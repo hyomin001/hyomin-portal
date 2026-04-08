@@ -88,7 +88,7 @@ def get_market():
 
 def save_market(data): save_db(MARKET_FILE, data)
 
-st.set_page_config(page_title="HYOMIN UNIVERSE v14.4", page_icon="💎", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE v14.5", page_icon="💎", layout="wide")
 
 # ==============================
 # 🔐 로그인 시스템
@@ -123,24 +123,16 @@ if 'logged_in_user' not in st.session_state:
     st.stop()
 
 # ==============================
-# 🎨 CSS (모바일 레이아웃 파괴 버그 수정본)
+# 🎨 CSS
 # ==============================
 css_base = """
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap');
-    
-    /* 앱 배경 검정, 기본 텍스트 하양 */
     .stApp { background-color: #050505 !important; }
     html, body, p, span, label, h1, h2, h3, button, input, th, td { font-family: 'Noto Sans KR', sans-serif !important; color: #FFFFFF !important; }
-    
-    /* 선택창 (입력 부분) */
     div[data-baseweb="select"] > div { background-color: #1A1C24 !important; border: 2px solid #00E5FF !important; }
-    
-    /* 선택창 (드롭다운 목록) - 모바일 버그 방지를 위해 role="listbox" 타겟팅 */
     div[role="listbox"] { background-color: #FFFFFF !important; border: 2px solid #00E5FF !important; border-radius: 8px; }
     div[role="listbox"] li, div[role="listbox"] span { color: #000000 !important; font-weight: 900 !important; }
     div[role="listbox"] li:hover, div[role="listbox"] li:hover span { background-color: #00E5FF !important; color: #000000 !important; }
-    
-    /* 주식 테이블 */
     .stock-table { width: 100%; border-collapse: collapse; background-color: #111; border: 2px solid #444; }
     .stock-table th { background-color: #333; color: #FFD600 !important; text-align: center; }
     .stock-table td { border-bottom: 1px solid #333; text-align: center; }
@@ -150,7 +142,6 @@ css_base = """
 if st.session_state.device_mode == "🖥️ PC (데스크탑)":
     st.markdown(f"<style>{css_base} p, span, label, button, input, td, th {{ font-size: 20px !important; }} h1 {{ font-size: 3rem !important; color: #00E5FF !important; text-align:center; }} h2 {{ font-size: 2.2rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }} .stButton>button {{ height: 65px !important; font-size: 22px !important; font-weight: 900 !important; border-radius: 12px; border: 2px solid #00E5FF !important; background-color: #1A1C24 !important; color: #00E5FF !important; }} .stButton>button:hover {{ background-color: #00E5FF !important; color: #000 !important; }} [data-testid='stSidebar'] {{ background-color: #001F3F !important; border-right: 4px solid #00E5FF; }}</style>", unsafe_allow_html=True)
 else:
-    # 모바일은 절대 * 선택자를 쓰면 안됨. 특정 태그들만 크기 조절.
     st.markdown(f"<style>{css_base} p, span, label, button, input, td, th {{ font-size: 15px !important; }} h1 {{ font-size: 1.8rem !important; color: #00E5FF !important; text-align:center; }} h2 {{ font-size: 1.4rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }} .stButton>button {{ height: 50px !important; font-size: 15px !important; font-weight: 900 !important; border-radius: 8px; border: 2px solid #00E5FF !important; background-color: #1A1C24 !important; color: #00E5FF !important; }} .stButton>button:hover {{ background-color: #00E5FF !important; color: #000 !important; }}</style>", unsafe_allow_html=True)
 
 # ==============================
@@ -174,7 +165,6 @@ if cur_t - market.get('news_time', 0) > 30:
     market['news'] = f"📰 [속보] {t_nm}, {'급격한 성장세 기록!' if imp > 0 else '예기치 못한 리스크 발생!'}"
     market['news_time'] = cur_t; market['next_news_target'] = random.choice(stock_config)['id']; market['next_news_impact'] = random.uniform(-0.25, 0.25); m_up = True
 
-# 1시간마다 로또 추첨 (3600초)
 if cur_t - market.get('lotto_last_draw', 0) > 3600:
     if market['lotto_tickets']:
         pool = []
@@ -199,7 +189,7 @@ if st.session_state.loan > 0 and nw < 0: st.session_state.equipped_title = "💸
 # ==============================
 # 🧭 메뉴 분기
 # ==============================
-menu_ops = ["🏠 홈 광장", "📈 주식 트레이딩", "🏢 부동산 (수금)", "🏦 은행 (대출/송금)", "⚔️ 1시간 글로벌 로또", "⚽ 구단주", "💻 CBT", "🏎️ 레이싱", "🎰 슬롯", "👑 칭호 상점", "💬 랭커 게시판"]
+menu_ops = ["🏠 홈 광장", "📈 주식 트레이딩", "🏢 부동산 (수금)", "🏦 은행 (대출/송금)", "⚔️ 1시간 글로벌 로또", "⚽ 구단주 시뮬", "💻 CBT 모의고사", "🏎️ 역배 레이싱", "🎰 슬롯", "👑 칭호 상점", "💬 랭커 게시판"]
 if nw >= 100000000000 or st.session_state.logged_in_user == "5891": menu_ops.insert(2, "💎 VIP 라운지")
 if st.session_state.logged_in_user == "5891": menu_ops.append("🛠️ 창조주 통제소")
 
@@ -360,68 +350,137 @@ elif menu == "⚔️ 1시간 글로벌 로또":
     st.info(f"⏳ 다음 추첨까지 약 {rem//60}분 {rem%60}초 남았습니다."); time.sleep(5); st.rerun()
 
 # ==============================
-# 미니게임 및 커뮤니티 (모바일 버그 수정본)
+# ⚽ [구단주 매니저 고퀄 패치]
 # ==============================
-elif menu == "⚽ 구단주":
+elif menu == "⚽ 구단주 시뮬":
     st.title("🏆 구단주 시뮬레이터")
-    if st.button("경기 시작"):
-        h, a = 0, 0; b = st.empty(); p = st.progress(0)
+    formation = st.selectbox("전술 및 포메이션 선택", ["4-4-2 (공수 밸런스)", "4-3-3 (초공격형)", "3-5-2 (중원 장악)", "5-4-1 (텐백 수비형)"])
+    
+    if st.button("🏟️ 경기 시작"):
+        h, a = 0, 0
+        score_board = st.empty()
+        commentary = st.empty()
+        p = st.progress(0)
+        
+        comments = [
+            "치열한 중원 싸움입니다!", "수비수가 몸을 날려 막아냅니다!", "아깝게 빗나가는 슈팅!",
+            "골키퍼의 엄청난 슈퍼 세이브!!", "측면을 완전히 허물었습니다, 크로스!", "옵사이드 트랩에 걸렸습니다.",
+            "VAR 판독 결과, 노골로 선언됩니다.", "관중들의 함성소리가 대단합니다!", "프리킥 찬스, 벽에 맞고 나갑니다."
+        ]
+        
         for i in range(10):
-            if random.random()<0.3: h+=1
-            if random.random()<0.2: a+=1
-            b.markdown(f"<h1 style='text-align:center;'>{h} : {a}</h1>", unsafe_allow_html=True); p.progress((i+1)/10); time.sleep(0.5)
-        res = 5000000 if h>a else 1000000 if h==a else 100000
-        st.session_state.global_cash += res; sync_user_data(); st.success(f"종료! +₩{res:,}")
+            # 골 확률
+            if random.random() < 0.25: h += 1
+            if random.random() < 0.15: a += 1
+            
+            # 스코어보드 업데이트
+            score_board.markdown(f"<div style='background:#111; border:3px solid #00E5FF; border-radius:15px; padding:20px;'><h1 style='text-align:center; color:#FFF; font-size:50px;'>내 팀 [ {h} : {a} ] 상대 팀</h1></div>", unsafe_allow_html=True)
+            
+            # 골이 들어갔을 때와 안 들어갔을 때 해설 변경
+            if random.random() < 0.3: commentary.error("⚽ 골!!! 엄청난 득점입니다!!")
+            else: commentary.info(f"🎙️ [해설] {random.choice(comments)}")
+            
+            p.progress((i+1)/10)
+            time.sleep(0.8)
+            
+        res = 5000000 if h > a else 1000000 if h == a else 100000
+        result_text = "승리!" if h > a else "무승부" if h == a else "패배..."
+        st.session_state.global_cash += res; sync_user_data()
+        st.success(f"경기 종료! 결과: {result_text} (수익금: +₩{res:,})")
         time.sleep(2.5); st.rerun()
 
-elif menu == "💻 CBT":
-    st.title("💻 정처기 모의고사")
+# ==============================
+# 💻 [CBT 고퀄 패치]
+# ==============================
+elif menu == "💻 CBT 모의고사":
+    st.title("💻 정처기 1급 실전 모의고사")
+    st.markdown("실제 정보처리기사 기출문제 수준의 고퀄리티 문제입니다.")
+    
     if 'cbt_q' not in st.session_state:
-        q_p = [{"q":"OSI 7계층 중 3계층은?", "a":"네트워크", "w":["물리","전송","세션"]}, {"q":"LIFO 구조는?", "a":"스택", "w":["큐","트리","그래프"]}]
+        q_p = [
+            {"q":"GoF 디자인 패턴 중 객체의 상태 변화를 관찰자들에게 통지하는 패턴은?", "a":"Observer", "w":["State", "Strategy", "Visitor"]},
+            {"q":"관계형 데이터베이스에서 '이행적 함수 종속'을 제거하는 정규화 단계는?", "a":"제3정규형(3NF)", "w":["제1정규형", "제2정규형", "BCNF"]},
+            {"q":"모듈의 응집도(Cohesion) 중 가장 응집도가 강한(좋은) 것은?", "a":"기능적(Functional)", "w":["순차적(Sequential)", "통신적(Communicational)", "논리적(Logical)"]},
+            {"q":"UNIX/Linux에서 파일의 권한을 변경하는 명령어는?", "a":"chmod", "w":["chown", "chgrp", "cat"]},
+            {"q":"OSI 7계층 중 종단 간(End-to-End) 신뢰성 있는 데이터 전송을 담당하는 계층은?", "a":"전송 계층(Transport)", "w":["네트워크 계층", "데이터 링크 계층", "세션 계층"]},
+            {"q":"비대칭키(공개키) 암호화 알고리즘에 해당하는 것은?", "a":"RSA", "w":["DES", "AES", "SEED"]},
+            {"q":"프로세스 스케줄링 기법 중 '비선점형(Non-preemptive)' 기법은?", "a":"SJF", "w":["Round Robin", "SRT", "다단계 큐"]},
+            {"q":"객체지향 설계 원칙(SOLID) 중 '클라이언트는 자신이 사용하지 않는 메서드에 의존하면 안 된다'는 원칙은?", "a":"ISP (인터페이스 분리)", "w":["SRP (단일 책임)", "OCP (개방-폐쇄)", "DIP (의존 역전)"]},
+            {"q":"트랜잭션 연산이 DB에 모두 반영되든지 전혀 반영되지 않아야 함을 의미하는 특성은?", "a":"Atomicity (원자성)", "w":["Consistency (일관성)", "Isolation (독립성)", "Durability (영속성)"]}
+        ]
         st.session_state.cbt_q = random.choice(q_p)
         st.session_state.cbt_opts = st.session_state.cbt_q['w'] + [st.session_state.cbt_q['a']]
         random.shuffle(st.session_state.cbt_opts)
     
     with st.form("exam"):
-        st.markdown(f"<h2 style='color:#FFD600;'>Q. {st.session_state.cbt_q['q']}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='color:#FFD600; font-size:24px;'>Q. {st.session_state.cbt_q['q']}</h2>", unsafe_allow_html=True)
         ans = st.radio("정답 선택:", st.session_state.cbt_opts)
-        if st.form_submit_button("제출"):
+        if st.form_submit_button("답안 제출"):
             if ans == st.session_state.cbt_q['a']: 
-                st.session_state.global_cash += 500000; st.success("정답! +50만")
-            else: st.error("오답!")
-            del st.session_state.cbt_q; sync_user_data(); time.sleep(1.5); st.rerun()
+                st.session_state.global_cash += 500000; st.success("🎉 정답입니다! 장학금 +50만 원")
+            else: st.error(f"❌ 오답입니다! 정답은 [{st.session_state.cbt_q['a']}] 입니다.")
+            del st.session_state.cbt_q; sync_user_data(); time.sleep(2); st.rerun()
 
-elif menu == "🏎️ 레이싱":
-    st.title("🏎️ 역배 레이싱")
-    sel = st.selectbox("차량", ["레이 (15배)", "페라리 (1.5배)"])
-    amt = st.number_input("배팅액", min_value=10000)
-    if st.button("출발"):
+# ==============================
+# 🏎️ [레이싱 고퀄 패치]
+# ==============================
+elif menu == "🏎️ 역배 레이싱":
+    st.title("🏎️ 역배 챔피언십 레이싱")
+    st.markdown("차량 라인업이 확장되었습니다. 배당률을 확인하고 배팅하세요!")
+    
+    cars = [
+        {"name": "🚲 낡은 자전거", "odds": 50.0, "emoji": "🚲"},
+        {"name": "🚜 농촌 경운기", "odds": 30.0, "emoji": "🚜"},
+        {"name": "🚗 귀여운 레이", "odds": 15.0, "emoji": "🚗"},
+        {"name": "🚙 국민 아반떼", "odds": 3.0, "emoji": "🚙"},
+        {"name": "🏎️ 페라리 F8", "odds": 1.5, "emoji": "🏎️"}
+    ]
+    
+    # 배당률 표 깔끔하게 보여주기
+    st.table(pd.DataFrame([{"차량": c['name'], "배당률": f"x {c['odds']}"} for c in cars]))
+    
+    sel = st.selectbox("승리할 차량을 선택하세요", [c['name'] for c in cars])
+    amt = st.number_input("배팅액 입력", min_value=10000, step=10000)
+    
+    if st.button("🏁 RACE START!!"):
         if st.session_state.global_cash >= amt:
             st.session_state.global_cash -= amt
-            bars = [st.progress(0, text=c) for c in ["레이", "페라리"]]; pos = [0, 0]
-            while max(pos) < 100:
-                pos[0] += random.randint(5, 15); pos[1] += random.randint(5, 15)
-                bars[0].progress(min(pos[0], 100)); bars[1].progress(min(pos[1], 100))
-                time.sleep(0.1)
             
-            win_car = "레이 (15배)" if pos[0] >= 100 else "페라리 (1.5배)"
-            if win_car == sel:
-                win = int(amt*15) if "레이" in sel else int(amt*1.5)
-                st.session_state.global_cash += win; st.success(f"승리! +₩{win:,}"); st.balloons()
-            else: st.error(f"패배... 우승차: {win_car}")
-            sync_user_data(); time.sleep(2.5); st.rerun()
+            # 차량별 진행바 (이름 명시)
+            bars = [st.progress(0, text=f"{c['emoji']} {c['name']} (진행률: 0%)") for c in cars]
+            pos = [0] * len(cars)
+            
+            while max(pos) < 100:
+                for i in range(len(cars)):
+                    # 역배일수록 느리게, 정배일수록 빠르게 가중치 부여
+                    speed_weight = 20 if cars[i]['odds'] == 1.5 else 10 if cars[i]['odds'] == 3.0 else 5
+                    pos[i] += random.randint(1, speed_weight)
+                    
+                    current_pos = min(pos[i], 100)
+                    bars[i].progress(current_pos, text=f"{cars[i]['emoji']} {cars[i]['name']} (진행률: {current_pos}%)")
+                time.sleep(0.15)
+            
+            win_idx = pos.index(max(pos))
+            win_car = cars[win_idx]
+            
+            if win_car['name'] == sel:
+                win_amt = int(amt * win_car['odds'])
+                st.session_state.global_cash += win_amt
+                st.success(f"🎉 우승 적중!! {win_car['name']}이(가) 가장 먼저 들어왔습니다! (+₩{win_amt:,})")
+                st.balloons()
+            else:
+                st.error(f"💀 배팅 실패... 우승 차량은 {win_car['name']} 입니다.")
+                
+            sync_user_data(); time.sleep(3); st.rerun()
+        else: st.error("잔액이 부족합니다.")
 
 elif menu == "🎰 슬롯":
     st.title("🎰 럭키 슬롯")
     if st.button("1,000만 당기기"):
         if st.session_state.global_cash >= 10000000:
-            st.session_state.global_cash -= 10000000
-            slot_box = st.empty()
+            st.session_state.global_cash -= 10000000; slot_box = st.empty()
             for _ in range(10):
-                r = [random.choice(["💎","🍒","7️⃣"]) for _ in range(3)]
-                slot_box.markdown(f"<h1 style='text-align:center; font-size:60px;'>{' '.join(r)}</h1>", unsafe_allow_html=True)
-                time.sleep(0.1)
-            
+                r = [random.choice(["💎","🍒","7️⃣"]) for _ in range(3)]; slot_box.markdown(f"<h1 style='text-align:center; font-size:60px;'>{' '.join(r)}</h1>", unsafe_allow_html=True); time.sleep(0.1)
             if r[0]==r[1]==r[2]: st.session_state.global_cash += 500000000; st.success("🎉 잭팟! +5억"); st.balloons()
             else: st.error("꽝! 다음 기회에...")
             sync_user_data(); time.sleep(2); st.rerun()
