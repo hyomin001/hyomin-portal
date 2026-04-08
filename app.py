@@ -1532,42 +1532,26 @@ elif menu == "🛠️ 창조주 통제소":
 
     t1, t2, t3, t4 = st.tabs(["👤 유저 조작", "📈 시장 조작", "📢 공지 & 이벤트", "📊 전체 현황"])
 
-   with t1:
+    with t1:
         u_db     = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "5891"]
         if uid_list:
             sel_u  = st.selectbox("유저 선택", uid_list)
             u_data = u_db[sel_u]
             c1, c2 = st.columns(2)
-            
-            # JS 숫자 한계 에러 방지를 위해 텍스트 입력 후 변환 방식 사용
             with c1:
-                # 텍스트로 입력받아 JS 숫자 제한(9000조)을 우회합니다.
-                raw_cash = st.text_input("현금 설정 (숫자만 입력)", value=str(int(u_data['cash'])))
-                raw_loan = st.text_input("대출 설정 (숫자만 입력)", value=str(int(u_data.get('loan', 0))))
-                
-                # 안전한 숫자 변환 루틴
-                try:
-                    new_cash = int(raw_cash.replace(',', '').strip())
-                    new_loan = int(raw_loan.replace(',', '').strip())
-                except ValueError:
-                    st.error("⚠️ 숫자를 올바르게 입력해주세요.")
-                    new_cash = int(u_data['cash'])
-                    new_loan = int(u_data.get('loan', 0))
-                    
+                new_cash  = st.number_input("현금 설정",  value=int(u_data['cash']),            step=1_000_000)
+                new_loan  = st.number_input("대출 설정",  value=int(u_data.get('loan', 0)),      step=1_000_000)
             with c2:
                 new_title = st.text_input("칭호 설정",   value=u_data.get('equipped_title',''))
                 st.metric("현재 현금", f"₩{u_data['cash']:,}")
                 st.metric("현재 대출", f"₩{u_data.get('loan',0):,}")
-            
             if st.button("⚡ 조작 실행", use_container_width=True):
                 u_db[sel_u]['cash']           = new_cash
                 u_db[sel_u]['loan']           = new_loan
                 u_db[sel_u]['equipped_title'] = new_title
                 save_db(USERS_FILE, u_db)
                 st.success(f"✅ {sel_u} 데이터 수정 완료!")
-                st.rerun() # 수정 후 즉시 반영
-
             st.write("---")
             if st.button("🗑️ 유저 삭제 (주의!)", use_container_width=True, type="secondary"):
                 del u_db[sel_u]; save_db(USERS_FILE, u_db)
