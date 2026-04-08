@@ -16,7 +16,8 @@ from datetime import datetime
 USERS_FILE    = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
 MARKET_FILE   = "market_db.json"
-TXLOG_FILE    = "txlog_db.json"   # 거래 기록
+TXLOG_FILE    = "txlog_db.json"
+REALESTATE_MARKET_FILE = "realestate_market_db.json"  # 부동산 거래 마켓
 
 stock_config = [
     {"id": "NDX",    "name": "나스닥100 ETF",       "vol": 0.04, "icon": "🇺🇸"},
@@ -31,11 +32,19 @@ stock_config = [
     {"id": "ENTER",  "name": "하이브",               "vol": 0.07, "icon": "🎵"},
 ]
 
+# ── 부동산 기본 매물 설정 (수량 제한 있음) ──
+# 초기 공급량이 정해져 있고, 유저가 판매 등록해야 다른 유저가 살 수 있음
 estate_config = {
-    "E1": {"name": "역세권 원룸",        "icon": "🏠", "price": 10_000_000_000,    "income": 10_000,   "desc": "지하철 2분 거리 황금 입지"},
-    "E2": {"name": "초대형 PC방",        "icon": "🖥️", "price": 50_000_000_000,    "income": 50_000,   "desc": "e스포츠 성지, 24시간 풀가동"},
-    "E3": {"name": "강남 꼬마빌딩",      "icon": "🏢", "price": 500_000_000_000,  "income": 500_000,  "desc": "강남 핵심 상권 4층 빌딩"},
-    "E4": {"name": "시그니엘 펜트하우스","icon": "👑", "price": 5_000_000_000_000,"income": 5_000_000,"desc": "롯데월드타워 최상층 전망"},
+    "E1":  {"name": "역세권 원룸",          "icon": "🏠",  "base_price": 10_000_000_000,    "income": 8_000,     "desc": "지하철 2분 거리 황금 입지",          "total_supply": 20},
+    "E2":  {"name": "초대형 PC방",           "icon": "🖥️",  "base_price": 50_000_000_000,    "income": 45_000,    "desc": "e스포츠 성지, 24시간 풀가동",        "total_supply": 10},
+    "E3":  {"name": "강남 꼬마빌딩",         "icon": "🏢",  "base_price": 500_000_000_000,   "income": 450_000,   "desc": "강남 핵심 상권 4층 빌딩",            "total_supply": 5},
+    "E4":  {"name": "시그니엘 펜트하우스",   "icon": "👑",  "base_price": 5_000_000_000_000, "income": 4_500_000, "desc": "롯데월드타워 최상층 전망",           "total_supply": 2},
+    "E5":  {"name": "제주 풀빌라",           "icon": "🌴",  "base_price": 30_000_000_000,    "income": 25_000,    "desc": "성산일출봉 전망 프리미엄 풀빌라",    "total_supply": 8},
+    "E6":  {"name": "홍대 상가건물",         "icon": "🎸",  "base_price": 200_000_000_000,   "income": 180_000,   "desc": "홍대 메인 스트리트 5층 상가",        "total_supply": 6},
+    "E7":  {"name": "판교 오피스타워",       "icon": "💻",  "base_price": 800_000_000_000,   "income": 750_000,   "desc": "IT 기업 밀집 A급 오피스",            "total_supply": 3},
+    "E8":  {"name": "해운대 호텔",           "icon": "🏖️",  "base_price": 2_000_000_000_000, "income": 2_000_000, "desc": "부산 해운대 특급 호텔 1동",          "total_supply": 2},
+    "E9":  {"name": "용산 임대아파트 단지",  "icon": "🏘️",  "base_price": 1_000_000_000_000, "income": 900_000,   "desc": "용산 재개발 신축 100세대 단지",      "total_supply": 3},
+    "E10": {"name": "인천공항 면세점",       "icon": "✈️",  "base_price": 3_000_000_000_000, "income": 3_500_000, "desc": "인천공항 1터미널 황금 면세점",       "total_supply": 1},
 }
 
 # ── 광산 아이템 설정 ──
@@ -50,9 +59,9 @@ MINE_ITEMS = [
     {"name": "전설의 원석","icon": "🌟", "value": 100_000_000,"prob": 0.005},
 ]
 
-# ── 💡 숫자를 한글 단위로 예쁘게 변환하는 마법의 함수 ──
+# ── 숫자를 한글 단위로 변환 ──
 def format_korean_money(num):
-    if pd.isna(num) or num == 0: return "0원"
+    if num is None or (isinstance(num, float) and np.isnan(num)) or num == 0: return "0원"
     is_neg = num < 0
     num = abs(int(num))
     jo = num // 10**12
@@ -68,7 +77,7 @@ def format_korean_money(num):
     return f"-{res}" if is_neg else res
 
 # ════════════════════════════════════
-# 🗄️ DB 유틸 (데이터 소실 방지 버전)
+# 🗄️ DB 유틸
 # ════════════════════════════════════
 def _atomic_save(filepath: str, data):
     tmp = filepath + ".tmp"
@@ -89,7 +98,7 @@ def load_db(file, default):
             try:
                 with open(target, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                if data: return data
+                if data is not None: return data
             except Exception:
                 continue
     return default
@@ -112,6 +121,58 @@ def log_tx(uid: str, category: str, desc: str, amount: int):
     logs[uid] = logs[uid][:200]
     save_db(TXLOG_FILE, logs)
 
+# ── 부동산 마켓 로드/저장 ──
+def load_estate_market():
+    """
+    구조: {
+      "listings": [
+        {
+          "id": str (uuid),
+          "eid": str,
+          "seller": str,
+          "price": int,
+          "listed_time": float
+        }, ...
+      ],
+      "owner_counts": { uid: { eid: count } }  # 전체 소유 현황
+    }
+    """
+    default = {"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}}
+    d = load_db(REALESTATE_MARKET_FILE, default)
+    # 초기 재고 동기화
+    if "initial_stock" not in d:
+        d["initial_stock"] = {eid: info["total_supply"] for eid, info in estate_config.items()}
+    if "owner_counts" not in d:
+        d["owner_counts"] = {}
+    if "listings" not in d:
+        d["listings"] = []
+    return d
+
+def save_estate_market(data):
+    save_db(REALESTATE_MARKET_FILE, data)
+
+def get_estate_initial_listings(em):
+    """초기 공급 매물 (아직 아무도 안 산 것들) - 기본가로 판매"""
+    result = []
+    for eid, info in estate_config.items():
+        # 현재 유저가 보유한 총 수량 계산
+        owned_total = sum(
+            v.get(eid, 0) for v in em["owner_counts"].values()
+        )
+        # 유저 간 거래 중인 수량
+        listed_count = sum(1 for l in em["listings"] if l["eid"] == eid)
+        # 초기 재고에서 소진된 수량
+        initial_released = owned_total + listed_count
+        remaining_initial = max(0, info["total_supply"] - initial_released)
+        if remaining_initial > 0:
+            result.append({
+                "eid": eid,
+                "remaining": remaining_initial,
+                "price": info["base_price"],
+                "is_initial": True
+            })
+    return result
+
 # ── 순자산 계산 ──
 def get_net_worth(uid, market_data):
     users = load_db(USERS_FILE, {})
@@ -121,8 +182,9 @@ def get_net_worth(uid, market_data):
     prices = {k: v['price'] for k, v in market_data.get('stock_data', {}).items()}
     for sid, p_data in u.get('portfolio', {}).items():
         if sid in prices: w += p_data.get('qty', 0) * prices[sid]
+    em = load_estate_market()
     for eid, count in u.get('real_estate', {}).items():
-        if eid in estate_config: w += estate_config[eid]['price'] * count * 0.8
+        if eid in estate_config: w += estate_config[eid]['base_price'] * count * 0.8
     return w
 
 def sync_user_data():
@@ -152,7 +214,7 @@ def get_market():
                           "price": random.randint(50_000, 150_000), "history": [80_000]}
                 for s in stock_config
             },
-            "news": "🌌 HYOMIN UNIVERSE 경제 밸런스 패치 완료!",
+            "news": "🌌 HYOMIN UNIVERSE v18 오픈! 부동산 실거래 시스템 도입!",
             "news_time": time.time(),
             "last_tick": time.time(),
             "admin_msg": "",
@@ -176,9 +238,24 @@ def get_market():
 def save_market(data): save_db(MARKET_FILE, data)
 
 # ════════════════════════════════════
+# ⏱️ 광클 방지 유틸
+# ════════════════════════════════════
+def can_action(key: str, cooldown_sec: float = 2.0) -> bool:
+    """True면 실행 가능, False면 쿨다운 중"""
+    last = st.session_state.get(f"_cd_{key}", 0)
+    return (time.time() - last) >= cooldown_sec
+
+def set_cooldown(key: str):
+    st.session_state[f"_cd_{key}"] = time.time()
+
+def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
+    last = st.session_state.get(f"_cd_{key}", 0)
+    return max(0.0, cooldown_sec - (time.time() - last))
+
+# ════════════════════════════════════
 # 페이지 설정
 # ════════════════════════════════════
-st.set_page_config(page_title="HYOMIN UNIVERSE v17.1", page_icon="🌌", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE v18", page_icon="🌌", layout="wide")
 
 # ==============================
 # 🔐 로그인
@@ -210,7 +287,7 @@ if 'logged_in_user' not in st.session_state:
 </style>""", unsafe_allow_html=True)
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
-    st.markdown("<div class='login-sub'>∙ 가상 자산 시뮬레이터 v17.1 ∙</div>", unsafe_allow_html=True)
+    st.markdown("<div class='login-sub'>∙ 가상 자산 시뮬레이터 v18 ∙</div>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
@@ -308,6 +385,9 @@ div[role="listbox"] li:hover { background:rgba(0,229,255,0.15) !important; }
   background:rgba(0,229,255,0.18) !important; border-color:#00E5FF !important;
   box-shadow:0 0 18px rgba(0,229,255,0.35) !important; transform:translateY(-1px) !important;
 }
+.stButton>button:disabled {
+  opacity:0.4 !important; cursor:not-allowed !important; transform:none !important;
+}
 .stTabs [data-baseweb="tab-list"] { background:transparent !important; border-bottom:1px solid rgba(0,229,255,0.15) !important; }
 .stTabs [data-baseweb="tab"] { color:#777 !important; font-weight:700 !important; font-size:0.95rem !important; padding:10px 20px !important; }
 .stTabs [aria-selected="true"] { color:#00E5FF !important; border-bottom:2px solid #00E5FF !important; background:transparent !important; }
@@ -351,14 +431,24 @@ div[role="listbox"] li:hover { background:rgba(0,229,255,0.15) !important; }
 .commentary-item {
   background:rgba(255,255,255,0.04); border-left:3px solid #00E5FF;
   padding:10px 15px; margin:6px 0; border-radius:0 8px 8px 0; font-size:0.9rem; color:#ddd !important;
-  animation:slideIn 0.4s ease;
 }
-@keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
 .estate-card {
   background:linear-gradient(135deg,rgba(255,215,0,0.05),rgba(255,100,0,0.05));
   border:1px solid rgba(255,215,0,0.2); border-radius:14px; padding:18px 22px; margin:10px 0;
 }
 .estate-income { color:#00FF88 !important; font-weight:900; font-size:0.9rem; }
+.market-listing {
+  background:linear-gradient(135deg,rgba(0,229,255,0.04),rgba(0,100,200,0.06));
+  border:1px solid rgba(0,229,255,0.25); border-radius:12px; padding:16px 20px; margin:8px 0;
+}
+.market-initial {
+  background:linear-gradient(135deg,rgba(0,255,136,0.04),rgba(0,150,80,0.06));
+  border:1px solid rgba(0,255,136,0.25); border-radius:12px; padding:16px 20px; margin:8px 0;
+}
+.my-listing {
+  background:linear-gradient(135deg,rgba(255,180,0,0.06),rgba(200,100,0,0.06));
+  border:1px solid rgba(255,180,0,0.35); border-radius:12px; padding:16px 20px; margin:8px 0;
+}
 .profit { color:#FF4B4B !important; font-weight:900; }
 .loss   { color:#4B9EFF !important; font-weight:900; }
 .vip-banner {
@@ -389,6 +479,11 @@ div[role="listbox"] li:hover { background:rgba(0,229,255,0.15) !important; }
 .tx-row {
   display:flex; justify-content:space-between; align-items:center;
   padding:9px 14px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.88rem;
+}
+.cooldown-badge {
+  background:rgba(255,80,80,0.15); border:1px solid rgba(255,80,80,0.4);
+  border-radius:6px; padding:4px 10px; font-size:0.78rem; color:#FF6060 !important;
+  display:inline-block; margin-left:8px;
 }
 """
 
@@ -492,7 +587,7 @@ is_vip   = nw >= 100_000_000_000 or is_admin
 menu_ops = [
     "🏠 홈 광장",
     "📈 주식 트레이딩",
-    "🏢 부동산 수금소",
+    "🏢 부동산 거래소",
     "🏦 은행 (대출/송금)",
     "⚔️ 글로벌 로또",
     "⚽ 구단주 시뮬레이터",
@@ -566,8 +661,12 @@ if menu == "💎 VIP 라운지":
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("### 🎰 VIP 전용 슬롯 (1억, 승률 50%)")
-        if st.button("💎 VIP 슬롯 당기기", use_container_width=True):
+        cd_rem = cooldown_remaining("vip_slot", 5.0)
+        if cd_rem > 0:
+            st.warning(f"⏱️ 쿨다운 중... {cd_rem:.1f}초")
+        elif st.button("💎 VIP 슬롯 당기기", use_container_width=True):
             if st.session_state.global_cash >= 100_000_000:
+                set_cooldown("vip_slot")
                 st.session_state.global_cash -= 100_000_000
                 if random.random() < 0.5:
                     st.session_state.global_cash += 250_000_000
@@ -581,7 +680,7 @@ if menu == "💎 VIP 라운지":
     with c2:
         st.markdown("### 📊 VIP 포트폴리오 요약")
         total_stock  = sum(st.session_state.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price'] for s in stock_config)
-        total_estate = sum(estate_config[eid]['price'] * cnt * 0.8 for eid, cnt in st.session_state.real_estate.items() if eid in estate_config)
+        total_estate = sum(estate_config[eid]['base_price'] * cnt * 0.8 for eid, cnt in st.session_state.real_estate.items() if eid in estate_config)
         st.metric("주식 평가액",   format_korean_money(total_stock))
         st.metric("부동산 평가액", format_korean_money(total_estate))
         st.metric("총 순자산",     format_korean_money(nw))
@@ -636,7 +735,7 @@ elif menu == "🏠 홈 광장":
         for sid, p in udata.get('portfolio', {}).items():
             if sid in market['stock_data']: w += p.get('qty', 0) * market['stock_data'][sid]['price']
         for eid, cnt in udata.get('real_estate', {}).items():
-            if eid in estate_config: w += estate_config[eid]['price'] * cnt * 0.8
+            if eid in estate_config: w += estate_config[eid]['base_price'] * cnt * 0.8
         rank_data.append({"uid": uid, "title": udata.get('equipped_title', '신규시민'), "nw": w})
     rank_data.sort(key=lambda x: x['nw'], reverse=True)
     medals = ["🥇","🥈","🥉","4️⃣","5️⃣"]
@@ -651,10 +750,21 @@ elif menu == "🏠 홈 광장":
 </div>""", unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════
-# 📈 주식 트레이딩
+# 📈 주식 트레이딩  (광클 방지 + 돈복사 방지 강화)
 # ════════════════════════════════════════════════
 elif menu == "📈 주식 트레이딩":
     st.title("📈 통합 거래소")
+
+    # ── 주식 거래 쿨다운 설정 ──
+    TRADE_COOLDOWN   = 3.0   # 일반 매수/매도 쿨다운 (초)
+    BULK_COOLDOWN    = 8.0   # 풀매수/풀매도 쿨다운 (초) — 조작 방지
+    DAILY_BULK_LIMIT = 5     # 풀매수+풀매도 하루 합산 최대 횟수
+
+    # 당일 거래 횟수 추적
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    if st.session_state.get("bulk_trade_date") != today_str:
+        st.session_state.bulk_trade_date  = today_str
+        st.session_state.bulk_trade_count = 0
 
     tab_market, tab_port, tab_trade = st.tabs(["📊 전체 시황", "💼 내 포트폴리오", "⚡ 빠른 거래"])
 
@@ -714,14 +824,24 @@ elif menu == "📈 주식 트레이딩":
         cost = qty_input * cp
         st.caption(f"예상 거래금액: {format_korean_money(cost)}")
 
-        c1, c2, c3, c4 = st.columns(4)
+        # 쿨다운 상태 표시
+        bulk_rem  = cooldown_remaining("bulk_trade", BULK_COOLDOWN)
+        trade_rem = cooldown_remaining(f"trade_{sid}", TRADE_COOLDOWN)
+        bulk_left = DAILY_BULK_LIMIT - st.session_state.get("bulk_trade_count", 0)
+
+        if bulk_rem > 0:
+            st.markdown(f"<span class='cooldown-badge'>풀매수/풀매도 쿨다운 {bulk_rem:.1f}초</span>", unsafe_allow_html=True)
+        if trade_rem > 0:
+            st.markdown(f"<span class='cooldown-badge'>일반 거래 쿨다운 {trade_rem:.1f}초</span>", unsafe_allow_html=True)
+
+        st.markdown(f"<div style='color:#666;font-size:0.78rem;margin-bottom:8px;'>풀매수/풀매도 오늘 남은 횟수: <b style='color:#FFD600;'>{bulk_left}회</b></div>", unsafe_allow_html=True)
 
         def _safe_buy(qty, price, sid_):
             total = qty * price
             if st.session_state.global_cash < total:
                 st.error("잔액 부족!"); return False
             st.session_state.global_cash -= total
-            if st.session_state.global_cash < 0:   
+            if st.session_state.global_cash < 0:
                 st.session_state.global_cash += total
                 st.error("거래 취소 (잔액 보호)"); return False
             old = st.session_state.portfolio.get(sid_, {'qty': 0, 'avg_price': 0})
@@ -741,136 +861,390 @@ elif menu == "📈 주식 트레이딩":
             log_tx(st.session_state.logged_in_user, "주식매도", f"{market['stock_data'][sid_]['name']} {qty}주 매도", earn)
             return True
 
+        c1, c2, c3, c4 = st.columns(4)
+
         with c1:
-            if st.button("💥 풀매수", use_container_width=True):
+            bulk_ok = (bulk_rem <= 0) and (bulk_left > 0)
+            if st.button("💥 풀매수", use_container_width=True, disabled=not bulk_ok):
                 max_q = st.session_state.global_cash // cp
-                if max_q > 0 and _safe_buy(max_q, cp, sid):
+                if max_q > 0:
+                    set_cooldown("bulk_trade")
+                    st.session_state.bulk_trade_count = st.session_state.get("bulk_trade_count", 0) + 1
                     buy_a = max_q * cp
-                    if buy_a >= 1_000_000_000:
-                        # 🚨 [패치 적용됨] 50% 펌핑 버그 수정 -> 최대 3% 변동으로 억제
-                        imp = min((buy_a / 1_000_000_000_000) * 0.1, 0.03) 
-                        market['stock_data'][sid]['price'] = int(cp * (1 + imp))
-                        market['news'] = f"🐋 [고래 매수] {st.session_state.logged_in_user}님이 {d['name']} 거액 매수!"
-                        save_market(market)
-                    sync_user_data(); st.rerun()
+                    if _safe_buy(max_q, cp, sid):
+                        # 가격 영향: 최대 8%, 거래대금에 비례
+                        imp = min((buy_a / 500_000_000_000) * 0.15, 0.08)
+                        if imp > 0.005:
+                            market['stock_data'][sid]['price'] = int(cp * (1 + imp))
+                            market['news'] = f"🐋 [고래 매수] {st.session_state.logged_in_user}님이 {d['name']} 거액 매수! +{imp*100:.1f}% 영향"
+                            save_market(market)
+                        sync_user_data(); st.rerun()
                 else:
-                    if max_q == 0: st.error("잔액 부족!")
+                    st.error("잔액 부족!")
+
         with c2:
-            if st.button(f"🟢 {qty_input}주 매수", use_container_width=True):
-                if _safe_buy(qty_input, cp, sid):
-                    sync_user_data(); st.success(f"✅ {qty_input}주 매수 완료!"); time.sleep(1); st.rerun()
+            if st.button(f"🟢 {qty_input}주 매수", use_container_width=True, disabled=trade_rem > 0):
+                if trade_rem <= 0:
+                    set_cooldown(f"trade_{sid}")
+                    if _safe_buy(qty_input, cp, sid):
+                        sync_user_data(); st.success(f"✅ {qty_input}주 매수 완료!"); time.sleep(1); st.rerun()
+
         with c3:
-            if st.button(f"🔴 {qty_input}주 매도", use_container_width=True):
-                if _safe_sell(qty_input, cp, sid):
-                    sync_user_data(); st.success(f"✅ {qty_input}주 매도!"); time.sleep(1); st.rerun()
+            if st.button(f"🔴 {qty_input}주 매도", use_container_width=True, disabled=trade_rem > 0):
+                if trade_rem <= 0:
+                    set_cooldown(f"trade_{sid}")
+                    if _safe_sell(qty_input, cp, sid):
+                        sync_user_data(); st.success(f"✅ {qty_input}주 매도!"); time.sleep(1); st.rerun()
+
         with c4:
-            if st.button("💸 풀매도", use_container_width=True):
+            bulk_ok2 = (bulk_rem <= 0) and (bulk_left > 0)
+            if st.button("💸 풀매도", use_container_width=True, disabled=not bulk_ok2):
                 own = st.session_state.portfolio.get(sid, {'qty': 0})['qty']
-                if own > 0 and _safe_sell(own, cp, sid):
+                if own > 0:
+                    set_cooldown("bulk_trade")
+                    st.session_state.bulk_trade_count = st.session_state.get("bulk_trade_count", 0) + 1
                     sell_a = own * cp
-                    if sell_a >= 1_000_000_000:
-                        # 🚨 [패치 적용됨] 매도 덤핑 버그 수정 -> 최대 3% 변동으로 억제
-                        imp = min((sell_a / 500_000_000_000) * 0.1, 0.03) 
-                        market['stock_data'][sid]['price'] = max(1_000, int(cp * (1 - imp)))
-                        market['news'] = f"📉 [고래 매도] {st.session_state.logged_in_user}님이 {d['name']} 물량 투하!"
-                        save_market(market)
-                    sync_user_data(); st.rerun()
+                    if _safe_sell(own, cp, sid):
+                        # 가격 영향: 최대 8%
+                        imp = min((sell_a / 500_000_000_000) * 0.15, 0.08)
+                        if imp > 0.005:
+                            market['stock_data'][sid]['price'] = max(1_000, int(cp * (1 - imp)))
+                            market['news'] = f"📉 [고래 매도] {st.session_state.logged_in_user}님이 {d['name']} 물량 투하! -{imp*100:.1f}% 영향"
+                            save_market(market)
+                        sync_user_data(); st.rerun()
                 else:
-                    if own == 0: st.error("보유 주식 없음")
+                    st.error("보유 주식 없음")
+
+        # 풀매수/풀매도 횟수 소진 안내
+        if bulk_left <= 0:
+            st.warning("⚠️ 오늘 풀매수/풀매도 횟수를 모두 사용했습니다. 내일 자정에 초기화됩니다.")
 
     if menu == "📈 주식 트레이딩":
         time.sleep(3); st.rerun()
 
 # ════════════════════════════════════════════════
-# 🏢 부동산 수금소
+# 🏢 부동산 거래소 (전면 재설계: 실거래 마켓 시스템)
 # ════════════════════════════════════════════════
-elif menu == "🏢 부동산 수금소":
-    st.title("🏢 부동산 제국")
+elif menu == "🏢 부동산 거래소":
+    st.title("🏢 부동산 실거래 마켓")
 
-    now      = time.time()
-    pass_s   = int(now - st.session_state.rent_time)
+    uid = st.session_state.logged_in_user
+    now = time.time()
+
+    # 임대 수익 수금 섹션
+    pass_s = int(now - st.session_state.rent_time)
     total_income_rate = sum(
         estate_config[eid]['income'] * cnt
         for eid, cnt in st.session_state.real_estate.items() if eid in estate_config
     )
     pending = total_income_rate * pass_s
 
-    st.markdown(f"""
+    if total_income_rate > 0:
+        st.markdown(f"""
 <div style='background:linear-gradient(135deg,rgba(0,255,136,0.08),rgba(0,100,50,0.1));
-     border:1px solid rgba(0,255,136,0.3);border-radius:14px;padding:22px;text-align:center;margin-bottom:18px;'>
-  <div style='color:#888;font-size:0.85rem;letter-spacing:2px;margin-bottom:8px;'>누적 월세 수익</div>
-  <div style='font-family:Orbitron,monospace;font-size:2rem;font-weight:900;color:#00FF88;'>{format_korean_money(pending)}</div>
-  <div style='color:#666;font-size:0.8rem;margin-top:8px;'>초당 {format_korean_money(total_income_rate)} 수입 중</div>
+     border:1px solid rgba(0,255,136,0.3);border-radius:14px;padding:18px;text-align:center;margin-bottom:16px;'>
+  <div style='color:#888;font-size:0.82rem;letter-spacing:2px;margin-bottom:6px;'>누적 임대 수익</div>
+  <div style='font-family:Orbitron,monospace;font-size:1.8rem;font-weight:900;color:#00FF88;'>{format_korean_money(pending)}</div>
+  <div style='color:#666;font-size:0.78rem;margin-top:6px;'>초당 {format_korean_money(total_income_rate)} 수입 중</div>
 </div>""", unsafe_allow_html=True)
 
-    if st.button("💰 전액 수금하기", use_container_width=True):
-        if pending > 0:
-            st.session_state.global_cash += int(pending)
-            st.session_state.rent_time = now
-            log_tx(st.session_state.logged_in_user, "부동산수금", f"임대 수익 수금", int(pending))
-            sync_user_data()
-            st.success(f"✅ {format_korean_money(pending)} 수금 완료!")
-            time.sleep(1); st.rerun()
-        else:
-            st.info("수금할 금액이 없습니다.")
+        cd_rent = cooldown_remaining("rent_collect", 3.0)
+        if cd_rent > 0:
+            st.warning(f"⏱️ 수금 쿨다운 {cd_rent:.1f}초")
+        elif st.button("💰 임대 수익 수금하기", use_container_width=True):
+            set_cooldown("rent_collect")
+            if pending > 0:
+                st.session_state.global_cash += int(pending)
+                st.session_state.rent_time = now
+                log_tx(uid, "부동산수금", "임대 수익 수금", int(pending))
+                sync_user_data()
+                st.success(f"✅ {format_korean_money(pending)} 수금 완료!")
+                time.sleep(0.8); st.rerun()
 
     st.write("---")
-    st.markdown("### 🏘️ 부동산 매물 목록")
 
-    for eid, info in estate_config.items():
-        owned     = st.session_state.real_estate.get(eid, 0)
-        inc_total = info['income'] * owned
-        sell_val  = int(info['price'] * 0.8)
+    em = load_estate_market()
+    initial_listings = get_estate_initial_listings(em)
 
-        c1, c2, c3 = st.columns([5, 2, 2])
-        with c1:
-            st.markdown(f"""
-<div class='estate-card'>
-  <div style='display:flex;align-items:center;gap:12px;'>
-    <span style='font-size:2rem;'>{info['icon']}</span>
+    tab_market_view, tab_my_estate, tab_sell = st.tabs(["🏪 마켓 (전체 매물)", "🏘️ 내 보유 부동산", "📋 판매 등록"])
+
+    # ──────────────────────────────
+    # 탭 1: 전체 마켓 (초기 매물 + 유저 매물)
+    # ──────────────────────────────
+    with tab_market_view:
+        st.markdown("### 🏗️ 신규 공급 매물 (운영사 직판)")
+        st.caption("수량 제한 있음 — 소진 시 유저 매물만 구매 가능")
+
+        if not initial_listings:
+            st.info("현재 신규 공급 매물이 없습니다. 유저 매물을 확인하세요!")
+        else:
+            for il in initial_listings:
+                eid  = il["eid"]
+                info = estate_config[eid]
+                c1, c2 = st.columns([5, 2])
+                with c1:
+                    st.markdown(f"""
+<div class='market-initial'>
+  <div style='display:flex;align-items:center;gap:10px;'>
+    <span style='font-size:1.8rem;'>{info['icon']}</span>
     <div>
-      <div style='font-weight:900;font-size:1.05rem;color:#fff;'>{info['name']}</div>
-      <div style='color:#888;font-size:0.82rem;'>{info['desc']}</div>
-      <div style='margin-top:6px;'>
-        <span style='color:#FFD600;font-weight:900;'>{format_korean_money(info['price'])}</span>
+      <div style='font-weight:900;font-size:1rem;color:#fff;'>{info['name']}</div>
+      <div style='color:#888;font-size:0.8rem;'>{info['desc']}</div>
+      <div style='margin-top:4px;'>
+        <span style='color:#FFD600;font-weight:900;'>{format_korean_money(info['base_price'])}</span>
         <span style='color:#555;margin:0 8px;'>|</span>
         <span class='estate-income'>+{format_korean_money(info['income'])}/초</span>
-        {f"<span style='margin-left:12px;color:#aaa;'>보유 {owned}채 → 초당 {format_korean_money(inc_total)}</span>" if owned > 0 else ""}
+        <span style='color:#888;margin-left:10px;font-size:0.78rem;'>잔여 {il['remaining']}개</span>
       </div>
     </div>
   </div>
 </div>""", unsafe_allow_html=True)
-        with c2:
-            can_buy = st.session_state.global_cash >= info['price']
-            if st.button("🏗️ 매입" if can_buy else "💸 잔액부족",
-                         key=f"buy_{eid}", use_container_width=True, disabled=not can_buy):
-                if st.session_state.global_cash >= info['price']:
-                    st.session_state.global_cash -= info['price']
-                    if st.session_state.global_cash < 0:
-                        st.session_state.global_cash += info['price']
-                        st.error("거래 취소 (잔액 보호)")
-                    else:
-                        st.session_state.real_estate[eid] = owned + 1
-                        log_tx(st.session_state.logged_in_user, "부동산매입", f"{info['name']} 매입", -info['price'])
-                        sync_user_data()
-                        st.success(f"✅ {info['name']} 매입 완료!")
-                        time.sleep(1); st.rerun()
-                else:
-                    st.error("잔액 부족!")
-        with c3:
-            if owned > 0:
-                if st.button(f"🏷️ 매각 (80%)\n{format_korean_money(sell_val)}",
-                             key=f"sell_{eid}", use_container_width=True):
-                    st.session_state.global_cash += sell_val
-                    st.session_state.real_estate[eid] = owned - 1
-                    if st.session_state.real_estate[eid] == 0:
-                        del st.session_state.real_estate[eid]
-                    log_tx(st.session_state.logged_in_user, "부동산매각", f"{info['name']} 매각 (80%)", sell_val)
-                    sync_user_data()
-                    st.success(f"✅ {info['name']} 매각 완료! +{format_korean_money(sell_val)}")
-                    time.sleep(1); st.rerun()
-            else:
-                st.markdown("<div style='height:52px;'></div>", unsafe_allow_html=True)
+                with c2:
+                    can_buy = st.session_state.global_cash >= info['base_price']
+                    cd_key  = f"estate_buy_{eid}_initial"
+                    cd_rem  = cooldown_remaining(cd_key, 4.0)
+                    if cd_rem > 0:
+                        st.warning(f"⏱️ {cd_rem:.1f}초")
+                    elif st.button("🏗️ 매입" if can_buy else "💸 잔액부족",
+                                   key=f"init_buy_{eid}", use_container_width=True, disabled=not can_buy):
+                        # 재고 재확인 (경쟁 방지)
+                        em2 = load_estate_market()
+                        il2 = next((x for x in get_estate_initial_listings(em2) if x["eid"] == eid), None)
+                        if il2 is None or il2["remaining"] <= 0:
+                            st.error("⚠️ 이미 매진되었습니다! 유저 매물을 확인하세요.")
+                        elif st.session_state.global_cash >= info['base_price']:
+                            set_cooldown(cd_key)
+                            st.session_state.global_cash -= info['base_price']
+                            st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
+                            # 소유 현황 업데이트
+                            if uid not in em2["owner_counts"]:
+                                em2["owner_counts"][uid] = {}
+                            em2["owner_counts"][uid][eid] = em2["owner_counts"][uid].get(eid, 0) + 1
+                            save_estate_market(em2)
+                            log_tx(uid, "부동산매입", f"{info['name']} 신규 매입", -info['base_price'])
+                            sync_user_data()
+                            st.success(f"✅ {info['name']} 매입 완료!")
+                            time.sleep(0.8); st.rerun()
+                        else:
+                            st.error("잔액 부족!")
+
+        st.write("---")
+        st.markdown("### 🔄 유저 매물 (2차 시장)")
+        st.caption("다른 유저가 판매 등록한 매물입니다. 판매자에게 대금이 지급됩니다.")
+
+        user_listings = [l for l in em["listings"] if l["seller"] != uid]
+        if not user_listings:
+            st.info("현재 등록된 유저 매물이 없습니다.")
+        else:
+            # 종목별로 그룹핑
+            listings_by_eid = {}
+            for l in user_listings:
+                listings_by_eid.setdefault(l["eid"], []).append(l)
+
+            for eid, llist in listings_by_eid.items():
+                info = estate_config.get(eid)
+                if not info: continue
+                # 가장 저렴한 순으로 정렬
+                llist_sorted = sorted(llist, key=lambda x: x["price"])
+                st.markdown(f"#### {info['icon']} {info['name']} — {len(llist)}건 매물")
+                for li in llist_sorted:
+                    premium = (li['price'] - info['base_price']) / info['base_price'] * 100
+                    prem_str = f"+{premium:.1f}%" if premium > 0 else f"{premium:.1f}%"
+                    prem_col = "#FF4B4B" if premium > 0 else "#4B9EFF"
+                    c1, c2 = st.columns([5, 2])
+                    with c1:
+                        st.markdown(f"""
+<div class='market-listing'>
+  <div style='display:flex;justify-content:space-between;align-items:center;'>
+    <div>
+      <span style='color:#aaa;font-size:0.8rem;'>판매자: </span>
+      <b style='color:#00E5FF;'>{li['seller']}</b>
+      <span style='color:{prem_col};font-size:0.78rem;margin-left:10px;'>{prem_str} (기준가 대비)</span>
+    </div>
+    <div style='text-align:right;'>
+      <div style='font-size:1.1rem;font-weight:900;color:#FFD600;'>{format_korean_money(li['price'])}</div>
+      <div class='estate-income'>+{format_korean_money(info['income'])}/초</div>
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
+                    with c2:
+                        can_buy = st.session_state.global_cash >= li['price']
+                        cd_key  = f"estate_buy_{li['id']}"
+                        cd_rem  = cooldown_remaining(cd_key, 4.0)
+                        if cd_rem > 0:
+                            st.warning(f"⏱️ {cd_rem:.1f}초")
+                        elif st.button("🛒 구매" if can_buy else "💸 잔액부족",
+                                       key=f"buy_listing_{li['id']}", use_container_width=True, disabled=not can_buy):
+                            # 매물 재확인 (중복 구매 방지)
+                            em3 = load_estate_market()
+                            target = next((x for x in em3["listings"] if x["id"] == li["id"]), None)
+                            if target is None:
+                                st.error("⚠️ 이미 판매된 매물입니다.")
+                            elif st.session_state.global_cash >= target["price"]:
+                                set_cooldown(cd_key)
+                                # 구매자 처리
+                                st.session_state.global_cash -= target["price"]
+                                st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
+                                if uid not in em3["owner_counts"]:
+                                    em3["owner_counts"][uid] = {}
+                                em3["owner_counts"][uid][eid] = em3["owner_counts"][uid].get(eid, 0) + 1
+                                # 판매자에게 대금 지급
+                                seller = target["seller"]
+                                us = load_db(USERS_FILE, {})
+                                if seller in us:
+                                    us[seller]['cash'] += target["price"]
+                                    if seller not in em3["owner_counts"]:
+                                        em3["owner_counts"][seller] = {}
+                                    em3["owner_counts"][seller][eid] = max(0, em3["owner_counts"][seller].get(eid, 1) - 1)
+                                    save_db(USERS_FILE, us)
+                                    log_tx(seller, "부동산판매", f"{info['name']} 판매 완료", target["price"])
+                                # 매물 제거
+                                em3["listings"] = [x for x in em3["listings"] if x["id"] != li["id"]]
+                                save_estate_market(em3)
+                                log_tx(uid, "부동산구매", f"{info['name']} 유저 매물 구매", -target["price"])
+                                sync_user_data()
+                                market['news'] = f"🏢 [{uid}] {info['name']} 유저 매물 구매 완료!"
+                                save_market(market)
+                                st.success(f"✅ {info['name']} 구매 완료! {format_korean_money(target['price'])}")
+                                time.sleep(0.8); st.rerun()
+                            else:
+                                st.error("잔액 부족!")
+
+    # ──────────────────────────────
+    # 탭 2: 내 보유 부동산
+    # ──────────────────────────────
+    with tab_my_estate:
+        owned_any = any(v > 0 for v in st.session_state.real_estate.values())
+        if not owned_any:
+            st.info("보유 중인 부동산이 없습니다. 마켓에서 매입하세요!")
+        else:
+            for eid, cnt in st.session_state.real_estate.items():
+                if cnt <= 0 or eid not in estate_config: continue
+                info = estate_config[eid]
+                # 내가 이미 판매 등록한 수량 확인
+                my_listed = sum(1 for l in em["listings"] if l["eid"] == eid and l["seller"] == uid)
+                available_to_sell = cnt - my_listed
+                st.markdown(f"""
+<div class='estate-card'>
+  <div style='display:flex;justify-content:space-between;align-items:center;'>
+    <div style='display:flex;align-items:center;gap:12px;'>
+      <span style='font-size:2rem;'>{info['icon']}</span>
+      <div>
+        <div style='font-weight:900;font-size:1.05rem;color:#fff;'>{info['name']}</div>
+        <div style='color:#888;font-size:0.8rem;'>{info['desc']}</div>
+        <div style='margin-top:4px;'>
+          <span style='color:#aaa;font-size:0.82rem;'>보유 {cnt}채 (판매 등록 {my_listed}채)</span>
+          <span style='color:#555;margin:0 8px;'>|</span>
+          <span class='estate-income'>+{format_korean_money(info['income'] * cnt)}/초</span>
+        </div>
+      </div>
+    </div>
+    <div style='text-align:right;'>
+      <div style='color:#888;font-size:0.78rem;'>현재 평가액</div>
+      <div style='color:#FFD600;font-weight:900;'>{format_korean_money(info['base_price'] * cnt * 0.8)}</div>
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
+                if available_to_sell > 0:
+                    st.caption(f"👆 판매 등록 가능: {available_to_sell}채 → '판매 등록' 탭에서 진행하세요")
+                elif my_listed > 0:
+                    st.caption("⏳ 모든 물건이 판매 등록 중입니다.")
+
+    # ──────────────────────────────
+    # 탭 3: 판매 등록 / 내 매물 관리
+    # ──────────────────────────────
+    with tab_sell:
+        st.markdown("### 📋 내 매물 판매 등록")
+        st.caption("판매 등록 후 다른 유저가 구매하면 현금이 즉시 입금됩니다. 거래 수수료: 2%")
+
+        # 판매 가능한 부동산 목록
+        sellable = [(eid, cnt) for eid, cnt in st.session_state.real_estate.items()
+                    if cnt > 0 and eid in estate_config]
+        # 이미 등록한 수량 제외
+        sellable_net = []
+        for eid, cnt in sellable:
+            my_listed = sum(1 for l in em["listings"] if l["eid"] == eid and l["seller"] == uid)
+            if cnt - my_listed > 0:
+                sellable_net.append((eid, cnt, my_listed))
+
+        if not sellable_net:
+            st.info("판매 등록 가능한 부동산이 없습니다. 모두 이미 등록되었거나 보유가 없습니다.")
+        else:
+            sel_eid = st.selectbox(
+                "판매할 부동산 선택",
+                [e for e, c, ml in sellable_net],
+                format_func=lambda e: f"{estate_config[e]['icon']} {estate_config[e]['name']} (판매 가능 {dict({e:(c-ml) for e,c,ml in sellable_net}).get(e,0)}채)"
+            )
+            sel_info = estate_config[sel_eid]
+            min_price = int(sel_info['base_price'] * 0.5)
+            max_price = int(sel_info['base_price'] * 3.0)
+            sell_price = st.number_input(
+                f"판매 희망가 (기준가: {format_korean_money(sel_info['base_price'])})",
+                min_value=min_price,
+                max_value=max_price,
+                value=sel_info['base_price'],
+                step=int(sel_info['base_price'] * 0.01),
+                format="%d"
+            )
+            fee = int(sell_price * 0.02)
+            net_receive = sell_price - fee
+            st.caption(f"📌 판매 시 수수료 2% ({format_korean_money(fee)}) 공제 → 실수령 {format_korean_money(net_receive)}")
+
+            cd_list_rem = cooldown_remaining("estate_list", 5.0)
+            if cd_list_rem > 0:
+                st.warning(f"⏱️ 등록 쿨다운 {cd_list_rem:.1f}초")
+            elif st.button("📋 판매 등록하기", use_container_width=True):
+                set_cooldown("estate_list")
+                import uuid as _uuid
+                new_listing = {
+                    "id": str(_uuid.uuid4())[:8],
+                    "eid": sel_eid,
+                    "seller": uid,
+                    "price": sell_price,
+                    "net_receive": net_receive,
+                    "listed_time": time.time()
+                }
+                em_fresh = load_estate_market()
+                em_fresh["listings"].append(new_listing)
+                save_estate_market(em_fresh)
+                market['news'] = f"🏢 [{uid}] {sel_info['name']} {format_korean_money(sell_price)}에 매물 등록!"
+                save_market(market)
+                st.success(f"✅ {sel_info['name']} 판매 등록 완료! 구매자 대기 중...")
+                time.sleep(0.8); st.rerun()
+
+        # 내 등록 매물 관리
+        st.write("---")
+        st.markdown("### 🗂️ 내 등록 매물 관리")
+        my_listings = [l for l in em["listings"] if l["seller"] == uid]
+        if not my_listings:
+            st.info("현재 등록된 매물이 없습니다.")
+        else:
+            for li in my_listings:
+                info = estate_config.get(li["eid"], {})
+                listed_dt = datetime.fromtimestamp(li.get("listed_time", 0)).strftime("%m/%d %H:%M")
+                c1, c2 = st.columns([5, 2])
+                with c1:
+                    st.markdown(f"""
+<div class='my-listing'>
+  <div style='display:flex;justify-content:space-between;'>
+    <div>
+      <span style='font-size:1.2rem;'>{info.get('icon','🏠')}</span>
+      <b style='color:#fff;margin-left:8px;'>{info.get('name','?')}</b>
+      <span style='color:#888;font-size:0.78rem;margin-left:8px;'>등록: {listed_dt}</span>
+    </div>
+    <div style='text-align:right;'>
+      <div style='color:#FFD600;font-weight:900;'>{format_korean_money(li['price'])}</div>
+      <div style='color:#888;font-size:0.78rem;'>실수령 {format_korean_money(li.get('net_receive', li['price']))}</div>
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
+                with c2:
+                    if st.button("❌ 등록 취소", key=f"cancel_{li['id']}", use_container_width=True):
+                        em_fresh = load_estate_market()
+                        em_fresh["listings"] = [x for x in em_fresh["listings"] if x["id"] != li["id"]]
+                        save_estate_market(em_fresh)
+                        st.success("매물 등록 취소 완료!")
+                        time.sleep(0.5); st.rerun()
 
 # ════════════════════════════════════════════════
 # 🏦 은행
@@ -894,7 +1268,10 @@ elif menu == "🏦 은행 (대출/송금)":
         target = st.text_input("받는 분 아이디", placeholder="상대방 아이디 입력")
         amt    = st.number_input("송금 금액 (원)", min_value=0, step=1_000_000, format="%d")
         st.caption(f"송금 예정: {format_korean_money(amt)}")
-        if st.button("📤 송금하기", use_container_width=True):
+        cd_send = cooldown_remaining("send_money", 5.0)
+        if cd_send > 0:
+            st.warning(f"⏱️ 송금 쿨다운 {cd_send:.1f}초")
+        elif st.button("📤 송금하기", use_container_width=True):
             us = load_db(USERS_FILE, {})
             if target not in us:
                 st.error("존재하지 않는 사용자입니다.")
@@ -903,6 +1280,7 @@ elif menu == "🏦 은행 (대출/송금)":
             elif amt <= 0:
                 st.error("금액을 입력하세요.")
             else:
+                set_cooldown("send_money")
                 st.session_state.global_cash -= amt
                 us[target]['cash'] += amt
                 save_db(USERS_FILE, us)
@@ -911,25 +1289,27 @@ elif menu == "🏦 은행 (대출/송금)":
                 st.success(f"✅ {target}님께 {format_korean_money(amt)} 송금 완료!")
 
     with tab_loan:
-        # 🚨 [패치 적용됨] 무제한 대출 버그 수정 (순자산의 50% 한도 적용 및 1% 선취수수료 추가)
         max_loan_limit = max(100_000_000, int(nw * 0.5))
         avail_loan = max(0, max_loan_limit - st.session_state.loan)
-        
+
         st.info(f"💡 최대 대출 한도: {format_korean_money(max_loan_limit)} (순자산의 50%)\n💸 현재 대출 가능액: {format_korean_money(avail_loan)}\n⚠️ 대출 실행 시 1%의 선취 수수료가 공제됩니다.")
-        
+
         if avail_loan > 0:
             l_amt = st.number_input("대출 금액 (원)", min_value=0, max_value=int(avail_loan), step=10_000_000, format="%d", key="loan_in")
-            if st.button("💳 대출 실행", use_container_width=True):
+            cd_loan = cooldown_remaining("loan_action", 5.0)
+            if cd_loan > 0:
+                st.warning(f"⏱️ 대출 쿨다운 {cd_loan:.1f}초")
+            elif st.button("💳 대출 실행", use_container_width=True):
                 if l_amt > 0 and l_amt <= avail_loan:
-                    fee = int(l_amt * 0.01) # 1% 선취 수수료 (돈복사 방지)
+                    set_cooldown("loan_action")
+                    fee = int(l_amt * 0.01)
                     actual_receive = l_amt - fee
-                    
                     st.session_state.global_cash += actual_receive
                     st.session_state.loan += l_amt
                     st.session_state.loan_time = time.time()
                     log_tx(st.session_state.logged_in_user, "대출", f"대출 실행 (수수료 {format_korean_money(fee)} 공제)", actual_receive)
                     sync_user_data()
-                    st.success(f"✅ {format_korean_money(l_amt)} 대출 완료! (1% 수수료 공제 후 {format_korean_money(actual_receive)} 입금)")
+                    st.success(f"✅ {format_korean_money(l_amt)} 대출 완료! (수수료 공제 후 {format_korean_money(actual_receive)} 입금)")
                     time.sleep(1.5); st.rerun()
                 elif l_amt > avail_loan:
                     st.error("대출 한도를 초과했습니다!")
@@ -938,9 +1318,13 @@ elif menu == "🏦 은행 (대출/송금)":
 
         st.write("---")
         r_amt = st.number_input("상환 금액 (원)", min_value=0, step=100_000_000, format="%d", key="repay_in")
-        if st.button("🏦 상환하기", use_container_width=True):
+        cd_repay = cooldown_remaining("repay_action", 3.0)
+        if cd_repay > 0:
+            st.warning(f"⏱️ 상환 쿨다운 {cd_repay:.1f}초")
+        elif st.button("🏦 상환하기", use_container_width=True):
             actual = min(r_amt, st.session_state.loan)
             if st.session_state.global_cash >= actual and actual > 0:
+                set_cooldown("repay_action")
                 st.session_state.global_cash -= actual
                 st.session_state.loan -= actual
                 if st.session_state.loan <= 0:
@@ -952,7 +1336,7 @@ elif menu == "🏦 은행 (대출/송금)":
                         st.success("🎉 대출 전액 상환 완료!")
                 else:
                     st.success(f"✅ {format_korean_money(actual)} 상환 완료. 잔여 대출: {format_korean_money(st.session_state.loan)}")
-                log_tx(st.session_state.logged_in_user, "대출상환", f"대출 상환", -actual)
+                log_tx(st.session_state.logged_in_user, "대출상환", "대출 상환", -actual)
                 sync_user_data(); time.sleep(1); st.rerun()
             else:
                 st.error("잔액 부족 또는 상환 금액 오류")
@@ -985,8 +1369,12 @@ elif menu == "⚔️ 글로벌 로또":
     with c2:
         st.metric("내 티켓", f"{my_t}장")
 
-    if st.button("🎫 티켓 구매하기", use_container_width=True):
+    cd_lotto = cooldown_remaining("lotto_buy", 3.0)
+    if cd_lotto > 0:
+        st.warning(f"⏱️ 쿨다운 {cd_lotto:.1f}초")
+    elif st.button("🎫 티켓 구매하기", use_container_width=True):
         if st.session_state.global_cash >= cost:
+            set_cooldown("lotto_buy")
             st.session_state.global_cash -= cost
             if st.session_state.global_cash < 0:
                 st.session_state.global_cash += cost
@@ -1006,10 +1394,10 @@ elif menu == "⚔️ 글로벌 로또":
         st.write("---")
         st.markdown("### 👥 현재 참여자")
         sorted_t = sorted(market['lotto_tickets'].items(), key=lambda x: x[1], reverse=True)
-        for uid, cnt in sorted_t[:10]:
+        for uid_l, cnt in sorted_t[:10]:
             pct     = cnt / total_tickets * 100
-            me_mark = " 👈" if uid == st.session_state.logged_in_user else ""
-            st.markdown(f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);'><span style='color:#ddd;'>{uid}{me_mark}</span><span style='color:#FF00FF;font-weight:900;'>{cnt}장 ({pct:.1f}%)</span></div>", unsafe_allow_html=True)
+            me_mark = " 👈" if uid_l == st.session_state.logged_in_user else ""
+            st.markdown(f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);'><span style='color:#ddd;'>{uid_l}{me_mark}</span><span style='color:#FF00FF;font-weight:900;'>{cnt}장 ({pct:.1f}%)</span></div>", unsafe_allow_html=True)
 
     time.sleep(5); st.rerun()
 
@@ -1042,10 +1430,14 @@ elif menu == "⚽ 구단주 시뮬레이터":
     stadium = st.selectbox("경기장", STADIUMS)
     betting = st.number_input("경기 베팅금액 (내 팀 승리 시 2배)", min_value=0, step=1_000_000, value=0)
 
-    if st.button("⚽ 킥오프!", use_container_width=True):
+    cd_soccer = cooldown_remaining("soccer_game", 10.0)
+    if cd_soccer > 0:
+        st.warning(f"⏱️ 경기 쿨다운 {cd_soccer:.1f}초 (광클 방지)")
+    elif st.button("⚽ 킥오프!", use_container_width=True):
         if betting > 0 and st.session_state.global_cash < betting:
             st.error("베팅 금액이 잔액을 초과합니다.")
         else:
+            set_cooldown("soccer_game")
             if betting > 0: st.session_state.global_cash -= betting
 
             my_s  = FORMATION_STATS[my_form]
@@ -1197,10 +1589,14 @@ elif menu == "🏎️ 하이퍼카 레이싱":
     bet_amt   = st.number_input("베팅 금액 (원)", min_value=10_000, step=10_000, value=100_000)
     st.caption(f"우승 시 예상 수령액: {format_korean_money(int(bet_amt * my_car['odds']))}")
 
-    if st.button("🏁 레이스 시작!", use_container_width=True):
+    cd_race = cooldown_remaining("race_start", 8.0)
+    if cd_race > 0:
+        st.warning(f"⏱️ 레이스 쿨다운 {cd_race:.1f}초")
+    elif st.button("🏁 레이스 시작!", use_container_width=True):
         if st.session_state.global_cash < bet_amt:
             st.error("잔액 부족!")
         else:
+            set_cooldown("race_start")
             st.session_state.global_cash -= bet_amt
             positions = {c['name']: 0.0 for c in CARS}
             winner    = None
@@ -1259,11 +1655,14 @@ elif menu == "🎰 럭키 슬롯":
     slot_display = st.empty()
     slot_display.markdown("<div class='slot-display'>🎰 &nbsp; 🎰 &nbsp; 🎰</div>", unsafe_allow_html=True)
 
-    if st.button(f"🎰 {tier['label']} 당기기! ({format_korean_money(tier['cost'])})", use_container_width=True):
-        # 🛡️ 이중 방어
+    cd_slot = cooldown_remaining(f"slot_{sel_tier}", 3.0)
+    if cd_slot > 0:
+        st.warning(f"⏱️ 슬롯 쿨다운 {cd_slot:.1f}초")
+    elif st.button(f"🎰 {tier['label']} 당기기! ({format_korean_money(tier['cost'])})", use_container_width=True):
         if st.session_state.global_cash < tier['cost']:
             st.error("잔액 부족!")
         else:
+            set_cooldown(f"slot_{sel_tier}")
             st.session_state.global_cash -= tier['cost']
             if st.session_state.global_cash < 0:
                 st.session_state.global_cash += tier['cost']
@@ -1281,34 +1680,33 @@ elif menu == "🎰 럭키 슬롯":
                 if final[0] == final[1] == final[2] == "💎":
                     prize = tier['jackpot']
                     st.session_state.global_cash += prize
-                    log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 잭팟!!!",  prize)
+                    log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 잭팟!!!", prize)
                     st.success(f"💎💎💎 JACKPOT!!! +{format_korean_money(prize)}"); st.balloons()
                     market['news'] = f"🎊 [슬롯 잭팟] {st.session_state.logged_in_user}님이 {format_korean_money(prize)} 잭팟!!"
                     save_market(market)
                 elif final[0] == final[1] == final[2]:
                     prize = int(tier['cost'] * tier['jackpot_mult'] * 0.2)
                     st.session_state.global_cash += prize
-                    log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 트리플",    prize)
+                    log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 트리플", prize)
                     st.success(f"🎉 트리플! +{format_korean_money(prize)}")
                 elif final[0]==final[1] or final[1]==final[2] or final[0]==final[2]:
                     prize = int(tier['cost'] * 1.5)
                     st.session_state.global_cash += prize
-                    log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 더블",      prize)
+                    log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 더블", prize)
                     st.warning(f"✨ 더블 매치! +{format_korean_money(prize)}")
                 else:
-                    log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 꽝",       -tier['cost'])
+                    log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 꽝", -tier['cost'])
                     st.error("꽝! 다음 기회를 노려보세요!")
 
                 sync_user_data(); time.sleep(2); st.rerun()
 
 # ════════════════════════════════════════════════
-# ⛏️ 광산 (신규)
+# ⛏️ 광산
 # ════════════════════════════════════════════════
 elif menu == "⛏️ 광산 (노가다)":
     st.title("⛏️ 효민 광산")
-    st.markdown("<div style='color:#888;margin-bottom:16px;'>곡괭이를 들어 광물을 캐세요! 뉴비도 OK — 클릭 한 번에 현금 획득!</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#888;margin-bottom:16px;'>곡괭이를 들어 광물을 캐세요!</div>", unsafe_allow_html=True)
 
-    # 광산 레벨 (보유 현금 기준으로 자동 결정)
     cash = st.session_state.global_cash
     if cash < 10_000_000:
         mine_tier, mine_label, mine_color = 0, "🪨 초보 광산",  "#888"
@@ -1319,7 +1717,6 @@ elif menu == "⛏️ 광산 (노가다)":
     else:
         mine_tier, mine_label, mine_color = 3, "🥇 마스터 광산","#FFD600"
 
-    # 보너스 확률: 티어가 높을수록 희귀 광물 확률 소폭 상승
     tier_bonus = mine_tier * 0.005
 
     st.markdown(f"""
@@ -1329,7 +1726,6 @@ elif menu == "⛏️ 광산 (노가다)":
   <div style='color:#888;font-size:0.82rem;margin-top:6px;'>광산 티어가 높을수록 희귀 광물 확률 ↑</div>
 </div>""", unsafe_allow_html=True)
 
-    # 아이템 확률 테이블
     st.write("")
     st.markdown("#### 📋 광물 목록")
     rows_html = "<table class='stock-table'><thead><tr><th>광물</th><th style='text-align:right;'>가치</th><th style='text-align:right;'>기본 확률</th></tr></thead><tbody>"
@@ -1338,25 +1734,27 @@ elif menu == "⛏️ 광산 (노가다)":
         rows_html += f"<tr><td>{item['icon']} {item['name']}</td><td style='text-align:right;color:#FFD600;font-weight:900;'>{format_korean_money(item['value'])}</td><td style='text-align:right;color:#888;'>{adj_prob*100:.1f}%</td></tr>"
     rows_html += "</tbody></table>"
     st.markdown(rows_html, unsafe_allow_html=True)
-
     st.write("")
 
-    # ── 채굴 버튼 ──
+    def do_mine(k):
+        items_adj   = []
+        weights_adj = []
+        for item in MINE_ITEMS:
+            items_adj.append(item)
+            weights_adj.append(item['prob'] + tier_bonus)
+        return random.choices(items_adj, weights=weights_adj, k=k)
+
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        if st.button("⛏️ 한 번 캐기!", use_container_width=True):
-            # 확률 계산 (티어 보너스 반영)
-            items_adj  = []
-            weights_adj = []
-            for item in MINE_ITEMS:
-                items_adj.append(item)
-                weights_adj.append(item['prob'] + tier_bonus)
-            result = random.choices(items_adj, weights=weights_adj, k=1)[0]
-
+        cd_mine1 = cooldown_remaining("mine_single", 1.5)
+        if cd_mine1 > 0:
+            st.warning(f"⏱️ 쿨다운 {cd_mine1:.1f}초")
+        elif st.button("⛏️ 한 번 캐기!", use_container_width=True):
+            set_cooldown("mine_single")
+            result = do_mine(1)[0]
             st.session_state.global_cash += result['value']
             log_tx(st.session_state.logged_in_user, "광산", f"{result['name']} 채굴", result['value'])
             sync_user_data()
-
             if result['name'] in ["다이아몬드", "전설의 원석"]:
                 st.balloons()
                 st.success(f"✨ {result['icon']} **{result['name']}** 발견!! +{format_korean_money(result['value'])}")
@@ -1367,27 +1765,26 @@ elif menu == "⛏️ 광산 (노가다)":
             else:
                 st.info(f"{result['icon']} {result['name']} 채굴. +{format_korean_money(result['value'])}")
 
-        # 10회 연속 채굴
     st.write("")
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        if st.button("⛏️⛏️ 10회 연속 채굴", use_container_width=True):
-            items_adj   = []
-            weights_adj = []
-            for item in MINE_ITEMS:
-                items_adj.append(item)
-                weights_adj.append(item['prob'] + tier_bonus)
-
-            results = random.choices(items_adj, weights=weights_adj, k=10)
+        cd_mine10 = cooldown_remaining("mine_ten", 4.0)
+        if cd_mine10 > 0:
+            st.warning(f"⏱️ 10연속 쿨다운 {cd_mine10:.1f}초")
+        elif st.button("⛏️⛏️ 10회 연속 채굴", use_container_width=True):
+            set_cooldown("mine_ten")
+            results = do_mine(10)
             total   = sum(r['value'] for r in results)
             st.session_state.global_cash += total
             log_tx(st.session_state.logged_in_user, "광산", "10회 연속 채굴", total)
             sync_user_data()
-
             summary = {}
             for r in results:
                 summary[r['name']] = summary.get(r['name'], 0) + 1
-            result_str = " | ".join(f"{MINE_ITEMS[next(i for i,m in enumerate(MINE_ITEMS) if m['name']==n)]['icon']} {n} x{cnt}" for n, cnt in summary.items())
+            result_str = " | ".join(
+                f"{next(m['icon'] for m in MINE_ITEMS if m['name']==n)} {n} x{cnt}"
+                for n, cnt in summary.items()
+            )
             st.success(f"⛏️ 10회 채굴 완료! +{format_korean_money(total)}\n{result_str}")
 
 # ════════════════════════════════════════════════
@@ -1415,7 +1812,6 @@ elif menu == "👑 칭호 상점":
                         sync_user_data(); st.rerun()
             else:
                 if st.button(f"구매하기", key=f"buy_{i}"):
-                    # 🛡️ 이중 방어
                     if st.session_state.global_cash >= price:
                         st.session_state.global_cash -= price
                         if st.session_state.global_cash < 0:
@@ -1430,26 +1826,24 @@ elif menu == "👑 칭호 상점":
                         st.error("잔액이 부족합니다.")
 
 # ════════════════════════════════════════════════
-# 📜 내 거래 기록 (신규)
+# 📜 내 거래 기록
 # ════════════════════════════════════════════════
 elif menu == "📜 내 거래 기록":
     st.title("📜 내 거래 기록")
     st.caption("모든 자산 변동 내역을 확인할 수 있습니다. (최근 200건)")
 
-    uid  = st.session_state.logged_in_user
+    uid_log  = st.session_state.logged_in_user
     logs = load_db(TXLOG_FILE, {})
-    my_logs = logs.get(uid, [])
+    my_logs = logs.get(uid_log, [])
 
     if not my_logs:
-        st.info("아직 거래 기록이 없습니다. 주식, 부동산, 광산 등을 이용해보세요!")
+        st.info("아직 거래 기록이 없습니다.")
     else:
-        # 카테고리 필터
         cats_all = sorted(set(l['category'] for l in my_logs))
         sel_cat  = st.selectbox("카테고리 필터", ["전체"] + cats_all)
 
         filtered = my_logs if sel_cat == "전체" else [l for l in my_logs if l['category'] == sel_cat]
 
-        # 통계
         total_in  = sum(l['amount'] for l in filtered if l['amount'] > 0)
         total_out = sum(l['amount'] for l in filtered if l['amount'] < 0)
 
@@ -1460,20 +1854,18 @@ elif menu == "📜 내 거래 기록":
 
         st.write("")
 
-        # 로그 테이블
         for log in filtered[:100]:
             amt   = log['amount']
             color = "#FF4B4B" if amt > 0 else "#4B9EFF"
             arrow = "▲" if amt > 0 else "▼"
             sign  = "+" if amt > 0 else ""
             cat_icons = {
-                "주식매수":"📉","주식매도":"📈","부동산매입":"🏗️","부동산매각":"🏷️",
-                "부동산수금":"💰","송금":"📤","대출":"💳","대출상환":"🏦",
+                "주식매수":"📉","주식매도":"📈","부동산매입":"🏗️","부동산구매":"🛒",
+                "부동산판매":"🏷️","부동산수금":"💰","송금":"📤","대출":"💳","대출상환":"🏦",
                 "로또":"🎫","축구베팅":"⚽","레이싱":"🏎️","슬롯":"🎰",
                 "광산":"⛏️","CBT":"💻","칭호구매":"👑","VIP슬롯":"💎",
             }
             cat_ico = cat_icons.get(log['category'], "📋")
-
             st.markdown(f"""
 <div class='tx-row'>
   <span style='color:#555;min-width:110px;'>{log['time']}</span>
@@ -1493,14 +1885,14 @@ elif menu == "🏅 랭킹 & 게시판":
     with tab_rank:
         users_all = load_db(USERS_FILE, {})
         rank_data = []
-        for uid, udata in users_all.items():
-            if uid == "5891": continue
+        for uid_r, udata in users_all.items():
+            if uid_r == "5891": continue
             w = udata.get('cash', 0) - udata.get('loan', 0)
             for sid, p in udata.get('portfolio', {}).items():
                 if sid in market['stock_data']: w += p.get('qty', 0) * market['stock_data'][sid]['price']
             for eid, cnt in udata.get('real_estate', {}).items():
-                if eid in estate_config: w += estate_config[eid]['price'] * cnt * 0.8
-            rank_data.append({"uid": uid, "title": udata.get('equipped_title','🌱 신규시민'), "nw": w})
+                if eid in estate_config: w += estate_config[eid]['base_price'] * cnt * 0.8
+            rank_data.append({"uid": uid_r, "title": udata.get('equipped_title','🌱 신규시민'), "nw": w})
         rank_data.sort(key=lambda x: x['nw'], reverse=True)
 
         medals = ["🥇","🥈","🥉"] + [f"{i}위" for i in range(4, 101)]
@@ -1517,8 +1909,12 @@ elif menu == "🏅 랭킹 & 게시판":
 
     with tab_board:
         msg = st.text_input("메시지 작성", placeholder="랭커 게시판에 글을 남겨보세요!")
-        if st.button("📝 등록", use_container_width=True):
+        cd_post = cooldown_remaining("board_post", 5.0)
+        if cd_post > 0:
+            st.warning(f"⏱️ 도배 방지 쿨다운 {cd_post:.1f}초")
+        elif st.button("📝 등록", use_container_width=True):
             if msg.strip():
+                set_cooldown("board_post")
                 comments = load_db(COMMENTS_FILE, [])
                 comments.append({
                     "name":    st.session_state.logged_in_user,
@@ -1548,23 +1944,19 @@ elif menu == "🛠️ 창조주 통제소":
     st.title("🛠️ 창조주 통제소")
     st.markdown("<div style='color:#FF4B4B;font-size:0.85rem;'>⚠️ 창조주 전용 패널</div>", unsafe_allow_html=True)
 
-    t1, t2, t3, t4 = st.tabs(["👤 유저 조작", "📈 시장 조작", "📢 공지 & 이벤트", "📊 전체 현황"])
+    t1, t2, t3, t4, t5 = st.tabs(["👤 유저 조작", "📈 시장 조작", "📢 공지 & 이벤트", "📊 전체 현황", "🏢 부동산 관리"])
 
     with t1:
-        # ── 🧠 창조주 전용 금액 변환기 (1000억 인식용) ──
         def parse_creator_money(text):
             if not text: return None
-            # 공백, 콤마 제거
             text = text.replace(',', '').replace(' ', '').strip()
-            if text.isdigit(): return int(text) # 숫자만 치면 바로 숫자로 인식
-            
+            if text.isdigit(): return int(text)
             units = {"조": 10**12, "억": 10**8, "만": 10**4}
             total = 0
             import re
-            # 숫자와 단위를 분리해서 추출 (예: 1000, 억)
             matches = re.findall(r'([0-9.]+)([조억만]?)', text)
             if not matches:
-                try: 
+                try:
                     clean_num = re.sub(r'[^0-9.]', '', text)
                     return int(float(clean_num)) if clean_num else None
                 except: return None
@@ -1574,33 +1966,28 @@ elif menu == "🛠️ 창조주 통제소":
 
         u_db = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "5891"]
-        
+
         if uid_list:
-            sel_u = st.selectbox("조작할 유저 선택", uid_list)
+            sel_u  = st.selectbox("조작할 유저 선택", uid_list)
             u_data = u_db[sel_u]
-            
+
             c1, c2 = st.columns(2)
             with c1:
                 st.markdown("##### 💰 자산 개조")
-                raw_cash = st.text_input("현금 설정 (예: 1000억, 1.5조)", placeholder="기존값 유지하려면 비워두기", key="admin_cash_input")
-                raw_loan = st.text_input("대출 설정 (예: 5000만)", placeholder="기존값 유지하려면 비워두기", key="admin_loan_input")
-                
+                raw_cash = st.text_input("현금 설정 (예: 1000억, 1.5조)", placeholder="비워두면 유지", key="admin_cash_input")
+                raw_loan = st.text_input("대출 설정 (예: 5000만)", placeholder="비워두면 유지", key="admin_loan_input")
                 parsed_cash = parse_creator_money(raw_cash)
                 parsed_loan = parse_creator_money(raw_loan)
-                
                 final_cash = parsed_cash if parsed_cash is not None else int(u_data.get('cash', 0))
                 final_loan = parsed_loan if parsed_loan is not None else int(u_data.get('loan', 0))
-
                 st.markdown(f"""
-                <div style='background:rgba(0,229,255,0.1);padding:15px;border-radius:10px;border:1px solid #00E5FF;margin-top:10px;'>
-                    <div style='color:#00E5FF;font-size:0.8rem;'>▼ 적용 예정 금액 (실시간)</div>
-                    <div style='font-size:1.1rem;margin-top:5px;'>
-                        <b>현금:</b> {format_korean_money(final_cash)}<br>
-                        <b>대출:</b> {format_korean_money(final_loan)}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
+<div style='background:rgba(0,229,255,0.1);padding:15px;border-radius:10px;border:1px solid #00E5FF;margin-top:10px;'>
+  <div style='color:#00E5FF;font-size:0.8rem;'>▼ 적용 예정 금액</div>
+  <div style='font-size:1.1rem;margin-top:5px;'>
+    <b>현금:</b> {format_korean_money(final_cash)}<br>
+    <b>대출:</b> {format_korean_money(final_loan)}
+  </div>
+</div>""", unsafe_allow_html=True)
             with c2:
                 st.markdown("##### 👑 신분 개조")
                 new_title = st.text_input("칭호 수정", value=u_data.get('equipped_title',''), key="admin_title_input")
@@ -1608,17 +1995,16 @@ elif menu == "🛠️ 창조주 통제소":
                 st.metric("현재 현금", format_korean_money(u_data.get('cash', 0)))
                 st.metric("현재 대출", format_korean_money(u_data.get('loan', 0)))
 
-            if st.button("🔥 유저 데이터 강제 개조 실행", use_container_width=True, key="admin_submit_btn"):
+            if st.button("🔥 유저 데이터 강제 개조 실행", use_container_width=True):
                 u_db[sel_u]['cash'] = final_cash
                 u_db[sel_u]['loan'] = final_loan
                 u_db[sel_u]['equipped_title'] = new_title
                 save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 유저의 자산이 개조되었습니다!")
-                time.sleep(1)
-                st.rerun()
+                st.success(f"✅ {sel_u} 유저 자산 개조 완료!")
+                time.sleep(1); st.rerun()
 
             st.write("---")
-            if st.button("🗑️ 해당 유저 정보 소멸 (삭제)", use_container_width=True, type="secondary", key="admin_delete_btn"):
+            if st.button("🗑️ 해당 유저 삭제", use_container_width=True, type="secondary"):
                 if sel_u in u_db:
                     del u_db[sel_u]
                     save_db(USERS_FILE, u_db)
@@ -1652,7 +2038,7 @@ elif menu == "🛠️ 창조주 통제소":
 
     with t3:
         st.markdown("### 📢 공지사항")
-        msg_text = st.text_area("공지 내용", value=market.get('admin_msg', ''), height=100)
+        msg_text  = st.text_area("공지 내용", value=market.get('admin_msg', ''), height=100)
         msg_color = st.color_picker("텍스트 색상", value=market.get('admin_color', '#FF4B4B'))
         c1, c2 = st.columns(2)
         with c1:
@@ -1665,16 +2051,48 @@ elif menu == "🛠️ 창조주 통제소":
     with t4:
         st.markdown("### 📊 전체 유저 현황")
         u_db2 = load_db(USERS_FILE, {})
-        rows = [{"ID": uid, "칭호": ud.get('equipped_title',''), "현금": format_korean_money(ud.get('cash',0)), "대출": format_korean_money(ud.get('loan',0))} for uid, ud in u_db2.items() if uid != "5891"]
+        rows = [{"ID": uid_r, "칭호": ud.get('equipped_title',''), "현금": format_korean_money(ud.get('cash',0)), "대출": format_korean_money(ud.get('loan',0))} for uid_r, ud in u_db2.items() if uid_r != "5891"]
         if rows: st.table(pd.DataFrame(rows))
         else: st.info("등록된 유저 없음")
 
         st.write("---")
         st.markdown("### 💾 데이터 백업 상태")
-        for f in [USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE]:
+        for f in [USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE]:
             exists = "✅" if os.path.exists(f) else "❌"
             size = f"{os.path.getsize(f):,} bytes" if os.path.exists(f) else "—"
             st.markdown(f"<div style='color:#aaa;font-size:0.85rem;'>{exists} <b>{f}</b> ({size})</div>", unsafe_allow_html=True)
 
         if st.button("🗑️ 게시판 전체 삭제"):
             save_db(COMMENTS_FILE, []); st.success("게시판 초기화 완료!")
+
+    with t5:
+        st.markdown("### 🏢 부동산 마켓 관리")
+        em_admin = load_estate_market()
+
+        st.markdown("#### 현재 유저 매물 현황")
+        if em_admin["listings"]:
+            for li in em_admin["listings"]:
+                info = estate_config.get(li["eid"], {})
+                c1, c2 = st.columns([5, 1])
+                with c1:
+                    st.markdown(f"**{info.get('icon','')} {info.get('name','?')}** — 판매자: `{li['seller']}` — {format_korean_money(li['price'])}")
+                with c2:
+                    if st.button("강제삭제", key=f"admin_del_{li['id']}"):
+                        em_admin["listings"] = [x for x in em_admin["listings"] if x["id"] != li["id"]]
+                        save_estate_market(em_admin)
+                        st.rerun()
+        else:
+            st.info("등록된 유저 매물 없음")
+
+        st.write("---")
+        st.markdown("#### 소유 현황 (owner_counts)")
+        if em_admin["owner_counts"]:
+            for uid_o, eids in em_admin["owner_counts"].items():
+                owned_str = ", ".join(f"{estate_config.get(e,{}).get('name','?')} x{cnt}" for e, cnt in eids.items() if cnt > 0)
+                if owned_str:
+                    st.markdown(f"<div style='color:#aaa;font-size:0.85rem;'><b style='color:#00E5FF;'>{uid_o}</b>: {owned_str}</div>", unsafe_allow_html=True)
+
+        if st.button("🔄 부동산 마켓 전체 초기화", type="secondary"):
+            save_estate_market({"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}})
+            st.success("부동산 마켓 초기화 완료!")
+            st.rerun()
