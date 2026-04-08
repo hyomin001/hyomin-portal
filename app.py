@@ -9,27 +9,6 @@ import os
 import time
 from datetime import datetime
 
-def hex_to_rgba(clr, alpha=0.3):
-    try:
-        if not clr or not isinstance(clr, str):
-            return f"rgba(255,255,255,{alpha})"
-
-        clr = clr.lstrip('#')
-
-        if len(clr) == 3:
-            clr = ''.join([c*2 for c in clr])
-
-        if len(clr) != 6:
-            return f"rgba(255,255,255,{alpha})"
-
-        r = int(clr[0:2], 16)
-        g = int(clr[2:4], 16)
-        b = int(clr[4:6], 16)
-
-        return f"rgba({r},{g},{b},{alpha})"
-    except:
-        return f"rgba(255,255,255,{alpha})"
-
 # ==============================
 # 🌌 시스템 설정 및 데이터베이스
 # ==============================
@@ -1459,39 +1438,35 @@ elif menu == "🎰 럭키 슬롯":
 # 👑 칭호 상점
 # ════════════════════════════════════════════════
 elif menu == "👑 칭호 상점":
-    st.title("👑 칭호 상점")
+    st.title("👑 VIP 칭호 상점")
+    st.markdown("칭호를 구매하고 장착하여 게시판에서 부를 과시하세요!")
+    
+    cols = st.columns(2)
+    for i in range(1, 101):
+        with cols[i%2]:
+            title_name = f"💫 초월자 Lv.{i}" if i >= 90 else f"💎 VIP 칭호 Lv.{i}"
+            title_id = f"title_{i}"
+            price = i * 10000000
+            
+            st.markdown(f"**{title_name}** | ₩{price:,}")
+            
+            if title_id in st.session_state.inventory:
+                if st.session_state.equipped_title == title_name:
+                    st.button("✅ 장착 중", key=f"eq_{i}", disabled=True)
+                else:
+                    if st.button("🌟 장착하기", key=f"eq_{i}"):
+                        st.session_state.equipped_title = title_name
+                        sync_user_data(); st.rerun()
+            else:
+                if st.button(f"구매하기", key=f"buy_{i}"):
+                    if st.session_state.global_cash >= price:
+                        st.session_state.global_cash -= price
+                        st.session_state.inventory.append(title_id)
+                        st.session_state.equipped_title = title_name # 사면 바로 장착
+                        sync_user_data(); st.rerun()
+                    else:
+                        st.error("잔액이 부족합니다.")
 
-    if st.session_state.equipped_title == "💸 신용불량자":
-        st.error("💸 신용불량 상태에서는 칭호 구매가 불가합니다. 대출을 먼저 상환하세요!")
-    else:
-        st.markdown(f"<div class='card' style='text-align:center;'>현재 장착 칭호: <b style='color:#FFD600;font-size:1.2rem;'>{st.session_state.equipped_title}</b></div>", unsafe_allow_html=True)
-        st.write("")
-
-        grade_colors = {1:"#888",2:"#4CAF50",3:"#2196F3",4:"#9C27B0",5:"#FF9800",6:"#FF5722",7:"#E91E63",8:"#00BCD4",9:"#FFEB3B",10:"#FF1744",99:"#FFD600"}
-
-        for t in TITLE_SHOP:
-            can_buy = st.session_state.global_cash >= t['price']
-            is_equipped = st.session_state.equipped_title == t['name']
-            clr = grade_colors.get(t['grade'], "#888")
-            c1, c2 = st.columns([5, 2])
-            with c1:
-                badge = "✅ 장착중" if is_equipped else ""
-                st.markdown(f"""
-                <div class='card' style='padding:14px 18px;border-color:rgba({int(clr[1:3],16)},{int(clr[3:5],16)},{int(clr[5:7],16)},0.3);'>
-                    <span style='font-size:1.05rem;font-weight:900;color:{clr};'>{t['name']}</span>
-                    <span style='color:#FFD600;margin-left:12px;font-size:0.9rem;'>₩{t['price']:,}</span>
-                    {f"<span style='color:#00FF88;margin-left:8px;font-size:0.82rem;'>{badge}</span>" if badge else ""}
-                </div>
-                """, unsafe_allow_html=True)
-            with c2:
-                btn_label = "✅ 장착중" if is_equipped else "🛒 구매/장착" if can_buy else "💸 부족"
-                if not is_equipped:
-                    if st.button(btn_label, key=f"title_{t['name']}", use_container_width=True, disabled=not can_buy):
-                        st.session_state.global_cash -= t['price']
-                        st.session_state.equipped_title = t['name']
-                        sync_user_data()
-                        st.success(f"✅ [{t['name']}] 장착 완료!")
-                        time.sleep(1); st.rerun()
 
 # ════════════════════════════════════════════════
 # 🏅 랭킹 & 게시판
