@@ -152,7 +152,7 @@ def get_market():
                           "price": random.randint(50_000, 150_000), "history": [80_000]}
                 for s in stock_config
             },
-            "news": "🌌 HYOMIN UNIVERSE 개장을 환영합니다!",
+            "news": "🌌 HYOMIN UNIVERSE 경제 밸런스 패치 완료!",
             "news_time": time.time(),
             "last_tick": time.time(),
             "admin_msg": "",
@@ -178,7 +178,7 @@ def save_market(data): save_db(MARKET_FILE, data)
 # ════════════════════════════════════
 # 페이지 설정
 # ════════════════════════════════════
-st.set_page_config(page_title="HYOMIN UNIVERSE v17", page_icon="🌌", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE v17.1", page_icon="🌌", layout="wide")
 
 # ==============================
 # 🔐 로그인
@@ -210,7 +210,7 @@ if 'logged_in_user' not in st.session_state:
 </style>""", unsafe_allow_html=True)
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
-    st.markdown("<div class='login-sub'>∙ 가상 자산 시뮬레이터 v17.0 ∙</div>", unsafe_allow_html=True)
+    st.markdown("<div class='login-sub'>∙ 가상 자산 시뮬레이터 v17.1 ∙</div>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
@@ -565,31 +565,18 @@ if menu == "💎 VIP 라운지":
     st.write("")
     c1, c2 = st.columns(2)
     with c1:
-
         st.markdown("### 🎰 VIP 전용 슬롯 (1억, 승률 50%)")
-
         if st.button("💎 VIP 슬롯 당기기", use_container_width=True):
-
             if st.session_state.global_cash >= 100_000_000:
-
                 st.session_state.global_cash -= 100_000_000
-
                 if random.random() < 0.5:
-
                     st.session_state.global_cash += 250_000_000
-
                     st.success("🎉 승리! +2.5억 획득!")
-
                     log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 승리", 150_000_000)
-
                 else:
-
                     st.error("❌ 아쉽습니다. 다음 기회를!")
-
                     log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 패배", -100_000_000)
-
                 sync_user_data(); time.sleep(1.5); st.rerun()
-
             else: st.error("잔액 부족!")
     with c2:
         st.markdown("### 📊 VIP 포트폴리오 요약")
@@ -729,13 +716,12 @@ elif menu == "📈 주식 트레이딩":
 
         c1, c2, c3, c4 = st.columns(4)
 
-        # ── 🛡️ 이중 잔액 방어 (광클 버그 방지) ──
         def _safe_buy(qty, price, sid_):
             total = qty * price
             if st.session_state.global_cash < total:
                 st.error("잔액 부족!"); return False
             st.session_state.global_cash -= total
-            if st.session_state.global_cash < 0:   # 혹시라도 마이너스 됐으면 롤백
+            if st.session_state.global_cash < 0:   
                 st.session_state.global_cash += total
                 st.error("거래 취소 (잔액 보호)"); return False
             old = st.session_state.portfolio.get(sid_, {'qty': 0, 'avg_price': 0})
@@ -761,7 +747,8 @@ elif menu == "📈 주식 트레이딩":
                 if max_q > 0 and _safe_buy(max_q, cp, sid):
                     buy_a = max_q * cp
                     if buy_a >= 1_000_000_000:
-                        imp = min((buy_a / 1_000_000_000_000) * 0.1, 0.5)
+                        # 🚨 [패치 적용됨] 50% 펌핑 버그 수정 -> 최대 3% 변동으로 억제
+                        imp = min((buy_a / 1_000_000_000_000) * 0.1, 0.03) 
                         market['stock_data'][sid]['price'] = int(cp * (1 + imp))
                         market['news'] = f"🐋 [고래 매수] {st.session_state.logged_in_user}님이 {d['name']} 거액 매수!"
                         save_market(market)
@@ -782,7 +769,8 @@ elif menu == "📈 주식 트레이딩":
                 if own > 0 and _safe_sell(own, cp, sid):
                     sell_a = own * cp
                     if sell_a >= 1_000_000_000:
-                        imp = min((sell_a / 500_000_000_000) * 0.1, 0.5)
+                        # 🚨 [패치 적용됨] 매도 덤핑 버그 수정 -> 최대 3% 변동으로 억제
+                        imp = min((sell_a / 500_000_000_000) * 0.1, 0.03) 
                         market['stock_data'][sid]['price'] = max(1_000, int(cp * (1 - imp)))
                         market['news'] = f"📉 [고래 매도] {st.session_state.logged_in_user}님이 {d['name']} 물량 투하!"
                         save_market(market)
@@ -856,9 +844,9 @@ elif menu == "🏢 부동산 수금소":
             can_buy = st.session_state.global_cash >= info['price']
             if st.button("🏗️ 매입" if can_buy else "💸 잔액부족",
                          key=f"buy_{eid}", use_container_width=True, disabled=not can_buy):
-                if st.session_state.global_cash >= info['price']:   # 2차 확인
+                if st.session_state.global_cash >= info['price']:
                     st.session_state.global_cash -= info['price']
-                    if st.session_state.global_cash < 0:            # 혹시 마이너스 롤백
+                    if st.session_state.global_cash < 0:
                         st.session_state.global_cash += info['price']
                         st.error("거래 취소 (잔액 보호)")
                     else:
@@ -923,17 +911,32 @@ elif menu == "🏦 은행 (대출/송금)":
                 st.success(f"✅ {target}님께 {format_korean_money(amt)} 송금 완료!")
 
     with tab_loan:
-        l_amt = st.number_input("대출 금액 (원)", min_value=0, step=100_000_000, format="%d", key="loan_in")
-        if st.button("💳 대출 실행", use_container_width=True):
-            if l_amt > 0:
-                st.session_state.global_cash += l_amt
-                st.session_state.loan += l_amt
-                st.session_state.loan_time = time.time()
-                log_tx(st.session_state.logged_in_user, "대출", f"대출 실행", l_amt)
-                sync_user_data()
-                st.success(f"✅ {format_korean_money(l_amt)} 대출 완료. 빠른 상환을 권장합니다!")
-                time.sleep(1); st.rerun()
+        # 🚨 [패치 적용됨] 무제한 대출 버그 수정 (순자산의 50% 한도 적용 및 1% 선취수수료 추가)
+        max_loan_limit = max(100_000_000, int(nw * 0.5))
+        avail_loan = max(0, max_loan_limit - st.session_state.loan)
+        
+        st.info(f"💡 최대 대출 한도: {format_korean_money(max_loan_limit)} (순자산의 50%)\n💸 현재 대출 가능액: {format_korean_money(avail_loan)}\n⚠️ 대출 실행 시 1%의 선취 수수료가 공제됩니다.")
+        
+        if avail_loan > 0:
+            l_amt = st.number_input("대출 금액 (원)", min_value=0, max_value=int(avail_loan), step=10_000_000, format="%d", key="loan_in")
+            if st.button("💳 대출 실행", use_container_width=True):
+                if l_amt > 0 and l_amt <= avail_loan:
+                    fee = int(l_amt * 0.01) # 1% 선취 수수료 (돈복사 방지)
+                    actual_receive = l_amt - fee
+                    
+                    st.session_state.global_cash += actual_receive
+                    st.session_state.loan += l_amt
+                    st.session_state.loan_time = time.time()
+                    log_tx(st.session_state.logged_in_user, "대출", f"대출 실행 (수수료 {format_korean_money(fee)} 공제)", actual_receive)
+                    sync_user_data()
+                    st.success(f"✅ {format_korean_money(l_amt)} 대출 완료! (1% 수수료 공제 후 {format_korean_money(actual_receive)} 입금)")
+                    time.sleep(1.5); st.rerun()
+                elif l_amt > avail_loan:
+                    st.error("대출 한도를 초과했습니다!")
+        else:
+            st.error("🚨 현재 대출 한도를 모두 소진하셨습니다.")
 
+        st.write("---")
         r_amt = st.number_input("상환 금액 (원)", min_value=0, step=100_000_000, format="%d", key="repay_in")
         if st.button("🏦 상환하기", use_container_width=True):
             actual = min(r_amt, st.session_state.loan)
