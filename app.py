@@ -1348,27 +1348,29 @@ elif menu == "💻 정처기 CBT":
             submitted = st.form_submit_button("✅ 답안 제출", use_container_width=True)
             
      if submitted:
-            if answer == q['a']:
-                st.success("🎉 정답입니다! 훌륭합니다! (₩500,000 획득)")
-                st.session_state.global_cash += 500_000
-                st.balloons()
-            else:
-                st.error(f"❌ 오답입니다. 정답은 [{q['a']}] 입니다.")
-            
-            # 문제 초기화 및 저장
-            del st.session_state.cbt_q
-            del st.session_state.cbt_opts
-            sync_user_data()
-            
-            # ❌ [기존 코드] 에러 나는 부분
-            # if st.session_state.current_page == menu:
-            #     time.sleep(2.5)
-            #     st.rerun()
+        if answer == q['a']:
+            st.success("🎉 정답입니다! 훌륭합니다! (₩500,000 획득)")
+            st.session_state.global_cash += 500_000
+            st.balloons()
+        else:
+            st.error(f"❌ 오답입니다. 정답은 [{q['a']}] 입니다.")
+        
+        # 문제 초기화 및 저장
+        del st.session_state.cbt_q
+        del st.session_state.cbt_opts
+        sync_user_data()
+        
+        # 🚨 에러 및 화면 깜빡임 방지 로직
+        if menu == "💻 정처기 CBT":
+            time.sleep(2.5)
+            st.rerun()
 
-            # ✅ [수정할 코드] 이렇게 바꾸세요!
-            if menu == "💻 정처기 CBT":
-                time.sleep(2.5)
-                st.rerun()
+# 문제 넘기기 버튼
+if st.button("🔄 다른 문제 풀기", use_container_width=True):
+    if 'cbt_q' in st.session_state: del st.session_state.cbt_q
+    if 'cbt_opts' in st.session_state: del st.session_state.cbt_opts
+    if menu == "💻 정처기 CBT":
+        st.rerun()
 # ════════════════════════════════════════════════
 # 🏎️ 하이퍼카 레이싱
 # ════════════════════════════════════════════════
