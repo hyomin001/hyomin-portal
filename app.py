@@ -1452,4 +1452,203 @@ elif menu == "👑 칭호 상점":
             
             if title_id in st.session_state.inventory:
                 if st.session_state.equipped_title == title_name:
-                    st.b
+                    st.button("✅ 장착 중", key=f"eq_{i}", disabled=True)
+                else:
+                    if st.button("🌟 장착하기", key=f"eq_{i}"):
+                        st.session_state.equipped_title = title_name
+                        sync_user_data(); st.rerun()
+            else:
+                if st.button(f"구매하기", key=f"buy_{i}"):
+                    if st.session_state.global_cash >= price:
+                        st.session_state.global_cash -= price
+                        st.session_state.inventory.append(title_id)
+                        st.session_state.equipped_title = title_name # 사면 바로 장착
+                        sync_user_data(); st.rerun()
+                    else:
+                        st.error("잔액이 부족합니다.")
+
+
+# ════════════════════════════════════════════════
+# 🏅 랭킹 & 게시판
+# ════════════════════════════════════════════════
+elif menu == "🏅 랭킹 & 게시판":
+    st.title("🏅 랭킹 & 게시판")
+
+    tab_rank, tab_board = st.tabs(["🏆 순위표", "💬 게시판"])
+
+    with tab_rank:
+        users_all = load_db(USERS_FILE, {})
+        rank_data = []
+        for uid, udata in users_all.items():
+            if uid == "5891": continue
+            w = udata.get('cash', 0) - udata.get('loan', 0)
+            for sid, p in udata.get('portfolio', {}).items():
+                if sid in market['stock_data']:
+                    w += p.get('qty', 0) * market['stock_data'][sid]['price']
+            for eid, cnt in udata.get('real_estate', {}).items():
+                if eid in estate_config:
+                    w += estate_config[eid]['price'] * cnt * 0.8
+            rank_data.append({"uid": uid, "title": udata.get('equipped_title','🌱 신규시민'), "nw": w, "cash": udata.get('cash',0)})
+        rank_data.sort(key=lambda x: x['nw'], reverse=True)
+
+        medals = ["🥇", "🥈", "🥉"] + [f"{i}위" for i in range(4, 101)]
+        for i, r in enumerate(rank_data[:20]):
+            me = "🫵" if r['uid'] == st.session_state.logged_in_user else ""
+            nw_color = "#FFD600" if i == 0 else "#C0C0C0" if i == 1 else "#CD7F32" if i == 2 else "#00E5FF"
+            st.markdown(f"""
+            <div class='card' style='display:flex;justify-content:space-between;align-items:center;padding:12px 18px;margin:4px 0;'>
+                <span style='font-size:1.1rem;min-width:36px;'>{medals[i]}</span>
+                <span style='font-weight:900;color:#E8E8F0;flex:1;margin:0 10px;'>{r['uid']} {me}</span>
+                <span style='color:#888;font-size:0.82rem;flex:1;'>{r['title']}</span>
+                <span style='font-weight:900;color:{nw_color};'>₩{r['nw']:,.0f}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with tab_board:
+        msg = st.text_input("메시지 작성", placeholder="랭커 게시판에 글을 남겨보세요!")
+        if st.button("📝 등록", use_container_width=True):
+            if msg.strip():
+                comments = load_db(COMMENTS_FILE, [])
+                comments.append({
+                    "name": st.session_state.logged_in_user,
+                    "title": st.session_state.equipped_title,
+                    "comment": msg.strip(),
+                    "time": datetime.now().strftime("%m/%d %H:%M")
+                })
+                save_db(COMMENTS_FILE, comments)
+                st.rerun()
+
+        st.write("")
+        all_c = load_db(COMMENTS_FILE, [])
+        for c in reversed(all_c[-50:]):
+            t_color = "#FFD600"
+            st.markdown(f"""
+            <div class='card' style='margin:6px 0;padding:12px 16px;'>
+                <div style='display:flex;justify-content:space-between;margin-bottom:6px;'>
+                    <span><b style='color:#00E5FF;'>{c['name']}</b> <span style='color:{t_color};font-size:0.82rem;'>{c.get('title','')}</span></span>
+                    <span style='color:#555;font-size:0.78rem;'>{c.get('time','')}</span>
+                </div>
+                <div style='color:#ddd;font-size:0.92rem;'>{c['comment']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════
+# 🛠️ 창조주 통제소
+# ════════════════════════════════════════════════
+elif menu == "🛠️ 창조주 통제소":
+    st.title("🛠️ 창조주 통제소")
+    st.markdown("<div style='color:#FF4B4B;font-size:0.85rem;'>⚠️ 창조주 전용 패널입니다. 신중하게 사용하세요.</div>", unsafe_allow_html=True)
+
+    t1, t2, t3, t4 = st.tabs(["👤 유저 조작", "📈 시장 조작", "📢 공지 & 이벤트", "📊 전체 현황"])
+
+    with t1:
+        u_db = load_db(USERS_FILE, {})
+        uid_list = [u for u in u_db.keys() if u != "5891"]
+        if uid_list:
+            sel_u = st.selectbox("유저 선택", uid_list)
+            u_data = u_db[sel_u]
+            c1, c2 = st.columns(2)
+            with c1:
+                new_cash = st.number_input("현금 설정", value=int(u_data['cash']), step=1_000_000)
+                new_loan = st.number_input("대출 설정", value=int(u_data.get('loan', 0)), step=1_000_000)
+            with c2:
+                new_title = st.text_input("칭호 설정", value=u_data.get('equipped_title',''))
+                st.metric("현재 현금", f"₩{u_data['cash']:,}")
+                st.metric("현재 대출", f"₩{u_data.get('loan',0):,}")
+
+            if st.button("⚡ 조작 실행", use_container_width=True):
+                u_db[sel_u]['cash'] = new_cash
+                u_db[sel_u]['loan'] = new_loan
+                u_db[sel_u]['equipped_title'] = new_title
+                save_db(USERS_FILE, u_db)
+                st.success(f"✅ {sel_u} 데이터 수정 완료!")
+
+            st.write("---")
+            if st.button("🗑️ 유저 삭제 (주의!)", use_container_width=True, type="secondary"):
+                del u_db[sel_u]
+                save_db(USERS_FILE, u_db)
+                st.success(f"✅ {sel_u} 삭제 완료!")
+                st.rerun()
+        else:
+            st.info("등록된 유저가 없습니다.")
+
+    with t2:
+        st.markdown("### 📈 종목별 가격 조작")
+        for s in stock_config:
+            c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
+            c1.write(f"{s['icon']} {s['name']}")
+            c2.write(f"현재: ₩{market['stock_data'][s['id']]['price']:,}")
+            if c3.button("🚀 +50%", key=f"up_{s['id']}"):
+                market['stock_data'][s['id']]['price'] = int(market['stock_data'][s['id']]['price'] * 1.5)
+                market['news'] = f"🚀 [시장조작] {s['name']} 급등!"
+                save_market(market); st.rerun()
+            if c4.button("📉 -30%", key=f"dn_{s['id']}"):
+                market['stock_data'][s['id']]['price'] = int(market['stock_data'][s['id']]['price'] * 0.7)
+                market['news'] = f"💣 [시장조작] {s['name']} 폭락!"
+                save_market(market); st.rerun()
+
+        st.write("---")
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("🔥 전종목 +50% 폭등", use_container_width=True):
+                for s in stock_config:
+                    market['stock_data'][s['id']]['price'] = int(market['stock_data'][s['id']]['price'] * 1.5)
+                market['news'] = "🔥 [창조주의 축복] 전 종목 폭등!!!"
+                save_market(market); st.rerun()
+        with c2:
+            if st.button("💣 전종목 -40% 폭락", use_container_width=True):
+                for s in stock_config:
+                    market['stock_data'][s['id']]['price'] = max(1000, int(market['stock_data'][s['id']]['price'] * 0.6))
+                market['news'] = "💣 [창조주의 심판] 전 종목 폭락!!!"
+                save_market(market); st.rerun()
+
+        st.write("---")
+        new_lotto = st.number_input("로또 잭팟 설정", value=market['lotto_pool'], step=1_000_000_000)
+        if st.button("💰 로또 잭팟 변경"):
+            market['lotto_pool'] = new_lotto; save_market(market); st.success("완료!")
+
+    with t3:
+        st.markdown("### 📢 공지사항")
+        msg_text = st.text_area("공지 내용", value=market.get('admin_msg', ''), height=100)
+        msg_color = st.color_picker("텍스트 색상", value=market.get('admin_color', '#FF4B4B'))
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("📣 공지 발령", use_container_width=True):
+                market['admin_msg'] = msg_text; market['admin_color'] = msg_color; save_market(market); st.success("공지 발령 완료!")
+        with c2:
+            if st.button("🗑️ 공지 삭제", use_container_width=True):
+                market['admin_msg'] = ""; save_market(market); st.success("공지 삭제 완료!")
+
+        st.write("---")
+        st.markdown("### 🎭 특별 이벤트")
+        ev_name = st.text_input("이벤트 이름", placeholder="예: 황금의 시간 🌟")
+        ev_target = st.selectbox("대상 종목", [f"{s['icon']} {s['name']}" for s in stock_config])
+        ev_mult = st.slider("변동 배율 (1.0 = 정상)", min_value=0.5, max_value=5.0, value=2.0, step=0.5)
+        if st.button("🎭 이벤트 발동", use_container_width=True):
+            ev_sid = next(s['id'] for s in stock_config if f"{s['icon']} {s['name']}" == ev_target)
+            market['event_active'] = True
+            market['event_name'] = ev_name
+            market['event_target'] = ev_sid
+            market['event_multiplier'] = ev_mult
+            market['news'] = f"🎭 [이벤트] {ev_name} 시작! {ev_target} 변동성 {ev_mult}배 증가!"
+            save_market(market); st.success("이벤트 발동!")
+
+        if st.button("⏹️ 이벤트 종료"):
+            market['event_active'] = False; save_market(market); st.success("이벤트 종료!")
+
+    with t4:
+        st.markdown("### 📊 전체 유저 현황")
+        u_db = load_db(USERS_FILE, {})
+        rows = []
+        for uid, ud in u_db.items():
+            if uid == "5891": continue
+            rows.append({"ID": uid, "칭호": ud.get('equipped_title',''), "현금": f"₩{ud.get('cash',0):,}", "대출": f"₩{ud.get('loan',0):,}"})
+        if rows:
+            st.table(pd.DataFrame(rows))
+        else:
+            st.info("등록된 유저 없음")
+
+        st.write("---")
+        st.markdown("### 💬 게시판 관리")
+        if st.button("🗑️ 게시판 전체 삭제"):
+            save_db(COMMENTS_FILE, []); st.success("게시판 초기화 완료!")
