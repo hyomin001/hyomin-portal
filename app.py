@@ -47,17 +47,15 @@ def save_comment(name, comment):
     with open(COMMENTS_FILE, 'w', encoding='utf-8') as f:
         json.dump(comments, f, indent=4, ensure_ascii=False)
 
-# --- 랭킹 시스템 추가 ---
+# --- 랭킹 시스템 ---
 def get_user_rankings():
     users = load_users()
     rankings = []
     for uid, data in users.items():
         total_wealth = data.get('cash', 0)
-        # 포트폴리오 가치 계산 (현재가 기준, 현재가가 없으면 매입 단가 사용)
         portfolio_val = 0
         portfolio = data.get('portfolio', {})
         
-        # 현재 주식 가격 가져오기 (세션에 있으면 사용, 없으면 0)
         current_prices = {}
         if 'stock_data' in st.session_state:
              current_prices = {k: v['price'] for k, v in st.session_state.stock_data.items()}
@@ -74,10 +72,8 @@ def get_user_rankings():
             "total": total_wealth + portfolio_val
         })
     
-    # 총 자산 기준으로 내림차순 정렬
     rankings.sort(key=lambda x: x['total'], reverse=True)
     return rankings
-
 
 st.set_page_config(page_title="HYOMIN UNIVERSE", page_icon="🌌", layout="wide")
 
@@ -90,11 +86,10 @@ st.markdown("""
     .stButton>button { border: 1px solid #00d4ff; color: #00d4ff; background: rgba(0,212,255,0.05); border-radius: 8px; }
     .stButton>button:hover { background-color: #00d4ff; color: #0a0a1a; }
     div[data-testid="stBlock"] { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; }
-    /* 랭킹 스타일 */
     .rank-card { background: rgba(0, 0, 0, 0.4); border-left: 4px solid #ffaa00; padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0; }
-    .rank-1 { border-color: #ffd700; } /* 금 */
-    .rank-2 { border-color: #c0c0c0; } /* 은 */
-    .rank-3 { border-color: #cd7f32; } /* 동 */
+    .rank-1 { border-color: #ffd700; }
+    .rank-2 { border-color: #c0c0c0; }
+    .rank-3 { border-color: #cd7f32; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -135,7 +130,7 @@ if 'logged_in_user' not in st.session_state:
     st.stop()
 
 # ==============================
-# 글로벌 주식 데이터 초기화 (다른 탭에서도 랭킹 계산에 필요)
+# 글로벌 주식 데이터 초기화
 # ==============================
 stock_config = [
     {"id": "SAMJI", "name": "삼지전자", "vol": 0.05, "trend": 1.01},
@@ -175,11 +170,11 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### 🏆 명예의 전당 (실시간 총자산)")
-    sync_user_data() # 랭킹 표시 전 내 정보 동기화
+    sync_user_data()
     rankings = get_user_rankings()
     
     medals = ["🥇", "🥈", "🥉"]
-    for i, rank in enumerate(rankings[:5]): # Top 5까지만 표시
+    for i, rank in enumerate(rankings[:5]):
         medal = medals[i] if i < 3 else "🏅"
         rank_class = f"rank-{i+1}" if i < 3 else ""
         is_me = " (나)" if rank['uid'] == st.session_state.logged_in_user else ""
@@ -201,13 +196,13 @@ if menu == "🏠 대시보드":
     st.image("https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80", caption="Cyberpunk City")
 
 # ==============================
-# 콘텐츠 2: 주식 종합 시장 (오류 완벽 수정본)
+# 콘텐츠 2: 주식 종합 시장 (10초 자동 갱신 안정화)
 # ==============================
 elif menu == "📈 주식 종합 시장":
     st.title("📈 대한민국 주식 종합 시장")
     
-    auto_refresh = st.checkbox("🔄 실시간 차트/뉴스 갱신 (3초)")
-    if auto_refresh: st.markdown('<meta http-equiv="refresh" content="3">', unsafe_allow_html=True)
+    # 파이썬 내부 타이머를 이용한 안전한 자동 갱신
+    auto_refresh = st.checkbox("🔄 실시간 10초 자동 갱신 켜기", value=True)
 
     # 주가 변동 엔진
     market_data = []
@@ -237,7 +232,6 @@ elif menu == "📈 주식 종합 시장":
         st.subheader("📊 시장 전체 현황")
         df_market = pd.DataFrame(market_data)
         
-        # Pandas 버전 호환성 완벽 해결 (styler 대신 직접 HTML 렌더링)
         def highlight_row(row):
             color = '#ff4444' if row['등락률'] < 0 else '#00ff88'
             sign = '▲' if row['등락률'] >= 0 else '▼'
@@ -328,6 +322,11 @@ elif menu == "📈 주식 종합 시장":
                     sync_user_data()
                     st.rerun()
                 else: st.error("매도할 주식이 없습니다.")
+
+    # 10초 자동 갱신 로직 (파이썬 내부 대기)
+    if auto_refresh:
+        time.sleep(10)
+        st.rerun()
 
 # ==============================
 # 콘텐츠 3: 축구 구단주 매니저
