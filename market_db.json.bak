@@ -1,0 +1,118 @@
+{
+    "version": 6,
+    "stock_data": {
+        "NDX": {
+            "name": "나스닥100 ETF",
+            "icon": "🇺🇸",
+            "price": 109692,
+            "history": [
+                80000,
+                109683,
+                109692
+            ]
+        },
+        "HDEC": {
+            "name": "현대건설",
+            "icon": "🏗️",
+            "price": 75200,
+            "history": [
+                80000,
+                76795,
+                75200
+            ]
+        },
+        "MANU": {
+            "name": "맨체스터 유나이티드",
+            "icon": "⚽",
+            "price": 63886,
+            "history": [
+                80000,
+                66409,
+                63886
+            ]
+        },
+        "CJENM": {
+            "name": "CJ ENM",
+            "icon": "🎬",
+            "price": 53461,
+            "history": [
+                80000,
+                53538,
+                53461
+            ]
+        },
+        "FOOD": {
+            "name": "삼양식품",
+            "icon": "🍜",
+            "price": 77816,
+            "history": [
+                80000,
+                79347,
+                77816
+            ]
+        },
+        "BIO": {
+            "name": "삼성바이오로직스",
+            "icon": "🧬",
+            "price": 115914,
+            "history": [
+                80000,
+                99610,
+                103139
+            ]
+        },
+        "AERO": {
+            "name": "한화에어로스페이스",
+            "icon": "🚀",
+            "price": 60936,
+            "history": [
+                80000,
+                62993,
+                60936
+            ]
+        },
+        "RETAIL": {
+            "name": "신세계",
+            "icon": "🛍️",
+            "price": 135431,
+            "history": [
+                80000,
+                132923,
+                135431
+            ]
+        },
+        "CHEM": {
+            "name": "LG화학",
+            "icon": "⚗️",
+            "price": 84896,
+            "history": [
+                80000,
+                84593,
+                84896
+            ]
+        },
+        "ENTER": {
+            "name": "하이브",
+            "icon": "🎵",
+            "price": 68558,
+            "history": [
+                80000,
+                67366,
+                68558
+            ]
+        }
+    },
+    "news": "🚀 [속보] 삼성바이오로직스, 실적 서프라이즈로 장중 급등!",
+    "news_time": 1775656258.163616,
+    "last_tick": 1775656251.0773578,
+    "admin_msg": "",
+    "admin_color": "#FF4B4B",
+    "lotto_pool": 5000000000,
+    "lotto_tickets": {},
+    "lotto_last_draw": 1775656226.4578502,
+    "next_news_target": "HDEC",
+    "next_news_impact": 0.19449378729700834,
+    "event_active": false,
+    "event_name": "",
+    "event_multiplier": 1.0
+}

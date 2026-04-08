@@ -1,0 +1,14 @@
+{
+    "admin": {
+        "pw": "admin",
+        "cash": 100500000,
+        "inventory": [],
+        "equipped_title": "🌱 신규시민",
+        "portfolio": {},
+        "real_estate": {},
+        "rent_time": 1775656213.129089,
+        "loan": 0,
+        "loan_time": 1775656213.129089,
+        "stats": {}
+    }
+}
