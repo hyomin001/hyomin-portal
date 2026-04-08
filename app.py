@@ -910,7 +910,9 @@ elif menu == "📈 주식 트레이딩":
                     sync_user_data(); st.rerun()
                 else: st.error("보유 주식 없음")
 
-    time.sleep(3); st.rerun()
+if menu == "📈 주식 트레이딩":
+        time.sleep(3)
+        st.rerun()
 
 # ════════════════════════════════════════════════
 # 🏢 부동산 수금소
@@ -1454,7 +1456,7 @@ elif menu == "👑 칭호 상점":
             with c1:
                 badge = "✅ 장착중" if is_equipped else ""
                 st.markdown(f"""
-                <div class='card' style='padding:14px 18px;border-color:rgba({int(clr[1:3],16)},{int(clr[3:5],16)},{int(clr[5:7],16)},0.3);'>
+                <div class='card' style='padding:14px 18px;border-color:{hex_to_rgba(clr, 0.3)};'>
                     <span style='font-size:1.05rem;font-weight:900;color:{clr};'>{t['name']}</span>
                     <span style='color:#FFD600;margin-left:12px;font-size:0.9rem;'>₩{t['price']:,}</span>
                     {f"<span style='color:#00FF88;margin-left:8px;font-size:0.82rem;'>{badge}</span>" if badge else ""}
