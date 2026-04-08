@@ -13,20 +13,20 @@ from datetime import datetime
 # ==============================
 USERS_FILE = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
-MARKET_FILE = "market_db.json" 
+MARKET_FILE = "market_db.json" # 모든 유저가 100% 동일하게 공유하는 시장 DB
 
-# 완전히 새로운 산업군으로 대개편!
+# 새로운 산업군 종목
 stock_config = [
-    {"id": "NDX", "name": "나스닥100 ETF", "vol": 0.04},       # 글로벌/금융
-    {"id": "HDEC", "name": "현대건설", "vol": 0.03},            # 건설/부동산
-    {"id": "MANU", "name": "맨체스터 유나이티드", "vol": 0.06}, # 스포츠/엔터
-    {"id": "CJENM", "name": "CJ ENM", "vol": 0.04},             # 미디어/영화
-    {"id": "FOOD", "name": "삼양식품", "vol": 0.03},            # F&B(식품)
-    {"id": "BIO", "name": "삼성바이오로직스", "vol": 0.05},     # 제약/바이오
-    {"id": "AERO", "name": "한화에어로스페이스", "vol": 0.06},  # 항공우주/방산
-    {"id": "RETAIL", "name": "신세계", "vol": 0.02},            # 유통/쇼핑
-    {"id": "CHEM", "name": "LG화학", "vol": 0.03},              # 화학/에너지
-    {"id": "ENTER", "name": "하이브", "vol": 0.07}              # 엔터테인먼트
+    {"id": "NDX", "name": "나스닥100 ETF", "vol": 0.04},       
+    {"id": "HDEC", "name": "현대건설", "vol": 0.03},            
+    {"id": "MANU", "name": "맨체스터 유나이티드", "vol": 0.06}, 
+    {"id": "CJENM", "name": "CJ ENM", "vol": 0.04},             
+    {"id": "FOOD", "name": "삼양식품", "vol": 0.03},            
+    {"id": "BIO", "name": "삼성바이오로직스", "vol": 0.05},     
+    {"id": "AERO", "name": "한화에어로스페이스", "vol": 0.06},  
+    {"id": "RETAIL", "name": "신세계", "vol": 0.02},            
+    {"id": "CHEM", "name": "LG화학", "vol": 0.03},              
+    {"id": "ENTER", "name": "하이브", "vol": 0.07}              
 ]
 
 def load_db(file, default):
@@ -53,26 +53,36 @@ def sync_user_data():
             })
             save_db(USERS_FILE, users)
 
+# [핵심 버그 수정] 초기 기준가(History)와 현재가를 일치시켜 뻥튀기 수익률 방지
 def get_market():
-    init_data = {
-        "stock_data": {s['id']: {"name": s['name'], "price": random.randint(50000, 150000), "history": [80000]} for s in stock_config},
-        "news": "새로운 산업군으로 시장이 전면 개편되었습니다!",
-        "news_time": time.time(),
-        "last_tick": time.time()
-    }
-    
+    def init_market():
+        data = {
+            "version": 2, # 버전 업그레이드로 기존 꼬인 DB 강제 리셋
+            "stock_data": {},
+            "news": "시장이 안정적으로 동기화되었습니다!",
+            "news_time": time.time(),
+            "last_tick": time.time()
+        }
+        for s in stock_config:
+            p = random.randint(50000, 150000)
+            # price와 history 초기값을 무조건 동일하게 세팅!
+            data["stock_data"][s['id']] = {"name": s['name'], "price": p, "history": [p]}
+        return data
+
     if not os.path.exists(MARKET_FILE):
-        save_db(MARKET_FILE, init_data)
-        return init_data
+        data = init_market()
+        save_db(MARKET_FILE, data)
+        return data
         
     data = load_db(MARKET_FILE, {})
     
-    # [방어코드] 기존 시장 DB의 종목과 현재 코드의 종목이 다르면 시장 강제 리셋 (KeyError 원천 차단)
+    # 버전이 다르거나 종목이 바뀌었으면 깔끔하게 시장 리셋
     db_keys = set(data.get('stock_data', {}).keys())
     c_keys = set([s['id'] for s in stock_config])
-    if db_keys != c_keys:
-        save_db(MARKET_FILE, init_data)
-        return init_data
+    if data.get("version") != 2 or db_keys != c_keys:
+        data = init_market()
+        save_db(MARKET_FILE, data)
+        return data
         
     return data
 
@@ -90,7 +100,7 @@ def get_rankings(market_data):
     rankings.sort(key=lambda x: x['total'], reverse=True)
     return rankings
 
-st.set_page_config(page_title="HYOMIN UNIVERSE v11.1", page_icon="🌌", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE v11.2", page_icon="🌌", layout="wide")
 
 # ==============================
 # 🔐 로그인 시스템
@@ -105,7 +115,7 @@ if 'logged_in_user' not in st.session_state:
     """, unsafe_allow_html=True)
     
     st.markdown("<h1>🌌 HYOMIN UNIVERSE</h1>", unsafe_allow_html=True)
-    st.markdown("<p>주식 시장 산업군 대개편 업데이트 완료!</p>", unsafe_allow_html=True)
+    st.markdown("<p>서버 동기화 완료! 모든 유저가 완벽히 동일한 주식 시장을 공유합니다.</p>", unsafe_allow_html=True)
     
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
@@ -187,7 +197,7 @@ else:
     """, unsafe_allow_html=True)
 
 # ==============================
-# 🌐 통합 글로벌 시장
+# 🌐 통합 글로벌 시장 제어
 # ==============================
 market = get_market()
 current_time = time.time()
@@ -214,7 +224,7 @@ if current_time - market.get('news_time', 0) > 30:
 if market_updated: save_market(market)
 
 # ==============================
-# 🧭 메뉴 (PC/Mobile 분기)
+# 🧭 메뉴 분기
 # ==============================
 menu_options = ["🏠 홈 광장", "📈 주식 트레이딩", "⚽ 구단주 매니저", "📡 통신 업무", "💻 CBT 모의고사", "🏎️ 레이싱", "🎰 슬롯머신", "⛏️ 채굴기", "👑 칭호 상점", "💬 랭커 게시판"]
 
@@ -244,14 +254,10 @@ else:
 # ==============================
 if menu == "🏠 홈 광장":
     st.title(f"환영합니다 {st.session_state.logged_in_user}님! 🎉")
-    st.markdown(f"현재 **{st.session_state.device_mode}** 모드로 접속 중입니다.")
+    st.markdown("현재 모든 유저가 서버에 연동된 **100% 동일한 주식 시장**을 보고 있습니다.")
     st.image("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200")
     
-    st.write("---")
-    st.markdown("### 👑 창조주 전용 치트키")
-    if st.button("비밀 금고에서 10억 인출하기"):
-        st.session_state.global_cash += 1000000000
-        sync_user_data(); st.success("통장에 10억이 입금되었습니다!"); st.rerun()
+   
 
 # ==============================
 # [2] 주식
@@ -259,7 +265,8 @@ if menu == "🏠 홈 광장":
 elif menu == "📈 주식 트레이딩":
     st.title("📈 글로벌 통합 거래소")
     st.warning(f"**{market['news']}**")
-    t_mkt, t_acc = st.tabs(["📊 시황", "💼 내 포트폴리오"])
+    t_mkt, t_acc = st.tabs(["📊 실시간 시황", "💼 내 포트폴리오"])
+    
     with t_mkt:
         rows = ""
         for s in stock_config:
@@ -269,6 +276,7 @@ elif menu == "📈 주식 트레이딩":
             cls, sign = ("p-up", "▲") if diff >= 0 else ("p-down", "▼")
             rows += f"<tr><td>{curr['name']}</td><td>₩{curr['price']:,}</td><td class='{cls}'>{sign} {abs(pct):.2f}%</td></tr>"
         st.markdown(f"<table class='stock-table'><tr><th>종목</th><th>현재가</th><th>변동</th></tr>{rows}</table>", unsafe_allow_html=True)
+        
     with t_acc:
         st.subheader("보유 계좌")
         p_list = []
@@ -283,7 +291,7 @@ elif menu == "📈 주식 트레이딩":
                 roi = ((cp - ap) / ap * 100) if ap > 0 else 0
                 p_list.append({"종목": market['stock_data'][sid]['name'], "수량": f"{qty}주", "평가액": f"₩{int(eval_amt):,}", "수익률": f"{roi:+.2f}%"})
         if p_list: st.table(pd.DataFrame(p_list))
-        else: st.info("새로운 산업군이 적용되었습니다. 주식을 매수해보세요!")
+        else: st.info("보유 주식이 없습니다.")
         st.markdown(f"💰 주식자산: ₩{total_eval:,} | 💵 현금: ₩{st.session_state.global_cash:,}")
 
     st.write("---")
@@ -387,7 +395,7 @@ elif menu == "🏎️ 레이싱":
                 for i in range(3): pos[i] += random.randint(1, 12); bars[i].progress(min(pos[i], 100))
                 time.sleep(0.1)
             win = cars[pos.index(max(pos))]
-            if win['n'] == sel: st.session_state.global_cash += int(amt * win['o']); st.success("승리!")
+            if win['n'] == sel: st.session_state.global_cash += int(amt * win['o']); st.success("승리!"); st.balloons()
             else: st.error(f"우승: {win['n']}"); sync_user_data()
 
 # ==============================
@@ -418,61 +426,44 @@ elif menu == "⛏️ 채굴기":
         st.markdown("<h1 style='color:gold;'>💰 +1,000</h1>", unsafe_allow_html=True)
 
 # ==============================
-# 👑 [9] 칭호 상점 (장착 기능 포함)
+# 👑 [9] 칭호 상점
 # ==============================
 elif menu == "👑 칭호 상점":
     st.title("👑 VIP 칭호 상점")
-    st.markdown("칭호를 구매하고 장착하여 랭커 게시판에서 간지를 뽐내세요!")
-    
+    st.markdown("게시판에서 장착할 수 있는 칭호를 구매하세요!")
     cols = st.columns(2)
     for i in range(1, 101):
         with cols[i%2]:
             title_name = f"💫 초월자 Lv.{i}" if i >= 90 else f"💎 VIP 칭호 Lv.{i}"
             title_id = f"title_{i}"
             price = i * 10000000
-            
             st.markdown(f"**{title_name}** | ₩{price:,}")
-            
             if title_id in st.session_state.inventory:
-                if st.session_state.equipped_title == title_name:
-                    st.button("✅ 장착 중", key=f"eq_{i}", disabled=True)
+                if st.session_state.equipped_title == title_name: st.button("✅ 장착 중", key=f"eq_{i}", disabled=True)
                 else:
-                    if st.button("🌟 장착하기", key=f"eq_{i}"):
-                        st.session_state.equipped_title = title_name
-                        sync_user_data(); st.rerun()
+                    if st.button("🌟 장착하기", key=f"eq_{i}"): st.session_state.equipped_title = title_name; sync_user_data(); st.rerun()
             else:
                 if st.button(f"구매하기", key=f"buy_{i}"):
                     if st.session_state.global_cash >= price:
-                        st.session_state.global_cash -= price
-                        st.session_state.inventory.append(title_id)
-                        st.session_state.equipped_title = title_name # 사면 바로 장착
-                        sync_user_data(); st.rerun()
-                    else:
-                        st.error("잔액이 부족합니다.")
+                        st.session_state.global_cash -= price; st.session_state.inventory.append(title_id)
+                        st.session_state.equipped_title = title_name; sync_user_data(); st.rerun()
+                    else: st.error("잔액 부족")
 
 # ==============================
-# 💬 [10] 게시판 (간지나는 배지 스타일)
+# 💬 [10] 게시판
 # ==============================
 elif menu == "💬 랭커 게시판":
     st.title("💬 랭커 게시판")
     msg = st.text_input("메시지 입력")
     if st.button("등록"):
         if msg:
-            new_comment = {
-                "name": st.session_state.logged_in_user, 
-                "title": st.session_state.equipped_title,
-                "comment": msg,
-                "time": datetime.now().strftime("%m-%d %H:%M")
-            }
-            save_db(COMMENTS_FILE, load_db(COMMENTS_FILE, []) + [new_comment])
-            st.rerun()
-            
+            new_comment = {"name": st.session_state.logged_in_user, "title": st.session_state.equipped_title, "comment": msg, "time": datetime.now().strftime("%m-%d %H:%M")}
+            save_db(COMMENTS_FILE, load_db(COMMENTS_FILE, []) + [new_comment]); st.rerun()
     for c in reversed(load_db(COMMENTS_FILE, [])):
-        c_title = c.get('title', '신규시민')
         st.markdown(f"""
         <div style='background-color: #111; border-left: 5px solid #00FF88; padding: 15px; margin-bottom: 15px; border-radius: 8px;'>
             <div style='margin-bottom: 8px;'>
-                <span style='background-color: #222; color: #FFD600; border: 1px solid #FFD600; padding: 3px 8px; border-radius: 5px; font-size: 14px; margin-right: 10px;'>{c_title}</span>
+                <span style='background-color: #222; color: #FFD600; border: 1px solid #FFD600; padding: 3px 8px; border-radius: 5px; font-size: 14px; margin-right: 10px;'>{c.get('title', '신규시민')}</span>
                 <b style='color: #00E5FF; font-size: 20px;'>{c['name']}</b>
                 <span style='color: #888; font-size: 12px; margin-left: 10px;'>{c.get('time', '')}</span>
             </div>
