@@ -30,8 +30,7 @@ stock_config = [
     {"id": "RETAIL", "name": "신세계",               "vol": 0.02, "icon": "🛍️"},
     {"id": "CHEM",   "name": "LG화학",               "vol": 0.03, "icon": "⚗️"},
     {"id": "ENTER",  "name": "하이브",               "vol": 0.07, "icon": "🎵"},
-    {"id": "Kleague",   "name": "K리그",  "vol": 0.01, "icon": "⚽"},
-    {"id": "MCI",   "name": "맨체스터 시티",  "vol": 0.05, "icon": "⚽"},
+
 ]
 
 # ── 부동산 기본 매물 설정 (수량 제한 있음) ──
