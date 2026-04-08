@@ -287,10 +287,11 @@ h1, h2, h3 { font-family: 'Orbitron', monospace !important; letter-spacing: 2px;
 /* ── 입력창 ── */
 .stTextInput > div > div > input,
 .stNumberInput > div > div > input {
-    background: rgba(255,255,255,0.04) !important;
-    border: 1px solid rgba(0,229,255,0.25) !important;
+    background: #FFFFFF !important; /* 배경을 완전 하양으로 */
+    border: 2px solid #00E5FF !important;
     border-radius: 8px !important;
-    color: #ffffff !important;
+    color: #000000 !important; /* 글씨를 완전 검정으로 */
+    font-weight: 900 !important;
 }
 .stTextInput > div > div > input:focus,
 .stNumberInput > div > div > input:focus {
