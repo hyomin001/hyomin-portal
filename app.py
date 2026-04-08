@@ -171,7 +171,7 @@ if 'logged_in_user' not in st.session_state:
         background: rgba(0,229,255,0.05) !important;
         border: 1px solid rgba(0,229,255,0.3) !important;
         border-radius: 8px !important;
-        color: #fff !important;
+        color: #000000 !important;
         font-size: 1rem !important;
         padding: 12px !important;
     }
