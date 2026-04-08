@@ -9,6 +9,27 @@ import os
 import time
 from datetime import datetime
 
+def hex_to_rgba(clr, alpha=0.3):
+    try:
+        if not clr or not isinstance(clr, str):
+            return f"rgba(255,255,255,{alpha})"
+
+        clr = clr.lstrip('#')
+
+        if len(clr) == 3:
+            clr = ''.join([c*2 for c in clr])
+
+        if len(clr) != 6:
+            return f"rgba(255,255,255,{alpha})"
+
+        r = int(clr[0:2], 16)
+        g = int(clr[2:4], 16)
+        b = int(clr[4:6], 16)
+
+        return f"rgba({r},{g},{b},{alpha})"
+    except:
+        return f"rgba(255,255,255,{alpha})"
+
 # ==============================
 # 🌌 시스템 설정 및 데이터베이스
 # ==============================
@@ -1456,7 +1477,7 @@ elif menu == "👑 칭호 상점":
             with c1:
                 badge = "✅ 장착중" if is_equipped else ""
                 st.markdown(f"""
-                <div class='card' style='padding:14px 18px;border-color:{hex_to_rgba(clr, 0.3)};'>
+                <div class='card' style='padding:14px 18px;border-color:rgba({int(clr[1:3],16)},{int(clr[3:5],16)},{int(clr[5:7],16)},0.3);'>
                     <span style='font-size:1.05rem;font-weight:900;color:{clr};'>{t['name']}</span>
                     <span style='color:#FFD600;margin-left:12px;font-size:0.9rem;'>₩{t['price']:,}</span>
                     {f"<span style='color:#00FF88;margin-left:8px;font-size:0.82rem;'>{badge}</span>" if badge else ""}
