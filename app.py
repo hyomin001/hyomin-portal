@@ -37,7 +37,28 @@ estate_config = {
     "E3": {"name": "강남 꼬마빌딩",      "icon": "🏢", "price": 500_000_000_000,  "income": 500_000,  "desc": "강남 핵심 상권 4층 빌딩"},
     "E4": {"name": "시그니엘 펜트하우스","icon": "👑", "price": 5_000_000_000_000,"income": 5_000_000,"desc": "롯데월드타워 최상층 전망"},
 }
-
+# ── 숫자를 한글 단위로 변환하는 함수 ──
+def format_korean_money(num):
+    if pd.isna(num) or num == 0:
+        return "0원"
+    
+    is_neg = num < 0
+    num = abs(int(num))
+    
+    jo = num // 10**12
+    eok = (num % 10**12) // 10**8
+    man = (num % 10**8) // 10**4
+    won = num % 10**4
+    
+    parts = []
+    if jo > 0: parts.append(f"{jo:,}조")
+    if eok > 0: parts.append(f"{eok:,}억")
+    if man > 0: parts.append(f"{man:,}만")
+    if won > 0 or not parts: parts.append(f"{won:,}")
+    
+    res = " ".join(parts) + "원"
+    return f"-{res}" if is_neg else res
+    
 # ── 광산 아이템 설정 ──
 MINE_ITEMS = [
     {"name": "돌멩이",     "icon": "🪨", "value": 10_000,     "prob": 0.40},
