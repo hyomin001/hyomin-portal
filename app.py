@@ -54,17 +54,7 @@ TITLE_SHOP = [
     {"name": "💎 VIP Lv.10",     "price": 1_000_000_000,  "grade": 10},
     {"name": "🔱 유니버스 지배자","price": 50_000_000_000, "grade": 99},
 ]
-def hex_to_rgba(hex_color, alpha=0.3):
-    try:
-        hex_color = hex_color.lstrip('#')
-        if len(hex_color) == 3: 
-            hex_color = ''.join(c*2 for c in hex_color)
-        r = int(hex_color[0:2], 16)
-        g = int(hex_color[2:4], 16)
-        b = int(hex_color[4:6], 16)
-        return f"rgba({r},{g},{b},{alpha})"
-    except:
-        return f"rgba(255,255,255,{alpha})"
+
 # ────────────────── DB 유틸 ──────────────────
 def load_db(file, default):
     if os.path.exists(file):
@@ -593,7 +583,7 @@ if cur_t - market.get('lotto_last_draw', 0) > 3600:
     if market['lotto_tickets']:
         pool = []
         for u, c in market['lotto_tickets'].items(): pool.extend([u] * c)
-        win = random.choice(pool)
+        win = random.choice(당구)
         prize = market['lotto_pool']
         us = load_db(USERS_FILE, {})
         if win in us:
@@ -1246,131 +1236,75 @@ elif menu == "⚽ 구단주 시뮬레이터":
             sync_user_data()
             st.info(f"💰 경기 보상: +₩{reward:,}")
             time.sleep(3); st.rerun()
+
 # ════════════════════════════════════════════════
-# 💻 정처기 CBT (50+ 고퀄리티 기출문제 패치)
+# 💻 정처기 CBT
 # ════════════════════════════════════════════════
 elif menu == "💻 정처기 CBT":
     st.title("💻 정보처리기사 실전 CBT")
-    st.caption("실제 기출문제 기반 50+ 문제입니다. 정답 시 50만원 지급!")
+    st.caption("실제 정처기 수준의 문제입니다. 정답 시 50만원 지급!")
 
-    # HTML에서 추출한 전체 데이터셋 변환 (스트림릿 객관식 UI용)
     QUESTION_POOL = [
-        # --- DB / SQL ---
-        {"q": "기존 테이블에 새로운 데이터를 추가할 때 사용하는 DML 명령어 형식은? (___ INTO 테이블명 VALUES)", "a": "INSERT", "w": ["UPDATE", "SELECT", "ALTER"], "cat": "데이터베이스"},
-        {"q": "특정 사용자에게 테이블에 대한 권한을 부여하는 DCL 명령어는?", "a": "GRANT", "w": ["REVOKE", "COMMIT", "ROLLBACK"], "cat": "데이터베이스"},
-        {"q": "UNION과 UNION ALL의 차이에서, UNION은 두 결과를 합칠 때 무엇을 제거하는가?", "a": "중복 행", "w": ["NULL 값", "기본키", "외래키"], "cat": "데이터베이스"},
-        {"q": "GROUP BY 절로 그룹화한 이후, 집계 함수 결과에 조건을 적용할 때 사용하는 절은?", "a": "HAVING", "w": ["WHERE", "ORDER BY", "SELECT"], "cat": "데이터베이스"},
-        {"q": "트랜잭션 연산은 데이터베이스에 모두 반영되든지 전혀 반영되지 않아야 한다는 특성(All or Nothing)은?", "a": "원자성(Atomicity)", "w": ["일관성(Consistency)", "고립성(Isolation)", "영속성(Durability)"], "cat": "데이터베이스"},
-        {"q": "트랜잭션 회복 기법 중, Start 기록은 있지만 Commit 기록이 없는 트랜잭션을 이전 상태로 되돌리는 연산은?", "a": "Undo (취소)", "w": ["Redo (재실행)", "Checkpoint", "Rollback"], "cat": "데이터베이스"},
-        {"q": "데이터를 읽을 때 설정하며, 동시 읽기는 가능하지만 쓰기는 불가능한 잠금(Lock)은?", "a": "S-Lock (공유 락)", "w": ["X-Lock (배타 락)", "U-Lock (업데이트 락)", "I-Lock (의도 락)"], "cat": "데이터베이스"},
-        {"q": "릴레이션에서 부분 함수 종속을 제거하여 완전 함수 종속으로 만드는 정규화 단계는?", "a": "제2정규형 (2NF)", "w": ["제1정규형 (1NF)", "제3정규형 (3NF)", "BCNF"], "cat": "데이터베이스"},
-        {"q": "A→B이고 B→C일 때 A→C가 성립하는 경우로, 3NF에서 제거하는 대상은?", "a": "이행 함수 종속", "w": ["부분 함수 종속", "다치 종속", "조인 종속"], "cat": "데이터베이스"},
-        {"q": "튜플을 유일하게 식별할 수 있는 속성 집합 중 유일성과 최소성을 모두 만족하는 키는?", "a": "후보키", "w": ["슈퍼키", "대체키", "외래키"], "cat": "데이터베이스"},
-        {"q": "두 테이블에서 동일한 컬럼명을 자동으로 매칭하며 중복 컬럼을 제거하는 조인 방식은?", "a": "NATURAL JOIN", "w": ["OUTER JOIN", "CROSS JOIN", "FULL JOIN"], "cat": "데이터베이스"},
-        {"q": "스트라이핑과 분산 패리티를 결합하여 최소 3개의 디스크가 필요한 RAID 레벨은?", "a": "RAID 5", "w": ["RAID 0", "RAID 1", "RAID 6"], "cat": "데이터베이스"},
-        {"q": "기본키(PK)는 NULL 값을 가질 수 없다는 제약 조건은?", "a": "개체 무결성", "w": ["참조 무결성", "도메인 무결성", "고유 무결성"], "cat": "데이터베이스"},
-        {"q": "관계대수 연산 중 수평적 연산으로 조건을 만족하는 튜플(행)을 선택하는 기호는?", "a": "σ (시그마)", "w": ["π (파이)", "⋈ (조인)", "÷ (디비전)"], "cat": "데이터베이스"},
-
-        # --- 네트워크 / 운영체제 ---
-        {"q": "가장 오랫동안 사용하지 않은 페이지를 교체하는 알고리즘은?", "a": "LRU", "w": ["LFU", "FIFO", "OPT"], "cat": "운영체제"},
-        {"q": "FIFO 페이지 교체 알고리즘에서 프레임 수를 늘렸는데도 페이지 폴트가 오히려 증가하는 현상은?", "a": "Belady's Anomaly", "w": ["Thrashing", "Paging", "Segmentation"], "cat": "운영체제"},
-        {"q": "SJF 스케줄링의 선점형 기법으로, 남은 실행시간이 가장 짧은 프로세스에게 CPU를 즉시 할당하는 것은?", "a": "SRT", "w": ["HRN", "Round Robin", "다단계 큐"], "cat": "운영체제"},
-        {"q": "링크 상태 알고리즘(다익스트라)을 사용하며 경로 비용 기준으로 최단 경로를 계산하는 라우팅 프로토콜은?", "a": "OSPF", "w": ["RIP", "BGP", "IGRP"], "cat": "네트워크"},
-        {"q": "IP 주소(논리 주소)를 이용하여 MAC 주소(물리 주소)를 알아내는 프로토콜은?", "a": "ARP", "w": ["RARP", "ICMP", "IGMP"], "cat": "네트워크"},
-        {"q": "메일 발송에 사용되는 SMTP 프로토콜의 포트 번호는?", "a": "25", "w": ["110", "143", "22"], "cat": "네트워크"},
-        {"q": "데이터를 암호화하여 전송하는 원격 접속 프로토콜인 SSH의 포트 번호는?", "a": "22", "w": ["23", "80", "443"], "cat": "네트워크"},
-        {"q": "HDLC 프레임 중 첫 비트가 '10'으로 시작하며 오류 및 흐름 제어에 사용되는 프레임은?", "a": "S 프레임 (감시)", "w": ["I 프레임 (정보)", "U 프레임 (비번호)", "P 프레임"], "cat": "네트워크"},
-        {"q": "수신측에서 해밍 코드 등을 이용해 스스로 오류를 검출하고 수정하는 방식은?", "a": "FEC (전진 오류 수정)", "w": ["BEC", "ARQ", "패리티 검사"], "cat": "네트워크"},
-        {"q": "IPv6의 주소 길이는 총 몇 비트인가?", "a": "128비트", "w": ["32비트", "64비트", "256비트"], "cat": "네트워크"},
-        {"q": "프로세스 스케줄링에서 '반환 시간'을 구하는 공식은? 반환 시간 = ( ? ) + 실행 시간", "a": "대기 시간", "w": ["응답 시간", "도착 시간", "반환 시간"], "cat": "운영체제"},
-
-        # --- 소프트웨어 공학 ---
-        {"q": "상향식 통합 테스트에서 아직 개발되지 않은 상위 모듈을 대신하여 임시로 제공되는 도구는?", "a": "테스트 드라이버", "w": ["테스트 스텁", "테스트 하네스", "테스트 슈트"], "cat": "소프트웨어공학"},
-        {"q": "하향식 통합 테스트에서 하위 모듈 역할을 임시로 대체하는 테스트 도구는?", "a": "테스트 스텁", "w": ["테스트 드라이버", "목(Mock) 객체", "스파이(Spy)"], "cat": "소프트웨어공학"},
-        {"q": "화이트박스 테스트 중 개별 조건식이 전체 결정에 독립적으로 영향을 미치는지 확인하는 가장 강력한 커버리지는?", "a": "MC/DC", "w": ["구문 커버리지", "결정 커버리지", "조건 커버리지"], "cat": "소프트웨어공학"},
-        {"q": "입력 데이터를 유효한 값과 유효하지 않은 값으로 묶어 대표값으로 테스트하는 블랙박스 기법은?", "a": "동등 분할", "w": ["경곗값 분석", "결정 테이블", "상태 전이"], "cat": "소프트웨어공학"},
-        {"q": "V모델에 따른 테스트 레벨의 올바른 순서는? ( ? ) → 통합 → 시스템 → 인수", "a": "단위 테스트", "w": ["회귀 테스트", "부하 테스트", "성능 테스트"], "cat": "소프트웨어공학"},
-        {"q": "네트워크 계층에서 IP 패킷 단위로 암호화를 수행하는 가장 강력한 VPN 프로토콜은?", "a": "IPSec", "w": ["PPTP", "L2TP", "SSL/TLS"], "cat": "보안"},
-        {"q": "들여쓰기를 이용하여 데이터 구조를 표현하며, 주석(#)을 지원하는 데이터 직렬화 형식은?", "a": "YAML", "w": ["JSON", "XML", "HTML"], "cat": "웹"},
-        {"q": "사용자가 개발자 환경에서 통제된 상태로 직접 수행하는 인수 테스트는?", "a": "알파 테스트", "w": ["베타 테스트", "빅뱅 테스트", "샌드위치 테스트"], "cat": "소프트웨어공학"},
-
-        # --- 디자인 패턴 및 구조 ---
-        {"q": "클래스 인스턴스가 오직 하나만 생성됨을 보장하고 전역 접근을 제공하는 생성 패턴은?", "a": "싱글톤 (Singleton)", "w": ["팩토리 메서드", "프로토타입", "빌더"], "cat": "디자인패턴"},
-        {"q": "상위 클래스에서 인터페이스를 정의하고, 하위 클래스에서 인스턴스 생성을 결정하는 패턴은?", "a": "팩토리 메서드", "w": ["추상 팩토리", "어댑터", "프록시"], "cat": "디자인패턴"},
-        {"q": "서로 다른 인터페이스를 가진 클래스들을 함께 사용할 수 있도록 변환해주는 구조 패턴은?", "a": "어댑터 (Adapter)", "w": ["브리지", "데코레이터", "퍼사드"], "cat": "디자인패턴"},
-        {"q": "실제 객체에 대한 접근을 제어하기 위해 대리 객체를 제공하는 구조 패턴은?", "a": "프록시 (Proxy)", "w": ["컴포지트", "플라이웨이트", "중재자"], "cat": "디자인패턴"},
-        {"q": "객체의 상태가 바뀌면 의존하는 다른 객체들에게 자동으로 알림을 보내는 행위 패턴은?", "a": "옵저버 (Observer)", "w": ["상태", "전략", "커맨드"], "cat": "디자인패턴"},
-        {"q": "컬렉션 내부 노출 없이 순차적으로 요소에 접근할 수 있게 하는 행위 패턴은?", "a": "이터레이터 (Iterator)", "w": ["방문자", "책임연쇄", "템플릿 메서드"], "cat": "디자인패턴"},
-        {"q": "복잡한 서브 시스템들에 대한 단순화된 인터페이스를 제공하는 구조 패턴은?", "a": "퍼사드 (Facade)", "w": ["데코레이터", "브리지", "어댑터"], "cat": "디자인패턴"},
-        {"q": "모듈 내의 모든 기능이 단 하나의 목적을 위해 수행되는 가장 이상적인 응집도는?", "a": "기능적 응집도", "w": ["순차적 응집도", "시간적 응집도", "우연적 응집도"], "cat": "소프트웨어공학"},
-        {"q": "확장에는 열려 있어야 하고, 수정에 대해서는 닫혀 있어야 한다는 SOLID 원칙은?", "a": "OCP (개방-폐쇄 원칙)", "w": ["SRP (단일 책임)", "LSP (리스코프 치환)", "DIP (의존성 역전)"], "cat": "소프트웨어공학"},
-        {"q": "전체-부분 관계에서 부분 객체가 전체 객체와 생명주기를 함께하는 강한 소유 관계(◆)는?", "a": "복합 (Composition)", "w": ["집합 (Aggregation)", "연관 (Association)", "의존 (Dependency)"], "cat": "소프트웨어공학"},
-        {"q": "럼바우 방법론에서 자료흐름도(DFD)를 산출물로 내는 모델링 단계는?", "a": "기능 모델링", "w": ["객체 모델링", "동적 모델링", "상태 모델링"], "cat": "소프트웨어공학"},
-
-        # --- 보안 ---
-        {"q": "출발지 IP와 목적지 IP를 동일하게 위조하여 시스템이 자기 자신에게 응답하게 만드는 DoS 공격은?", "a": "랜드 어택 (LAND Attack)", "w": ["스머프 어택", "티어드롭", "SYN 플러딩"], "cat": "보안"},
-        {"q": "ICMP Echo 요청 패킷을 브로드캐스트로 전송하여 엄청난 양의 응답이 피해자에게 집중되게 하는 공격은?", "a": "스머프 (Smurf) 공격", "w": ["핑 오브 데스", "눈물 방울", "HTTP GET 플러딩"], "cat": "보안"},
-        {"q": "TCP 3-way handshake를 완료하지 않고 SYN 패킷만 대량으로 보내 서버 자원을 고갈시키는 공격은?", "a": "SYN 플러딩", "w": ["UDP 플러딩", "ICMP 플러딩", "스머프"], "cat": "보안"},
-        {"q": "IP 스푸핑과 제3의 반사체(정상 서버)를 이용하여 증폭된 응답을 피해자에게 보내는 분산 공격은?", "a": "DRDoS", "w": ["DDoS", "DoS", "랜섬웨어"], "cat": "보안"},
-        {"q": "숙주 프로그램 없이 스스로 복제하며 자율적으로 전파되는 악성코드는?", "a": "웜 (Worm)", "w": ["바이러스", "트로이 목마", "스파이웨어"], "cat": "보안"},
-        {"q": "미국 NIST가 DES를 대체하기 위해 선정한 현재 대칭키 블록 암호화 표준(128비트)은?", "a": "AES", "w": ["SEED", "ARIA", "RSA"], "cat": "보안"},
-        {"q": "한국인터넷진흥원(KISA)에서 개발한 한국의 최초 대칭키 블록 암호화 표준은?", "a": "SEED", "w": ["AES", "DES", "Skipjack"], "cat": "보안"},
-        {"q": "큰 합성수의 소인수분해의 어려움을 기반으로 하는 공개키(비대칭키) 암호화 알고리즘은?", "a": "RSA", "w": ["디피-헬만", "ECC", "SHA-256"], "cat": "보안"},
-        {"q": "사용자의 '역할(Role)'에 기반하여 중앙 관리자가 접근 권한을 관리하는 통제 방식은?", "a": "RBAC", "w": ["DAC (임의적)", "MAC (강제적)", "ABAC"], "cat": "보안"},
-        {"q": "한 번만 로그인하면 별도 인증 없이 여러 시스템을 이용할 수 있게 하는 기술은?", "a": "SSO (Single Sign-On)", "w": ["OTP", "VPN", "MFA"], "cat": "보안"}
+        {"q": "제2정규형(2NF)의 조건은?", "a": "부분 함수 종속 제거", "w": ["이행 함수 종속 제거", "다치 종속 제거", "조인 종속 제거"], "cat": "데이터베이스"},
+        {"q": "OSI 7계층에서 세그먼트(Segment)를 데이터 단위로 사용하는 계층은?", "a": "전송 계층(Transport Layer)", "w": ["네트워크 계층", "세션 계층", "데이터링크 계층"], "cat": "네트워크"},
+        {"q": "스크럼(Scrum)에서 반복 개발 주기를 의미하는 용어는?", "a": "스프린트(Sprint)", "w": ["이터레이션", "릴리즈", "에픽"], "cat": "소프트웨어공학"},
+        {"q": "트랜잭션의 원자성(Atomicity)이란?", "a": "모두 실행되거나 모두 취소되어야 함", "w": ["동시 트랜잭션 간 독립성 보장", "완료 후 영구 반영", "실행 전후 무결성 유지"], "cat": "데이터베이스"},
+        {"q": "객체 생성을 서브클래스에서 결정하도록 위임하는 패턴은?", "a": "팩토리 메서드(Factory Method)", "w": ["싱글톤", "어댑터", "옵저버"], "cat": "디자인패턴"},
+        {"q": "IP 주소 192.168.1.0/24의 서브넷 마스크는?", "a": "255.255.255.0", "w": ["255.255.0.0", "255.0.0.0", "255.255.255.128"], "cat": "네트워크"},
+        {"q": "SQL LEFT OUTER JOIN의 결과로 옳은 설명은?", "a": "왼쪽 테이블 전체 + 오른쪽 매칭값(없으면 NULL)", "w": ["양쪽 매칭 행만 출력", "오른쪽 테이블 전체 포함", "매칭 안 되는 행은 제외"], "cat": "데이터베이스"},
+        {"q": "퀵 정렬(Quick Sort)의 평균 시간 복잡도는?", "a": "O(n log n)", "w": ["O(n²)", "O(n)", "O(log n)"], "cat": "알고리즘"},
+        {"q": "TCP와 UDP의 핵심 차이점은?", "a": "TCP는 연결 지향, UDP는 비연결 지향", "w": ["TCP가 더 빠름", "UDP가 신뢰성 보장", "둘 다 응용 계층 프로토콜"], "cat": "네트워크"},
+        {"q": "REST API에서 리소스 삭제 시 사용하는 HTTP 메서드는?", "a": "DELETE", "w": ["GET", "POST", "PUT"], "cat": "웹"},
+        {"q": "NoSQL의 특징으로 올바른 것은?", "a": "유연한 스키마 + 수평 확장(Scale-out) 용이", "w": ["ACID 반드시 보장", "관계형 모델 전용", "수직 확장만 가능"], "cat": "데이터베이스"},
+        {"q": "페이징(Paging) 기법의 주요 장점은?", "a": "외부 단편화 제거", "w": ["내부 단편화 제거", "메모리 접근 속도 향상", "TLB 불필요"], "cat": "운영체제"},
+        {"q": "Git에서 원격 저장소 변경사항을 로컬에 병합하는 명령어는?", "a": "git pull", "w": ["git push", "git fetch", "git clone"], "cat": "개발도구"},
+        {"q": "해시 테이블의 평균 검색 시간 복잡도는?", "a": "O(1)", "w": ["O(n)", "O(log n)", "O(n log n)"], "cat": "자료구조"},
+        {"q": "프로세스와 스레드의 차이점으로 올바른 것은?", "a": "스레드는 같은 프로세스 내 메모리를 공유", "w": ["프로세스가 더 가벼움", "스레드는 독립적인 메모리 공간 가짐", "스레드 생성 비용이 더 큼"], "cat": "운영체제"},
+        {"q": "UML 다이어그램 중 시스템 동적 행위를 표현하지 않는 것은?", "a": "클래스 다이어그램", "w": ["시퀀스 다이어그램", "상태 다이어그램", "활동 다이어그램"], "cat": "소프트웨어공학"},
+        {"q": "대칭키 암호화 방식의 특징은?", "a": "암호화·복호화에 동일한 키 사용, 처리 속도 빠름", "w": ["공개키·개인키 쌍 사용", "키 분배가 안전함", "전자서명에 주로 사용"], "cat": "보안"},
+        {"q": "Python에서 GIL(Global Interpreter Lock)의 영향은?", "a": "멀티스레드 환경에서 CPU 병렬 실행이 제한됨", "w": ["메모리 누수 방지", "비동기 I/O 불가", "멀티프로세스 제한"], "cat": "프로그래밍"},
     ]
 
-    # 문제 초기화 (세션 상태 유지)
     if 'cbt_q' not in st.session_state:
         q = random.choice(QUESTION_POOL)
         opts = q['w'] + [q['a']]
         random.shuffle(opts)
-        st.session_state.cbt_q = q
+        st.session_state.cbt_q    = q
         st.session_state.cbt_opts = opts
         st.session_state.cbt_answered = False
 
     q = st.session_state.cbt_q
-    
-    # 카테고리 아이콘 설정
-    cats = {"데이터베이스": "🗄️", "네트워크": "🌐", "소프트웨어공학": "⚙️", "알고리즘": "🔢", "자료구조": "📚", "운영체제": "🖥️", "디자인패턴": "🎨", "웹": "🌍", "개발도구": "🛠️", "보안": "🔒", "프로그래밍": "💻"}
+    cats = {"데이터베이스": "🗄️", "네트워크": "🌐", "소프트웨어공학": "⚙️",
+            "알고리즘": "🔢", "자료구조": "📚", "운영체제": "🖥️",
+            "디자인패턴": "🎨", "웹": "🌍", "개발도구": "🛠️", "보안": "🔒", "프로그래밍": "💻"}
     cat_icon = cats.get(q.get('cat', ''), "📝")
 
-    st.markdown(f"<div style='color:#00E5FF; font-size:0.9rem; font-weight:bold; margin-bottom:8px;'>{cat_icon} {q.get('cat','기타')} 파트</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='card' style='background:#111; padding:25px; border-left:5px solid #FFD600; font-size:1.1rem; line-height:1.6;'><b>Q.</b> {q['q']}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#888;font-size:0.8rem;margin-bottom:8px;'>{cat_icon} {q.get('cat','기타')} 분야</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='question-box'><b>Q.</b> {q['q']}</div>", unsafe_allow_html=True)
     st.write("")
 
-    # 퀴즈 입력 폼
     with st.form("cbt_form"):
         answer = st.radio("정답을 선택하세요:", st.session_state.cbt_opts, key="cbt_radio")
-        st.write("")
         c1, c2, c3 = st.columns([1, 2, 1])
         with c2:
-            submitted = st.form_submit_button("✅ 답안 제출", use_container_width=True)
-            
-     if submitted:
-        if answer == q['a']:
-            st.success("🎉 정답입니다! 훌륭합니다! (₩500,000 획득)")
-            st.session_state.global_cash += 500_000
-            st.balloons()
-        else:
-            st.error(f"❌ 오답입니다. 정답은 [{q['a']}] 입니다.")
-        
-        # 문제 초기화 및 저장
-        del st.session_state.cbt_q
-        del st.session_state.cbt_opts
-        sync_user_data()
-        
-        # 🚨 에러 및 화면 깜빡임 방지 로직
-        if menu == "💻 정처기 CBT":
-            time.sleep(2.5)
-            st.rerun()
+            submitted = st.form_submit_button("✅ 제출", use_container_width=True)
+        if submitted:
+            if answer == q['a']:
+                st.success("🎉 정답입니다! 훌륭합니다!")
+                st.session_state.global_cash += 500_000
+                st.balloons()
+                st.info("💰 보상: +₩500,000")
+            else:
+                st.error(f"❌ 오답! 정답: {q['a']}")
+            del st.session_state.cbt_q, st.session_state.cbt_opts
+            sync_user_data()
+            time.sleep(2.5); st.rerun()
 
-# 문제 넘기기 버튼
-if st.button("🔄 다른 문제 풀기", use_container_width=True):
-    if 'cbt_q' in st.session_state: del st.session_state.cbt_q
-    if 'cbt_opts' in st.session_state: del st.session_state.cbt_opts
-    if menu == "💻 정처기 CBT":
+    if st.button("🔄 다른 문제", use_container_width=True):
+        if 'cbt_q' in st.session_state: del st.session_state.cbt_q
+        if 'cbt_opts' in st.session_state: del st.session_state.cbt_opts
         st.rerun()
+
 # ════════════════════════════════════════════════
 # 🏎️ 하이퍼카 레이싱
 # ════════════════════════════════════════════════
@@ -1434,6 +1368,7 @@ elif menu == "🏎️ 하이퍼카 레이싱":
                 st.error(f"😢 아쉽습니다. {winner}이(가) 우승했습니다.")
 
             sync_user_data(); time.sleep(3); st.rerun()
+
 # ════════════════════════════════════════════════
 # 🎰 럭키 슬롯
 # ════════════════════════════════════════════════
@@ -1517,203 +1452,4 @@ elif menu == "👑 칭호 상점":
             
             if title_id in st.session_state.inventory:
                 if st.session_state.equipped_title == title_name:
-                    st.button("✅ 장착 중", key=f"eq_{i}", disabled=True)
-                else:
-                    if st.button("🌟 장착하기", key=f"eq_{i}"):
-                        st.session_state.equipped_title = title_name
-                        sync_user_data(); st.rerun()
-            else:
-                if st.button(f"구매하기", key=f"buy_{i}"):
-                    if st.session_state.global_cash >= price:
-                        st.session_state.global_cash -= price
-                        st.session_state.inventory.append(title_id)
-                        st.session_state.equipped_title = title_name # 사면 바로 장착
-                        sync_user_data(); st.rerun()
-                    else:
-                        st.error("잔액이 부족합니다.")
-
-
-# ════════════════════════════════════════════════
-# 🏅 랭킹 & 게시판
-# ════════════════════════════════════════════════
-elif menu == "🏅 랭킹 & 게시판":
-    st.title("🏅 랭킹 & 게시판")
-
-    tab_rank, tab_board = st.tabs(["🏆 순위표", "💬 게시판"])
-
-    with tab_rank:
-        users_all = load_db(USERS_FILE, {})
-        rank_data = []
-        for uid, udata in users_all.items():
-            if uid == "5891": continue
-            w = udata.get('cash', 0) - udata.get('loan', 0)
-            for sid, p in udata.get('portfolio', {}).items():
-                if sid in market['stock_data']:
-                    w += p.get('qty', 0) * market['stock_data'][sid]['price']
-            for eid, cnt in udata.get('real_estate', {}).items():
-                if eid in estate_config:
-                    w += estate_config[eid]['price'] * cnt * 0.8
-            rank_data.append({"uid": uid, "title": udata.get('equipped_title','🌱 신규시민'), "nw": w, "cash": udata.get('cash',0)})
-        rank_data.sort(key=lambda x: x['nw'], reverse=True)
-
-        medals = ["🥇", "🥈", "🥉"] + [f"{i}위" for i in range(4, 101)]
-        for i, r in enumerate(rank_data[:20]):
-            me = "🫵" if r['uid'] == st.session_state.logged_in_user else ""
-            nw_color = "#FFD600" if i == 0 else "#C0C0C0" if i == 1 else "#CD7F32" if i == 2 else "#00E5FF"
-            st.markdown(f"""
-            <div class='card' style='display:flex;justify-content:space-between;align-items:center;padding:12px 18px;margin:4px 0;'>
-                <span style='font-size:1.1rem;min-width:36px;'>{medals[i]}</span>
-                <span style='font-weight:900;color:#E8E8F0;flex:1;margin:0 10px;'>{r['uid']} {me}</span>
-                <span style='color:#888;font-size:0.82rem;flex:1;'>{r['title']}</span>
-                <span style='font-weight:900;color:{nw_color};'>₩{r['nw']:,.0f}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-    with tab_board:
-        msg = st.text_input("메시지 작성", placeholder="랭커 게시판에 글을 남겨보세요!")
-        if st.button("📝 등록", use_container_width=True):
-            if msg.strip():
-                comments = load_db(COMMENTS_FILE, [])
-                comments.append({
-                    "name": st.session_state.logged_in_user,
-                    "title": st.session_state.equipped_title,
-                    "comment": msg.strip(),
-                    "time": datetime.now().strftime("%m/%d %H:%M")
-                })
-                save_db(COMMENTS_FILE, comments)
-                st.rerun()
-
-        st.write("")
-        all_c = load_db(COMMENTS_FILE, [])
-        for c in reversed(all_c[-50:]):
-            t_color = "#FFD600"
-            st.markdown(f"""
-            <div class='card' style='margin:6px 0;padding:12px 16px;'>
-                <div style='display:flex;justify-content:space-between;margin-bottom:6px;'>
-                    <span><b style='color:#00E5FF;'>{c['name']}</b> <span style='color:{t_color};font-size:0.82rem;'>{c.get('title','')}</span></span>
-                    <span style='color:#555;font-size:0.78rem;'>{c.get('time','')}</span>
-                </div>
-                <div style='color:#ddd;font-size:0.92rem;'>{c['comment']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-# ════════════════════════════════════════════════
-# 🛠️ 창조주 통제소
-# ════════════════════════════════════════════════
-elif menu == "🛠️ 창조주 통제소":
-    st.title("🛠️ 창조주 통제소")
-    st.markdown("<div style='color:#FF4B4B;font-size:0.85rem;'>⚠️ 창조주 전용 패널입니다. 신중하게 사용하세요.</div>", unsafe_allow_html=True)
-
-    t1, t2, t3, t4 = st.tabs(["👤 유저 조작", "📈 시장 조작", "📢 공지 & 이벤트", "📊 전체 현황"])
-
-    with t1:
-        u_db = load_db(USERS_FILE, {})
-        uid_list = [u for u in u_db.keys() if u != "5891"]
-        if uid_list:
-            sel_u = st.selectbox("유저 선택", uid_list)
-            u_data = u_db[sel_u]
-            c1, c2 = st.columns(2)
-            with c1:
-                new_cash = st.number_input("현금 설정", value=int(u_data['cash']), step=1_000_000)
-                new_loan = st.number_input("대출 설정", value=int(u_data.get('loan', 0)), step=1_000_000)
-            with c2:
-                new_title = st.text_input("칭호 설정", value=u_data.get('equipped_title',''))
-                st.metric("현재 현금", f"₩{u_data['cash']:,}")
-                st.metric("현재 대출", f"₩{u_data.get('loan',0):,}")
-
-            if st.button("⚡ 조작 실행", use_container_width=True):
-                u_db[sel_u]['cash'] = new_cash
-                u_db[sel_u]['loan'] = new_loan
-                u_db[sel_u]['equipped_title'] = new_title
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 데이터 수정 완료!")
-
-            st.write("---")
-            if st.button("🗑️ 유저 삭제 (주의!)", use_container_width=True, type="secondary"):
-                del u_db[sel_u]
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 삭제 완료!")
-                st.rerun()
-        else:
-            st.info("등록된 유저가 없습니다.")
-
-    with t2:
-        st.markdown("### 📈 종목별 가격 조작")
-        for s in stock_config:
-            c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
-            c1.write(f"{s['icon']} {s['name']}")
-            c2.write(f"현재: ₩{market['stock_data'][s['id']]['price']:,}")
-            if c3.button("🚀 +50%", key=f"up_{s['id']}"):
-                market['stock_data'][s['id']]['price'] = int(market['stock_data'][s['id']]['price'] * 1.5)
-                market['news'] = f"🚀 [시장조작] {s['name']} 급등!"
-                save_market(market); st.rerun()
-            if c4.button("📉 -30%", key=f"dn_{s['id']}"):
-                market['stock_data'][s['id']]['price'] = int(market['stock_data'][s['id']]['price'] * 0.7)
-                market['news'] = f"💣 [시장조작] {s['name']} 폭락!"
-                save_market(market); st.rerun()
-
-        st.write("---")
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("🔥 전종목 +50% 폭등", use_container_width=True):
-                for s in stock_config:
-                    market['stock_data'][s['id']]['price'] = int(market['stock_data'][s['id']]['price'] * 1.5)
-                market['news'] = "🔥 [창조주의 축복] 전 종목 폭등!!!"
-                save_market(market); st.rerun()
-        with c2:
-            if st.button("💣 전종목 -40% 폭락", use_container_width=True):
-                for s in stock_config:
-                    market['stock_data'][s['id']]['price'] = max(1000, int(market['stock_data'][s['id']]['price'] * 0.6))
-                market['news'] = "💣 [창조주의 심판] 전 종목 폭락!!!"
-                save_market(market); st.rerun()
-
-        st.write("---")
-        new_lotto = st.number_input("로또 잭팟 설정", value=market['lotto_pool'], step=1_000_000_000)
-        if st.button("💰 로또 잭팟 변경"):
-            market['lotto_pool'] = new_lotto; save_market(market); st.success("완료!")
-
-    with t3:
-        st.markdown("### 📢 공지사항")
-        msg_text = st.text_area("공지 내용", value=market.get('admin_msg', ''), height=100)
-        msg_color = st.color_picker("텍스트 색상", value=market.get('admin_color', '#FF4B4B'))
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("📣 공지 발령", use_container_width=True):
-                market['admin_msg'] = msg_text; market['admin_color'] = msg_color; save_market(market); st.success("공지 발령 완료!")
-        with c2:
-            if st.button("🗑️ 공지 삭제", use_container_width=True):
-                market['admin_msg'] = ""; save_market(market); st.success("공지 삭제 완료!")
-
-        st.write("---")
-        st.markdown("### 🎭 특별 이벤트")
-        ev_name = st.text_input("이벤트 이름", placeholder="예: 황금의 시간 🌟")
-        ev_target = st.selectbox("대상 종목", [f"{s['icon']} {s['name']}" for s in stock_config])
-        ev_mult = st.slider("변동 배율 (1.0 = 정상)", min_value=0.5, max_value=5.0, value=2.0, step=0.5)
-        if st.button("🎭 이벤트 발동", use_container_width=True):
-            ev_sid = next(s['id'] for s in stock_config if f"{s['icon']} {s['name']}" == ev_target)
-            market['event_active'] = True
-            market['event_name'] = ev_name
-            market['event_target'] = ev_sid
-            market['event_multiplier'] = ev_mult
-            market['news'] = f"🎭 [이벤트] {ev_name} 시작! {ev_target} 변동성 {ev_mult}배 증가!"
-            save_market(market); st.success("이벤트 발동!")
-
-        if st.button("⏹️ 이벤트 종료"):
-            market['event_active'] = False; save_market(market); st.success("이벤트 종료!")
-
-    with t4:
-        st.markdown("### 📊 전체 유저 현황")
-        u_db = load_db(USERS_FILE, {})
-        rows = []
-        for uid, ud in u_db.items():
-            if uid == "5891": continue
-            rows.append({"ID": uid, "칭호": ud.get('equipped_title',''), "현금": f"₩{ud.get('cash',0):,}", "대출": f"₩{ud.get('loan',0):,}"})
-        if rows:
-            st.table(pd.DataFrame(rows))
-        else:
-            st.info("등록된 유저 없음")
-
-        st.write("---")
-        st.markdown("### 💬 게시판 관리")
-        if st.button("🗑️ 게시판 전체 삭제"):
-            save_db(COMMENTS_FILE, []); st.success("게시판 초기화 완료!")
+                    st.b
