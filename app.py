@@ -1347,7 +1347,7 @@ elif menu == "💻 정처기 CBT":
         with c2:
             submitted = st.form_submit_button("✅ 답안 제출", use_container_width=True)
             
-        if submitted:
+     if submitted:
             if answer == q['a']:
                 st.success("🎉 정답입니다! 훌륭합니다! (₩500,000 획득)")
                 st.session_state.global_cash += 500_000
@@ -1360,18 +1360,78 @@ elif menu == "💻 정처기 CBT":
             del st.session_state.cbt_opts
             sync_user_data()
             
-            # 🚨 렌더링 꼬임 및 화면 깜빡임 방지 로직 (핵심)
-            if st.session_state.current_page == menu:
+            # ❌ [기존 코드] 에러 나는 부분
+            # if st.session_state.current_page == menu:
+            #     time.sleep(2.5)
+            #     st.rerun()
+
+            # ✅ [수정할 코드] 이렇게 바꾸세요!
+            if menu == "💻 정처기 CBT":
                 time.sleep(2.5)
                 st.rerun()
+# ════════════════════════════════════════════════
+# 🏎️ 하이퍼카 레이싱
+# ════════════════════════════════════════════════
+elif menu == "🏎️ 하이퍼카 레이싱":
+    st.title("🏎️ 하이퍼카 레이싱")
+    st.caption("배당률이 높을수록 우승 확률은 낮지만 당첨 시 고수익!")
 
-    # 문제 넘기기 버튼
-    if st.button("🔄 다른 문제 풀기", use_container_width=True):
-        if 'cbt_q' in st.session_state: del st.session_state.cbt_q
-        if 'cbt_opts' in st.session_state: del st.session_state.cbt_opts
-        if st.session_state.current_page == menu:
-            st.rerun()
+    CARS = [
+        {"name": "부가티 시론 SS",    "emoji": "🏎️", "odds": 20.0, "spd": (2, 7),  "color": "#FF0066"},
+        {"name": "람보르기니 레부엘토","emoji": "🐂", "odds": 12.0, "spd": (3, 10), "color": "#FF6600"},
+        {"name": "페라리 SF90 XX",    "emoji": "🐎", "odds": 8.0,  "spd": (4, 12), "color": "#FF2200"},
+        {"name": "맥라렌 P1 GTR",     "emoji": "🚀", "odds": 6.0,  "spd": (5, 13), "color": "#FF9900"},
+        {"name": "포르쉐 918 스파이더","emoji": "⚡", "odds": 4.0,  "spd": (6, 15), "color": "#FFCC00"},
+        {"name": "테슬라 로드스터 2",  "emoji": "⚡", "odds": 2.5,  "spd": (8, 17), "color": "#00FF88"},
+        {"name": "토요타 GR010 하이브","emoji": "🏁", "odds": 1.8,  "spd": (10, 20),"color": "#00CCFF"},
+    ]
 
+    car_names = [f"{c['emoji']} {c['name']} ({c['odds']}배)" for c in CARS]
+    sel_idx   = st.selectbox("차량 선택", range(len(CARS)), format_func=lambda i: car_names[i])
+    my_car    = CARS[sel_idx]
+    bet_amt   = st.number_input("베팅 금액 (원)", min_value=10_000, step=10_000, value=100_000)
+    st.caption(f"우승 시 예상 수령액: ₩{int(bet_amt * my_car['odds']):,}")
+
+    if st.button("🏁 레이스 시작!", use_container_width=True):
+        if st.session_state.global_cash < bet_amt:
+            st.error("잔액 부족!")
+        else:
+            st.session_state.global_cash -= bet_amt
+
+            positions = {c['name']: 0.0 for c in CARS}
+            winner    = None
+            bars      = {}
+            st.markdown("### 🏁 레이스 진행")
+            for c in CARS:
+                bars[c['name']] = st.progress(0, text=f"{c['emoji']} {c['name']}")
+
+            lap = 0
+            while winner is None:
+                time.sleep(0.12)
+                lap += 1
+                for c in CARS:
+                    move = random.randint(c['spd'][0], c['spd'][1])
+                    positions[c['name']] = min(100, positions[c['name']] + move)
+                    pct  = positions[c['name']] / 100
+                    rank = sorted(positions.items(), key=lambda x: x[1], reverse=True)
+                    pos_num = next(i+1 for i, (n, _) in enumerate(rank) if n == c['name'])
+                    bars[c['name']].progress(pct, text=f"{c['emoji']} {c['name']}  {pos_num}위 | {positions[c['name']]:.0f}%")
+                    if positions[c['name']] >= 100 and winner is None:
+                        winner = c['name']
+
+            st.write("---")
+            winner_car = next(c for c in CARS if c['name'] == winner)
+            st.markdown(f"<div style='text-align:center;font-family:Orbitron,monospace;font-size:1.8rem;color:{winner_car['color']};font-weight:900;padding:20px;'>🏆 {winner_car['emoji']} {winner} 우승!</div>", unsafe_allow_html=True)
+
+            if winner == my_car['name']:
+                prize = int(bet_amt * my_car['odds'])
+                st.session_state.global_cash += prize
+                st.success(f"🎉 베팅 성공! +₩{prize:,}")
+                st.balloons()
+            else:
+                st.error(f"😢 아쉽습니다. {winner}이(가) 우승했습니다.")
+
+            sync_user_data(); time.sleep(3); st.rerun()
 # ════════════════════════════════════════════════
 # 🎰 럭키 슬롯
 # ════════════════════════════════════════════════
