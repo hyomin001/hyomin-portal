@@ -230,11 +230,10 @@ if menu == "🏠 홈 광장":
     st.markdown(f"현재 **{st.session_state.device_mode}** 모드로 접속 중입니다.")
     st.image("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200")
     
-    st.write("---")
-    st.markdown("### 👑 창조주 전용 치트키")
-    if st.button("비밀 금고에서 10억 인출하기"):
-        st.session_state.global_cash += 1000000000
-        sync_user_data(); st.success("통장에 10억이 입금되었습니다!"); st.rerun()
+    
+   
+   
+        
 
 # ==============================
 # [2] 주식
