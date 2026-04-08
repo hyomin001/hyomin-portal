@@ -1533,81 +1533,47 @@ elif menu == "🛠️ 창조주 통제소":
     t1, t2, t3, t4 = st.tabs(["👤 유저 조작", "📈 시장 조작", "📢 공지 & 이벤트", "📊 전체 현황"])
 
    with t1:
-        # ── 🧠 창조주 전용 금액 변환기 (1000억 인식용) ──
-        def parse_creator_money(text):
-            if not text: return None
-            # 공백, 콤마 제거
-            text = text.replace(',', '').replace(' ', '').strip()
-            if text.isdigit(): return int(text) # 숫자만 치면 바로 숫자로 인식
-            
-            units = {"조": 10**12, "억": 10**8, "만": 10**4}
-            total = 0
-            import re
-            # 숫자와 단위를 분리해서 추출 (예: 1000, 억)
-            matches = re.findall(r'([0-9.]+)([조억만]?)', text)
-            if not matches:
-                try: return int(float(re.sub(r'[^0-9.]', '', text)))
-                except: return None
-            for val, unit in matches:
-                total += float(val) * units.get(unit, 1)
-            return int(total)
-
-        u_db = load_db(USERS_FILE, {})
+        u_db     = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "5891"]
-        
         if uid_list:
-            sel_u = st.selectbox("조작할 유저 선택", uid_list)
+            sel_u  = st.selectbox("유저 선택", uid_list)
             u_data = u_db[sel_u]
-            
             c1, c2 = st.columns(2)
+            
+            # JS 숫자 한계 에러 방지를 위해 텍스트 입력 후 변환 방식 사용
             with c1:
-                st.markdown("##### 💰 자산 개조")
-                # 창조주님이 1000억이라고 칠 곳입니다.
-                raw_cash = st.text_input("현금 설정 (예: 1000억, 1.5조)", placeholder="기존값 유지하려면 비워두기")
-                raw_loan = st.text_input("대출 설정 (예: 5000만)", placeholder="기존값 유지하려면 비워두기")
+                # 텍스트로 입력받아 JS 숫자 제한(9000조)을 우회합니다.
+                raw_cash = st.text_input("현금 설정 (숫자만 입력)", value=str(int(u_data['cash'])))
+                raw_loan = st.text_input("대출 설정 (숫자만 입력)", value=str(int(u_data.get('loan', 0))))
                 
-                # 실시간으로 숫자로 변환
-                parsed_cash = parse_creator_money(raw_cash)
-                parsed_loan = parse_creator_money(raw_loan)
-                
-                # 입력 안 했으면 원래 유저가 가진 돈 그대로
-                final_cash = parsed_cash if parsed_cash is not None else int(u_data['cash'])
-                final_loan = parsed_loan if parsed_loan is not None else int(u_data.get('loan', 0))
-
-                # 🔍 여기가 중요! 입력하자마자 숫자가 제대로 바뀌는지 눈으로 확인하세요.
-                st.markdown(f"""
-                <div style='background:rgba(0,229,255,0.1);padding:15px;border-radius:10px;border:1px solid #00E5FF;margin-top:10px;'>
-                    <div style='color:#00E5FF;font-size:0.8rem;'>▼ 적용 예정 금액 (실시간)</div>
-                    <div style='font-size:1.1rem;margin-top:5px;'>
-                        <b>현금:</b> ₩{final_cash:,}<br>
-                        <b>대출:</b> ₩{final_loan:,}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
+                # 안전한 숫자 변환 루틴
+                try:
+                    new_cash = int(raw_cash.replace(',', '').strip())
+                    new_loan = int(raw_loan.replace(',', '').strip())
+                except ValueError:
+                    st.error("⚠️ 숫자를 올바르게 입력해주세요.")
+                    new_cash = int(u_data['cash'])
+                    new_loan = int(u_data.get('loan', 0))
+                    
             with c2:
-                st.markdown("##### 👑 신분 개조")
-                new_title = st.text_input("칭호 수정", value=u_data.get('equipped_title',''))
-                st.write("")
+                new_title = st.text_input("칭호 설정",   value=u_data.get('equipped_title',''))
                 st.metric("현재 현금", f"₩{u_data['cash']:,}")
-                st.metric("현재 대출", f"₩{u_data.get('loan', 0):,}")
-
-            if st.button("🔥 유저 데이터 강제 개조 실행", use_container_width=True):
-                u_db[sel_u]['cash'] = final_cash
-                u_db[sel_u]['loan'] = final_loan
+                st.metric("현재 대출", f"₩{u_data.get('loan',0):,}")
+            
+            if st.button("⚡ 조작 실행", use_container_width=True):
+                u_db[sel_u]['cash']           = new_cash
+                u_db[sel_u]['loan']           = new_loan
                 u_db[sel_u]['equipped_title'] = new_title
                 save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 유저의 자산이 개조되었습니다!")
-                time.sleep(1)
-                st.rerun()
+                st.success(f"✅ {sel_u} 데이터 수정 완료!")
+                st.rerun() # 수정 후 즉시 반영
 
             st.write("---")
-            if st.button("🗑️ 해당 유저 정보 소멸 (삭제)", use_container_width=True, type="secondary"):
-                del u_db[sel_u]
-                save_db(USERS_FILE, u_db)
-                st.rerun()
+            if st.button("🗑️ 유저 삭제 (주의!)", use_container_width=True, type="secondary"):
+                del u_db[sel_u]; save_db(USERS_FILE, u_db)
+                st.success(f"✅ {sel_u} 삭제 완료!"); st.rerun()
         else:
-            st.info("관리할 유저가 없습니다.")
+            st.info("등록된 유저가 없습니다.")
 
     with t2:
         st.markdown("### 📈 종목별 가격 조작")
