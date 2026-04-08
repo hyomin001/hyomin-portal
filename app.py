@@ -15,12 +15,18 @@ USERS_FILE = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
 MARKET_FILE = "market_db.json" 
 
+# 완전히 새로운 산업군으로 대개편!
 stock_config = [
-    {"id": "SAMJI", "name": "삼지전자", "vol": 0.05}, {"id": "SAMSG", "name": "삼성전자", "vol": 0.02},
-    {"id": "HYNDI", "name": "현대차", "vol": 0.025}, {"id": "NAVER", "name": "네이버", "vol": 0.03},
-    {"id": "KAON", "name": "가온브로드", "vol": 0.06}, {"id": "HFR", "name": "HFR", "vol": 0.05},
-    {"id": "GOODS", "name": "굿어스데이터", "vol": 0.04}, {"id": "RAY", "name": "레이차", "vol": 0.03},
-    {"id": "DOGE", "name": "도지코인", "vol": 0.15}, {"id": "VHDL", "name": "VHDL칩", "vol": 0.07}
+    {"id": "NDX", "name": "나스닥100 ETF", "vol": 0.04},       # 글로벌/금융
+    {"id": "HDEC", "name": "현대건설", "vol": 0.03},            # 건설/부동산
+    {"id": "MANU", "name": "맨체스터 유나이티드", "vol": 0.06}, # 스포츠/엔터
+    {"id": "CJENM", "name": "CJ ENM", "vol": 0.04},             # 미디어/영화
+    {"id": "FOOD", "name": "삼양식품", "vol": 0.03},            # F&B(식품)
+    {"id": "BIO", "name": "삼성바이오로직스", "vol": 0.05},     # 제약/바이오
+    {"id": "AERO", "name": "한화에어로스페이스", "vol": 0.06},  # 항공우주/방산
+    {"id": "RETAIL", "name": "신세계", "vol": 0.02},            # 유통/쇼핑
+    {"id": "CHEM", "name": "LG화학", "vol": 0.03},              # 화학/에너지
+    {"id": "ENTER", "name": "하이브", "vol": 0.07}              # 엔터테인먼트
 ]
 
 def load_db(file, default):
@@ -48,16 +54,27 @@ def sync_user_data():
             save_db(USERS_FILE, users)
 
 def get_market():
+    init_data = {
+        "stock_data": {s['id']: {"name": s['name'], "price": random.randint(50000, 150000), "history": [80000]} for s in stock_config},
+        "news": "새로운 산업군으로 시장이 전면 개편되었습니다!",
+        "news_time": time.time(),
+        "last_tick": time.time()
+    }
+    
     if not os.path.exists(MARKET_FILE):
-        init_data = {
-            "stock_data": {s['id']: {"name": s['name'], "price": random.randint(50000, 150000), "history": [80000]} for s in stock_config},
-            "news": "시장이 안정적으로 운영 중입니다.",
-            "news_time": time.time(),
-            "last_tick": time.time()
-        }
         save_db(MARKET_FILE, init_data)
         return init_data
-    return load_db(MARKET_FILE, {})
+        
+    data = load_db(MARKET_FILE, {})
+    
+    # [방어코드] 기존 시장 DB의 종목과 현재 코드의 종목이 다르면 시장 강제 리셋 (KeyError 원천 차단)
+    db_keys = set(data.get('stock_data', {}).keys())
+    c_keys = set([s['id'] for s in stock_config])
+    if db_keys != c_keys:
+        save_db(MARKET_FILE, init_data)
+        return init_data
+        
+    return data
 
 def save_market(data): save_db(MARKET_FILE, data)
 
@@ -73,7 +90,7 @@ def get_rankings(market_data):
     rankings.sort(key=lambda x: x['total'], reverse=True)
     return rankings
 
-st.set_page_config(page_title="HYOMIN UNIVERSE v11.0", page_icon="🌌", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE v11.1", page_icon="🌌", layout="wide")
 
 # ==============================
 # 🔐 로그인 시스템
@@ -88,7 +105,7 @@ if 'logged_in_user' not in st.session_state:
     """, unsafe_allow_html=True)
     
     st.markdown("<h1>🌌 HYOMIN UNIVERSE</h1>", unsafe_allow_html=True)
-    st.markdown("<p>칭호 상점 및 게시판 플렉스 기능이 추가되었습니다!</p>", unsafe_allow_html=True)
+    st.markdown("<p>주식 시장 산업군 대개편 업데이트 완료!</p>", unsafe_allow_html=True)
     
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
@@ -190,7 +207,7 @@ if current_time - market.get('news_time', 0) > 30:
     target = random.choice(stock_config)
     impact = random.uniform(-0.15, 0.15)
     market['stock_data'][target['id']]['price'] *= (1 + impact)
-    market['news'] = f"📰 [속보] {target['name']}, 혁신 기술 발표!" if impact > 0 else f"📰 [속보] {target['name']}, 악재 발생!"
+    market['news'] = f"📰 [속보] {target['name']}, {'어닝 서프라이즈로 주가 폭등!' if impact > 0 else '악재 발생으로 투자자 패닉!'}"
     market['news_time'] = current_time
     market_updated = True
 
@@ -230,10 +247,11 @@ if menu == "🏠 홈 광장":
     st.markdown(f"현재 **{st.session_state.device_mode}** 모드로 접속 중입니다.")
     st.image("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200")
     
-    
-   
-   
-        
+    st.write("---")
+    st.markdown("### 👑 창조주 전용 치트키")
+    if st.button("비밀 금고에서 10억 인출하기"):
+        st.session_state.global_cash += 1000000000
+        sync_user_data(); st.success("통장에 10억이 입금되었습니다!"); st.rerun()
 
 # ==============================
 # [2] 주식
@@ -265,7 +283,7 @@ elif menu == "📈 주식 트레이딩":
                 roi = ((cp - ap) / ap * 100) if ap > 0 else 0
                 p_list.append({"종목": market['stock_data'][sid]['name'], "수량": f"{qty}주", "평가액": f"₩{int(eval_amt):,}", "수익률": f"{roi:+.2f}%"})
         if p_list: st.table(pd.DataFrame(p_list))
-        else: st.info("보유 주식이 없습니다.")
+        else: st.info("새로운 산업군이 적용되었습니다. 주식을 매수해보세요!")
         st.markdown(f"💰 주식자산: ₩{total_eval:,} | 💵 현금: ₩{st.session_state.global_cash:,}")
 
     st.write("---")
@@ -404,7 +422,7 @@ elif menu == "⛏️ 채굴기":
 # ==============================
 elif menu == "👑 칭호 상점":
     st.title("👑 VIP 칭호 상점")
-    st.markdown("칭호를 구매하고 장착하여 게시판에서 부를 과시하세요!")
+    st.markdown("칭호를 구매하고 장착하여 랭커 게시판에서 간지를 뽐내세요!")
     
     cols = st.columns(2)
     for i in range(1, 101):
