@@ -88,7 +88,7 @@ def get_market():
 
 def save_market(data): save_db(MARKET_FILE, data)
 
-st.set_page_config(page_title="HYOMIN UNIVERSE v14.2", page_icon="💎", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE v14.4", page_icon="💎", layout="wide")
 
 # ==============================
 # 🔐 로그인 시스템
@@ -123,25 +123,35 @@ if 'logged_in_user' not in st.session_state:
     st.stop()
 
 # ==============================
-# 🎨 CSS (반응형)
+# 🎨 CSS (모바일 레이아웃 파괴 버그 수정본)
 # ==============================
 css_base = """
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap');
+    
+    /* 앱 배경 검정, 기본 텍스트 하양 */
     .stApp { background-color: #050505 !important; }
-    html, body, [class*="css"], .stMarkdown, p, span, li, label { font-family: 'Noto Sans KR', sans-serif !important; color: #FFFFFF !important; }
+    html, body, p, span, label, h1, h2, h3, button, input, th, td { font-family: 'Noto Sans KR', sans-serif !important; color: #FFFFFF !important; }
+    
+    /* 선택창 (입력 부분) */
     div[data-baseweb="select"] > div { background-color: #1A1C24 !important; border: 2px solid #00E5FF !important; }
-    div[data-baseweb="popover"] * { background-color: #1A1C24 !important; color: #00FF88 !important; }
+    
+    /* 선택창 (드롭다운 목록) - 모바일 버그 방지를 위해 role="listbox" 타겟팅 */
+    div[role="listbox"] { background-color: #FFFFFF !important; border: 2px solid #00E5FF !important; border-radius: 8px; }
+    div[role="listbox"] li, div[role="listbox"] span { color: #000000 !important; font-weight: 900 !important; }
+    div[role="listbox"] li:hover, div[role="listbox"] li:hover span { background-color: #00E5FF !important; color: #000000 !important; }
+    
+    /* 주식 테이블 */
     .stock-table { width: 100%; border-collapse: collapse; background-color: #111; border: 2px solid #444; }
     .stock-table th { background-color: #333; color: #FFD600 !important; text-align: center; }
     .stock-table td { border-bottom: 1px solid #333; text-align: center; }
     .p-up { color: #FF4B4B !important; font-weight: 900; }
     .p-down { color: #1F77B4 !important; font-weight: 900; }
-    .stButton>button:hover { background-color: #00E5FF !important; color: #000 !important; }
 """
 if st.session_state.device_mode == "🖥️ PC (데스크탑)":
-    st.markdown(f"<style>{css_base} * {{ font-size: 20px !important; }} h1 {{ font-size: 3rem !important; color: #00E5FF !important; text-align:center; }} h2 {{ font-size: 2.2rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }} .stButton>button {{ height: 65px !important; font-size: 22px !important; font-weight: 900 !important; border-radius: 12px; }} [data-testid='stSidebar'] {{ background-color: #001F3F !important; border-right: 4px solid #00E5FF; }}</style>", unsafe_allow_html=True)
+    st.markdown(f"<style>{css_base} p, span, label, button, input, td, th {{ font-size: 20px !important; }} h1 {{ font-size: 3rem !important; color: #00E5FF !important; text-align:center; }} h2 {{ font-size: 2.2rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }} .stButton>button {{ height: 65px !important; font-size: 22px !important; font-weight: 900 !important; border-radius: 12px; border: 2px solid #00E5FF !important; background-color: #1A1C24 !important; color: #00E5FF !important; }} .stButton>button:hover {{ background-color: #00E5FF !important; color: #000 !important; }} [data-testid='stSidebar'] {{ background-color: #001F3F !important; border-right: 4px solid #00E5FF; }}</style>", unsafe_allow_html=True)
 else:
-    st.markdown(f"<style>{css_base} * {{ font-size: 14px !important; }} h1 {{ font-size: 1.8rem !important; color: #00E5FF !important; text-align:center; }} h2 {{ font-size: 1.4rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }} .stButton>button {{ height: 50px !important; font-size: 15px !important; font-weight: 900 !important; border-radius: 8px; }}</style>", unsafe_allow_html=True)
+    # 모바일은 절대 * 선택자를 쓰면 안됨. 특정 태그들만 크기 조절.
+    st.markdown(f"<style>{css_base} p, span, label, button, input, td, th {{ font-size: 15px !important; }} h1 {{ font-size: 1.8rem !important; color: #00E5FF !important; text-align:center; }} h2 {{ font-size: 1.4rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }} .stButton>button {{ height: 50px !important; font-size: 15px !important; font-weight: 900 !important; border-radius: 8px; border: 2px solid #00E5FF !important; background-color: #1A1C24 !important; color: #00E5FF !important; }} .stButton>button:hover {{ background-color: #00E5FF !important; color: #000 !important; }}</style>", unsafe_allow_html=True)
 
 # ==============================
 # 🌐 서버 통합 동기화 로직
@@ -164,7 +174,7 @@ if cur_t - market.get('news_time', 0) > 30:
     market['news'] = f"📰 [속보] {t_nm}, {'급격한 성장세 기록!' if imp > 0 else '예기치 못한 리스크 발생!'}"
     market['news_time'] = cur_t; market['next_news_target'] = random.choice(stock_config)['id']; market['next_news_impact'] = random.uniform(-0.25, 0.25); m_up = True
 
-# [중요] 1시간마다 로또 추첨 (3600초)
+# 1시간마다 로또 추첨 (3600초)
 if cur_t - market.get('lotto_last_draw', 0) > 3600:
     if market['lotto_tickets']:
         pool = []
@@ -205,7 +215,7 @@ else:
     if st.button("로그아웃"): sync_user_data(); st.session_state.clear(); st.rerun()
 
 # ==============================
-# 💎 [VIP 라운지] - 퍼센트 숨김 패치
+# 💎 [VIP 라운지]
 # ==============================
 if menu == "💎 VIP 라운지":
     st.title("💎 VIP 시크릿 라운지")
@@ -221,12 +231,13 @@ if menu == "💎 VIP 라운지":
         if st.session_state.global_cash >= 100000000:
             st.session_state.global_cash -= 100000000
             if random.random() < 0.5: st.session_state.global_cash += 200000000; st.success("당첨! +2억")
-            else: st.error("꽝!")
+            else: st.error("꽝! 다음 기회에...")
             sync_user_data()
+            time.sleep(2); st.rerun()
         else: st.error("잔액 부족")
 
 # ==============================
-# 🏠 [홈] - 비상금 버튼 삭제 패치
+# 🏠 [홈]
 # ==============================
 elif menu == "🏠 홈 광장":
     st.title(f"반갑습니다 {st.session_state.logged_in_user}님! 🎉")
@@ -334,7 +345,7 @@ elif menu == "🏦 은행 (대출/송금)":
                 sync_user_data(); st.rerun()
 
 # ==============================
-# ⚔️ [로또] - 1시간/50억 세팅 패치
+# ⚔️ [로또]
 # ==============================
 elif menu == "⚔️ 1시간 글로벌 로또":
     st.title("⚔️ 1시간 글로벌 로또")
@@ -348,44 +359,73 @@ elif menu == "⚔️ 1시간 글로벌 로또":
     rem = int(3600 - (time.time() - market['lotto_last_draw']))
     st.info(f"⏳ 다음 추첨까지 약 {rem//60}분 {rem%60}초 남았습니다."); time.sleep(5); st.rerun()
 
-# [기타 메뉴 간소화 포함]
+# ==============================
+# 미니게임 및 커뮤니티 (모바일 버그 수정본)
+# ==============================
 elif menu == "⚽ 구단주":
     st.title("🏆 구단주 시뮬레이터")
     if st.button("경기 시작"):
         h, a = 0, 0; b = st.empty(); p = st.progress(0)
         for i in range(10):
-            if random.random()<0.1: h+=1
-            if random.random()<0.08: a+=1
-            b.markdown(f"<h1 style='text-align:center;'>{h} : {a}</h1>", unsafe_allow_html=True); p.progress((i+1)/10); time.sleep(1)
-        res = 5000000 if h>a else 1000000 if h==a else 100000; st.session_state.global_cash += res; sync_user_data(); st.success(f"+₩{res:,}")
+            if random.random()<0.3: h+=1
+            if random.random()<0.2: a+=1
+            b.markdown(f"<h1 style='text-align:center;'>{h} : {a}</h1>", unsafe_allow_html=True); p.progress((i+1)/10); time.sleep(0.5)
+        res = 5000000 if h>a else 1000000 if h==a else 100000
+        st.session_state.global_cash += res; sync_user_data(); st.success(f"종료! +₩{res:,}")
+        time.sleep(2.5); st.rerun()
 
 elif menu == "💻 CBT":
     st.title("💻 정처기 모의고사")
-    q_p = [{"q":"OSI 7계층 중 3계층은?", "a":"네트워크", "w":["물리","전송","세션"]}]
-    curr = random.choice(q_p); ans = st.radio(curr['q'], curr['w']+[curr['a']])
-    if st.button("제출"):
-        if ans == curr['a']: st.session_state.global_cash += 500000; st.success("정답!"); sync_user_data()
-        else: st.error("오답!")
+    if 'cbt_q' not in st.session_state:
+        q_p = [{"q":"OSI 7계층 중 3계층은?", "a":"네트워크", "w":["물리","전송","세션"]}, {"q":"LIFO 구조는?", "a":"스택", "w":["큐","트리","그래프"]}]
+        st.session_state.cbt_q = random.choice(q_p)
+        st.session_state.cbt_opts = st.session_state.cbt_q['w'] + [st.session_state.cbt_q['a']]
+        random.shuffle(st.session_state.cbt_opts)
+    
+    with st.form("exam"):
+        st.markdown(f"<h2 style='color:#FFD600;'>Q. {st.session_state.cbt_q['q']}</h2>", unsafe_allow_html=True)
+        ans = st.radio("정답 선택:", st.session_state.cbt_opts)
+        if st.form_submit_button("제출"):
+            if ans == st.session_state.cbt_q['a']: 
+                st.session_state.global_cash += 500000; st.success("정답! +50만")
+            else: st.error("오답!")
+            del st.session_state.cbt_q; sync_user_data(); time.sleep(1.5); st.rerun()
 
 elif menu == "🏎️ 레이싱":
     st.title("🏎️ 역배 레이싱")
     sel = st.selectbox("차량", ["레이 (15배)", "페라리 (1.5배)"])
-    amt = st.number_input("배팅액", min_value=10000); res = random.random()
+    amt = st.number_input("배팅액", min_value=10000)
     if st.button("출발"):
         if st.session_state.global_cash >= amt:
             st.session_state.global_cash -= amt
-            if (sel=="레이 (15배)" and res<0.05) or (sel=="페라리 (1.5배)" and res<0.6):
-                win = int(amt*15) if "레이" in sel else int(amt*1.5); st.session_state.global_cash += win; st.balloons()
-            sync_user_data(); st.rerun()
+            bars = [st.progress(0, text=c) for c in ["레이", "페라리"]]; pos = [0, 0]
+            while max(pos) < 100:
+                pos[0] += random.randint(5, 15); pos[1] += random.randint(5, 15)
+                bars[0].progress(min(pos[0], 100)); bars[1].progress(min(pos[1], 100))
+                time.sleep(0.1)
+            
+            win_car = "레이 (15배)" if pos[0] >= 100 else "페라리 (1.5배)"
+            if win_car == sel:
+                win = int(amt*15) if "레이" in sel else int(amt*1.5)
+                st.session_state.global_cash += win; st.success(f"승리! +₩{win:,}"); st.balloons()
+            else: st.error(f"패배... 우승차: {win_car}")
+            sync_user_data(); time.sleep(2.5); st.rerun()
 
 elif menu == "🎰 슬롯":
     st.title("🎰 럭키 슬롯")
     if st.button("1,000만 당기기"):
         if st.session_state.global_cash >= 10000000:
-            st.session_state.global_cash -= 10000000; r = [random.choice(["💎","🍒","7️⃣"]) for _ in range(3)]
-            st.markdown(f"## {' '.join(r)}"); 
-            if r[0]==r[1]==r[2]: st.session_state.global_cash += 500000000; st.success("잭팟!")
-            sync_user_data(); st.rerun()
+            st.session_state.global_cash -= 10000000
+            slot_box = st.empty()
+            for _ in range(10):
+                r = [random.choice(["💎","🍒","7️⃣"]) for _ in range(3)]
+                slot_box.markdown(f"<h1 style='text-align:center; font-size:60px;'>{' '.join(r)}</h1>", unsafe_allow_html=True)
+                time.sleep(0.1)
+            
+            if r[0]==r[1]==r[2]: st.session_state.global_cash += 500000000; st.success("🎉 잭팟! +5억"); st.balloons()
+            else: st.error("꽝! 다음 기회에...")
+            sync_user_data(); time.sleep(2); st.rerun()
+        else: st.error("잔액 부족!")
 
 elif menu == "👑 칭호 상점":
     st.title("👑 VIP 칭호 상점")
