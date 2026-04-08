@@ -565,18 +565,31 @@ if menu == "💎 VIP 라운지":
     st.write("")
     c1, c2 = st.columns(2)
     with c1:
+
         st.markdown("### 🎰 VIP 전용 슬롯 (1억, 승률 50%)")
+
         if st.button("💎 VIP 슬롯 당기기", use_container_width=True):
+
             if st.session_state.global_cash >= 100_000_000:
+
                 st.session_state.global_cash -= 100_000_000
+
                 if random.random() < 0.5:
+
                     st.session_state.global_cash += 250_000_000
+
                     st.success("🎉 승리! +2.5억 획득!")
+
                     log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 승리", 150_000_000)
+
                 else:
+
                     st.error("❌ 아쉽습니다. 다음 기회를!")
+
                     log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 패배", -100_000_000)
+
                 sync_user_data(); time.sleep(1.5); st.rerun()
+
             else: st.error("잔액 부족!")
     with c2:
         st.markdown("### 📊 VIP 포트폴리오 요약")
