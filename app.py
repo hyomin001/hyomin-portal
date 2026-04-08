@@ -251,7 +251,7 @@ else:
 # ==============================
 if menu == "🏠 홈 광장":
     st.title(f"환영합니다 {st.session_state.logged_in_user}님! 🎉")
-    st.markdown("현재 **대주주(고래) 시장 개입 시스템**이 활성화되었습니다. 10억 이상의 대규모 자금이 움직이면 전 서버에 속보가 뜨며 시장이 요동칩니다!")
+    st.markdown("현재 **대주주(고래) 시장 개입 시스템**이 활성화되었습니다. 100억 이상의 대규모 자금이 움직이면 전 서버에 속보가 뜨며 시장이 요동칩니다!")
     st.image("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200")
     
 
@@ -315,8 +315,8 @@ elif menu == "📈 주식 트레이딩":
                 st.session_state.portfolio[sid] = {'qty': new_q, 'avg_price': new_a}
                 sync_user_data()
                 
-                # 🐋 대주주(고래) 매수 로직: 10억 이상 매수 시 주가 폭등
-                if buy_amt >= 1000000000:
+                # 🐋 대주주(고래) 매수 로직: 100억 이상 매수 시 주가 폭등
+                if buy_amt >= 10000000000:
                     # 1000억당 10% 상승, 최대 50%까지 제한
                     impact = min((buy_amt / 100000000000) * 0.1, 0.5) 
                     market['stock_data'][sid]['price'] = int(cp * (1 + impact))
@@ -333,8 +333,8 @@ elif menu == "📈 주식 트레이딩":
                 st.session_state.portfolio[sid] = {'qty': 0, 'avg_price': 0}
                 sync_user_data()
                 
-                # 🐋 대주주(고래) 매도 로직: 10억 이상 매도 시 주가 폭락
-                if sell_amt >= 1000000000:
+                # 🐋 대주주(고래) 매도 로직: 50억 이상 매도 시 주가 폭락
+                if sell_amt >= 5000000000:
                     impact = min((sell_amt / 100000000000) * 0.1, 0.5)
                     market['stock_data'][sid]['price'] = max(1000, int(cp * (1 - impact)))
                     market['news'] = f"📉 [패닉 셀] 대주주 {st.session_state.logged_in_user}님이 {sel_name} ₩{sell_amt//100000000:,}억 물량 투하!! 주가 폭락!"
