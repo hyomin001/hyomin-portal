@@ -41,113 +41,119 @@ def sync_user_data():
 def get_rankings():
     users = load_db(USERS_FILE, {})
     rankings = []
-    if 'stock_data' in st.session_state:
-        prices = {k: v['price'] for k, v in st.session_state.stock_data.items()}
-        for uid, data in users.items():
-            wealth = data.get('cash', 0)
-            portfolio = data.get('portfolio', {})
-            for sid, p_data in portfolio.items():
-                if sid in prices: wealth += p_data.get('qty', 0) * prices[sid]
-            rankings.append({"uid": uid, "total": wealth})
+    prices = {k: v['price'] for k, v in st.session_state.get('stock_data', {}).items()} if 'stock_data' in st.session_state else {}
+    for uid, data in users.items():
+        wealth = data.get('cash', 0)
+        for sid, p_data in data.get('portfolio', {}).items():
+            if sid in prices: wealth += p_data.get('qty', 0) * prices[sid]
+        rankings.append({"uid": uid, "total": wealth})
     rankings.sort(key=lambda x: x['total'], reverse=True)
     return rankings
 
-# ==============================
-# 📱 모바일 최적화 + 가독성 CSS
-# ==============================
-st.set_page_config(page_title="HYOMIN UNIVERSE v9.1", page_icon="🌌", layout="wide")
-
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap');
-    
-    /* 1. 기본 배경 및 텍스트 (PC 기준) */
-    .stApp { background-color: #050505 !important; }
-    html, body, [class*="css"], .stMarkdown, p, span, li, label {
-        font-family: 'Noto Sans KR', sans-serif !important;
-        color: #FFFFFF !important; font-weight: 700 !important;
-    }
-    
-    /* 입력창 및 셀렉트박스 공통 (눈에 띄게) */
-    div[data-baseweb="select"] > div { background-color: #1A1C24 !important; border: 2px solid #00E5FF !important; }
-    div[data-baseweb="select"] * { color: #FFFFFF !important; font-weight: 900 !important; }
-    div[data-baseweb="popover"] * { background-color: #1A1C24 !important; color: #00FF88 !important; font-weight: 900 !important; }
-    .stNumberInput input { background-color: #222 !important; color: #00FF88 !important; }
-    
-    /* 버튼 스타일 공통 */
-    .stButton>button { border: 3px solid #00E5FF !important; background-color: #1A1C24 !important; color: #00E5FF !important; font-weight: 900 !important; border-radius: 12px; width: 100%; }
-    .stButton>button:hover { background-color: #00E5FF !important; color: #000 !important; }
-    
-    /* 주식 테이블 공통 */
-    .stock-table { width: 100%; border-collapse: collapse; background-color: #111; border: 2px solid #444; }
-    .stock-table th { background-color: #333; color: #FFD600 !important; text-align: center; }
-    .stock-table td { border-bottom: 1px solid #333; text-align: center; }
-    .p-up { color: #FF4B4B !important; font-weight: 900; }
-    .p-down { color: #1F77B4 !important; font-weight: 900; }
-    
-    /* 슬롯머신 텍스트 클래스 */
-    .slot-text { text-align: center; font-weight: 900; margin: 0; padding: 10px; }
-
-    /* ========================================================= */
-    /* 🖥️ PC 환경 글씨 크기 (화면 폭 769px 이상) */
-    /* ========================================================= */
-    @media screen and (min-width: 769px) {
-        html, body, [class*="css"], .stMarkdown, p, span, li, label { font-size: 22px !important; }
-        h1 { font-size: 4rem !important; color: #00E5FF !important; text-align: center; }
-        h2 { font-size: 2.8rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }
-        div[data-baseweb="select"] * { font-size: 22px !important; }
-        .stNumberInput input { font-size: 24px !important; }
-        .stButton>button { height: 70px !important; font-size: 24px !important; }
-        .stock-table th, .stock-table td { padding: 15px; font-size: 22px !important; }
-        .slot-text { font-size: 120px !important; }
-    }
-
-    /* ========================================================= */
-    /* 📱 모바일 환경 글씨 크기 자동 축소 (화면 폭 768px 이하) */
-    /* ========================================================= */
-    @media screen and (max-width: 768px) {
-        html, body, [class*="css"], .stMarkdown, p, span, li, label { font-size: 16px !important; }
-        h1 { font-size: 2.2rem !important; color: #00E5FF !important; text-align: center; }
-        h2 { font-size: 1.8rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; margin-bottom: 15px; }
-        div[data-baseweb="select"] * { font-size: 16px !important; }
-        .stNumberInput input { font-size: 18px !important; }
-        .stButton>button { height: 55px !important; font-size: 18px !important; border-width: 2px !important;}
-        .stock-table th, .stock-table td { padding: 8px; font-size: 14px !important; }
-        .slot-text { font-size: 60px !important; }
-    }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="HYOMIN UNIVERSE v10.0", page_icon="🌌", layout="wide")
 
 # ==============================
-# 🔐 로그인 시스템
+# 🔐 로그인 시스템 (기기 환경 선택 추가)
 # ==============================
 if 'logged_in_user' not in st.session_state:
+    st.markdown("""
+    <style>
+        .stApp { background-color: #050505 !important; color: white !important; }
+        h1 { text-align: center; color: #00E5FF !important; font-weight: 900 !important; font-size: 4rem !important; }
+        p { text-align: center; font-size: 20px !important; color: #FFF !important; }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.markdown("<h1>🌌 HYOMIN UNIVERSE</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;'>모바일 최적화 및 정처기 CBT 하드코어 패치 완료!</p>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns([1, 10, 1])
+    st.markdown("<p>최적의 해상도를 위해 접속하시는 기기 환경을 선택해 주세요.</p>", unsafe_allow_html=True)
+    
+    c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
-        tab_log = st.tabs(["🔑 로그인", "📝 시민등록"])
-        with tab_log[0]:
+        # 기기 선택 라디오 버튼
+        device_mode = st.radio("💻 접속 환경 선택", ["🖥️ PC (데스크탑/태블릿)", "📱 모바일 (스마트폰)"], horizontal=True)
+        st.write("---")
+        
+        choice = st.tabs(["🔑 로그인", "📝 시민등록"])
+        with choice[0]:
             l_id = st.text_input("아이디")
             l_pw = st.text_input("비밀번호", type="password")
-            if st.button("유니버스 입장"):
+            if st.button("유니버스 입장", use_container_width=True):
                 users = load_db(USERS_FILE, {})
                 if l_id in users and users[l_id]['pw'] == l_pw:
                     st.session_state.update({
-                        'logged_in_user': l_id, 'global_cash': users[l_id]['cash'],
-                        'inventory': users[l_id]['inventory'], 'equipped_title': users[l_id]['equipped_title'],
-                        'portfolio': users[l_id].get('portfolio', {})
+                        'logged_in_user': l_id, 'global_cash': users[l_id]['cash'], 'inventory': users[l_id]['inventory'],
+                        'equipped_title': users[l_id]['equipped_title'], 'portfolio': users[l_id].get('portfolio', {}),
+                        'device_mode': device_mode # 선택한 기기 환경 저장
                     }); st.rerun()
                 else: st.error("정보 불일치")
-        with tab_log[1]:
-            n_id, n_pw = st.text_input("새 아이디"), st.text_input("새 비밀번호", type="password")
-            if st.button("시민 등록"):
+        with choice[1]:
+            n_id = st.text_input("새 아이디")
+            n_pw = st.text_input("새 비밀번호", type="password")
+            if st.button("시민 등록", use_container_width=True):
                 users = load_db(USERS_FILE, {})
                 if n_id in users: st.error("중복된 이름입니다.")
                 else:
                     users[n_id] = {"pw": n_pw, "cash": 100000000, "inventory": [], "equipped_title": "신규시민", "portfolio": {}}
                     save_db(USERS_FILE, users); st.success("가입 성공! 로그인하세요.")
     st.stop()
+
+# ==============================
+# 🎨 동적 CSS 적용 (PC vs Mobile)
+# ==============================
+if st.session_state.device_mode == "🖥️ PC (데스크탑/태블릿)":
+    # PC 전용 CSS (크고 굵고 시원하게)
+    st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap');
+        .stApp { background-color: #050505 !important; }
+        html, body, [class*="css"], .stMarkdown, p, span, li, label { font-family: 'Noto Sans KR', sans-serif !important; color: #FFFFFF !important; font-size: 24px !important; font-weight: 700 !important; }
+        div[data-baseweb="select"] > div { background-color: #1A1C24 !important; border: 2px solid #00E5FF !important; }
+        div[data-baseweb="select"] * { color: #FFFFFF !important; font-size: 24px !important; font-weight: 900 !important; }
+        div[data-baseweb="popover"] * { background-color: #1A1C24 !important; color: #00FF88 !important; font-size: 22px !important; }
+        .stNumberInput input { background-color: #222 !important; color: #00FF88 !important; font-size: 26px !important; }
+        
+        /* PC 사이드바 강조 */
+        [data-testid="stSidebar"] { background-color: #001F3F !important; border-right: 4px solid #00E5FF; }
+        div[data-testid="stSidebarNav"] span, .stRadio label p { color: #FFD600 !important; font-size: 26px !important; font-weight: 900 !important; }
+        
+        .stock-table { width: 100%; border-collapse: collapse; background-color: #111; border: 3px solid #444; }
+        .stock-table th { background-color: #333; color: #FFD600 !important; font-size: 28px !important; padding: 15px; text-align: center; }
+        .stock-table td { font-size: 26px !important; padding: 15px; border-bottom: 2px solid #333; text-align: center; }
+        .p-up { color: #FF4B4B !important; font-weight: 900; }
+        .p-down { color: #1F77B4 !important; font-weight: 900; }
+        
+        h1 { font-size: 4.5rem !important; color: #00E5FF !important; font-weight: 900 !important; text-align: center; }
+        h2 { font-size: 3rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }
+        .stButton>button { height: 80px !important; border: 4px solid #00E5FF !important; background-color: #1A1C24 !important; color: #00E5FF !important; font-size: 28px !important; font-weight: 900 !important; border-radius: 15px; width: 100%; }
+        .stButton>button:hover { background-color: #00E5FF !important; color: #000 !important; }
+        .slot-text { text-align: center; font-weight: 900; font-size: 150px !important; margin: 0; padding: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    # 모바일 전용 CSS (컴팩트하게)
+    st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap');
+        .stApp { background-color: #050505 !important; }
+        html, body, [class*="css"], .stMarkdown, p, span, li, label { font-family: 'Noto Sans KR', sans-serif !important; color: #FFFFFF !important; font-size: 16px !important; font-weight: 700 !important; }
+        div[data-baseweb="select"] > div { background-color: #1A1C24 !important; border: 2px solid #00E5FF !important; }
+        div[data-baseweb="select"] * { color: #FFFFFF !important; font-size: 16px !important; font-weight: 900 !important; }
+        div[data-baseweb="popover"] * { background-color: #1A1C24 !important; color: #00FF88 !important; font-size: 16px !important; }
+        .stNumberInput input { background-color: #222 !important; color: #00FF88 !important; font-size: 18px !important; }
+        
+        .stock-table { width: 100%; border-collapse: collapse; background-color: #111; border: 2px solid #444; }
+        .stock-table th { background-color: #333; color: #FFD600 !important; font-size: 14px !important; padding: 8px; text-align: center; }
+        .stock-table td { font-size: 14px !important; padding: 8px; border-bottom: 1px solid #333; text-align: center; }
+        .p-up { color: #FF4B4B !important; font-weight: 900; }
+        .p-down { color: #1F77B4 !important; font-weight: 900; }
+        
+        h1 { font-size: 2.2rem !important; color: #00E5FF !important; font-weight: 900 !important; text-align: center; }
+        h2 { font-size: 1.8rem !important; color: #00FF88 !important; border-bottom: 2px solid #00FF88; }
+        .stButton>button { height: 55px !important; border: 2px solid #00E5FF !important; background-color: #1A1C24 !important; color: #00E5FF !important; font-size: 18px !important; font-weight: 900 !important; border-radius: 12px; width: 100%; }
+        .stButton>button:hover { background-color: #00E5FF !important; color: #000 !important; }
+        .slot-text { text-align: center; font-weight: 900; font-size: 60px !important; margin: 0; padding: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
 
 # ==============================
 # 📈 주식 데이터 엔진
@@ -168,28 +174,40 @@ if 'news_time' not in st.session_state: st.session_state.news_time = time.time()
 if 'last_tick' not in st.session_state: st.session_state.last_tick = time.time()
 
 # ==============================
-# 📱 모바일 친화적 최상단 메뉴 
+# 🧭 메뉴 분기 (PC vs Mobile)
 # ==============================
-st.markdown(f"<div style='text-align:right; color:#FFD600;'>👤 <b>{st.session_state.logged_in_user}</b>님 | 💰 <b>₩{st.session_state.global_cash:,}</b></div>", unsafe_allow_html=True)
-menu = st.selectbox("📌 이동할 메뉴를 선택하세요", 
-                    ["🏠 홈 광장", "📈 주식 트레이딩", "⚽ 구단주 매니저", "📡 통신 업무", "💻 CBT 모의고사", "🏎️ 레이싱", "🎰 슬롯머신", "⛏️ 채굴기", "🛒 슈퍼 상점", "💬 게시판"])
+menu_options = ["🏠 홈 광장", "📈 주식 트레이딩", "⚽ 구단주 매니저", "📡 통신 업무", "💻 CBT 모의고사", "🏎️ 레이싱", "🎰 슬롯머신", "⛏️ 채굴기", "🛒 슈퍼 상점", "💬 게시판"]
 
-with st.expander("🏆 실시간 부자 랭킹 보기"):
-    for i, r in enumerate(get_rankings()[:5]):
-        medal = ["🥇", "🥈", "🥉"][i] if i < 3 else "🏅"
-        st.write(f"{medal} **{r['uid']}**: ₩{r['total']:,.0f}")
-    if st.button("🔴 로그아웃"):
-        sync_user_data(); st.session_state.clear(); st.rerun()
-
-st.markdown("---")
+if st.session_state.device_mode == "🖥️ PC (데스크탑/태블릿)":
+    with st.sidebar:
+        st.markdown(f"### 👤 {st.session_state.logged_in_user}님")
+        st.markdown(f"**칭호**: `{st.session_state.equipped_title}`")
+        st.metric("💰 보유 자산", f"₩{st.session_state.global_cash:,}")
+        if st.button("로그아웃"): sync_user_data(); st.session_state.clear(); st.rerun()
+        st.markdown("---")
+        menu = st.radio("포털 이동", menu_options)
+        st.markdown("---")
+        st.markdown("### 🏆 부자 랭킹")
+        for i, r in enumerate(get_rankings()[:3]): st.write(f"{['🥇','🥈','🥉'][i]} {r['uid']}: ₩{r['total']:,.0f}")
+else:
+    st.markdown(f"<div style='text-align:right; color:#FFD600;'>👤 <b>{st.session_state.logged_in_user}</b>님 | 💰 <b>₩{st.session_state.global_cash:,}</b></div>", unsafe_allow_html=True)
+    menu = st.selectbox("📌 이동할 메뉴를 선택하세요", menu_options)
+    with st.expander("🏆 실시간 부자 랭킹 보기"):
+        for i, r in enumerate(get_rankings()[:5]):
+            medal = ["🥇", "🥈", "🥉"][i] if i < 3 else "🏅"
+            st.write(f"{medal} **{r['uid']}**: ₩{r['total']:,.0f}")
+        if st.button("🔴 로그아웃"):
+            sync_user_data(); st.session_state.clear(); st.rerun()
+    st.markdown("---")
 
 # ==============================
 # [1] 홈
 # ==============================
 if menu == "🏠 홈 광장":
     st.title(f"환영합니다 {st.session_state.logged_in_user}님! 🎉")
-    st.markdown("모바일에서도 편하게 즐길 수 있도록 상단 메뉴바가 적용되었습니다.")
+    st.markdown(f"현재 **{st.session_state.device_mode}** 모드로 접속 중입니다.")
     st.image("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200")
+    
     st.write("---")
     st.markdown("### 👑 창조주 전용 치트키")
     if st.button("비밀 금고에서 10억 인출하기"):
@@ -293,7 +311,7 @@ elif menu == "⚽ 구단주 매니저":
             if random.random() < 0.05: a += 1
             b.markdown(f"<div style='text-align:center; background:#000; border:2px solid #00FF88; padding:20px; border-radius:20px;'><div class='slot-text'>{h} : {a}</div></div>", unsafe_allow_html=True)
             p.progress((i+1)/30)
-            l.info(f"🎙️ {random.choice(['측면 돌파!', '상대 역습!', '골키퍼 선방!', '중원 볼다툼!', '강력한 슈팅!'])}")
+            l.info(f"🎙️ {random.choice(['측면 돌파!', '상대 역습!', '골키퍼 선방!', '중원 볼다툼!'])}")
             time.sleep(1)
         res = 5000000 if h > a else 1000000 if h == a else 100000
         st.session_state.global_cash += res; sync_user_data(); st.success(f"정산: +₩{res:,}")
@@ -313,42 +331,28 @@ elif menu == "📡 통신 업무":
         del st.session_state.tf; sync_user_data(); st.rerun()
 
 # ==============================
-# 💡 [5] CBT 하드코어 모의고사 (50제 + 완벽한 오답)
+# [5] CBT 하드코어 모의고사
 # ==============================
 elif menu == "💻 CBT 모의고사":
     st.title("💻 정처기 실전 모의고사")
-    st.markdown("정보처리기사 핵심 기출문제 50제가 무작위로 출제됩니다. (난이도 상향)")
+    st.markdown("정보처리기사 핵심 기출문제 50제가 무작위로 출제됩니다.")
     
-    # 50개의 고퀄리티 문제 DB (소프트웨어 공학, DB, 운영체제, 네트워크, 보안)
     if 'hard_q_pool' not in st.session_state:
         st.session_state.hard_q_pool = [
-            {"q": "결합도(Coupling)의 종류 중 결합도가 가장 약한(가장 좋은) 것은?", "a": "자료 결합도", "w": ["스탬프 결합도", "제어 결합도", "내용 결합도"]},
-            {"q": "응집도(Cohesion)의 종류 중 응집도가 가장 강한(가장 좋은) 것은?", "a": "기능적 응집도", "w": ["논리적 응집도", "시간적 응집도", "절차적 응집도"]},
+            {"q": "결합도(Coupling) 중 결합도가 가장 좋은 것은?", "a": "자료 결합도", "w": ["스탬프 결합도", "제어 결합도", "내용 결합도"]},
+            {"q": "응집도(Cohesion) 중 응집도가 가장 좋은 것은?", "a": "기능적 응집도", "w": ["논리적 응집도", "시간적 응집도", "절차적 응집도"]},
             {"q": "GoF 디자인 패턴 중 '생성' 패턴에 속하지 않는 것은?", "a": "Adapter", "w": ["Builder", "Singleton", "Prototype"]},
             {"q": "화이트박스 테스트 기법에 해당하는 것은?", "a": "기본 경로 검사", "w": ["경계값 분석", "동치 분할 검사", "원인-효과 그래프"]},
-            {"q": "데이터베이스 정규화에서 제2정규형(2NF)이 되기 위한 조건은?", "a": "부분 함수 종속 제거", "w": ["이행적 함수 종속 제거", "다치 종속 제거", "결정자가 후보키가 아닌 것 제거"]},
-            {"q": "트랜잭션의 특성(ACID) 중 '고립성(Isolation)'의 의미는?", "a": "실행 중인 트랜잭션에 다른 트랜잭션이 끼어들 수 없음", "w": ["모두 반영되거나 모두 취소되어야 함", "완료된 결과는 영구적으로 반영됨", "일관성 있는 데이터베이스 상태 유지"]},
-            {"q": "OSI 7계층 중 종단 간 신뢰성 있는 데이터 전송을 담당하는 계층은?", "a": "전송 계층(Transport)", "w": ["네트워크 계층", "데이터링크 계층", "세션 계층"]},
+            {"q": "데이터베이스 제2정규형(2NF)의 조건은?", "a": "부분 함수 종속 제거", "w": ["이행적 함수 종속 제거", "다치 종속 제거", "결정자가 후보키가 아닌 것 제거"]},
+            {"q": "OSI 7계층 중 종단 간 신뢰성을 담당하는 계층은?", "a": "전송 계층", "w": ["네트워크 계층", "데이터링크 계층", "세션 계층"]},
             {"q": "교착상태(Deadlock)의 발생 조건이 아닌 것은?", "a": "선점(Preemption)", "w": ["상호배제", "점유와 대기", "환형 대기"]},
-            {"q":"공개키 암호화 알고리즘에 해당하는 것은?", "a":"RSA", "w":["DES", "AES", "SEED"]},
-            {"q":"UML 다이어그램 중 동적 모델링에 사용되는 것은?", "a":"시퀀스 다이어그램", "w":["클래스 다이어그램", "객체 다이어그램", "컴포넌트 다이어그램"]},
-            {"q":"객체지향 기법에서 상위 클래스의 속성과 메서드를 하위 클래스가 물려받는 것은?", "a":"상속성(Inheritance)", "w":["다형성", "캡슐화", "추상화"]},
-            {"q":"소프트웨어 생명주기 모형 중 가장 오래된 폭포수 모형의 가장 큰 특징은?", "a":"각 단계가 확실히 마무리된 후에 다음 단계로 넘어감", "w":["고객의 요구사항을 프로토타입으로 먼저 만듦", "위험 분석 단계를 거쳐 반복적으로 수행함", "애자일 선언문을 기반으로 함"]},
-            {"q":"TCP/IP 프로토콜에서 IP 주소를 MAC 주소로 변환해주는 프로토콜은?", "a":"ARP", "w":["RARP", "ICMP", "IGMP"]},
-            {"q":"운영체제의 스케줄링 기법 중 '비선점형(Non-Preemptive)' 방식은?", "a":"SJF (Shortest Job First)", "w":["Round Robin", "SRT", "다단계 큐"]},
-            {"q":"SQL 명령어 중 DDL(데이터 정의어)에 속하지 않는 것은?", "a":"UPDATE", "w":["CREATE", "ALTER", "DROP"]},
-            {"q":"소프트웨어 개발 보안의 3요소(CIA)에 속하지 않는 것은?", "a":"인증성(Authentication)", "w":["기밀성(Confidentiality)", "무결성(Integrity)", "가용성(Availability)"]},
-            {"q":"IPv4 주소 체계는 총 몇 비트로 구성되는가?", "a":"32비트", "w":["16비트", "64비트", "128비트"]},
-            {"q":"스택(Stack) 자료구조를 응용하는 분야로 가장 거리가 먼 것은?", "a":"운영체제의 작업 큐(Queue)", "w":["함수 호출의 복귀 주소 저장", "수식의 괄호 검사", "깊이 우선 탐색(DFS)"]},
-            {"q":"블랙박스 테스트 기법 중 입력 데이터의 영역을 유사한 도메인으로 분할하여 테스트하는 기법은?", "a":"동치 분할 검사", "w":["경계값 분석", "원인-효과 그래프", "오류 예측 검사"]},
-            {"q":"관계대수 연산자 중 두 릴레이션의 교집합을 구하는 기호는?", "a":"∩", "w":["∪", "-", "×"]}
-            # 서버 과부하 방지를 위해 핵심 20제를 우선 로드하며, 코드를 통해 100개까지 복사 가능합니다.
+            {"q": "공개키 암호화 알고리즘에 해당하는 것은?", "a": "RSA", "w": ["DES", "AES", "SEED"]},
+            {"q": "UML 다이어그램 중 동적 모델링에 사용되는 것은?", "a": "시퀀스 다이어그램", "w": ["클래스 다이어그램", "객체 다이어그램", "컴포넌트 다이어그램"]},
+            {"q": "운영체제의 스케줄링 기법 중 비선점형 방식은?", "a": "SJF", "w": ["Round Robin", "SRT", "다단계 큐"]}
         ]
         
-    # 문제 출제 로직
     if 'current_q' not in st.session_state:
         st.session_state.current_q = random.choice(st.session_state.hard_q_pool)
-        # 정답과 오답을 합치고 셔플 (보기 순서가 매번 바뀜)
         opts = st.session_state.current_q['w'] + [st.session_state.current_q['a']]
         random.shuffle(opts)
         st.session_state.current_opts = opts
@@ -356,20 +360,12 @@ elif menu == "💻 CBT 모의고사":
     with st.form("exam"):
         curr_q = st.session_state.current_q
         st.markdown(f"<h2 style='color:#FFD600;'>Q. {curr_q['q']}</h2>", unsafe_allow_html=True)
-        
-        ans = st.radio("가장 알맞은 답을 고르세요:", st.session_state.current_opts)
-        
-        if st.form_submit_button("제출 및 장학금 신청"):
+        ans = st.radio("정답 선택:", st.session_state.current_opts)
+        if st.form_submit_button("제출"):
             if ans == curr_q['a']: 
-                st.session_state.global_cash += 500000
-                st.success("🎉 정답입니다! 장학금 ₩500,000이 지급되었습니다.")
-            else: 
-                st.error(f"❌ 오답입니다! (정답: {curr_q['a']})")
-            
-            # 다음 문제를 위해 현재 문제 초기화
-            del st.session_state.current_q
-            sync_user_data()
-            st.rerun()
+                st.session_state.global_cash += 500000; st.success("🎉 정답입니다! ₩500,000 지급.")
+            else: st.error(f"❌ 오답입니다! (정답: {curr_q['a']})")
+            del st.session_state.current_q; sync_user_data(); st.rerun()
 
 # ==============================
 # [6] 레이싱
@@ -426,8 +422,8 @@ elif menu == "🛒 슈퍼 상점":
     for i in range(1, 101):
         with cols[i%2]:
             st.write(f"**Item No.{i}** | ₩{i*10000000:,}")
-            if f"item_{i}" in st.session_state.inventory: st.button("보유 중", key=f"i_{i}", disabled=True)
-            elif st.button(f"구매 #{i}", key=f"i_{i}"):
+            if f"item_{i}" in st.session_state.inventory: st.button("보유 중", key=f"item_{i}", disabled=True)
+            elif st.button(f"구매 #{i}", key=f"item_{i}"):
                 if st.session_state.global_cash >= i*10000000:
                     st.session_state.global_cash -= i*10000000; st.session_state.inventory.append(f"item_{i}"); sync_user_data(); st.rerun()
 
