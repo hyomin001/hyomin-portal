@@ -15,7 +15,6 @@ USERS_FILE = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
 MARKET_FILE = "market_db.json" # 모든 유저가 100% 동일하게 공유하는 시장 DB
 
-# 새로운 산업군 종목
 stock_config = [
     {"id": "NDX", "name": "나스닥100 ETF", "vol": 0.04},       
     {"id": "HDEC", "name": "현대건설", "vol": 0.03},            
@@ -53,19 +52,17 @@ def sync_user_data():
             })
             save_db(USERS_FILE, users)
 
-# [핵심 버그 수정] 초기 기준가(History)와 현재가를 일치시켜 뻥튀기 수익률 방지
 def get_market():
     def init_market():
         data = {
-            "version": 2, # 버전 업그레이드로 기존 꼬인 DB 강제 리셋
+            "version": 2, 
             "stock_data": {},
-            "news": "시장이 안정적으로 동기화되었습니다!",
+            "news": "시장이 안정적으로 운영 중입니다.",
             "news_time": time.time(),
             "last_tick": time.time()
         }
         for s in stock_config:
             p = random.randint(50000, 150000)
-            # price와 history 초기값을 무조건 동일하게 세팅!
             data["stock_data"][s['id']] = {"name": s['name'], "price": p, "history": [p]}
         return data
 
@@ -75,8 +72,6 @@ def get_market():
         return data
         
     data = load_db(MARKET_FILE, {})
-    
-    # 버전이 다르거나 종목이 바뀌었으면 깔끔하게 시장 리셋
     db_keys = set(data.get('stock_data', {}).keys())
     c_keys = set([s['id'] for s in stock_config])
     if data.get("version") != 2 or db_keys != c_keys:
@@ -100,7 +95,7 @@ def get_rankings(market_data):
     rankings.sort(key=lambda x: x['total'], reverse=True)
     return rankings
 
-st.set_page_config(page_title="HYOMIN UNIVERSE v11.2", page_icon="🌌", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE v12.0", page_icon="🐋", layout="wide")
 
 # ==============================
 # 🔐 로그인 시스템
@@ -115,7 +110,7 @@ if 'logged_in_user' not in st.session_state:
     """, unsafe_allow_html=True)
     
     st.markdown("<h1>🌌 HYOMIN UNIVERSE</h1>", unsafe_allow_html=True)
-    st.markdown("<p>서버 동기화 완료! 모든 유저가 완벽히 동일한 주식 시장을 공유합니다.</p>", unsafe_allow_html=True)
+    st.markdown("<p>슈퍼개미의 움직임이 시장 전체를 뒤흔듭니다. 눈치싸움에 참전하세요!</p>", unsafe_allow_html=True)
     
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
@@ -197,12 +192,13 @@ else:
     """, unsafe_allow_html=True)
 
 # ==============================
-# 🌐 통합 글로벌 시장 제어
+# 🌐 통합 글로벌 시장 동기화
 # ==============================
 market = get_market()
 current_time = time.time()
 market_updated = False
 
+# 10초 주가 자동 변동
 if current_time - market.get('last_tick', 0) > 10:
     for s in stock_config:
         curr = market['stock_data'][s['id']]
@@ -213,11 +209,12 @@ if current_time - market.get('last_tick', 0) > 10:
     market['last_tick'] = current_time
     market_updated = True
 
+# 30초 정규 뉴스
 if current_time - market.get('news_time', 0) > 30:
     target = random.choice(stock_config)
     impact = random.uniform(-0.15, 0.15)
-    market['stock_data'][target['id']]['price'] *= (1 + impact)
-    market['news'] = f"📰 [속보] {target['name']}, {'어닝 서프라이즈로 주가 폭등!' if impact > 0 else '악재 발생으로 투자자 패닉!'}"
+    market['stock_data'][target['id']]['price'] = int(market['stock_data'][target['id']]['price'] * (1 + impact))
+    market['news'] = f"📰 [정규속보] {target['name']}, {'어닝 서프라이즈로 시장 기대감 상승!' if impact > 0 else '실적 부진으로 투자심리 위축'}"
     market['news_time'] = current_time
     market_updated = True
 
@@ -254,18 +251,22 @@ else:
 # ==============================
 if menu == "🏠 홈 광장":
     st.title(f"환영합니다 {st.session_state.logged_in_user}님! 🎉")
-    st.markdown("현재 모든 유저가 서버에 연동된 **100% 동일한 주식 시장**을 보고 있습니다.")
+    st.markdown("현재 **대주주(고래) 시장 개입 시스템**이 활성화되었습니다. 10억 이상의 대규모 자금이 움직이면 전 서버에 속보가 뜨며 시장이 요동칩니다!")
     st.image("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200")
     
-   
+
 
 # ==============================
-# [2] 주식
+# [2] 주식 (고래 시스템 탑재)
 # ==============================
 elif menu == "📈 주식 트레이딩":
     st.title("📈 글로벌 통합 거래소")
-    st.warning(f"**{market['news']}**")
-    t_mkt, t_acc = st.tabs(["📊 실시간 시황", "💼 내 포트폴리오"])
+    
+    # 상단 뉴스 (가장 눈에 띄게)
+    news_color = "#FF4B4B" if "폭등" in market['news'] else "#1F77B4" if "폭락" in market['news'] else "#FFD600"
+    st.markdown(f"<div style='background-color:#222; padding:15px; border-left:10px solid {news_color}; margin-bottom:20px;'><h3 style='color:{news_color}; margin:0;'>{market['news']}</h3></div>", unsafe_allow_html=True)
+    
+    t_mkt, t_acc = st.tabs(["📊 시황", "💼 내 포트폴리오"])
     
     with t_mkt:
         rows = ""
@@ -291,7 +292,7 @@ elif menu == "📈 주식 트레이딩":
                 roi = ((cp - ap) / ap * 100) if ap > 0 else 0
                 p_list.append({"종목": market['stock_data'][sid]['name'], "수량": f"{qty}주", "평가액": f"₩{int(eval_amt):,}", "수익률": f"{roi:+.2f}%"})
         if p_list: st.table(pd.DataFrame(p_list))
-        else: st.info("보유 주식이 없습니다.")
+        else: st.info("주식을 매수해보세요!")
         st.markdown(f"💰 주식자산: ₩{total_eval:,} | 💵 현금: ₩{st.session_state.global_cash:,}")
 
     st.write("---")
@@ -305,20 +306,41 @@ elif menu == "📈 주식 트레이딩":
     with c1:
         if st.button("💥 풀매수"):
             max_q = st.session_state.global_cash // cp
+            buy_amt = max_q * cp
             if max_q > 0:
-                st.session_state.global_cash -= max_q * cp
+                st.session_state.global_cash -= buy_amt
                 old = st.session_state.portfolio.get(sid, {'qty':0, 'avg_price':0})
                 new_q = old['qty'] + max_q
-                new_a = ((old['qty'] * old['avg_price']) + (max_q * cp)) / new_q
+                new_a = ((old['qty'] * old['avg_price']) + buy_amt) / new_q
                 st.session_state.portfolio[sid] = {'qty': new_q, 'avg_price': new_a}
-                sync_user_data(); st.rerun()
+                sync_user_data()
+                
+                # 🐋 대주주(고래) 매수 로직: 10억 이상 매수 시 주가 폭등
+                if buy_amt >= 1000000000:
+                    # 1000억당 10% 상승, 최대 50%까지 제한
+                    impact = min((buy_amt / 100000000000) * 0.1, 0.5) 
+                    market['stock_data'][sid]['price'] = int(cp * (1 + impact))
+                    market['news'] = f"🚨 [슈퍼개미 출현] {st.session_state.equipped_title} {st.session_state.logged_in_user}님이 {sel_name}에 ₩{buy_amt//100000000:,}억 풀매수!! 주가 폭등!"
+                    market['news_time'] = time.time()
+                    save_market(market)
+                st.rerun()
     with c2:
         if st.button("💸 풀매도"):
             owned = st.session_state.portfolio.get(sid, {'qty':0})['qty']
+            sell_amt = owned * cp
             if owned > 0:
-                st.session_state.global_cash += owned * cp
+                st.session_state.global_cash += sell_amt
                 st.session_state.portfolio[sid] = {'qty': 0, 'avg_price': 0}
-                sync_user_data(); st.rerun()
+                sync_user_data()
+                
+                # 🐋 대주주(고래) 매도 로직: 10억 이상 매도 시 주가 폭락
+                if sell_amt >= 1000000000:
+                    impact = min((sell_amt / 100000000000) * 0.1, 0.5)
+                    market['stock_data'][sid]['price'] = max(1000, int(cp * (1 - impact)))
+                    market['news'] = f"📉 [패닉 셀] 대주주 {st.session_state.logged_in_user}님이 {sel_name} ₩{sell_amt//100000000:,}억 물량 투하!! 주가 폭락!"
+                    market['news_time'] = time.time()
+                    save_market(market)
+                st.rerun()
     time.sleep(2); st.rerun()
 
 # ==============================
@@ -395,7 +417,7 @@ elif menu == "🏎️ 레이싱":
                 for i in range(3): pos[i] += random.randint(1, 12); bars[i].progress(min(pos[i], 100))
                 time.sleep(0.1)
             win = cars[pos.index(max(pos))]
-            if win['n'] == sel: st.session_state.global_cash += int(amt * win['o']); st.success("승리!"); st.balloons()
+            if win['n'] == sel: st.session_state.global_cash += int(amt * win['o']); st.success("승리!")
             else: st.error(f"우승: {win['n']}"); sync_user_data()
 
 # ==============================
@@ -430,7 +452,6 @@ elif menu == "⛏️ 채굴기":
 # ==============================
 elif menu == "👑 칭호 상점":
     st.title("👑 VIP 칭호 상점")
-    st.markdown("게시판에서 장착할 수 있는 칭호를 구매하세요!")
     cols = st.columns(2)
     for i in range(1, 101):
         with cols[i%2]:
