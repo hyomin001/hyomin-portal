@@ -54,7 +54,17 @@ TITLE_SHOP = [
     {"name": "💎 VIP Lv.10",     "price": 1_000_000_000,  "grade": 10},
     {"name": "🔱 유니버스 지배자","price": 50_000_000_000, "grade": 99},
 ]
-
+def hex_to_rgba(hex_color, alpha=0.3):
+    try:
+        hex_color = hex_color.lstrip('#')
+        if len(hex_color) == 3: 
+            hex_color = ''.join(c*2 for c in hex_color)
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        return f"rgba({r},{g},{b},{alpha})"
+    except:
+        return f"rgba(255,255,255,{alpha})"
 # ────────────────── DB 유틸 ──────────────────
 def load_db(file, default):
     if os.path.exists(file):
@@ -1236,138 +1246,702 @@ elif menu == "⚽ 구단주 시뮬레이터":
             sync_user_data()
             st.info(f"💰 경기 보상: +₩{reward:,}")
             time.sleep(3); st.rerun()
-
 # ════════════════════════════════════════════════
-# 💻 정처기 CBT
+# 💻 정처기 CBT (HTML 고퀄리티 버전 삽입)
 # ════════════════════════════════════════════════
 elif menu == "💻 정처기 CBT":
-    st.title("💻 정보처리기사 실전 CBT")
-    st.caption("실제 정처기 수준의 문제입니다. 정답 시 50만원 지급!")
-
-    QUESTION_POOL = [
-        {"q": "제2정규형(2NF)의 조건은?", "a": "부분 함수 종속 제거", "w": ["이행 함수 종속 제거", "다치 종속 제거", "조인 종속 제거"], "cat": "데이터베이스"},
-        {"q": "OSI 7계층에서 세그먼트(Segment)를 데이터 단위로 사용하는 계층은?", "a": "전송 계층(Transport Layer)", "w": ["네트워크 계층", "세션 계층", "데이터링크 계층"], "cat": "네트워크"},
-        {"q": "스크럼(Scrum)에서 반복 개발 주기를 의미하는 용어는?", "a": "스프린트(Sprint)", "w": ["이터레이션", "릴리즈", "에픽"], "cat": "소프트웨어공학"},
-        {"q": "트랜잭션의 원자성(Atomicity)이란?", "a": "모두 실행되거나 모두 취소되어야 함", "w": ["동시 트랜잭션 간 독립성 보장", "완료 후 영구 반영", "실행 전후 무결성 유지"], "cat": "데이터베이스"},
-        {"q": "객체 생성을 서브클래스에서 결정하도록 위임하는 패턴은?", "a": "팩토리 메서드(Factory Method)", "w": ["싱글톤", "어댑터", "옵저버"], "cat": "디자인패턴"},
-        {"q": "IP 주소 192.168.1.0/24의 서브넷 마스크는?", "a": "255.255.255.0", "w": ["255.255.0.0", "255.0.0.0", "255.255.255.128"], "cat": "네트워크"},
-        {"q": "SQL LEFT OUTER JOIN의 결과로 옳은 설명은?", "a": "왼쪽 테이블 전체 + 오른쪽 매칭값(없으면 NULL)", "w": ["양쪽 매칭 행만 출력", "오른쪽 테이블 전체 포함", "매칭 안 되는 행은 제외"], "cat": "데이터베이스"},
-        {"q": "퀵 정렬(Quick Sort)의 평균 시간 복잡도는?", "a": "O(n log n)", "w": ["O(n²)", "O(n)", "O(log n)"], "cat": "알고리즘"},
-        {"q": "TCP와 UDP의 핵심 차이점은?", "a": "TCP는 연결 지향, UDP는 비연결 지향", "w": ["TCP가 더 빠름", "UDP가 신뢰성 보장", "둘 다 응용 계층 프로토콜"], "cat": "네트워크"},
-        {"q": "REST API에서 리소스 삭제 시 사용하는 HTTP 메서드는?", "a": "DELETE", "w": ["GET", "POST", "PUT"], "cat": "웹"},
-        {"q": "NoSQL의 특징으로 올바른 것은?", "a": "유연한 스키마 + 수평 확장(Scale-out) 용이", "w": ["ACID 반드시 보장", "관계형 모델 전용", "수직 확장만 가능"], "cat": "데이터베이스"},
-        {"q": "페이징(Paging) 기법의 주요 장점은?", "a": "외부 단편화 제거", "w": ["내부 단편화 제거", "메모리 접근 속도 향상", "TLB 불필요"], "cat": "운영체제"},
-        {"q": "Git에서 원격 저장소 변경사항을 로컬에 병합하는 명령어는?", "a": "git pull", "w": ["git push", "git fetch", "git clone"], "cat": "개발도구"},
-        {"q": "해시 테이블의 평균 검색 시간 복잡도는?", "a": "O(1)", "w": ["O(n)", "O(log n)", "O(n log n)"], "cat": "자료구조"},
-        {"q": "프로세스와 스레드의 차이점으로 올바른 것은?", "a": "스레드는 같은 프로세스 내 메모리를 공유", "w": ["프로세스가 더 가벼움", "스레드는 독립적인 메모리 공간 가짐", "스레드 생성 비용이 더 큼"], "cat": "운영체제"},
-        {"q": "UML 다이어그램 중 시스템 동적 행위를 표현하지 않는 것은?", "a": "클래스 다이어그램", "w": ["시퀀스 다이어그램", "상태 다이어그램", "활동 다이어그램"], "cat": "소프트웨어공학"},
-        {"q": "대칭키 암호화 방식의 특징은?", "a": "암호화·복호화에 동일한 키 사용, 처리 속도 빠름", "w": ["공개키·개인키 쌍 사용", "키 분배가 안전함", "전자서명에 주로 사용"], "cat": "보안"},
-        {"q": "Python에서 GIL(Global Interpreter Lock)의 영향은?", "a": "멀티스레드 환경에서 CPU 병렬 실행이 제한됨", "w": ["메모리 누수 방지", "비동기 I/O 불가", "멀티프로세스 제한"], "cat": "프로그래밍"},
-    ]
-
-    if 'cbt_q' not in st.session_state:
-        q = random.choice(QUESTION_POOL)
-        opts = q['w'] + [q['a']]
-        random.shuffle(opts)
-        st.session_state.cbt_q    = q
-        st.session_state.cbt_opts = opts
-        st.session_state.cbt_answered = False
-
-    q = st.session_state.cbt_q
-    cats = {"데이터베이스": "🗄️", "네트워크": "🌐", "소프트웨어공학": "⚙️",
-            "알고리즘": "🔢", "자료구조": "📚", "운영체제": "🖥️",
-            "디자인패턴": "🎨", "웹": "🌍", "개발도구": "🛠️", "보안": "🔒", "프로그래밍": "💻"}
-    cat_icon = cats.get(q.get('cat', ''), "📝")
-
-    st.markdown(f"<div style='color:#888;font-size:0.8rem;margin-bottom:8px;'>{cat_icon} {q.get('cat','기타')} 분야</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='question-box'><b>Q.</b> {q['q']}</div>", unsafe_allow_html=True)
-    st.write("")
-
-    with st.form("cbt_form"):
-        answer = st.radio("정답을 선택하세요:", st.session_state.cbt_opts, key="cbt_radio")
-        c1, c2, c3 = st.columns([1, 2, 1])
-        with c2:
-            submitted = st.form_submit_button("✅ 제출", use_container_width=True)
-        if submitted:
-            if answer == q['a']:
-                st.success("🎉 정답입니다! 훌륭합니다!")
-                st.session_state.global_cash += 500_000
-                st.balloons()
-                st.info("💰 보상: +₩500,000")
-            else:
-                st.error(f"❌ 오답! 정답: {q['a']}")
-            del st.session_state.cbt_q, st.session_state.cbt_opts
-            sync_user_data()
-            time.sleep(2.5); st.rerun()
-
-    if st.button("🔄 다른 문제", use_container_width=True):
-        if 'cbt_q' in st.session_state: del st.session_state.cbt_q
-        if 'cbt_opts' in st.session_state: del st.session_state.cbt_opts
-        st.rerun()
-
-# ════════════════════════════════════════════════
-# 🏎️ 하이퍼카 레이싱
-# ════════════════════════════════════════════════
-elif menu == "🏎️ 하이퍼카 레이싱":
-    st.title("🏎️ 하이퍼카 레이싱")
-    st.caption("배당률이 높을수록 우승 확률은 낮지만 당첨 시 고수익!")
-
-    CARS = [
-        {"name": "부가티 시론 SS",    "emoji": "🏎️", "odds": 20.0, "spd": (2, 7),  "color": "#FF0066"},
-        {"name": "람보르기니 레부엘토","emoji": "🐂", "odds": 12.0, "spd": (3, 10), "color": "#FF6600"},
-        {"name": "페라리 SF90 XX",    "emoji": "🐎", "odds": 8.0,  "spd": (4, 12), "color": "#FF2200"},
-        {"name": "맥라렌 P1 GTR",     "emoji": "🚀", "odds": 6.0,  "spd": (5, 13), "color": "#FF9900"},
-        {"name": "포르쉐 918 스파이더","emoji": "⚡", "odds": 4.0,  "spd": (6, 15), "color": "#FFCC00"},
-        {"name": "테슬라 로드스터 2",  "emoji": "⚡", "odds": 2.5,  "spd": (8, 17), "color": "#00FF88"},
-        {"name": "토요타 GR010 하이브","emoji": "🏁", "odds": 1.8,  "spd": (10, 20),"color": "#00CCFF"},
-    ]
-
-    car_names = [f"{c['emoji']} {c['name']} ({c['odds']}배)" for c in CARS]
-    sel_idx   = st.selectbox("차량 선택", range(len(CARS)), format_func=lambda i: car_names[i])
-    my_car    = CARS[sel_idx]
-    bet_amt   = st.number_input("베팅 금액 (원)", min_value=10_000, step=10_000, value=100_000)
-    st.caption(f"우승 시 예상 수령액: ₩{int(bet_amt * my_car['odds']):,}")
-
-    if st.button("🏁 레이스 시작!", use_container_width=True):
-        if st.session_state.global_cash < bet_amt:
-            st.error("잔액 부족!")
-        else:
-            st.session_state.global_cash -= bet_amt
-
-            positions = {c['name']: 0.0 for c in CARS}
-            winner    = None
-            bars      = {}
-            st.markdown("### 🏁 레이스 진행")
-            for c in CARS:
-                bars[c['name']] = st.progress(0, text=f"{c['emoji']} {c['name']}")
-
-            lap = 0
-            while winner is None:
-                time.sleep(0.12)
-                lap += 1
-                for c in CARS:
-                    move = random.randint(c['spd'][0], c['spd'][1])
-                    positions[c['name']] = min(100, positions[c['name']] + move)
-                    pct  = positions[c['name']] / 100
-                    rank = sorted(positions.items(), key=lambda x: x[1], reverse=True)
-                    pos_num = next(i+1 for i, (n, _) in enumerate(rank) if n == c['name'])
-                    bars[c['name']].progress(pct, text=f"{c['emoji']} {c['name']}  {pos_num}위 | {positions[c['name']]:.0f}%")
-                    if positions[c['name']] >= 100 and winner is None:
-                        winner = c['name']
-
-            st.write("---")
-            winner_car = next(c for c in CARS if c['name'] == winner)
-            st.markdown(f"<div style='text-align:center;font-family:Orbitron,monospace;font-size:1.8rem;color:{winner_car['color']};font-weight:900;padding:20px;'>🏆 {winner_car['emoji']} {winner} 우승!</div>", unsafe_allow_html=True)
-
-            if winner == my_car['name']:
-                prize = int(bet_amt * my_car['odds'])
-                st.session_state.global_cash += prize
-                st.success(f"🎉 베팅 성공! +₩{prize:,}")
-                st.balloons()
-            else:
-                st.error(f"😢 아쉽습니다. {winner}이(가) 우승했습니다.")
-
-            sync_user_data(); time.sleep(3); st.rerun()
+    import streamlit.components.v1 as components
+    
+    st.title("💻 정보처리기사 실기 완벽정복")
+    st.markdown("스마트폰 앱 환경처럼 구현된 최고급 실전 모의고사입니다.")
+    
+    # 효민님이 주신 HTML 코드를 통째로 문자열로 넣습니다.
+    cbt_html = """
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>정처기 실기 완벽정복 🥔</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    :root{
+      --ac:#3B5BDB;--ac-l:#EEF2FF;
+      --bg:#F0F2F8;--card:#fff;--text:#1A1D2E;--sub:#6B7280;
+      --border:#E2E6F0;
+      --green:#059669;--green-l:#ECFDF5;--green-b:#A7F3D0;
+      --red:#DC2626;--red-l:#FEF2F2;--red-b:#FECACA;
+      --orange:#D97706;--orange-l:#FFFBEB;
+      --nav-h:62px;
+    }
+    html,body{height:100%;overflow-x:hidden}
+    body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px)}
+    .hd{background:#fff;border-bottom:1.5px solid var(--border);padding:10px 14px 0;position:sticky;top:0;z-index:200;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+    .hd-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+    .hd-title{font-size:16px;font-weight:900;letter-spacing:-.3px;display:flex;align-items:center;gap:6px}
+    .hd-badge{padding:2px 9px;border-radius:20px;font-size:10px;font-weight:800;color:#fff;background:var(--ac)}
+    .hd-streak{font-size:11px;font-weight:700;color:var(--orange);background:var(--orange-l);padding:3px 9px;border-radius:20px}
+    .mode-tabs{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px;margin-bottom:10px}
+    .mtab{flex:1;padding:7px 2px;border:none;border-radius:7px;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--sub);background:transparent;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:3px}
+    .mtab.on{background:#fff;color:var(--text);box-shadow:0 1px 5px rgba(0,0,0,.1)}
+    .nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1.5px solid var(--border);display:flex;z-index:300;padding-bottom:env(safe-area-inset-bottom);height:calc(var(--nav-h) + env(safe-area-inset-bottom))}
+    .nbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;cursor:pointer;color:var(--sub);font-family:inherit;font-size:9px;font-weight:700;padding:8px 2px 4px;transition:all .2s;position:relative}
+    .nbtn .ico{font-size:20px;line-height:1;transition:transform .2s}
+    .nbtn.on{color:var(--ac)}.nbtn.on .ico{transform:scale(1.1)}
+    .nbtn .dot{position:absolute;top:7px;right:calc(50% - 16px);width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid #fff;display:none}
+    .nbtn .dot.show{display:block}
+    .main{padding:12px}
+    .view{display:none}.view.on{display:block}
+    .fview{display:none;flex-direction:column}.fview.on{display:flex}
+    .qview{display:none;flex-direction:column;gap:10px}.qview.on{display:flex}
+    .rcard{background:#fff;border-radius:14px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.06);border:1.5px solid var(--border);overflow:hidden;transition:border-color .2s}
+    .rcard.open{border-color:var(--ac)}
+    .rcard-hd{display:flex;align-items:center;padding:13px 14px;cursor:pointer;gap:8px;user-select:none;-webkit-user-select:none}
+    .rcard-num{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:var(--ac-l);color:var(--ac)}
+    .rcard-name{font-size:13.5px;font-weight:700;line-height:1.3;flex:1}
+    .prob{font-size:14px;flex-shrink:0}
+    .arr{font-size:11px;color:#ccc;transition:transform .25s;flex-shrink:0}
+    .rcard.open .arr{transform:rotate(180deg)}
+    .rcard-body{display:none;border-top:1.5px solid var(--border);padding:13px 14px}
+    .rcard.open .rcard-body{display:block}
+    .rt{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+    .rt th{background:var(--ac-l);padding:7px 10px;text-align:left;font-weight:800;color:var(--ac);border-bottom:1.5px solid var(--border);font-size:11px}
+    .rt td{padding:7px 10px;border-bottom:1px solid var(--border);color:#333;vertical-align:top;line-height:1.55;font-size:12.5px}
+    .rt tr:last-child td{border-bottom:none}
+    .rt td b,.rt td strong{color:#111;font-weight:800}
+    .tip{background:var(--ac-l);border-left:3px solid var(--ac);border-radius:0 8px 8px 0;padding:10px 12px;margin-top:8px;font-size:12.5px;line-height:1.75;color:#333}
+    .tip b{color:var(--ac)}
+    .mnemo{background:var(--text);color:#fff;border-radius:7px;padding:5px 11px;font-size:12px;font-weight:700;margin-bottom:8px;display:inline-block}
+    .flow{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:8px 0}
+    .flow .s{background:var(--ac-l);border:1.5px solid #c5d0f8;border-radius:7px;padding:4px 9px;font-size:12px;font-weight:700;color:var(--ac)}
+    .flow .a{color:#bbb;font-size:11px}
+    .fc-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .fc-prog-txt{font-size:12px;font-weight:700;color:var(--sub)}
+    .fc-score-wrap{display:flex;gap:10px;font-size:12px;font-weight:800}
+    .fc-score-k{color:var(--green)}.fc-score-u{color:var(--red)}
+    .fc-pbar{height:5px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:14px}
+    .fc-pbar-fill{height:100%;background:var(--ac);border-radius:99px;transition:width .4s}
+    .fc-area{perspective:1200px;height:230px;cursor:pointer;margin-bottom:10px}
+    .fc-inner{width:100%;height:100%;position:relative;transition:transform .55s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d;-webkit-transform-style:preserve-3d}
+    .fc-inner.flip{transform:rotateY(180deg)}
+    .fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 20px;border:2px solid var(--border);box-shadow:0 5px 24px rgba(0,0,0,.09)}
+    .fc-front{background:#fff}
+    .fc-back{background:var(--ac);transform:rotateY(180deg);border-color:var(--ac)}
+    .fc-tag{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;opacity:.55}
+    .fc-front .fc-tag{color:var(--ac)}
+    .fc-back .fc-tag{color:rgba(255,255,255,.75)}
+    .fc-word{font-size:17px;font-weight:900;text-align:center;line-height:1.55}
+    .fc-front .fc-word{color:var(--text)}
+    .fc-back .fc-word{color:#fff}
+    .fc-sub{font-size:12.5px;text-align:center;line-height:1.65;margin-top:8px;font-weight:500}
+    .fc-front .fc-sub{color:var(--sub)}
+    .fc-back .fc-sub{color:rgba(255,255,255,.85)}
+    .fc-hint-txt{text-align:center;font-size:11px;color:#c5c8d4;font-weight:600;margin-top:10px}
+    .fc-actions{display:none;gap:10px;margin-bottom:12px}
+    .fc-actions.show{display:grid;grid-template-columns:1fr 1fr}
+    .fc-no{padding:14px;border-radius:12px;border:2px solid var(--red-b);background:var(--red-l);font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer;color:var(--red);transition:all .15s}
+    .fc-yes{padding:14px;border-radius:12px;border:2px solid var(--green-b);background:var(--green-l);font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer;color:var(--green);transition:all .15s}
+    .fc-no:active,.fc-yes:active{opacity:.78;transform:scale(.97)}
+    .fc-result{background:#fff;border-radius:16px;border:1.5px solid var(--border);padding:28px 18px;text-align:center;display:none}
+    .fc-result.show{display:block}
+    .fc-result .re{font-size:50px;margin-bottom:6px}
+    .fc-result .rt2{font-size:19px;font-weight:900;margin-bottom:4px}
+    .fc-result .rs{font-size:13px;color:var(--sub);margin-bottom:14px;line-height:1.6}
+    .fc-result .rstats{display:flex;justify-content:center;gap:24px;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px}
+    .fc-result .rstat .n{font-size:22px;font-weight:900}
+    .fc-result .rstat .l{font-size:10px;color:var(--sub);font-weight:600;margin-top:2px}
+    .fc-btn{width:100%;padding:13px;border-radius:11px;border:none;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;background:var(--ac);color:#fff;margin-bottom:8px}
+    .fc-btn2{width:100%;padding:11px;border-radius:11px;border:2px solid var(--red-b);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:var(--red);display:none}
+    .fc-btn2.show{display:block}
+    .qprog{background:#fff;border-radius:12px;padding:11px 14px;border:1.5px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.05)}
+    .qprog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+    .qpl{font-size:11.5px;font-weight:700;color:var(--sub)}
+    .qpr{display:flex;gap:12px;font-size:12px;font-weight:800}
+    .qpr-c{color:var(--green)}.qpr-w{color:var(--red)}
+    .qpbar{height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+    .qpbar-f{height:100%;background:linear-gradient(90deg,var(--ac),#6B8AFF);border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+    .qcard{background:#fff;border-radius:16px;border:1.5px solid var(--border);box-shadow:0 3px 14px rgba(0,0,0,.07);overflow:hidden;animation:fadeUp .3s ease both}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+    .qcard-top{padding:9px 16px;display:flex;justify-content:space-between;align-items:center}
+    .qcat-l{font-size:11px;font-weight:800;color:var(--ac);background:var(--ac-l);padding:3px 8px;border-radius:5px}
+    .qnum-l{font-size:11px;font-weight:700;color:var(--sub)}
+    .qbody{padding:16px}
+    .qtype{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:3px 8px;border-radius:5px;margin-bottom:12px;border:1px solid}
+    .qtype-sa{background:#FEF3C7;color:#92400E;border-color:#FDE68A}
+    .qbox{background:#F8F9FC;border:1.5px solid var(--border);border-radius:10px;padding:14px 15px;margin-bottom:14px;font-size:14px;line-height:1.85;color:#111;font-weight:500;white-space:pre-wrap}
+    .ans-section{margin-top:0}
+    .ans-label{font-size:11px;font-weight:800;color:var(--sub);margin-bottom:7px;letter-spacing:.05em}
+    .ans-wrap{display:flex;gap:8px}
+    .ans-input{flex:1;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;color:var(--text);background:#fff;outline:none;transition:border-color .2s;-webkit-appearance:none}
+    .ans-input:focus{border-color:var(--ac)}
+    .ans-input.ok{border-color:var(--green);background:var(--green-l)}
+    .ans-input.ng{border-color:var(--red);background:var(--red-l)}
+    .ans-input:disabled{cursor:default}
+    .submit-btn{padding:12px 16px;border-radius:10px;border:none;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;background:var(--ac);color:#fff;white-space:nowrap;transition:opacity .2s;flex-shrink:0}
+    .submit-btn:active{opacity:.85}
+    .res-box{display:none;margin-top:12px;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.75;border-left:4px solid}
+    .res-box.show{display:block}
+    .res-box.ok{background:var(--green-l);border-color:var(--green);color:#065f46}
+    .res-box.ng{background:var(--red-l);border-color:var(--red);color:#991b1b}
+    .res-head{font-size:13px;font-weight:900;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+    .res-correct{font-size:14px;font-weight:800;margin:6px 0;padding:8px 12px;background:rgba(255,255,255,.65);border-radius:7px}
+    .res-exp{font-size:12.5px;margin-top:5px;line-height:1.75;opacity:.9}
+    .next-btn{width:100%;padding:14px;border-radius:12px;border:none;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;background:var(--ac);color:#fff;display:none;margin-top:12px}
+    .next-btn.show{display:block}
+    .qresult{background:#fff;border-radius:16px;border:1.5px solid var(--border);padding:28px 18px;text-align:center;display:none;box-shadow:0 3px 14px rgba(0,0,0,.07)}
+    .qresult.show{display:block;animation:fadeUp .35s ease both}
+    .qr-e{font-size:52px;margin-bottom:6px}
+    .qr-t{font-size:20px;font-weight:900;margin-bottom:4px}
+    .qr-s{font-size:13px;color:var(--sub);margin-bottom:12px;line-height:1.6}
+    .qr-pct{font-size:50px;font-weight:900;color:var(--ac);line-height:1;margin-bottom:10px}
+    .qr-stats{display:flex;justify-content:center;gap:28px;margin-bottom:18px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .qr-stat .n{font-size:22px;font-weight:900}.qr-stat .l{font-size:10px;color:var(--sub);font-weight:600;margin-top:3px}
+    .qr-btn{width:100%;padding:13px;border-radius:11px;border:none;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;background:var(--ac);color:#fff;margin-bottom:8px}
+    .qr-btn2{width:100%;padding:11px;border-radius:11px;border:2px solid var(--red-b);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:var(--red);margin-bottom:8px;display:none}
+    .qr-btn2.show{display:block}
+    .qr-btn3{width:100%;padding:11px;border-radius:11px;border:1.5px solid var(--border);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:var(--text)}
+    .wrongs{display:none;flex-direction:column;gap:8px}.wrongs.on{display:flex}
+    .wcard{background:#fff;border-radius:12px;border:1.5px solid var(--red-b);padding:13px}
+    .wcard-q{font-size:12.5px;font-weight:700;color:#111;margin-bottom:8px;line-height:1.7;background:#F8F9FC;padding:10px;border-radius:8px;white-space:pre-wrap}
+    .wcard-your{font-size:11.5px;color:var(--red);font-weight:700;margin-bottom:4px}
+    .wcard-ans-l{font-size:10px;color:var(--green);font-weight:800;margin-bottom:3px}
+    .wcard-ans{font-size:13.5px;color:var(--green);font-weight:800;background:var(--green-l);padding:8px 12px;border-radius:8px}
+    .wcard-exp{font-size:12px;color:#555;margin-top:6px;line-height:1.65}
+    .back-btn{width:100%;padding:12px;border-radius:11px;border:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;background:var(--ac);color:#fff;margin-bottom:10px}
+    .sechd{font-size:11px;font-weight:800;color:var(--sub);letter-spacing:.08em;padding:2px 0 8px}
+    .empty-state{text-align:center;padding:48px 16px;color:var(--sub);font-size:14px;font-weight:700;line-height:1.8}
+    </style>
+    </head>
+    <body>
+    <div class="hd">
+      <div class="hd-top">
+        <div class="hd-title">🥔 정처기 실기<span class="hd-badge" id="hd-badge">DB</span></div>
+        <span class="hd-streak" id="hd-streak">🔥 0일</span>
+      </div>
+      <div class="mode-tabs">
+        <button class="mtab on" onclick="setMode('review')">📖 복습</button>
+        <button class="mtab" onclick="setMode('flash')">🃏 암기</button>
+        <button class="mtab" onclick="setMode('quiz')">✏️ 기출형</button>
+        <button class="mtab" onclick="setMode('wrong')">❌ 오답</button>
+      </div>
+    </div>
+    <div class="main">
+      <div class="view on" id="view-review"></div>
+      <div class="fview" id="view-flash">
+        <div class="fc-hd">
+          <span class="fc-prog-txt" id="fc-prog">0 / 0</span>
+          <div class="fc-score-wrap">
+            <span class="fc-score-k" id="fc-k">✅ 0</span>
+            <span class="fc-score-u" id="fc-u">❌ 0</span>
+          </div>
+        </div>
+        <div class="fc-pbar"><div class="fc-pbar-fill" id="fc-pbar" style="width:0%"></div></div>
+        <div class="fc-area" id="fc-area" onclick="flipCard()">
+          <div class="fc-inner" id="fc-inner">
+            <div class="fc-face fc-front">
+              <div class="fc-tag" id="fc-tag-f">카테고리</div>
+              <div class="fc-word" id="fc-word">—</div>
+              <div class="fc-sub" id="fc-hint-sub"></div>
+            </div>
+            <div class="fc-face fc-back">
+              <div class="fc-tag">정답 ✅</div>
+              <div class="fc-word" id="fc-ans"></div>
+              <div class="fc-sub" id="fc-exp"></div>
+            </div>
+          </div>
+        </div>
+        <div class="fc-hint-txt" id="fc-hint-txt">👆 카드를 탭해서 뒤집기</div>
+        <div class="fc-actions" id="fc-actions">
+          <button class="fc-no" onclick="fcMark(false)">❌ 모르겠어</button>
+          <button class="fc-yes" onclick="fcMark(true)">✅ 알아!</button>
+        </div>
+        <div class="fc-result" id="fc-result">
+          <div class="re" id="fc-r-e"></div>
+          <div class="rt2" id="fc-r-t"></div>
+          <div class="rs" id="fc-r-s"></div>
+          <div class="rstats">
+            <div class="rstat"><div class="n" style="color:var(--green)" id="fc-r-k">0</div><div class="l">알아!</div></div>
+            <div class="rstat"><div class="n" style="color:var(--red)" id="fc-r-u">0</div><div class="l">모르겠어</div></div>
+            <div class="rstat"><div class="n" id="fc-r-tot">0</div><div class="l">전체</div></div>
+          </div>
+          <button class="fc-btn" onclick="startFlash()">🔁 다시 외우기</button>
+          <button class="fc-btn2" id="fc-r-unkn-btn" onclick="startFlashUnknown()">❌ 모르는 것만 다시</button>
+        </div>
+      </div>
+      <div class="qview" id="view-quiz">
+        <div class="qprog">
+          <div class="qprog-top">
+            <span class="qpl" id="qpl">0 / 0</span>
+            <div class="qpr"><span class="qpr-c" id="qpr-c">✓ 0</span><span class="qpr-w" id="qpr-w">✗ 0</span></div>
+          </div>
+          <div class="qpbar"><div class="qpbar-f" id="qpbar-f" style="width:0%"></div></div>
+        </div>
+        <div class="qcard" id="qcard">
+          <div class="qcard-top">
+            <span class="qcat-l" id="qcat-l">—</span>
+            <span class="qnum-l" id="qnum-l">1 / 20</span>
+          </div>
+          <div class="qbody">
+            <span class="qtype" id="qt-badge"></span>
+            <div class="qbox" id="qtxt"></div>
+            <div class="ans-section">
+              <div class="ans-label">▶ 답안 입력</div>
+              <div class="ans-wrap">
+                <input class="ans-input" id="ans-input" type="text" placeholder="답을 입력하세요" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <button class="submit-btn" id="submit-btn" onclick="submitAns()">확인</button>
+              </div>
+            </div>
+            <div class="res-box" id="res-box"></div>
+            <button class="next-btn" id="next-btn" onclick="nextQ()">다음 문제 →</button>
+          </div>
+        </div>
+        <div class="qresult" id="qresult">
+          <div class="qr-e" id="qr-e"></div>
+          <div class="qr-t" id="qr-t"></div>
+          <div class="qr-s" id="qr-s"></div>
+          <div class="qr-pct" id="qr-pct"></div>
+          <div class="qr-stats">
+            <div class="qr-stat"><div class="n" style="color:var(--green)" id="qr-c">0</div><div class="l">맞음</div></div>
+            <div class="qr-stat"><div class="n" style="color:var(--red)" id="qr-w">0</div><div class="l">틀림</div></div>
+            <div class="qr-stat"><div class="n" id="qr-t2">0</div><div class="l">전체</div></div>
+          </div>
+          <button class="qr-btn" onclick="startQuiz()">🔁 다시 풀기</button>
+          <button class="qr-btn2" id="qr-btn2" onclick="viewWrong()">❌ 오답 보기</button>
+          <button class="qr-btn3" onclick="setMode('review')">📖 복습으로</button>
+        </div>
+      </div>
+      <div class="view" id="view-wrong">
+        <div class="sechd" id="wrong-hd"></div>
+        <div id="wrong-body"></div>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nbtn on" data-cat="db" onclick="setCat('db')"><span class="ico">🗄️</span>DB<span class="dot" id="dot-db"></span></button>
+      <button class="nbtn" data-cat="net" onclick="setCat('net')"><span class="ico">🌐</span>네트워크<span class="dot" id="dot-net"></span></button>
+      <button class="nbtn" data-cat="sw" onclick="setCat('sw')"><span class="ico">🧪</span>SW개발<span class="dot" id="dot-sw"></span></button>
+      <button class="nbtn" data-cat="des" onclick="setCat('des')"><span class="ico">🏗️</span>SW설계<span class="dot" id="dot-des"></span></button>
+      <button class="nbtn" data-cat="sec" onclick="setCat('sec')"><span class="ico">🔐</span>보안<span class="dot" id="dot-sec"></span></button>
+    </nav>
+    <script>
+    const CATS = {
+      db:  {name:'DB·SQL',      color:'#3B5BDB',light:'#EEF2FF'},
+      net: {name:'네트워크·OS', color:'#7C3AED',light:'#F3EEFF'},
+      sw:  {name:'SW 개발',     color:'#059669',light:'#ECFDF5'},
+      des: {name:'SW 설계',     color:'#D97706',light:'#FFFBEB'},
+      sec: {name:'보안·신기술', color:'#DC2626',light:'#FFF5F5'},
+    };
+    const RV = {
+    db:[
+    {num:'1',name:'SQL 핵심 명령어',p:'💯',b:`<div class="mnemo">DDL·DML·DCL 구분 먼저!</div><table class="rt"><tr><th>분류</th><th>명령어</th><th>역할</th></tr><tr><td>DML</td><td><b>SELECT</b></td><td>조회</td></tr><tr><td>DML</td><td><b>INSERT INTO</b></td><td>삽입</td></tr><tr><td>DML</td><td><b>UPDATE SET</b></td><td>수정</td></tr><tr><td>DML</td><td><b>DELETE FROM</b></td><td>삭제</td></tr><tr><td>DDL</td><td><b>CREATE</b></td><td>생성</td></tr><tr><td>DDL</td><td><b>ALTER ADD/MODIFY/DROP</b></td><td>구조 변경</td></tr><tr><td>DDL</td><td><b>DROP TABLE</b></td><td>삭제 (CASCADE/RESTRICT)</td></tr><tr><td>DCL</td><td><b>GRANT … TO</b></td><td>권한 부여</td></tr><tr><td>DCL</td><td><b>REVOKE … FROM</b></td><td>권한 회수</td></tr></table><div class="tip"><b>WHERE vs HAVING:</b> WHERE = 그룹화 전 / HAVING = GROUP BY 후 집계에 조건<br><b>LIKE:</b> '%문자%'=포함 · '문자%'=시작 · '_문'=앞 1글자<br><b>AND는 OR보다 우선!</b></div>`},
+    {num:'2',name:'JOIN·집합연산자·서브쿼리',p:'💯',b:`<table class="rt"><tr><th>JOIN</th><th>설명</th></tr><tr><td><b>INNER JOIN</b></td><td>두 테이블 모두 매칭되는 행만</td></tr><tr><td><b>LEFT OUTER</b></td><td>왼쪽 전부 + 오른쪽 NULL</td></tr><tr><td><b>NATURAL JOIN</b></td><td>ON 없음, 공통 컬럼 자동 매칭</td></tr><tr><td><b>CROSS JOIN</b></td><td>모든 조합 (카르테시안)</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>집합연산자</th><th>핵심</th></tr><tr><td><b>UNION</b></td><td>중복 제거 합집합</td></tr><tr><td><b>UNION ALL</b></td><td>중복 허용 합집합</td></tr><tr><td><b>INTERSECT</b></td><td>교집합</td></tr><tr><td><b>EXCEPT / MINUS</b></td><td>차집합 (Oracle = MINUS)</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>서브쿼리 연산자</th><th>의미</th></tr><tr><td><b>IN</b></td><td>하나라도 일치</td></tr><tr><td><b>&gt; ALL</b></td><td>모든 값보다 큼</td></tr><tr><td><b>&gt; ANY</b></td><td>하나보다 큼</td></tr><tr><td><b>EXISTS</b></td><td>결과 존재하면 반환</td></tr></table>`},
+    {num:'3',name:'트랜잭션 ACID + Lock + 회복',p:'⭐',b:`<table class="rt"><tr><th>ACID</th><th>영어</th><th>의미</th></tr><tr><td><b>원자성</b></td><td>Atomicity</td><td><b>All or Nothing</b></td></tr><tr><td><b>일관성</b></td><td>Consistency</td><td>전후 무결성 보장</td></tr><tr><td><b>고립성</b></td><td>Isolation</td><td>다른 트랜잭션 끼어들기 불가</td></tr><tr><td><b>지속성</b></td><td>Durability</td><td>완료 결과 영구 저장</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>Lock</th><th>설명</th></tr><tr><td><b>S-Lock(공유락)</b></td><td>읽기 시, 동시 읽기 가능, 쓰기 불가</td></tr><tr><td><b>X-Lock(배타락)</b></td><td>쓰기 시, 읽기·쓰기 모두 불가</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>회복</th><th>조건</th><th>동작</th></tr><tr><td><b>Redo(재실행)</b></td><td>Start O + Commit O</td><td>복구 재실행</td></tr><tr><td><b>Undo(취소)</b></td><td>Start O + Commit X</td><td>작업 전부 취소</td></tr></table>`},
+    {num:'4',name:'정규화 (1NF~BCNF)',p:'🔥',b:`<div class="mnemo">1NF→2NF→3NF→BCNF</div><table class="rt"><tr><th>정규형</th><th>제거 대상</th><th>조건</th></tr><tr><td><b>1NF</b></td><td>반복 그룹</td><td>모든 속성 = 원자값</td></tr><tr><td><b>2NF</b></td><td><b>부분 함수 종속</b></td><td>완전 함수 종속</td></tr><tr><td><b>3NF</b></td><td><b>이행 함수 종속</b></td><td>A→B→C 제거</td></tr><tr><td><b>BCNF</b></td><td>후보키 아닌 결정자</td><td>모든 결정자 = 후보키</td></tr></table><div class="tip"><b>이행 함수 종속:</b> A→B, B→C → A→C 성립 (3NF에서 제거)</div>`},
+    {num:'5',name:'키(Key) · 무결성 · RAID',p:'⭐',b:`<div class="mnemo">슈퍼키→후보키→기본키+대체키</div><table class="rt"><tr><th>키</th><th>유일성</th><th>최소성</th></tr><tr><td><b>슈퍼키</b></td><td>✅</td><td>❌</td></tr><tr><td><b>후보키</b></td><td>✅</td><td>✅</td></tr><tr><td><b>기본키(PK)</b></td><td>✅ NOT NULL</td><td>✅</td></tr><tr><td><b>대체키</b></td><td>✅</td><td>✅</td></tr><tr><td><b>외래키(FK)</b></td><td>NULL 가능</td><td>—</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>RAID</th><th>방식</th><th>최소 디스크</th></tr><tr><td><b>RAID 0</b></td><td>스트라이핑, 패리티 없음</td><td>2개</td></tr><tr><td><b>RAID 1</b></td><td>미러링</td><td>2개</td></tr><tr><td><b>RAID 5</b></td><td>스트라이핑+분산패리티</td><td>3개</td></tr><tr><td><b>RAID 6</b></td><td>이중분산패리티</td><td>4개</td></tr></table>`},
+    ],
+    net:[
+    {num:'1',name:'메모리 교체 + 스케줄링',p:'⭐',b:`<table class="rt"><tr><th>교체 알고리즘</th><th>기준</th><th>특이사항</th></tr><tr><td><b>FIFO</b></td><td>먼저 들어온 것</td><td>Belady 이상 발생</td></tr><tr><td><b>LRU</b></td><td>가장 오래 미참조</td><td>가장 많이 사용</td></tr><tr><td><b>LFU</b></td><td>참조 횟수 최소</td><td>동률 시 FIFO</td></tr><tr><td><b>OPT</b></td><td>앞으로 가장 안쓸 것</td><td>이론상 최적, 구현 불가</td></tr></table><div class="tip"><b>Belady's Anomaly:</b> FIFO에서 프레임 수↑ → Page Fault가 오히려 ↑</div><table class="rt" style="margin-top:8px"><tr><th>스케줄링</th><th>선점</th><th>핵심</th></tr><tr><td><b>FIFO</b></td><td>비선점</td><td>도착 순서</td></tr><tr><td><b>SJF</b></td><td>비선점</td><td>짧은 것 먼저</td></tr><tr><td><b>Round Robin</b></td><td>선점</td><td>FIFO+시간할당량</td></tr><tr><td><b>SRT</b></td><td>선점</td><td>선점형 SJF</td></tr><tr><td><b>HRN</b></td><td>비선점</td><td>SJF+대기시간 고려</td></tr></table>`},
+    {num:'2',name:'라우팅 프로토콜 + 네트워크 계층',p:'⭐',b:`<table class="rt"><tr><th>프로토콜</th><th>알고리즘</th><th>분류</th><th>특징</th></tr><tr><td><b>RIP</b></td><td>거리 벡터(벨만-포드)</td><td>IGP</td><td>홉 수 기준, 최대 15홉</td></tr><tr><td><b>OSPF</b></td><td>링크 상태(다익스트라)</td><td>IGP</td><td>비용 기준, 대규모</td></tr><tr><td><b>BGP</b></td><td>경로 벡터</td><td>EGP</td><td>AS 간 라우팅</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>프로토콜</th><th>역할</th></tr><tr><td><b>ARP</b></td><td>IP→MAC 주소 변환</td></tr><tr><td><b>RARP</b></td><td>MAC→IP 주소 변환</td></tr><tr><td><b>ICMP</b></td><td>오류 전송 (Ping)</td></tr><tr><td><b>NAT</b></td><td>사설IP→공인IP 변환</td></tr></table>`},
+    {num:'3',name:'응용 계층 포트번호 (암기 필수)',p:'🔥',b:`<div class="mnemo">22 23 25 53 80 110 143 443 — 순서대로 외워!</div><table class="rt"><tr><th>포트</th><th>프로토콜</th><th>역할</th></tr><tr><td><b>22</b></td><td>SSH</td><td>암호화 원격접속</td></tr><tr><td><b>23</b></td><td>Telnet</td><td>평문 원격접속</td></tr><tr><td><b>25</b></td><td>SMTP</td><td>메일 발송</td></tr><tr><td><b>53</b></td><td>DNS</td><td>도메인→IP 변환</td></tr><tr><td><b>80</b></td><td>HTTP</td><td>웹</td></tr><tr><td><b>110</b></td><td>POP3</td><td>메일 수신(다운로드)</td></tr><tr><td><b>143</b></td><td>IMAP</td><td>메일 수신(동기화)</td></tr><tr><td><b>443</b></td><td>HTTPS</td><td>HTTP+SSL/TLS</td></tr></table>`},
+    {num:'4',name:'HDLC·Shell Script·오류제어·IPv6',p:'🔥',b:`<table class="rt"><tr><th>HDLC 프레임</th><th>비트</th><th>역할</th></tr><tr><td><b>I 프레임</b></td><td>0</td><td>데이터 전달</td></tr><tr><td><b>S 프레임</b></td><td>10</td><td>오류/흐름 제어</td></tr><tr><td><b>U 프레임</b></td><td>11</td><td>링크 동작 모드 설정</td></tr></table><div class="tip"><b>chmod 754:</b> 사용자(7=rwx), 그룹(5=r-x), 기타(4=r--)<br>r=4, w=2, x=1<br><b>FEC:</b> 스스로 수정 (해밍코드) / <b>BEC/ARQ:</b> 재전송 요청 (CRC, 패리티)<br><b>IPv6:</b> 128비트, 16진수 8그룹, :(콜론)으로 구분</div>`},
+    ],
+    sw:[
+    {num:'1',name:'테스트 커버리지 · 블랙박스 기법',p:'⭐',b:`<div class="mnemo">커버리지 강도: 구문 &lt; 결정 &lt; 조건 &lt; 조건/결정 &lt; MC/DC</div><table class="rt"><tr><th>커버리지</th><th>핵심</th></tr><tr><td><b>구문(Statement)</b></td><td>모든 명령문 1회 이상 실행</td></tr><tr><td><b>결정(Branch)</b></td><td>결정문 T/F 모두</td></tr><tr><td><b>조건</b></td><td>각 개별 조건식 T/F</td></tr><tr><td><b>MC/DC</b></td><td>개별 조건 독립적 영향</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>블랙박스</th><th>핵심</th></tr><tr><td><b>동등 분할</b></td><td>유효값/무효값 그룹핑 후 대표값</td></tr><tr><td><b>경곗값 분석</b></td><td>경계값 집중 테스트</td></tr><tr><td><b>결정 테이블</b></td><td>조건·행동 표로 정리</td></tr><tr><td><b>상태 전이</b></td><td>상태 변화 기반</td></tr><tr><td><b>오류 예측</b></td><td>경험/직관으로 예측</td></tr></table>`},
+    {num:'2',name:'테스트 자동화 · 레벨 · VPN',p:'🔥',b:`<table class="rt"><tr><th>구성요소</th><th>역할</th></tr><tr><td><b>테스트 드라이버</b></td><td><b>상향식</b> — 상위 모듈 역할 임시 대체</td></tr><tr><td><b>테스트 스텁</b></td><td><b>하향식</b> — 하위 모듈 역할 임시 대체</td></tr><tr><td><b>테스트 하네스</b></td><td>테스트 환경 구축 도구</td></tr><tr><td><b>테스트 슈트</b></td><td>테스트 케이스 집합</td></tr></table><div class="flow" style="margin-top:8px"><span class="s">단위</span><span class="a">→</span><span class="s">통합</span><span class="a">→</span><span class="s">시스템</span><span class="a">→</span><span class="s">인수</span></div><div class="tip"><b>알파:</b> 개발자 환경 / <b>베타:</b> 개발자 없이 사용자 수행</div><table class="rt" style="margin-top:8px"><tr><th>VPN 프로토콜</th><th>계층</th></tr><tr><td><b>PPTP</b></td><td>데이터링크</td></tr><tr><td><b>L2TP</b></td><td>데이터링크 (L2F+PPTP)</td></tr><tr><td><b>IPSec</b></td><td>네트워크 (가장 강력)</td></tr><tr><td><b>SSL/TLS</b></td><td>전송 (HTTPS 기반)</td></tr></table>`},
+    {num:'3',name:'데이터 형식 · 웹 서비스',p:'🤔',b:`<table class="rt"><tr><th>형식</th><th>주석</th><th>특징</th></tr><tr><td><b>JSON</b></td><td>❌</td><td>key-value, 경량, 현대 표준</td></tr><tr><td><b>XML</b></td><td>✅</td><td>태그(&lt;&gt;), 확장성</td></tr><tr><td><b>YAML</b></td><td>✅(#)</td><td>들여쓰기, 사람 친화적</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>웹서비스</th><th>특징</th></tr><tr><td><b>SOAP</b></td><td>XML 메시지</td></tr><tr><td><b>REST</b></td><td>HTTP+JSON, 현대 표준</td></tr><tr><td><b>UDDI</b></td><td>웹서비스 검색 레지스트리</td></tr><tr><td><b>WSDL</b></td><td>XML로 인터페이스 기술</td></tr></table>`},
+    ],
+    des:[
+    {num:'1',name:'생성 패턴 5가지 (싱팩빌프앱)',p:'💯',b:`<div class="mnemo">싱팩빌프앱 → 자주 출제!</div><table class="rt"><tr><th>패턴</th><th>핵심 설명</th></tr><tr><td><b>싱글톤</b></td><td>인스턴스 <b>하나만</b> 생성, 전역 접근</td></tr><tr><td><b>팩토리 메서드</b></td><td>상위=인터페이스, 서브클래스=실제 생성</td></tr><tr><td><b>빌더</b></td><td>단계별 복잡한 객체 생성</td></tr><tr><td><b>프로토타입</b></td><td>인스턴스 <b>복제(clone)</b></td></tr><tr><td><b>앱스트랙트 팩토리</b></td><td>관련 객체 조합 인터페이스 (Kit)</td></tr></table>`},
+    {num:'2',name:'구조 패턴 7가지 (어데퍼프브플컴)',p:'💯',b:`<div class="mnemo">어데퍼프브플컴</div><table class="rt"><tr><th>패턴</th><th>핵심 설명</th></tr><tr><td><b>어댑터</b></td><td>다른 인터페이스 <b>연결</b> (변환기)</td></tr><tr><td><b>데코레이터</b></td><td>객체 감싸서 기능 <b>동적 추가</b></td></tr><tr><td><b>퍼사드</b></td><td>복잡한 내부를 단순 인터페이스로</td></tr><tr><td><b>프록시</b></td><td><b>대리 객체</b>가 실제 객체 대신 처리</td></tr><tr><td><b>브리지</b></td><td>기능/구현 클래스 분리</td></tr><tr><td><b>플라이웨이트</b></td><td>공유로 <b>메모리 절약</b></td></tr><tr><td><b>컴포지트</b></td><td><b>트리 구조</b>, 복합/단일 동일 처리</td></tr></table>`},
+    {num:'3',name:'행위 패턴 9가지 (전옵중방이상인매커책템)',p:'💯',b:`<table class="rt"><tr><th>패턴</th><th>핵심 설명</th></tr><tr><td><b>전략(Strategy)</b></td><td>알고리즘 캡슐화, 동적 교체</td></tr><tr><td><b>옵저버(Observer)</b></td><td>상태변화 → 의존 객체 <b>자동 알림</b></td></tr><tr><td><b>커맨드</b></td><td>요청을 객체로 캡슐화 (Undo)</td></tr><tr><td><b>이터레이터</b></td><td>컬렉션 <b>순차 탐색</b> (Cursor)</td></tr><tr><td><b>템플릿 메서드</b></td><td>상위=골격, 하위=세부 구체화</td></tr><tr><td><b>상태(State)</b></td><td>상태에 따라 행동 변경</td></tr><tr><td><b>방문자(Visitor)</b></td><td>메서드가 각 클래스 순회</td></tr><tr><td><b>책임연쇄</b></td><td>요청 처리 체인 연결</td></tr><tr><td><b>중재자</b></td><td>객체 간 통신 <b>중앙 관리</b></td></tr></table>`},
+    {num:'4',name:'응집도·결합도·SOLID',p:'🔥',b:`<div class="mnemo">응집도 강→약: 기순통절시논우 (기능적=최선)</div><div class="mnemo" style="margin-top:6px">결합도 약→강: 자스제외공내 (자료=최선)</div><table class="rt"><tr><th>SOLID</th><th>원칙</th><th>핵심</th></tr><tr><td><b>SRP</b></td><td>단일 책임</td><td>클래스 = 하나의 책임</td></tr><tr><td><b>OCP</b></td><td>개방-폐쇄</td><td>확장O 변경X</td></tr><tr><td><b>LSP</b></td><td>리스코프 치환</td><td>자식이 부모 대체 가능</td></tr><tr><td><b>ISP</b></td><td>인터페이스 분리</td><td>안쓰는 메서드 의존X</td></tr><tr><td><b>DIP</b></td><td>의존성 역전</td><td>고수준이 저수준 의존X</td></tr></table>`},
+    {num:'5',name:'UML 다이어그램·클래스 관계',p:'🤔',b:`<div class="mnemo">정적 6: 클·객·컴·배·복·패 / 동적 7: 유·시·커·상·활·타·협</div><table class="rt"><tr><th>관계</th><th>표기</th><th>의미</th></tr><tr><td><b>복합(Composition)</b></td><td>◆ 채운 마름모</td><td>강한 소유, 생명주기 공유</td></tr><tr><td><b>집합(Aggregation)</b></td><td>◇ 빈 마름모</td><td>약한 소유</td></tr><tr><td><b>연관(Association)</b></td><td>─→</td><td>서로 연결</td></tr><tr><td><b>의존(Dependency)</b></td><td>⇢ 점선</td><td>짧은 시간 연관</td></tr><tr><td><b>일반화(상속)</b></td><td>─▷ 실선 빈삼각</td><td>상속</td></tr><tr><td><b>실체화(구현)</b></td><td>--▷ 점선 빈삼각</td><td>인터페이스 구현</td></tr></table>`},
+    ],
+    sec:[
+    {num:'1',name:'DoS 공격 종류',p:'🔥',b:`<table class="rt"><tr><th>공격</th><th>핵심 키워드</th></tr><tr><td><b>랜드 어택</b></td><td>출발지IP = 목적지IP 동일하게 위조</td></tr><tr><td><b>스머프(Smurf)</b></td><td>ICMP Echo + 브로드캐스팅 → 증폭</td></tr><tr><td><b>티어드롭</b></td><td>IP Fragment 조립 과정에서 오류 유발</td></tr><tr><td><b>죽음의 핑</b></td><td>과도하게 큰 ICMP 패킷 전송</td></tr><tr><td><b>SYN 플러딩</b></td><td>3-way handshake 미완료, SYN만 전송</td></tr></table><div class="tip"><b>DoS:</b> 단일 시스템<br><b>DDoS:</b> 다수 분산 시스템<br><b>DRDoS:</b> IP 스푸핑 + 정상 제3 서버(반사체) 이용, 증폭</div>`},
+    {num:'2',name:'네트워크 공격 · 악성코드',p:'🔥',b:`<table class="rt"><tr><th>공격</th><th>핵심</th></tr><tr><td><b>ARP 스푸핑</b></td><td>MAC 주소 위조, 트래픽 가로채기</td></tr><tr><td><b>세션 하이재킹</b></td><td>handshake 완료 후 세션 탈취</td></tr><tr><td><b>레인보우 테이블</b></td><td>미리 계산된 해시값으로 패스워드 역추적</td></tr><tr><td><b>무차별 공격</b></td><td>모든 문자 조합 대입 (Brute-force)</td></tr><tr><td><b>사전 공격</b></td><td>사전 단어 대입 (Dictionary)</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>악성코드</th><th>특징</th></tr><tr><td><b>웜(Worm)</b></td><td>자가 복제 + 자율 전파, 숙주 불필요</td></tr><tr><td><b>바이러스</b></td><td>실행파일 기생, 자율 전파 없음</td></tr><tr><td><b>트로이 목마</b></td><td>정상 프로그램 위장, 자기복제 없음</td></tr></table>`},
+    {num:'3',name:'암호화 알고리즘',p:'⭐',b:`<div class="tip"><b>대칭키:</b> 암복호화 키 동일, 빠름<br><b>비대칭키:</b> 공개키+개인키, 느림<br><b>해시:</b> 단방향, 복호화 불가</div><table class="rt"><tr><th>대칭키(블록)</th><th>특징</th></tr><tr><td><b>DES</b></td><td>IBM, 블록 64비트 (취약, 구식)</td></tr><tr><td><b>AES</b></td><td>DES 대체, 블록 128비트, 현재 표준</td></tr><tr><td><b>SEED</b></td><td>KISA 개발, 한국 최초 표준</td></tr><tr><td><b>Skipjack</b></td><td>음성 암호화에 주로 사용</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>비대칭키</th><th>기반</th></tr><tr><td><b>디피-헬만</b></td><td>최초 공개키, 이산 로그</td></tr><tr><td><b>RSA</b></td><td>소인수분해</td></tr><tr><td><b>ECC</b></td><td>타원곡선, 짧은 키</td></tr></table><table class="rt" style="margin-top:8px"><tr><th>해시</th><th>비트 수</th></tr><tr><td><b>MD5</b></td><td>128비트</td></tr><tr><td><b>SHA-1</b></td><td>160비트</td></tr><tr><td><b>SHA-256</b></td><td>256비트 (현재 표준)</td></tr></table>`},
+    {num:'4',name:'접근통제 · 3A · 인증 · 클라우드',p:'🤔',b:`<table class="rt"><tr><th>접근 통제</th><th>기반</th><th>특징</th></tr><tr><td><b>DAC(임의적)</b></td><td>신분/식별자</td><td>소유자가 직접 허용</td></tr><tr><td><b>MAC(강제적)</b></td><td>규칙/등급</td><td>강력한 중앙 통제</td></tr><tr><td><b>RBAC(역할기반)</b></td><td>역할(Role)</td><td>중앙 관리자</td></tr></table><div class="tip"><b>3A:</b> Authentication(인증) · Authorization(권한부여) · Accounting(계정)<br><b>SSO:</b> 커버로스 사용, 한번 인증→여러 자원<br><b>OTP:</b> 일회용 비밀번호, 단방향 해시<br><b>IaaS/PaaS/SaaS:</b> 인프라/플랫폼/소프트웨어</div>`},
+    ],
+    };
+    const FC = {
+    db:[
+    {front:'다음이 설명하는 SQL 명령어\n\n기존 테이블의 데이터를 변경할 때 사용하며\n"SET 컬럼=값 WHERE 조건" 형식으로 사용',back:'UPDATE',hint:'DML'},
+    {front:'UNION vs UNION ALL\n\n중복을 제거하는 것 / 중복을 허용하는 것',back:'UNION = 중복 제거\nUNION ALL = 중복 허용',hint:'집합연산자'},
+    {front:'권한을 부여하는 SQL 명령어\n권한을 회수하는 SQL 명령어',back:'부여: GRANT … ON … TO\n회수: REVOKE … ON … FROM',hint:'DCL'},
+    {front:'트랜잭션 ACID\nAll or Nothing을 의미하는 특성',back:'원자성 (Atomicity)',hint:'ACID'},
+    {front:'트랜잭션 회복\nStart O + Commit O 일 때',back:'Redo (재실행)\n— 완료된 트랜잭션 복구',hint:'회복 기법'},
+    {front:'트랜잭션 회복\nStart O + Commit X 일 때',back:'Undo (취소)\n— 작업 전부 취소',hint:'회복 기법'},
+    {front:'읽기 시 사용, 동시 읽기 가능\n쓰기는 불가능한 Lock',back:'S-Lock (공유 락, Shared Lock)',hint:'동시성 제어'},
+    {front:'2NF가 제거하는 종속\n기본키 일부에만 종속된 속성',back:'부분 함수 종속',hint:'정규화'},
+    {front:'A→B이고 B→C일 때 A→C가 성립\n3NF에서 제거하는 대상',back:'이행 함수 종속 (Transitive)',hint:'정규화'},
+    {front:'유일성 O + 최소성 O\nPK가 될 수 있는 키',back:'후보키 (Candidate Key)',hint:'키 종류'},
+    {front:'스트라이핑 + 분산 패리티\n최소 3개 디스크 필요',back:'RAID 5',hint:'RAID'},
+    {front:'오라클에서 차집합 연산자\n표준 SQL의 EXCEPT에 해당',back:'MINUS',hint:'집합연산자'},
+    {front:'GROUP BY 후 집계 결과에 조건\nWHERE와의 차이점',back:'HAVING\n(WHERE는 그룹화 전 조건)',hint:'SQL'},
+    {front:'외부 스키마 / 개념 스키마 / 내부 스키마\n각각 어떤 관점?',back:'외부=사용자·개발자\n개념=DBA 전체구조\n내부=물리적 저장',hint:'DB 스키마'},
+    ],
+    net:[
+    {front:'가장 오랫동안 참조되지 않은 페이지를 교체\n가장 널리 쓰이는 교체 알고리즘',back:'LRU\n(Least Recently Used)',hint:'메모리 교체'},
+    {front:'프레임 수를 늘렸는데 Page Fault가 오히려 증가\nFIFO에서 발생하는 이상 현상',back:"Belady's Anomaly\n(벨라디 이상 현상)",hint:'메모리 교체'},
+    {front:'선점형 SJF\n더 짧은 프로세스 도착 시 즉시 선점',back:'SRT\n(Shortest Remaining Time)',hint:'스케줄링'},
+    {front:'IP 주소 → MAC 주소 변환\nMAC 주소 → IP 주소 변환',back:'ARP (IP→MAC)\nRARP (MAC→IP)',hint:'네트워크 계층'},
+    {front:'메일 발송 포트번호\n메일 수신(동기화) 포트번호\n암호화 원격접속 포트번호',back:'SMTP: 25\nIMAP: 143\nSSH: 22',hint:'포트번호'},
+    {front:'HTTP 포트번호\nHTTPS 포트번호\nDNS 포트번호',back:'HTTP: 80\nHTTPS: 443\nDNS: 53',hint:'포트번호'},
+    {front:'거리 벡터(벨만-포드) 알고리즘 사용\n홉 수 기준, 최대 15홉, IGP',back:'RIP',hint:'라우팅'},
+    {front:'링크 상태(다익스트라) 알고리즘\n비용 기준, 대규모 네트워크, IGP',back:'OSPF',hint:'라우팅'},
+    {front:'AS 간 라우팅\n경로 벡터 알고리즘, EGP',back:'BGP',hint:'라우팅'},
+    {front:'HDLC 프레임 비트 0\n데이터 전달 담당',back:'I 프레임 (정보 프레임)',hint:'HDLC'},
+    {front:'chmod 754\n사용자 / 그룹 / 기타 권한',back:'사용자: rwx (7)\n그룹: r-x (5)\n기타: r-- (4)',hint:'Shell Script'},
+    {front:'스스로 오류 검출·수정\n대표적 기법: 해밍 코드',back:'FEC (전진 오류 수정)\nForward Error Correction',hint:'오류 제어'},
+    ],
+    sw:[
+    {front:'테스트 커버리지 강도 순서',back:'구문 < 결정 < 조건 < 조건/결정 < MC/DC',hint:'커버리지'},
+    {front:'상향식 테스트에서\n아직 구현되지 않은 상위 모듈 역할 임시 대체',back:'테스트 드라이버 (Driver)',hint:'테스트 자동화'},
+    {front:'하향식 테스트에서\n아직 구현되지 않은 하위 모듈 역할 임시 대체',back:'테스트 스텁 (Stub)',hint:'테스트 자동화'},
+    {front:'테스트 레벨 순서',back:'단위 → 통합 → 시스템 → 인수',hint:'테스트 레벨'},
+    {front:'개발자 환경, 통제된 상태에서 수행\nvs\n개발자 없이 사용자 직접 수행',back:'알파(Alpha) vs 베타(Beta) 테스트',hint:'인수 테스트'},
+    {front:'IP 패킷 단위로 암호화\n네트워크 계층, 가장 강력한 VPN',back:'IPSec',hint:'VPN'},
+    {front:'L2F와 PPTP를 결합한 VPN\n데이터링크 계층',back:'L2TP',hint:'VPN'},
+    {front:'JSON은 주석 가능? 불가?\nYAML은 주석 가능? 불가?',back:'JSON: 주석 불가 ❌\nYAML: 주석 가능 ✅ (# 사용)',hint:'데이터 형식'},
+    ],
+    des:[
+    {front:'다음이 설명하는 디자인 패턴\n\n클래스 인스턴스를 오직 하나만 생성하고\n어디서든 이 인스턴스에 접근할 수 있게 함',back:'싱글톤 (Singleton)\n생성 패턴',hint:'디자인 패턴'},
+    {front:'다음이 설명하는 디자인 패턴\n\n한 객체의 상태가 바뀌면 그 객체에 의존하는\n다른 객체들에게 자동으로 알림을 보내는 패턴',back:'옵저버 (Observer)\n행위 패턴 / 발행-수신 모델',hint:'디자인 패턴'},
+    {front:'다음이 설명하는 디자인 패턴\n\n대리 객체(Surrogate)가 실제 객체 대신\n요청을 처리하고 흐름을 제어하는 패턴',back:'프록시 (Proxy)\n구조 패턴',hint:'디자인 패턴'},
+    {front:'다음이 설명하는 디자인 패턴\n\n서로 다른 인터페이스를 가진 클래스들을\n함께 사용할 수 있도록 변환하는 패턴',back:'어댑터 (Adapter)\n구조 패턴',hint:'디자인 패턴'},
+    {front:'다음이 설명하는 디자인 패턴\n\n객체를 복제(clone)하여 새로운 인스턴스를\n생성하는 패턴',back:'프로토타입 (Prototype)\n생성 패턴',hint:'디자인 패턴'},
+    {front:'다음이 설명하는 디자인 패턴\n\n컬렉션의 내부를 노출하지 않고\n모든 요소를 순차적으로 접근하는 패턴\nCursor라고도 불림',back:'이터레이터 (Iterator)\n행위 패턴',hint:'디자인 패턴'},
+    {front:'응집도 강도 순서 (강→약)',back:'기능적 > 순차적 > 통신적 > 절차적\n> 시간적 > 논리적 > 우연적',hint:'응집도'},
+    {front:'결합도 강도 순서 (약→강)',back:'자료 < 스탬프 < 제어 < 외부\n< 공통 < 내용',hint:'결합도'},
+    {front:'OCP 원칙\n개방-폐쇄 원칙',back:'확장에는 열려 있고\n변경에는 닫혀 있어야 함',hint:'SOLID'},
+    {front:'클래스다이어그램\n◆ 채운 마름모 vs ◇ 빈 마름모',back:'◆ 복합(Composition): 강한 소유, 생명주기 공유\n◇ 집합(Aggregation): 약한 소유',hint:'UML'},
+    {front:'럼바우 3가지 모델링\n각각의 산출물',back:'객체모델링 → ER 다이어그램\n동적모델링 → 상태 다이어그램\n기능모델링 → 자료흐름도(DFD)',hint:'럼바우'},
+    ],
+    sec:[
+    {front:'다음이 설명하는 공격\n\n패킷의 출발지 IP와 목적지 IP를 동일하게 설정하여\n서버가 자기 자신에게 응답하게 만드는 공격',back:'랜드 어택 (LAND Attack)',hint:'DoS 공격'},
+    {front:'다음이 설명하는 공격\n\nICMP Echo 패킷을 브로드캐스트로 전송하여\n네트워크 전체가 피해자에게 응답하도록 유도',back:'스머프 (Smurf) 공격',hint:'DoS 공격'},
+    {front:'다음이 설명하는 공격\n\nTCP 3-way handshake를 완료하지 않고\nSYN 패킷만 대량 전송하여 서버 자원 고갈',back:'SYN 플러딩 (SYN Flooding)',hint:'DoS 공격'},
+    {front:'다음이 설명하는 악성코드\n\n숙주 프로그램 없이 자가 복제하고\n네트워크를 통해 자율적으로 전파',back:'웜 (Worm)',hint:'악성코드'},
+    {front:'DES의 단점을 보완한 현재 대칭키 표준\n블록 크기 128비트',back:'AES (Advanced Encryption Standard)',hint:'암호화 알고리즘'},
+    {front:'한국인터넷진흥원(KISA)이 개발한\n한국 최초 블록 암호화 표준',back:'SEED',hint:'암호화 알고리즘'},
+    {front:'소인수분해를 기반으로 하는\n공개키 비대칭 암호화 알고리즘',back:'RSA',hint:'비대칭키'},
+    {front:'역할(Role)에 기초하여\n중앙 관리자가 접근 권한을 관리하는 방식',back:'RBAC (역할기반 접근통제)\nRole Based Access Control',hint:'접근 통제'},
+    {front:'커버로스(Kerberos)를 사용\n한번 로그인으로 여러 시스템/서비스 이용',back:'SSO (Single Sign-On)',hint:'인증'},
+    {front:'IP 스푸핑 + 정상적인 제3 서버를 반사체로 이용\n증폭 효과로 피해 극대화',back:'DRDoS\n(Distributed Reflection DoS)',hint:'분산 공격'},
+    ],
+    };
+    const QZ = {
+    db:[
+    {type:'단답형',s:'SQL',q:`다음이 설명하는 SQL 명령어를 쓰시오.\n\n기존 테이블에 새로운 데이터를 추가할 때 사용하며, 다음과 같은 형식으로 사용한다.\n\n  ___ INTO 테이블명(컬럼1, 컬럼2) VALUES(값1, 값2);`,ans:['INSERT','insert'],disp:'INSERT',exp:'INSERT INTO 테이블명(컬럼) VALUES(값); — DML 중 삽입 명령어'},
+    {type:'단답형',s:'SQL',q:`다음이 설명하는 SQL 명령어를 쓰시오.\n\n특정 사용자에게 테이블에 대한 SELECT, INSERT 등의 권한을 부여하는 DCL 명령어이다. 반대로 권한을 회수하는 명령어는 REVOKE이다.`,ans:['GRANT','grant'],disp:'GRANT',exp:'GRANT 권한 ON 테이블 TO 사용자;\\nREVOKE 권한 ON 테이블 FROM 사용자;'},
+    {type:'단답형',s:'SQL',q:`다음 두 집합 연산자의 차이를 빈칸에 쓰시오.\n\nUNION     : 두 SELECT 결과를 합치며 (   ①   )을 제거한다.\nUNION ALL : 두 SELECT 결과를 합치며 (   ①   )을 제거하지 않는다.\n\n①에 들어갈 말을 쓰시오.`,ans:['중복','duplicate','중복행','중복 행'],disp:'중복',exp:'UNION: 중복 제거 / UNION ALL: 중복 유지'},
+    {type:'단답형',s:'SQL',q:`다음이 설명하는 SQL 절(Clause)을 쓰시오.\n\nGROUP BY 절로 그룹화한 이후, 집계 함수 결과에 조건을 적용할 때 사용한다. WHERE 절은 그룹화 전에 조건을 적용하지만 이 절은 그룹화 후에 적용한다.`,ans:['HAVING','having'],disp:'HAVING',exp:'WHERE: 그룹화 전 조건 / HAVING: GROUP BY 후 집계에 조건'},
+    {type:'단답형',s:'트랜잭션',q:`트랜잭션의 특성 중 다음이 설명하는 것을 쓰시오.\n\n트랜잭션의 연산은 데이터베이스에 모두 반영되든지 아니면 전혀 반영되지 않아야 한다. 즉, 트랜잭션 내의 모든 명령은 반드시 완벽히 수행되어야 하며, 모두 실행되지 못한 경우엔 되돌려야 한다.\n(All or Nothing)`,ans:['원자성','atomicity','Atomicity'],disp:'원자성 (Atomicity)',exp:'ACID 중 원자성: All or Nothing. 전부 실행되거나 하나도 실행 안 됨'},
+    {type:'단답형',s:'트랜잭션',q:`다음 괄호 안에 알맞은 것을 쓰시오.\n\n트랜잭션 회복 기법에서 로그 파일을 분석한 결과, Start 기록은 있지만 Commit 기록이 없는 트랜잭션은 (    ) 연산을 수행하여 작업 이전 상태로 되돌린다.`,ans:['Undo','undo','취소'],disp:'Undo',exp:'Start O + Commit X → Undo (취소)\\nStart O + Commit O → Redo (재실행)'},
+    {type:'단답형',s:'트랜잭션',q:`다음이 설명하는 Lock의 종류를 쓰시오.\n\n트랜잭션이 데이터를 읽을 때 설정하는 잠금으로, 여러 트랜잭션이 동시에 이 잠금을 설정하고 읽기를 수행할 수 있지만, 쓰기는 불가능하다.`,ans:['S-Lock','s-lock','공유락','공유 락','Shared Lock','shared lock'],disp:'S-Lock (공유 락)',exp:'S-Lock: 읽기 시, 동시 읽기 가능, 쓰기 불가\\nX-Lock(배타락): 읽기·쓰기 모두 불가'},
+    {type:'단답형',s:'정규화',q:`다음이 설명하는 정규화 단계를 쓰시오.\n\n릴레이션에서 부분 함수 종속을 제거하여 완전 함수 종속으로 만드는 과정이다. 기본키의 일부 속성에만 종속된 속성들을 별도의 릴레이션으로 분리한다.`,ans:['2NF','제2정규형','2차 정규형','제 2 정규형'],disp:'제2정규형 (2NF)',exp:'2NF: 부분 함수 종속 제거 / 3NF: 이행 함수 종속 제거'},
+    {type:'단답형',s:'정규화',q:`다음 빈칸에 들어갈 알맞은 용어를 쓰시오.\n\nA→B이고 B→C일 때 A→C가 성립하는 경우를 (    )(이)라고 한다. 제3정규형(3NF)은 이것을 제거하는 것을 목표로 한다.`,ans:['이행함수종속','이행 함수 종속','이행적 함수 종속','Transitive Functional Dependency'],disp:'이행 함수 종속',exp:'이행 함수 종속: A→B, B→C → A→C 성립. 3NF에서 제거'},
+    {type:'단답형',s:'키(Key)',q:`다음이 설명하는 키의 종류를 쓰시오.\n\n릴레이션에서 튜플을 유일하게 식별할 수 있는 속성들의 집합 중, 최소성을 만족하는 키이다. 기본키(Primary Key)가 될 수 있는 모든 키를 의미한다.`,ans:['후보키','Candidate Key','candidate key'],disp:'후보키 (Candidate Key)',exp:'후보키 = 유일성O + 최소성O / 슈퍼키 = 유일성O + 최소성X'},
+    {type:'단답형',s:'SQL',q:`다음이 설명하는 SQL 연산자를 쓰시오.\n\n두 테이블에서 서로 관련된 컬럼명이 같을 때 ON 조건 없이 자동으로 매칭하여 조인하며, 결과에서 중복 컬럼을 제거하는 조인 방식이다.`,ans:['NATURAL JOIN','natural join','자연조인','자연 조인'],disp:'NATURAL JOIN',exp:'NATURAL JOIN: 공통 컬럼 자동 매칭, ON 없음, 중복 컬럼 제거'},
+    {type:'단답형',s:'RAID',q:`다음이 설명하는 RAID 레벨을 쓰시오.\n\n스트라이핑과 분산 패리티를 결합한 방식으로, 최소 3개의 디스크가 필요하다. 하나의 디스크에 장애가 발생해도 데이터를 복구할 수 있으며, 성능과 안정성의 균형이 좋다.`,ans:['RAID 5','RAID5','raid 5','raid5'],disp:'RAID 5',exp:'RAID 5: 스트라이핑+분산패리티, 최소 3개, 1개 장애 허용'},
+    {type:'단답형',s:'무결성',q:`다음이 설명하는 무결성 제약 조건을 쓰시오.\n\n기본키(Primary Key)로 설정된 속성은 NULL 값을 가질 수 없고, 각 튜플을 유일하게 식별할 수 있어야 한다는 조건이다.`,ans:['개체무결성','개체 무결성','Entity Integrity'],disp:'개체 무결성',exp:'개체 무결성: PK = NOT NULL + 유일\\n참조 무결성: FK = 참조 PK값 or NULL'},
+    {type:'단답형',s:'관계대수',q:`관계대수 연산자 중 다음이 설명하는 것의 기호를 쓰시오.\n\n수평적 연산으로, 릴레이션에서 조건을 만족하는 튜플(행)만을 선택하는 연산이다. SQL의 WHERE 절에 해당한다.`,ans:['σ','시그마','Sigma'],disp:'σ (시그마, Select 연산)',exp:'σ = 셀렉트(수평, 행 선택) / π = 프로젝트(수직, 열 선택)'},
+    ],
+    net:[
+    {type:'단답형',s:'메모리 교체',q:`다음이 설명하는 페이지 교체 알고리즘을 쓰시오.\n\n메모리에서 가장 오랫동안 사용하지 않은 페이지를 교체한다. 참조된 페이지를 목록의 최상위로 이동시키는 방식으로 구현되며, 성능이 우수하여 실제로 가장 많이 사용되는 알고리즘이다.`,ans:['LRU','lru','LRU 알고리즘','Least Recently Used'],disp:'LRU (Least Recently Used)',exp:'LRU: 가장 오래 미참조 교체 / LFU: 참조횟수 최소 / FIFO: 먼저 들어온 것'},
+    {type:'단답형',s:'메모리 교체',q:`다음이 설명하는 현상을 무엇이라 하는가?\n\nFIFO 페이지 교체 알고리즘에서 프레임의 수를 늘렸음에도 불구하고 페이지 폴트(Page Fault)의 수가 오히려 증가하는 현상이다.`,ans:["Belady's Anomaly","belady's anomaly","벨라디","벨라디의 이상","Belady Anomaly","belady anomaly"],disp:"Belady's Anomaly (벨라디 이상 현상)",exp:'FIFO 알고리즘에서만 발생, 프레임↑ → Page Fault↑'},
+    {type:'단답형',s:'스케줄링',q:`다음이 설명하는 CPU 스케줄링 알고리즘을 쓰시오.\n\nSJF(Shortest Job First) 알고리즘의 선점형 버전으로, 현재 실행 중인 프로세스보다 남은 실행시간이 더 짧은 프로세스가 도착하면 즉시 CPU를 빼앗는다.`,ans:['SRT','srt','SRT 알고리즘','Shortest Remaining Time'],disp:'SRT (Shortest Remaining Time)',exp:'SRT = 선점형 SJF / SJF = 비선점형'},
+    {type:'단답형',s:'라우팅',q:`다음이 설명하는 라우팅 프로토콜을 쓰시오.\n\n링크 상태(Link State) 알고리즘인 다익스트라(Dijkstra) 알고리즘을 사용하며, 경로 비용을 기준으로 최단 경로를 계산한다. IGP 계열로 대규모 네트워크에 적합하다.`,ans:['OSPF','ospf','Open Shortest Path First'],disp:'OSPF',exp:'OSPF: 링크상태·다익스트라·비용기준·IGP\\nRIP: 거리벡터·벨만포드·홉수·IGP·최대15홉'},
+    {type:'단답형',s:'네트워크 계층',q:`다음이 설명하는 프로토콜을 쓰시오.\n\nIP 주소(논리 주소)를 이용하여 해당 호스트의 MAC 주소(물리 주소)를 알아내는 프로토콜이다. 반대로 MAC 주소로 IP 주소를 알아내는 것은 RARP이다.`,ans:['ARP','arp','Address Resolution Protocol'],disp:'ARP (Address Resolution Protocol)',exp:'ARP: IP→MAC / RARP: MAC→IP'},
+    {type:'단답형',s:'응용 계층',q:`다음 각 프로토콜의 포트 번호를 쓰시오.\n\nSMTP:  (   ①   )\nPOP3:  (   ②   )\n\n①을 쓰시오.`,ans:['25'],disp:'25',exp:'SMTP(25): 메일 발송 / POP3(110): 메일 수신 다운로드 / IMAP(143): 메일 수신 동기화'},
+    {type:'단답형',s:'응용 계층',q:`SSH 프로토콜의 포트 번호를 쓰시오.\n\nSSH는 원격 접속 시 데이터를 암호화하여 전송하는 프로토콜로, 평문으로 전송하는 Telnet(포트 23)의 보안 문제를 해결하였다.`,ans:['22'],disp:'22',exp:'SSH: 22 (암호화) / Telnet: 23 (평문) — SSH가 보안상 우수'},
+    {type:'단답형',s:'HDLC',q:`다음이 설명하는 HDLC 프레임의 종류를 쓰시오.\n\n첫 번째 비트가 '10'으로 시작하는 프레임으로, 오류 제어 및 흐름 제어에 사용된다.`,ans:['S프레임','S 프레임','감시 프레임','감독 프레임','Supervisory Frame'],disp:'S 프레임 (감시 프레임)',exp:'I프레임(0): 데이터 / S프레임(10): 오류·흐름 제어 / U프레임(11): 링크 설정'},
+    {type:'단답형',s:'오류 제어',q:`다음이 설명하는 오류 제어 방식을 쓰시오.\n\n수신측에서 오류를 스스로 검출하고 수정할 수 있는 방식으로, 별도의 재전송을 요구하지 않는다. 대표적인 기법으로 해밍 코드(Hamming Code)가 있다.`,ans:['FEC','fec','전진오류수정','Forward Error Correction'],disp:'FEC (전진 오류 수정)',exp:'FEC: 스스로 수정 (해밍코드)\\nBEC/ARQ: 재전송 요청 (CRC, 패리티)'},
+    {type:'단답형',s:'IPv6',q:`IPv4와 비교하여 IPv6의 주소 비트 수를 쓰시오.\n\nIPv4는 32비트를 사용하지만, IPv6는 주소 공간 부족 문제를 해결하기 위해 더 많은 비트를 사용한다.`,ans:['128','128비트','128 비트'],disp:'128비트',exp:'IPv4: 32비트, 10진수, .으로 구분\\nIPv6: 128비트, 16진수, :으로 구분'},
+    {type:'단답형',s:'스케줄링',q:`반환 시간을 구하는 공식을 쓰시오. 빈칸을 채우시오.\n\n반환 시간 = (    ) + 실행 시간`,ans:['대기시간','대기 시간','Waiting Time'],disp:'대기 시간',exp:'반환 시간 = 대기 시간 + 실행 시간'},
+    ],
+    sw:[
+    {type:'단답형',s:'테스트 자동화',q:`다음이 설명하는 테스트 구성 요소를 쓰시오.\n\n상향식 통합 테스트에서 아직 개발이 완료되지 않은 상위 모듈을 대신하여 임시로 제공되는 테스트 도구이다. 하위 모듈을 테스트하기 위해 상위 모듈의 역할을 임시로 수행한다.`,ans:['테스트 드라이버','테스트드라이버','드라이버','Driver','Test Driver'],disp:'테스트 드라이버 (Driver)',exp:'드라이버: 상향식, 상위모듈 대체\\n스텁: 하향식, 하위모듈 대체'},
+    {type:'단답형',s:'테스트 자동화',q:`다음이 설명하는 테스트 구성 요소를 쓰시오.\n\n하향식 통합 테스트에서 아직 개발이 완료되지 않은 하위 모듈을 대신하여 임시로 제공되는 테스트 도구이다. 상위 모듈이 호출할 때 미리 정해진 결과를 반환한다.`,ans:['테스트 스텁','테스트스텁','스텁','Stub','Test Stub'],disp:'테스트 스텁 (Stub)',exp:'스텁: 하향식, 하위모듈 대체\\n드라이버: 상향식, 상위모듈 대체'},
+    {type:'단답형',s:'커버리지',q:`다음이 설명하는 테스트 커버리지를 쓰시오.\n\n각 개별 조건식이 다른 조건에 독립적으로 전체 결정의 결과에 영향을 미치는지 확인하는 커버리지로, 화이트박스 테스트 커버리지 기준 중 가장 강도가 강하다.`,ans:['MC/DC','mc/dc','MCDC','mcdc','변형조건결정 커버리지','수정 조건/결정 커버리지'],disp:'MC/DC 커버리지',exp:'커버리지 강도: 구문 < 결정 < 조건 < 조건/결정 < MC/DC (가장 강함)'},
+    {type:'단답형',s:'블랙박스 테스트',q:`다음이 설명하는 블랙박스 테스트 기법을 쓰시오.\n\n입력 데이터를 유효한 값과 유효하지 않은 값으로 분류하여 각 그룹의 대표값으로 테스트하는 기법이다. 동일한 결과를 나타내는 입력 데이터들을 하나의 그룹으로 묶어 처리한다.`,ans:['동등 분할','동등분할','동치 분할','Equivalence Partitioning','동등 분할 기법'],disp:'동등 분할 (Equivalence Partitioning)',exp:'동등분할: 유효값/무효값 그룹핑 후 대표값 테스트'},
+    {type:'단답형',s:'테스트 레벨',q:`다음 빈칸에 알맞은 테스트 레벨을 순서대로 쓰시오.\n\n(   ① 테스트   ) → 통합 테스트 → 시스템 테스트 → (   ② 테스트   )\n\n①을 쓰시오.`,ans:['단위','단위 테스트','유닛'],disp:'단위',exp:'단위 → 통합 → 시스템 → 인수 테스트'},
+    {type:'단답형',s:'인터페이스 보안',q:`다음이 설명하는 VPN 프로토콜을 쓰시오.\n\n네트워크 계층에서 IP 패킷 단위로 암호화를 수행하는 가장 강력한 VPN 프로토콜이다. AH(Authentication Header)와 ESP(Encapsulating Security Payload) 두 가지 헤더를 사용한다.`,ans:['IPSec','ipsec','IPsec'],disp:'IPSec',exp:'IPSec: 네트워크 계층, 가장 강력\\nL2TP: 데이터링크(L2F+PPTP)\\nSSL/TLS: 전송 계층'},
+    {type:'단답형',s:'데이터 형식',q:`다음이 설명하는 데이터 표현 형식을 쓰시오.\n\n들여쓰기를 이용하여 데이터 구조를 표현하는 사람 친화적인 데이터 직렬화 형식이다. 주석을 지원하며(#), 설정 파일 작성에 자주 사용된다.`,ans:['YAML','yaml'],disp:'YAML',exp:'YAML: 들여쓰기, 주석(#) 가능, 사람 친화적\\nJSON: 주석 불가 / XML: 태그(<>) 사용'},
+    {type:'단답형',s:'인수 테스트',q:`다음이 설명하는 인수 테스트 종류를 쓰시오.\n\n개발자의 통제 하에서 개발자 환경에서 실시되는 테스트로, 테스터가 사용자를 대표하여 실시한다. 반대로 베타 테스트는 개발자 없이 사용자가 직접 수행한다.`,ans:['알파 테스트','알파테스트','Alpha Test','알파'],disp:'알파(Alpha) 테스트',exp:'알파: 개발자 환경, 통제된 상태\\n베타: 개발자 없이, 사용자 직접'},
+    ],
+    des:[
+    {type:'단답형',s:'생성 패턴',q:`다음이 설명하는 디자인 패턴의 이름을 쓰시오.\n\n클래스의 인스턴스가 오직 하나임을 보장하고, 이 인스턴스에 대한 전역적인 접근을 제공하는 패턴이다. 예를 들어 프린터 스풀러, 로그 기록기 등에 사용된다.`,ans:['싱글톤','Singleton','singleton'],disp:'싱글톤 (Singleton)',exp:'생성 패턴 | 인스턴스 하나만 생성, 전역 접근'},
+    {type:'단답형',s:'생성 패턴',q:`다음이 설명하는 디자인 패턴의 이름을 쓰시오.\n\n객체 생성을 위한 인터페이스는 상위 클래스에서 정의하고, 실제로 어떤 클래스의 인스턴스를 만들지는 하위 클래스에서 결정하도록 하는 패턴이다.`,ans:['팩토리 메서드','Factory Method','factory method','팩토리메서드'],disp:'팩토리 메서드 (Factory Method)',exp:'생성 패턴 | 상위=인터페이스 정의, 서브클래스=실제 생성'},
+    {type:'단답형',s:'구조 패턴',q:`다음이 설명하는 디자인 패턴의 이름을 쓰시오.\n\n클라이언트가 요청한 인터페이스와 실제 제공되는 인터페이스가 달라 함께 동작할 수 없을 때, 이를 변환하여 연결해주는 패턴이다. 전원 콘센트 변환기에 비유된다.`,ans:['어댑터','Adapter','adapter'],disp:'어댑터 (Adapter)',exp:'구조 패턴 | 서로 다른 인터페이스 연결 (변환기 역할)'},
+    {type:'단답형',s:'구조 패턴',q:`다음이 설명하는 디자인 패턴의 이름을 쓰시오.\n\n실제 객체에 대한 접근을 제어하기 위해 대리 객체(Surrogate)를 제공하는 패턴이다. 보안, 원격 접근, 지연 초기화, 캐싱 등에 활용된다.`,ans:['프록시','Proxy','proxy'],disp:'프록시 (Proxy)',exp:'구조 패턴 | 대리 객체가 실제 객체 대신 처리'},
+    {type:'단답형',s:'행위 패턴',q:`다음이 설명하는 디자인 패턴의 이름을 쓰시오.\n\n한 객체의 상태가 바뀌면 그 객체에 의존하는 다른 객체들에게 연락이 가고 자동으로 내용이 갱신되는 방식의 일대다(1:N) 의존성을 정의한 패턴이다.\n(발행-구독 모델, Publish-Subscribe)`,ans:['옵저버','Observer','observer'],disp:'옵저버 (Observer)',exp:'행위 패턴 | 상태 변화 자동 알림, 발행-수신 모델'},
+    {type:'단답형',s:'행위 패턴',q:`다음이 설명하는 디자인 패턴의 이름을 쓰시오.\n\n내부 컬렉션의 구현 방법을 외부로 노출시키지 않으면서도 모든 항목에 순서대로 접근할 수 있는 방법을 제공하는 패턴이다. "Cursor"라고도 불린다.`,ans:['이터레이터','Iterator','iterator'],disp:'이터레이터 (Iterator)',exp:'행위 패턴 | 컬렉션 순차 탐색, Cursor'},
+    {type:'단답형',s:'구조 패턴',q:`다음이 설명하는 디자인 패턴의 이름을 쓰시오.\n\n복잡한 서브 시스템들에 대한 단순화된 인터페이스를 제공하는 패턴이다. 클라이언트와 서브 시스템 사이의 의존관계를 줄여 결합도를 낮추는 효과가 있다.`,ans:['퍼사드','파사드','Facade','facade'],disp:'퍼사드 (Facade)',exp:'구조 패턴 | 단순한 인터페이스 제공, 결합도 낮춤'},
+    {type:'단답형',s:'응집도',q:`다음이 설명하는 응집도의 종류를 쓰시오.\n\n모듈 내의 모든 기능 요소들이 단 하나의 목적을 위해 수행되는 응집도이다. 가장 강한 응집도로, 모듈이 단 하나의 기능만을 수행하도록 설계되어 이상적인 형태로 평가된다.`,ans:['기능적응집도','기능적 응집도','기능 응집도','Functional Cohesion'],disp:'기능적 응집도',exp:'응집도 강→약: 기능적 > 순차적 > 통신적 > 절차적 > 시간적 > 논리적 > 우연적'},
+    {type:'단답형',s:'SOLID',q:`다음이 설명하는 객체지향 설계 원칙(SOLID)을 약어로 쓰시오.\n\n소프트웨어 구성요소(클래스, 모듈, 함수 등)는 확장에는 열려 있어야 하고, 수정에 대해서는 닫혀 있어야 한다는 원칙이다.`,ans:['OCP','ocp','개방폐쇄원칙','개방-폐쇄 원칙'],disp:'OCP (개방-폐쇄 원칙)',exp:'SOLID: SRP(단일책임) OCP(개방폐쇄) LSP(리스코프) ISP(인터페이스분리) DIP(의존성역전)'},
+    {type:'단답형',s:'UML',q:`UML 클래스 다이어그램에서 다음이 설명하는 관계를 쓰시오.\n\n전체-부분 관계에서 부분 객체가 전체 객체에 강하게 속하여 생명주기를 함께하는 관계이다. 채워진 마름모(◆)로 표현한다.`,ans:['복합','Composition','composition','복합관계','복합(Composition)'],disp:'복합 관계 (Composition)',exp:'◆ 복합: 강한 소유, 생명주기 공유 / ◇ 집합: 약한 소유, 독립 존재 가능'},
+    {type:'단답형',s:'럼바우',q:`럼바우 방법론에서 기능 모델링(Functional Modeling)의 산출물을 쓰시오.`,ans:['자료흐름도','자료 흐름도','DFD','dfd','Data Flow Diagram'],disp:'자료 흐름도 (DFD)',exp:'럼바우: 객체→ER다이어그램 / 동적→상태다이어그램 / 기능→DFD'},
+    ],
+    sec:[
+    {type:'단답형',s:'DoS 공격',q:`다음이 설명하는 공격 기법을 쓰시오.\n\n공격자가 패킷의 출발지 IP 주소를 피해자의 IP 주소와 동일하게 위조하여 전송하는 공격이다. 피해 시스템이 자기 자신에게 계속 응답을 전송하게 되어 과부하가 발생한다.`,ans:['랜드어택','랜드 어택','LAND Attack','LAND','land attack'],disp:'랜드 어택 (LAND Attack)',exp:'출발지IP = 목적지IP 동일 설정'},
+    {type:'단답형',s:'DoS 공격',q:`다음이 설명하는 공격 기법을 쓰시오.\n\n출발지 IP를 피해자 IP로 위조한 ICMP Echo Request 패킷을 브로드캐스트 주소로 전송한다. 네트워크상의 모든 호스트가 피해자에게 응답을 보내 트래픽이 폭증한다.`,ans:['스머프','스머프공격','Smurf','smurf','Smurf Attack'],disp:'스머프 (Smurf) 공격',exp:'ICMP Echo + 브로드캐스팅 → 증폭 효과'},
+    {type:'단답형',s:'DoS 공격',q:`다음이 설명하는 공격 기법을 쓰시오.\n\nTCP 3-way handshake 과정에서 SYN 패킷만 대량으로 전송하고 ACK를 보내지 않아, 서버의 연결 대기 큐(백로그)를 가득 채워 정상 서비스를 불가능하게 하는 공격이다.`,ans:['SYN 플러딩','SYN플러딩','SYN Flooding','SYN flooding','SYN flood'],disp:'SYN 플러딩 (SYN Flooding)',exp:'TCP 3-way handshake 악용 / 3-way handshake: SYN→SYN+ACK→ACK'},
+    {type:'단답형',s:'분산 공격',q:`다음이 설명하는 공격 기법을 쓰시오.\n\nIP 주소를 피해자의 IP로 위조한 요청 패킷을 정상적인 제3의 서버(반사체)에 보내고, 반사 서버가 피해자에게 대용량 응답을 보내게 만드는 DoS 공격이다. IP 스푸핑과 서버의 응답 증폭 효과를 이용한다.`,ans:['DRDoS','drDos','DR DoS','Distributed Reflection DoS'],disp:'DRDoS',exp:'IP스푸핑 + 정상서버(반사체) + 증폭 효과\\nDoS: 단일 / DDoS: 다수 분산 / DRDoS: 반사'},
+    {type:'단답형',s:'악성코드',q:`다음이 설명하는 악성코드를 쓰시오.\n\n독립적인 프로그램으로, 숙주 프로그램 없이 스스로 복제하며 네트워크를 통해 다른 시스템으로 자율적으로 전파된다. 이메일이나 네트워크 공유를 통해 주로 확산된다.`,ans:['웜','Worm','worm'],disp:'웜 (Worm)',exp:'웜: 자가복제+자율전파, 숙주불필요\\n바이러스: 실행파일기생, 자율전파없음'},
+    {type:'단답형',s:'암호화 알고리즘',q:`다음이 설명하는 암호화 알고리즘을 쓰시오.\n\n미국 국가표준기술연구소(NIST)가 DES의 취약점을 보완하기 위해 선정한 현재의 대칭키 블록 암호화 표준이다. 블록 크기는 128비트이며, 키 길이는 128/192/256비트를 지원한다.`,ans:['AES','aes','Advanced Encryption Standard'],disp:'AES (Advanced Encryption Standard)',exp:'AES: DES 대체, 블록 128비트, 현재 대칭키 표준\\nDES: IBM, 64비트 (취약)'},
+    {type:'단답형',s:'암호화 알고리즘',q:`다음이 설명하는 암호화 알고리즘을 쓰시오.\n\n한국인터넷진흥원(KISA)에서 개발한 대칭키 블록 암호화 알고리즘으로, 한국의 최초 국내 표준 암호 알고리즘이다.`,ans:['SEED','seed'],disp:'SEED',exp:'SEED: KISA 개발, 한국 최초 블록 암호 표준'},
+    {type:'단답형',s:'암호화 알고리즘',q:`다음이 설명하는 암호화 알고리즘을 쓰시오.\n\n큰 합성수의 소인수분해가 매우 어렵다는 수학적 원리를 기반으로 하는 공개키 암호화 알고리즘이다. 공개키와 개인키 한 쌍을 사용한다.`,ans:['RSA','rsa'],disp:'RSA',exp:'RSA: 소인수분해 기반, 비대칭키\\n디피-헬만: 이산로그 / ECC: 타원곡선'},
+    {type:'단답형',s:'접근 통제',q:`다음이 설명하는 접근 통제 방식을 약어로 쓰시오.\n\n사용자의 역할(Role)에 기반하여 접근 권한을 부여하는 방식이다. 중앙 관리자가 역할을 정의하고, 사용자에게 역할을 할당하여 권한을 관리한다.`,ans:['RBAC','rbac','역할기반접근통제','역할 기반 접근 통제','Role Based Access Control'],disp:'RBAC (역할기반 접근통제)',exp:'DAC: 신분기반, 소유자 직접\\nMAC: 규칙/등급, 강제 통제\\nRBAC: 역할 기반, 중앙 관리자'},
+    {type:'단답형',s:'인증',q:`다음이 설명하는 인증 기술을 쓰시오.\n\n사용자가 한 번만 로그인하면 별도의 인증 과정 없이 여러 시스템이나 서비스를 이용할 수 있는 기술이다. 커버로스(Kerberos) 프로토콜을 주로 사용한다.`,ans:['SSO','sso','Single Sign-On','Single Sign On'],disp:'SSO (Single Sign-On)',exp:'SSO: 커버로스 사용, 1회 인증으로 여러 자원 접근'},
+    ],
+    };
+    let curCat='db', curMode='review';
+    let fcList=[],fcIdx=0,fcKnow=0,fcUnknow=0,fcFlipped=false,fcUnknowList=[];
+    let qList=[],qIdx=0,qSc=0,qSw=0,qWrongList=[],qAnswered=false;
+    const wrongMap={};
+    window.onload=()=>{loadStreak();setCat('db')};
+    function loadStreak(){
+      try{
+        const d=localStorage.getItem('streak_date'),n=localStorage.getItem('streak_days')||'0';
+        const today=new Date().toDateString();
+        if(d!==today){
+          const yesterday=new Date(Date.now()-86400000).toDateString();
+          const days=d===yesterday?parseInt(n)+1:1;
+          localStorage.setItem('streak_date',today);localStorage.setItem('streak_days',days);
+          document.getElementById('hd-streak').textContent=`🔥 ${days}일`;
+        }else document.getElementById('hd-streak').textContent=`🔥 ${n}일`;
+      }catch(e){}
+    }
+    function setCat(cat){
+      curCat=cat;const c=CATS[cat];
+      document.documentElement.style.setProperty('--ac',c.color);
+      document.documentElement.style.setProperty('--ac-l',c.light);
+      document.querySelectorAll('.nbtn').forEach(b=>b.classList.toggle('on',b.dataset.cat===cat));
+      document.getElementById('hd-badge').textContent=c.name;
+      updateDots();
+      if(curMode==='review')renderReview();
+      else if(curMode==='flash')startFlash();
+      else if(curMode==='quiz')startQuiz();
+      else renderWrong();
+    }
+    function setMode(m){
+      curMode=m;
+      document.querySelectorAll('.mtab').forEach((b,i)=>b.classList.toggle('on',['review','flash','quiz','wrong'][i]===m));
+      document.getElementById('view-review').classList.toggle('on',m==='review');
+      document.getElementById('view-flash').classList.toggle('on',m==='flash');
+      document.getElementById('view-quiz').classList.toggle('on',m==='quiz');
+      document.getElementById('view-wrong').classList.toggle('on',m==='wrong');
+      if(m==='review')renderReview();
+      else if(m==='flash')startFlash();
+      else if(m==='quiz')startQuiz();
+      else renderWrong();
+    }
+    function updateDots(){
+      ['db','net','sw','des','sec'].forEach(cat=>{
+        const el=document.getElementById('dot-'+cat);
+        if(el)el.classList.toggle('show',!!(wrongMap[cat]&&wrongMap[cat].length>0));
+      });
+    }
+    function renderReview(){
+      const wrap=document.getElementById('view-review');
+      wrap.innerHTML=(RV[curCat]||[]).map((s,i)=>`
+        <div class="rcard" id="rc${i}">
+          <div class="rcard-hd" onclick="tog('rc${i}')">
+            <div class="rcard-num">${s.num}</div>
+            <div class="rcard-name">${s.name}</div>
+            <span class="prob">${s.p}</span>
+            <span class="arr">▾</span>
+          </div>
+          <div class="rcard-body">${s.b}</div>
+        </div>`).join('');
+      tog('rc0');
+    }
+    function tog(id){document.getElementById(id).classList.toggle('open')}
+    function startFlash(useUnknown){
+      const all=FC[curCat]||[];
+      fcList=shuffle(useUnknown?(fcUnknowList.length?[...fcUnknowList]:[...all]):[...all]);
+      fcIdx=0;fcKnow=0;fcUnknow=0;fcFlipped=false;fcUnknowList=[];
+      document.getElementById('fc-result').classList.remove('show');
+      document.getElementById('fc-area').style.display='';
+      document.getElementById('fc-hint-txt').style.display='';
+      document.getElementById('fc-actions').classList.remove('show');
+      showFC();
+    }
+    function startFlashUnknown(){startFlash(true)}
+    function showFC(){
+      if(fcIdx>=fcList.length){showFCResult();return}
+      const c=fcList[fcIdx];
+      fcFlipped=false;
+      document.getElementById('fc-inner').classList.remove('flip');
+      document.getElementById('fc-tag-f').textContent=c.hint||curCat.toUpperCase();
+      document.getElementById('fc-word').textContent=c.front;
+      document.getElementById('fc-hint-sub').textContent='';
+      document.getElementById('fc-ans').textContent=c.back;
+      document.getElementById('fc-exp').textContent='';
+      document.getElementById('fc-hint-txt').style.display='';
+      document.getElementById('fc-actions').classList.remove('show');
+      const total=fcList.length;
+      document.getElementById('fc-prog').textContent=`${fcIdx+1} / ${total}`;
+      document.getElementById('fc-pbar').style.width=(fcIdx/total*100)+'%';
+      document.getElementById('fc-k').textContent=`✅ ${fcKnow}`;
+      document.getElementById('fc-u').textContent=`❌ ${fcUnknow}`;
+    }
+    function flipCard(){
+      if(fcIdx>=fcList.length)return;
+      if(!fcFlipped){
+        fcFlipped=true;
+        document.getElementById('fc-inner').classList.add('flip');
+        document.getElementById('fc-hint-txt').style.display='none';
+        document.getElementById('fc-actions').classList.add('show');
+      }
+    }
+    function fcMark(know){
+      if(!fcFlipped)return;
+      if(know)fcKnow++;else{fcUnknow++;fcUnknowList.push(fcList[fcIdx]);}
+      fcIdx++;showFC();
+    }
+    function showFCResult(){
+      document.getElementById('fc-area').style.display='none';
+      document.getElementById('fc-hint-txt').style.display='none';
+      document.getElementById('fc-actions').classList.remove('show');
+      const total=fcList.length,pct=Math.round(fcKnow/total*100);
+      const e=pct>=90?'🎉':pct>=70?'😊':pct>=50?'💪':'📚';
+      const t=pct>=90?'완벽해요!':pct>=70?'잘하고 있어요!':pct>=50?'반은 외웠어요!':'더 반복이 필요해요!';
+      document.getElementById('fc-r-e').textContent=e;
+      document.getElementById('fc-r-t').textContent=t;
+      document.getElementById('fc-r-s').textContent=`정답률 ${pct}%`;
+      document.getElementById('fc-r-k').textContent=fcKnow;
+      document.getElementById('fc-r-u').textContent=fcUnknow;
+      document.getElementById('fc-r-tot').textContent=total;
+      const btn=document.getElementById('fc-r-unkn-btn');
+      btn.className='fc-btn2'+(fcUnknow>0?' show':'');
+      btn.textContent=`❌ 모르는 것만 다시 (${fcUnknow}개)`;
+      document.getElementById('fc-result').classList.add('show');
+    }
+    function startQuiz(){
+      const qs=QZ[curCat]||[];
+      qList=shuffle([...qs]);
+      qIdx=0;qSc=0;qSw=0;qWrongList=[];qAnswered=false;
+      document.getElementById('qresult').classList.remove('show');
+      document.getElementById('qcard').style.display='';
+      if(qList.length)showQ();
+    }
+    function showQ(){
+      if(qIdx>=qList.length){showQResult();return}
+      const q=qList[qIdx];
+      qAnswered=false;
+      document.getElementById('qcat-l').textContent=q.s;
+      document.getElementById('qnum-l').textContent=`${qIdx+1} / ${qList.length}`;
+      const tb=document.getElementById('qt-badge');
+      tb.className='qtype qtype-sa';
+      tb.textContent='✏️ 단답형';
+      document.getElementById('qtxt').textContent=q.q;
+      const inp=document.getElementById('ans-input');
+      inp.value='';inp.className='ans-input';inp.disabled=false;
+      inp.onkeydown=e=>{if(e.key==='Enter'&&!qAnswered)submitAns()};
+      document.getElementById('submit-btn').disabled=false;
+      document.getElementById('res-box').className='res-box';
+      document.getElementById('res-box').innerHTML='';
+      document.getElementById('next-btn').className='next-btn';
+      const card=document.getElementById('qcard');
+      card.style.animation='none';card.offsetHeight;card.style.animation='';
+      setTimeout(()=>inp.focus(),300);
+      updateQProg();
+    }
+    function submitAns(){
+      if(qAnswered)return;
+      const q=qList[qIdx];
+      const input=document.getElementById('ans-input').value;
+      if(!input.trim())return;
+      qAnswered=true;
+      document.getElementById('submit-btn').disabled=true;
+      document.getElementById('ans-input').disabled=true;
+      const correct=checkAns(input,q.ans);
+      const inp=document.getElementById('ans-input');
+      inp.className='ans-input '+(correct?'ok':'ng');
+      const box=document.getElementById('res-box');
+      if(correct){
+        qSc++;
+        box.className='res-box show ok';
+        box.innerHTML=`<div class="res-head">🎉 정답!</div><div class="res-exp">${q.exp}</div>`;
+      }else{
+        qSw++;
+        qWrongList.push({...q,userAns:input});
+        box.className='res-box show ng';
+        box.innerHTML=`<div class="res-head">❌ 오답</div><div class="res-correct">✅ 정답: ${q.disp}</div><div class="res-exp">${q.exp}</div>`;
+      }
+      document.getElementById('next-btn').className='next-btn show';
+      updateQProg();
+    }
+    function nextQ(){qIdx++;showQ()}
+    function updateQProg(){
+      const total=qList.length;
+      document.getElementById('qpl').textContent=`${qIdx} / ${total}`;
+      document.getElementById('qpbar-f').style.width=(qIdx/total*100)+'%';
+      document.getElementById('qpr-c').textContent=`✓ ${qSc}`;
+      document.getElementById('qpr-w').textContent=`✗ ${qSw}`;
+    }
+    function showQResult(){
+      document.getElementById('qcard').style.display='none';
+      const total=qList.length,pct=Math.round(qSc/total*100);
+      document.getElementById('qr-e').textContent=pct>=90?'🎉':pct>=70?'👍':pct>=50?'💪':'📚';
+      document.getElementById('qr-t').textContent=pct>=90?'완벽해요!':pct>=70?'잘했어요!':pct>=50?'절반 정도!':'다시 복습하세요!';
+      document.getElementById('qr-s').textContent=pct>=90?'이 파트 자신 있습니다!':pct>=70?'틀린 것만 복습하면 완벽!':'복습 탭으로 개념 다시 확인하세요.';
+      document.getElementById('qr-pct').textContent=pct+'%';
+      document.getElementById('qr-c').textContent=qSc;
+      document.getElementById('qr-w').textContent=qSw;
+      document.getElementById('qr-t2').textContent=total;
+      const btn2=document.getElementById('qr-btn2');
+      if(qWrongList.length>0){
+        wrongMap[curCat]=[...qWrongList];
+        btn2.className='qr-btn2 show';
+        btn2.textContent=`❌ 오답 보기 (${qWrongList.length}개)`;
+        updateDots();
+      }else btn2.className='qr-btn2';
+      document.getElementById('qresult').classList.add('show');
+      updateQProg();
+    }
+    function checkAns(input,answers){
+      const norm=s=>s.trim().toLowerCase().replace(/[\s\-\_\(\)]/g,'');
+      const ni=norm(input);
+      return answers.some(a=>{
+        const na=norm(a);
+        return ni===na||ni.includes(na)||na.includes(ni);
+      });
+    }
+    function viewWrong(){setMode('wrong')}
+    function renderWrong(){
+      const wrongs=wrongMap[curCat]||[];
+      const hd=document.getElementById('wrong-hd');
+      const body=document.getElementById('wrong-body');
+      if(wrongs.length===0){
+        hd.textContent='오답 노트';
+        body.innerHTML='<div class="empty-state">아직 오답이 없어요 🎉<br>기출형 퀴즈를 먼저 풀어보세요!</div>';
+        return;
+      }
+      hd.textContent=`${CATS[curCat].name} 오답 ${wrongs.length}개`;
+      body.innerHTML=`<button class="back-btn" onclick="setMode('quiz')">↩ 기출형 다시 풀기</button>`+
+        wrongs.map((q,i)=>`<div class="wcard">
+          <div class="wcard-q">${i+1}. ${q.q}</div>
+          ${q.userAns?`<div class="wcard-your">내 답: "${q.userAns}"</div>`:''}
+          <div class="wcard-ans-l">✅ 정답</div>
+          <div class="wcard-ans">${q.disp}</div>
+          <div class="wcard-exp">${q.exp}</div>
+        </div>`).join('');
+    }
+    function shuffle(a){
+      for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+      return a;
+    }
+    </script>
+    </body>
+    </html>
+    """
+    
+    # Streamlit 화면에 HTML/JS 앱 전체를 내장 (높이 800px 지정)
+    components.html(cbt_html, height=800, scrolling=True)
 
 # ════════════════════════════════════════════════
 # 🎰 럭키 슬롯
