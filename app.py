@@ -47,6 +47,38 @@ def save_comment(name, comment):
     with open(COMMENTS_FILE, 'w', encoding='utf-8') as f:
         json.dump(comments, f, indent=4, ensure_ascii=False)
 
+# --- 랭킹 시스템 추가 ---
+def get_user_rankings():
+    users = load_users()
+    rankings = []
+    for uid, data in users.items():
+        total_wealth = data.get('cash', 0)
+        # 포트폴리오 가치 계산 (현재가 기준, 현재가가 없으면 매입 단가 사용)
+        portfolio_val = 0
+        portfolio = data.get('portfolio', {})
+        
+        # 현재 주식 가격 가져오기 (세션에 있으면 사용, 없으면 0)
+        current_prices = {}
+        if 'stock_data' in st.session_state:
+             current_prices = {k: v['price'] for k, v in st.session_state.stock_data.items()}
+             
+        for sid, p_data in portfolio.items():
+            qty = p_data.get('qty', 0)
+            if qty > 0:
+                price = current_prices.get(sid, p_data.get('avg_price', 0))
+                portfolio_val += qty * price
+                
+        rankings.append({
+            "uid": uid,
+            "title": data.get('equipped_title', '뉴비'),
+            "total": total_wealth + portfolio_val
+        })
+    
+    # 총 자산 기준으로 내림차순 정렬
+    rankings.sort(key=lambda x: x['total'], reverse=True)
+    return rankings
+
+
 st.set_page_config(page_title="HYOMIN UNIVERSE", page_icon="🌌", layout="wide")
 
 st.markdown("""
@@ -58,6 +90,11 @@ st.markdown("""
     .stButton>button { border: 1px solid #00d4ff; color: #00d4ff; background: rgba(0,212,255,0.05); border-radius: 8px; }
     .stButton>button:hover { background-color: #00d4ff; color: #0a0a1a; }
     div[data-testid="stBlock"] { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; }
+    /* 랭킹 스타일 */
+    .rank-card { background: rgba(0, 0, 0, 0.4); border-left: 4px solid #ffaa00; padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0; }
+    .rank-1 { border-color: #ffd700; } /* 금 */
+    .rank-2 { border-color: #c0c0c0; } /* 은 */
+    .rank-3 { border-color: #cd7f32; } /* 동 */
 </style>
 """, unsafe_allow_html=True)
 
@@ -90,6 +127,7 @@ if 'logged_in_user' not in st.session_state:
             if st.button("가입하기", use_container_width=True):
                 users = load_users()
                 if new_id in users: st.error("이미 존재하는 아이디입니다.")
+                elif len(new_id) < 2 or len(new_pw) < 2: st.warning("2글자 이상 입력하세요.")
                 else:
                     users[new_id] = {"pw": new_pw, "cash": 100000000, "inventory": [], "equipped_title": "뉴비", "portfolio": {}}
                     save_users(users)
@@ -97,12 +135,31 @@ if 'logged_in_user' not in st.session_state:
     st.stop()
 
 # ==============================
-# 사이드바 메뉴 (10종)
+# 글로벌 주식 데이터 초기화 (다른 탭에서도 랭킹 계산에 필요)
+# ==============================
+stock_config = [
+    {"id": "SAMJI", "name": "삼지전자", "vol": 0.05, "trend": 1.01},
+    {"id": "SAMSUNG", "name": "삼성전자", "vol": 0.02, "trend": 1.0},
+    {"id": "HYUNDAI", "name": "현대차", "vol": 0.025, "trend": 1.0},
+    {"id": "NAVER", "name": "네이버", "vol": 0.03, "trend": 1.0},
+    {"id": "KAKAO", "name": "카카오", "vol": 0.035, "trend": 0.99},
+    {"id": "KAON", "name": "가온브로드밴드", "vol": 0.06, "trend": 1.02},
+    {"id": "HFR", "name": "에이치에프알", "vol": 0.055, "trend": 1.0},
+    {"id": "GOODUS", "name": "굿어스데이터", "vol": 0.04, "trend": 1.0}
+]
+
+if 'stock_data' not in st.session_state:
+    st.session_state.stock_data = {s['id']: {"name":s['name'], "price": random.randint(10000, 100000), "history": []} for s in stock_config}
+if 'news_feed' not in st.session_state: 
+    st.session_state.news_feed = []
+
+# ==============================
+# 사이드바 메뉴 & 실시간 랭킹
 # ==============================
 with st.sidebar:
     st.title("메인 메뉴")
     st.subheader(f"[{st.session_state.equipped_title}] {st.session_state.logged_in_user}")
-    st.metric("내 자산", f"₩{st.session_state.global_cash:,}")
+    st.metric("내 현금 자산", f"₩{st.session_state.global_cash:,}")
     if st.button("로그아웃", use_container_width=True):
         sync_user_data()
         for key in list(st.session_state.keys()): del st.session_state[key]
@@ -115,6 +172,25 @@ with st.sidebar:
         "🎰 럭키 슬롯머신", "⛏️ 코인 채굴장", "🛒 슈퍼 상점", "💬 커뮤니티"
     ]
     menu = st.radio("콘텐츠 선택", menus)
+    
+    st.markdown("---")
+    st.markdown("### 🏆 명예의 전당 (실시간 총자산)")
+    sync_user_data() # 랭킹 표시 전 내 정보 동기화
+    rankings = get_user_rankings()
+    
+    medals = ["🥇", "🥈", "🥉"]
+    for i, rank in enumerate(rankings[:5]): # Top 5까지만 표시
+        medal = medals[i] if i < 3 else "🏅"
+        rank_class = f"rank-{i+1}" if i < 3 else ""
+        is_me = " (나)" if rank['uid'] == st.session_state.logged_in_user else ""
+        
+        st.markdown(f"""
+        <div class='rank-card {rank_class}'>
+            <div style='font-size: 14px; font-weight: bold; color: #fff;'>{medal} {rank['uid']}{is_me}</div>
+            <div style='font-size: 11px; color: #aaa;'>[{rank['title']}]</div>
+            <div style='font-size: 15px; color: #00ff88; text-align: right;'>₩{rank['total']:,.0f}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ==============================
 # 콘텐츠 1: 홈 대시보드
@@ -125,28 +201,13 @@ if menu == "🏠 대시보드":
     st.image("https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80", caption="Cyberpunk City")
 
 # ==============================
-# 콘텐츠 2: 주식 종합 시장
+# 콘텐츠 2: 주식 종합 시장 (오류 완벽 수정본)
 # ==============================
 elif menu == "📈 주식 종합 시장":
     st.title("📈 대한민국 주식 종합 시장")
     
     auto_refresh = st.checkbox("🔄 실시간 차트/뉴스 갱신 (3초)")
     if auto_refresh: st.markdown('<meta http-equiv="refresh" content="3">', unsafe_allow_html=True)
-
-    stock_config = [
-        {"id": "SAMJI", "name": "삼지전자", "vol": 0.05, "trend": 1.01},
-        {"id": "SAMSUNG", "name": "삼성전자", "vol": 0.02, "trend": 1.0},
-        {"id": "HYUNDAI", "name": "현대차", "vol": 0.025, "trend": 1.0},
-        {"id": "NAVER", "name": "네이버", "vol": 0.03, "trend": 1.0},
-        {"id": "KAKAO", "name": "카카오", "vol": 0.035, "trend": 0.99},
-        {"id": "KAON", "name": "가온브로드밴드", "vol": 0.06, "trend": 1.02},
-        {"id": "HFR", "name": "에이치에프알", "vol": 0.055, "trend": 1.0},
-        {"id": "GOODUS", "name": "굿어스데이터", "vol": 0.04, "trend": 1.0}
-    ]
-
-    if 'stock_data' not in st.session_state:
-        st.session_state.stock_data = {s['id']: {"name":s['name'], "price": random.randint(10000, 100000), "history": []} for s in stock_config}
-    if 'news_feed' not in st.session_state: st.session_state.news_feed = []
 
     # 주가 변동 엔진
     market_data = []
@@ -159,10 +220,15 @@ elif menu == "📈 주식 종합 시장":
         curr_data['history'].append(curr_data['price'])
         curr_data['history'] = curr_data['history'][-20:]
         
-        market_data.append({"종목명": curr_data['name'], "현재가": curr_data['price'], "등락률": change_pct * 100})
+        market_data.append({
+            "종목명": curr_data['name'], 
+            "현재가": curr_data['price'], 
+            "등락률": change_pct * 100
+        })
         
         if random.random() < 0.05:
-            st.session_state.news_feed.insert(0, f"[{curr_data['name']}] {'어닝 서프라이즈! 기관 대량 매수' if change_pct>0 else '악재 돌출! 외인 매도세 전환'}")
+            msg = "어닝 서프라이즈! 기관 대량 매수" if change_pct > 0 else "악재 돌출! 외인 매도세 전환"
+            st.session_state.news_feed.insert(0, f"[{curr_data['name']}] {msg}")
             st.session_state.news_feed = st.session_state.news_feed[:5]
 
     col1, col2 = st.columns([1.2, 1])
@@ -170,66 +236,98 @@ elif menu == "📈 주식 종합 시장":
     with col1:
         st.subheader("📊 시장 전체 현황")
         df_market = pd.DataFrame(market_data)
-        # 등락률에 따른 히트맵 컬러
-        def color_cells(val):
-            color = '#ff4444' if val < 0 else '#00ff88'
-            return f'color: {color}; font-weight: bold;'
         
-        st.dataframe(df_market.style.format({"현재가": "₩{:,.0f}", "등락률": "{:.2f}%"}).applymap(color_cells, subset=['등락률']), use_container_width=True)
+        # Pandas 버전 호환성 완벽 해결 (styler 대신 직접 HTML 렌더링)
+        def highlight_row(row):
+            color = '#ff4444' if row['등락률'] < 0 else '#00ff88'
+            sign = '▲' if row['등락률'] >= 0 else '▼'
+            return f"<tr><td style='padding:8px;'>{row['종목명']}</td><td style='padding:8px; text-align:right;'>₩{row['현재가']:,}</td><td style='padding:8px; text-align:right; color:{color}; font-weight:bold;'>{sign} {abs(row['등락률']):.2f}%</td></tr>"
+
+        html_table = "<table style='width:100%; border-collapse: collapse; background:rgba(0,0,0,0.3); border-radius:8px;'>"
+        html_table += "<tr style='border-bottom: 1px solid #555;'><th style='padding:8px; text-align:left;'>종목명</th><th style='padding:8px; text-align:right;'>현재가</th><th style='padding:8px; text-align:right;'>등락률</th></tr>"
+        for _, row in df_market.iterrows():
+            html_table += highlight_row(row)
+        html_table += "</table>"
         
+        st.markdown(html_table, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         st.subheader("📰 실시간 시장 속보")
-        for n in st.session_state.news_feed: st.info(n)
+        for n in st.session_state.news_feed: 
+            st.info(n)
 
     with col2:
         st.subheader("💼 내 계좌 및 거래")
-        selected_stock = st.selectbox("거래 종목 선택", [s['name'] for s in stock_config])
-        sid = next(s['id'] for s in stock_config if s['name'] == selected_stock)
+        selected_stock_name = st.selectbox("거래 종목 선택", [s['name'] for s in stock_config])
+        sid = next(s['id'] for s in stock_config if s['name'] == selected_stock_name)
         
         # 미니 차트
         df_chart = pd.DataFrame(st.session_state.stock_data[sid]['history'], columns=["가격"])
-        st.plotly_chart(px.line(df_chart, y="가격", template="plotly_dark", height=250).update_layout(margin=dict(l=0,r=0,t=0,b=0)), use_container_width=True)
+        fig = px.line(df_chart, y="가격", template="plotly_dark", height=250)
+        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_title="", yaxis_title="")
+        fig.update_traces(line_color="#00d4ff")
+        st.plotly_chart(fig, use_container_width=True)
         
         curr_price = st.session_state.stock_data[sid]['price']
         owned = st.session_state.portfolio.get(sid, {"qty": 0, "avg_price": 0})
         
-        st.markdown(f"**현재가:** ₩{curr_price:,} | **보유량:** {owned['qty']}주 (평단가: ₩{int(owned['avg_price']):,})")
+        # 평가액 및 수익률 계산
+        qty = owned['qty']
+        avg_price = owned['avg_price']
+        eval_amt = qty * curr_price
+        profit = eval_amt - (qty * avg_price)
+        profit_pct = ((curr_price - avg_price) / avg_price * 100) if avg_price > 0 else 0
+        
+        st.markdown(f"**현재가:** <span style='font-size: 24px; color: #00d4ff;'>₩{curr_price:,}</span>", unsafe_allow_html=True)
+        st.markdown(f"**보유량:** {qty}주 (평단가: ₩{int(avg_price):,})")
+        if qty > 0:
+            p_color = "#00ff88" if profit >= 0 else "#ff4444"
+            p_sign = "+" if profit >= 0 else ""
+            st.markdown(f"**평가액:** ₩{eval_amt:,} / **손익:** <span style='color: {p_color};'>{p_sign}₩{int(profit):,} ({p_sign}{profit_pct:.2f}%)</span>", unsafe_allow_html=True)
         
         trade_qty = st.number_input("수량", min_value=1, value=1)
         
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("📈 매수"):
+            if st.button("📈 매수", use_container_width=True):
                 cost = trade_qty * curr_price
                 if st.session_state.global_cash >= cost:
                     st.session_state.global_cash -= cost
-                    new_qty = owned["qty"] + trade_qty
-                    new_avg = ((owned["qty"] * owned["avg_price"]) + cost) / new_qty
+                    new_qty = qty + trade_qty
+                    new_avg = ((qty * avg_price) + cost) / new_qty
                     st.session_state.portfolio[sid] = {"qty": new_qty, "avg_price": new_avg}
                     sync_user_data()
                     st.rerun()
-            if st.button("🔥 풀매수"):
+                else: st.error("현금이 부족합니다.")
+            if st.button("🔥 풀매수", use_container_width=True):
                 max_qty = st.session_state.global_cash // curr_price
                 if max_qty > 0:
                     cost = max_qty * curr_price
                     st.session_state.global_cash -= cost
-                    new_qty = owned["qty"] + max_qty
-                    new_avg = ((owned["qty"] * owned["avg_price"]) + cost) / new_qty
+                    new_qty = qty + max_qty
+                    new_avg = ((qty * avg_price) + cost) / new_qty
                     st.session_state.portfolio[sid] = {"qty": new_qty, "avg_price": new_avg}
                     sync_user_data()
                     st.rerun()
+                else: st.error("매수할 현금이 없습니다.")
         with c2:
-            if st.button("📉 매도"):
-                if owned["qty"] >= trade_qty:
+            if st.button("📉 매도", use_container_width=True):
+                if qty >= trade_qty:
                     st.session_state.global_cash += trade_qty * curr_price
                     st.session_state.portfolio[sid]["qty"] -= trade_qty
+                    if st.session_state.portfolio[sid]["qty"] == 0:
+                         st.session_state.portfolio[sid]["avg_price"] = 0
                     sync_user_data()
                     st.rerun()
-            if st.button("💸 풀매도"):
-                if owned["qty"] > 0:
-                    st.session_state.global_cash += owned["qty"] * curr_price
+                else: st.error("보유량이 부족합니다.")
+            if st.button("💸 풀매도", use_container_width=True):
+                if qty > 0:
+                    st.session_state.global_cash += qty * curr_price
                     st.session_state.portfolio[sid]["qty"] = 0
+                    st.session_state.portfolio[sid]["avg_price"] = 0
                     sync_user_data()
                     st.rerun()
+                else: st.error("매도할 주식이 없습니다.")
 
 # ==============================
 # 콘텐츠 3: 축구 구단주 매니저
@@ -248,7 +346,7 @@ elif menu == "⚽ 축구 구단주 매니저":
             with st.spinner("90분 경기 시뮬레이션 중..."):
                 time.sleep(2)
             
-            # 승패 확률 계산 (간단한 로직)
+            # 승패 확률 계산
             win_prob = 50
             if "4-3-3" in formation and "게겐프레싱" in playstyle: win_prob += 15
             elif "5-3-2" in formation and "선수비" in playstyle: win_prob += 10
@@ -291,7 +389,7 @@ elif menu == "📡 통신 신호 맞추기":
                 st.success("✅ 동기화 완료! 업무 보너스 ₩500,000 획득!")
                 st.session_state.global_cash += 500000
                 sync_user_data()
-                st.session_state.target_freq = random.randint(2, 10) # 리셋
+                st.session_state.target_freq = random.randint(2, 10)
                 st.session_state.target_amp = random.randint(2, 10)
             else:
                 st.error("❌ 파형이 일치하지 않습니다. 다시 조율하세요.")
@@ -337,7 +435,7 @@ elif menu == "🏎️ 레이싱 배팅":
     
     cars = ["🚗 2021년식 레이", "🏎️ 페라리", "🚙 포르쉐", "🚜 트랙터"]
     bet_car = st.selectbox("어떤 차가 우승할까요?", cars)
-    bet_amount = st.number_input("배팅 금액", min_value=10000, max_value=st.session_state.global_cash, step=10000)
+    bet_amount = st.number_input("배팅 금액", min_value=10000, max_value=max(10000, st.session_state.global_cash), step=10000)
     
     if st.button("레이스 시작!"):
         if st.session_state.global_cash >= bet_amount:
@@ -379,7 +477,7 @@ elif menu == "🎰 럭키 슬롯머신":
             st.session_state.global_cash -= 100000
             emojis = ["🍒", "🍋", "🔔", "💎", "7️⃣"]
             with st.empty():
-                for _ in range(10): # 애니메이션 효과
+                for _ in range(10):
                     r1, r2, r3 = random.choice(emojis), random.choice(emojis), random.choice(emojis)
                     st.markdown(f"<h1 style='text-align:center; font-size:80px;'>[ {r1} | {r2} | {r3} ]</h1>", unsafe_allow_html=True)
                     time.sleep(0.1)
