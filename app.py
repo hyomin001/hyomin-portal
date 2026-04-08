@@ -798,18 +798,24 @@ elif menu == "📈 주식 트레이딩":
 
     tab_market, tab_port, tab_trade = st.tabs(["📊 전체 시황", "💼 내 포트폴리오", "⚡ 빠른 거래"])
 
-    with tab_market:
+with tab_market:
         rows = ""
         for s in stock_config:
             d = market['stock_data'][s['id']]
-            diff = d['price'] - d['history'][-2] if len(d['history']) > 1 else 0
-            pct  = diff / d['history'][-2] * 100 if len(d['history']) > 1 else 0
+            # 안전하게 전일가 가져오기 (데이터가 1개뿐이면 현재가를 전일가로 취급)
+            prev_price = d['history'][-2] if len(d['history']) > 1 else d['history'][0]
+            
+            diff = d['price'] - prev_price
+            pct  = (diff / prev_price) * 100 if prev_price > 0 else 0
             cls  = "p-up" if diff > 0 else "p-down" if diff < 0 else "p-flat"
             arr  = "▲" if diff > 0 else "▼" if diff < 0 else "━"
-            rows += f"<tr><td>{s['icon']} {d['name']}</td><td style='text-align:right; font-weight:900; color:#fff;'>₩{d['price']:,}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td><td style='text-align:right; color:#888;'>₩{d['history'][-2]:,}</td></tr>"
+            
+            # d['history'][-2] 대신 안전한 prev_price 사용
+            rows += f"<tr><td>{s['icon']} {d['name']}</td><td style='text-align:right; font-weight:900; color:#fff;'>₩{d['price']:,}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td><td style='text-align:right; color:#888;'>₩{prev_price:,}</td></tr>"
+        
         st.markdown(f"<table class='stock-table'><thead><tr><th>종목</th><th style='text-align:right;'>현재가</th><th style='text-align:right;'>변동률</th><th style='text-align:right;'>전일가</th></tr></thead><tbody>{rows}</tbody></table>", unsafe_allow_html=True)
 
-    with tab_port:
+with tab_port:
         p_rows = []
         total_eval = 0
         for sid, info in st.session_state.portfolio.items():
