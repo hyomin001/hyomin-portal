@@ -1532,68 +1532,44 @@ elif menu == "🛠️ 창조주 통제소":
 
     t1, t2, t3, t4 = st.tabs(["👤 유저 조작", "📈 시장 조작", "📢 공지 & 이벤트", "📊 전체 현황"])
 
-    with t1:
-        u_db     = load_db(USERS_FILE, {})
-        uid_list = [u for u in u_db.keys() if u != "5891"]
-        if uid_list:
-            sel_u  = st.selectbox("유저 선택", uid_list)
-            u_data = u_db[sel_u]
-            c1, c2 = st.columns(2)
-            
-            with c1:
-                st.markdown("##### ✍️ 자산 수정 (한글 단위 가능)")
-                raw_cash = st.text_input("현금 설정", value=str(u_data['cash']), help="예: 10억, 1.5조, 5500만")
-                raw_loan = st.text_input("대출 설정", value=str(u_data.get('loan', 0)))
-
-                # ── 🧠 한글 단위를 숫자로 바꾸는 마법의 함수 ──
+    # ── 🧠 창조주 전용 초강력 한글 단위 변환기 ──
                 def korean_to_int(text):
                     if not text: return 0
-                    if isinstance(text, int) or text.isdigit(): return int(text)
+                    # 소수점, 숫자, 단위(조,억,만) 제외하고 모두 제거
+                    text = text.replace(',', '').replace(' ', '').strip()
                     
-                    text = text.replace(',', '').replace(' ', '')
+                    # 만약 순수하게 숫자만 들어왔다면 즉시 반환
+                    if text.isdigit():
+                        return int(text)
+                    
                     units = {"조": 10**12, "억": 10**8, "만": 10**4}
                     total = 0
                     
-                    # 단위별로 쪼개서 합산 (예: 1조 500억 -> 1*10^12 + 500*10^8)
                     import re
-                    # 숫자가 포함된 단위 패턴 찾기 (예: 1.5조, 10억 등)
-                    parts = re.findall(r'[0-9.]+[조억만]?', text)
-                    if not parts: # 숫자만 있는 경우
-                        try: return int(float(text))
-                        except: return 0
-                        
-                    for part in parts:
-                        match = re.match(r'([0-9.]+)([조억만]?)', part)
-                        if match:
-                            val, unit = match.groups()
-                            total += float(val) * units.get(unit, 1)
+                    # 패턴 설명: (숫자나 소수점) + (단위 조/억/만 중 하나)
+                    # "1000억" -> ('1000', '억')
+                    matches = re.findall(r'([0-9.]+)([조억만])', text)
+                    
+                    if matches:
+                        for val, unit in matches:
+                            total += float(val) * units[unit]
+                    else:
+                        # 단위가 없는데 문자가 섞여있을 경우 대비 (예: 1000)
+                        try:
+                            total = float(re.sub(r'[^0-9.]', '', text))
+                        except:
+                            total = 0
+                            
                     return int(total)
 
                 new_cash = korean_to_int(raw_cash)
                 new_loan = korean_to_int(raw_loan)
                 
-                st.caption(f"💡 변환 결과: 현금 {new_cash:,}원 / 대출 {new_loan:,}원")
-
-            with c2:
-                new_title = st.text_input("칭호 설정", value=u_data.get('equipped_title',''))
-                st.metric("현재 현금", f"₩{u_data['cash']:,}")
-                st.metric("현재 대출", f"₩{u_data.get('loan',0):,}")
-            
-            if st.button("⚡ 데이터 즉시 개조", use_container_width=True):
-                u_db[sel_u]['cash']           = new_cash
-                u_db[sel_u]['loan']           = new_loan
-                u_db[sel_u]['equipped_title'] = new_title
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 유저의 운명이 바뀌었습니다.")
-                st.rerun()
-
-            st.write("---")
-            if st.button("🗑️ 유저 데이터 소멸", use_container_width=True, type="secondary"):
-                del u_db[sel_u]; save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 삭제 완료!"); st.rerun()
-        else:
-            st.info("등록된 유저가 없습니다.")
-    with t2:
+                # 실시간으로 변환된 값을 보여줘서 확인 사살
+                if new_cash > 0 or new_loan > 0:
+                    st.success(f"💎 인식된 금액: {new_cash:,}원")
+                else:
+                    st.warning("⚠️ 금액이 0원입니다. 단위를 확인해주세요 (예: 1000억)")
         st.markdown("### 📈 종목별 가격 조작")
         for s in stock_config:
             c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
