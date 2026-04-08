@@ -1,20 +1,18 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 import random
 import json
 import os
-import math
+import time
 from datetime import datetime
 
 # ==============================
-# 데이터베이스 시스템 (JSON)
+# 데이터베이스 & 세션 시스템
 # ==============================
 USERS_FILE = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
 
-# 1. 유저 DB 로드 및 저장
 def load_users():
     if os.path.exists(USERS_FILE):
         with open(USERS_FILE, 'r', encoding='utf-8') as f:
@@ -26,7 +24,6 @@ def save_users(users_data):
     with open(USERS_FILE, 'w', encoding='utf-8') as f:
         json.dump(users_data, f, indent=4, ensure_ascii=False)
 
-# 2. 현재 세션의 유저 데이터를 DB에 동기화 (돈 변동 시 호출)
 def sync_user_data():
     if 'logged_in_user' in st.session_state:
         users = load_users()
@@ -37,7 +34,6 @@ def sync_user_data():
         users[uid]['portfolio'] = st.session_state.portfolio
         save_users(users)
 
-# 3. 댓글 DB
 def load_comments():
     if os.path.exists(COMMENTS_FILE):
         with open(COMMENTS_FILE, 'r', encoding='utf-8') as f:
@@ -51,300 +47,109 @@ def save_comment(name, comment):
     with open(COMMENTS_FILE, 'w', encoding='utf-8') as f:
         json.dump(comments, f, indent=4, ensure_ascii=False)
 
-# ==============================
-# 시스템 초기화 및 CSS
-# ==============================
-st.set_page_config(page_title="김효민 슈퍼 포털", page_icon="🌐", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE", page_icon="🌌", layout="wide")
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
-    html, body, [class*="css"]  { font-family: 'Space Mono', monospace; color: #e0e0e0; }
-    .stApp { background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%); }
-    h1, h2, h3 { color: #00ff88 !important; }
-    .stButton>button { border: 2px solid #00ff88; color: #00ff88; background: transparent; font-weight: bold; border-radius: 8px;}
-    .stButton>button:hover { background-color: #00ff88; color: #0f0f23; }
-    div[data-testid="stBlock"] { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px; }
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+    html, body, [class*="css"]  { font-family: 'Noto Sans KR', sans-serif; color: #e0e0e0; }
+    .stApp { background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%); }
+    h1, h2, h3 { color: #00d4ff !important; }
+    .stButton>button { border: 1px solid #00d4ff; color: #00d4ff; background: rgba(0,212,255,0.05); border-radius: 8px; }
+    .stButton>button:hover { background-color: #00d4ff; color: #0a0a1a; }
+    div[data-testid="stBlock"] { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==============================
-# 로그인 / 회원가입 페이지
+# 로그인 화면
 # ==============================
 if 'logged_in_user' not in st.session_state:
-    st.markdown("<h1 style='text-align: center; font-size: 60px; margin-top: 50px;'>⚡ HYOMIN PORTAL</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #aaa;'>계정을 만들고 자산을 영구적으로 저장하세요.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-size: 50px; margin-top: 50px;'>🌌 HYOMIN UNIVERSE</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>10가지 다채로운 콘텐츠가 있는 종합 포털입니다.</p>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
         tab1, tab2 = st.tabs(["🔑 로그인", "📝 회원가입"])
-        
         with tab1:
-            login_id = st.text_input("아이디", key="l_id")
-            login_pw = st.text_input("비밀번호", type="password", key="l_pw")
+            login_id = st.text_input("아이디")
+            login_pw = st.text_input("비밀번호", type="password")
             if st.button("로그인", use_container_width=True):
                 users = load_users()
                 if login_id in users and users[login_id]['pw'] == login_pw:
-                    # 세션에 정보 로드
                     st.session_state.logged_in_user = login_id
                     st.session_state.global_cash = users[login_id]['cash']
                     st.session_state.inventory = users[login_id]['inventory']
                     st.session_state.equipped_title = users[login_id]['equipped_title']
                     st.session_state.portfolio = users[login_id].get('portfolio', {})
-                    st.success("로그인 성공! 포털로 이동합니다...")
                     st.rerun()
-                else:
-                    st.error("아이디나 비밀번호가 틀렸습니다.")
-                    
+                else: st.error("정보가 일치하지 않습니다.")
         with tab2:
             new_id = st.text_input("새 아이디", key="r_id")
             new_pw = st.text_input("새 비밀번호", type="password", key="r_pw")
             if st.button("가입하기", use_container_width=True):
                 users = load_users()
-                if new_id in users:
-                    st.error("이미 존재하는 아이디입니다.")
-                elif len(new_id) < 2 or len(new_pw) < 2:
-                    st.warning("아이디와 비밀번호는 2글자 이상 입력해주세요.")
+                if new_id in users: st.error("이미 존재하는 아이디입니다.")
                 else:
-                    users[new_id] = {
-                        "pw": new_pw,
-                        "cash": 100000000, # 초기 자본 1억
-                        "inventory": [],
-                        "equipped_title": "신규 유저",
-                        "portfolio": {}
-                    }
+                    users[new_id] = {"pw": new_pw, "cash": 100000000, "inventory": [], "equipped_title": "뉴비", "portfolio": {}}
                     save_users(users)
-                    st.success("가입 완료! 이제 로그인 탭에서 로그인해주세요.")
-                    
-    st.stop() # 로그인 전에는 아래 코드를 실행하지 않음
+                    st.success("가입 완료! 로그인해주세요.")
+    st.stop()
 
 # ==============================
-# 로그인 후: 메인 포털 UI
+# 사이드바 메뉴 (10종)
 # ==============================
 with st.sidebar:
-    st.image("https://img.icons8.com/neon/96/controller.png")
-    st.title("메뉴")
-    st.header(f"🧑 [{st.session_state.equipped_title}] {st.session_state.logged_in_user}")
-    st.metric("보유 자산", f"₩{st.session_state.global_cash:,}")
-    
-    if st.button("🚪 로그아웃"):
-        sync_user_data() # 나가기 전에 강제 저장
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+    st.title("메인 메뉴")
+    st.subheader(f"[{st.session_state.equipped_title}] {st.session_state.logged_in_user}")
+    st.metric("내 자산", f"₩{st.session_state.global_cash:,}")
+    if st.button("로그아웃", use_container_width=True):
+        sync_user_data()
+        for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
-        
     st.markdown("---")
-    menu = st.radio("바로가기", ["🏠 홈", "⚽ 11vs11 실시간 사커", "📈 실시간 주식 마스터", "🛒 쇼핑몰", "💬 커뮤니티"])
-
-# ==============================
-# ⚽ 11vs11 실시간 사커 (패스/슛 개선 & 버그 수정)
-# ==============================
-if menu == "⚽ 11vs11 실시간 사커":
-    st.title("⚽ 11vs11 실시간 액션 사커")
-    st.markdown("조작법: **WASD** 이동 / 공을 가진 상태에서 **[S] 자동 패스**, **[D] 강슛**")
     
-    if 'soccer_game_active' not in st.session_state:
-        st.session_state.soccer_game_active = False
-
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        st.info("🎟️ **참가비:** ₩500,000\n\n🏆 **우승 상금:** ₩2,000,000")
-        position = st.selectbox("출전 포지션", ["공격수 (FW)", "미드필더 (MF)", "수비수 (DF)"])
-        start_x = 600 if position == "공격수 (FW)" else 400 if position == "미드필더 (MF)" else 200
-        
-        if not st.session_state.soccer_game_active:
-            if st.button("경기 시작 (참가비 결제)", use_container_width=True):
-                if st.session_state.global_cash >= 500000:
-                    st.session_state.global_cash -= 500000
-                    st.session_state.soccer_game_active = True
-                    sync_user_data()
-                    st.rerun()
-                else:
-                    st.error("참가비가 부족합니다.")
-        else:
-            if st.button("🏆 상금 정산 및 종료", use_container_width=True):
-                st.session_state.global_cash += 2000000
-                st.session_state.soccer_game_active = False
-                sync_user_data()
-                st.success("상금 2,000,000원 획득 완료!")
-                st.rerun()
-
-    with col2:
-        if st.session_state.soccer_game_active:
-            # 개선된 JS 물리엔진 및 조작
-            html_code = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body {{ margin: 0; overflow: hidden; background: #1a4d2e; display: flex; justify-content: center; align-items: center; color: white; font-family: monospace; }}
-                    canvas {{ border: 2px solid #00ff88; box-shadow: 0 0 20px rgba(0,255,136,0.3); background: #1a4d2e; }}
-                    #ui {{ position: absolute; top: 10px; width: 760px; display: flex; justify-content: space-between; font-size: 24px; font-weight: bold; text-shadow: 1px 1px 2px black; pointer-events: none; }}
-                </style>
-            </head>
-            <body>
-                <div id="ui">
-                    <div style="color: #00d4ff;">HOME <span id="homeScore">0</span></div>
-                    <div style="color: #ffaa00;">[S]패스 [D]슛</div>
-                    <div style="color: #ff4444;"><span id="awayScore">0</span> AWAY</div>
-                </div>
-                <canvas id="gameCanvas" width="800" height="500"></canvas>
-                <script>
-                    const canvas = document.getElementById("gameCanvas");
-                    const ctx = canvas.getContext("2d");
-                    
-                    let score = {{ home: 0, away: 0 }};
-                    const keys = {{}};
-                    window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-                    window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-
-                    const ball = {{ x: 400, y: 250, vx: 0, vy: 0, radius: 6, heldBy: null }};
-                    const players = [];
-                    
-                    const userPlayer = {{ x: {start_x}, y: 250, vx: 0, vy: 0, color: '#ffaa00', team: 'home', isUser: true }};
-                    players.push(userPlayer);
-                    
-                    // Teammates & Enemies
-                    for(let i=0; i<10; i++) players.push({{ x: Math.random()*300 + 50, y: Math.random()*400 + 50, vx: 0, vy: 0, color: '#00d4ff', team: 'home', isUser: false }});
-                    for(let i=0; i<11; i++) players.push({{ x: Math.random()*300 + 450, y: Math.random()*400 + 50, vx: 0, vy: 0, color: '#ff4444', team: 'away', isUser: false }});
-
-                    function update() {{
-                        let speed = 0.8;
-                        players.forEach(p => {{
-                            if(p.isUser) {{
-                                if(keys['arrowup'] || keys['w']) p.vy -= speed;
-                                if(keys['arrowdown'] || keys['s']) p.vy += speed;
-                                if(keys['arrowleft'] || keys['a']) p.vx -= speed;
-                                if(keys['arrowright'] || keys['d']) p.vx += speed;
-                            }} else {{
-                                // AI
-                                if(Math.hypot(ball.x - p.x, ball.y - p.y) < 150 && ball.heldBy !== p) {{
-                                    p.vx += (ball.x - p.x) * 0.003;
-                                    p.vy += (ball.y - p.y) * 0.003;
-                                }}
-                            }}
-                            
-                            p.x += p.vx; p.y += p.vy;
-                            p.vx *= 0.85; p.vy *= 0.85; // Friction
-                            p.x = Math.max(10, Math.min(790, p.x));
-                            p.y = Math.max(10, Math.min(490, p.y));
-                        }});
-
-                        // Ball Grab Logic
-                        if(ball.heldBy === null) {{
-                            players.forEach(p => {{
-                                if(Math.hypot(ball.x - p.x, ball.y - p.y) < 15) ball.heldBy = p;
-                            }});
-                        }}
-
-                        if(ball.heldBy !== null) {{
-                            let p = ball.heldBy;
-                            // Keep ball at player's feet
-                            ball.x = p.x + (p.team === 'home' ? 10 : -10);
-                            ball.y = p.y;
-                            ball.vx = 0; ball.vy = 0;
-                            
-                            if(p.isUser) {{
-                                // User Pass (S)
-                                if(keys['s']) {{
-                                    // Find nearest teammate
-                                    let bestDist = Infinity; let target = null;
-                                    players.forEach(tm => {{
-                                        if(tm.team === 'home' && !tm.isUser && tm.x > p.x) {{
-                                            let d = Math.hypot(tm.x - p.x, tm.y - p.y);
-                                            if(d < bestDist) {{ bestDist = d; target = tm; }}
-                                        }}
-                                    }});
-                                    if(target) {{
-                                        let angle = Math.atan2(target.y - ball.y, target.x - ball.x);
-                                        ball.vx = Math.cos(angle) * 18;
-                                        ball.vy = Math.sin(angle) * 18;
-                                    }} else {{ ball.vx = 15; ball.vy = 0; }}
-                                    ball.heldBy = null;
-                                    keys['s'] = false; // Prevent spam
-                                }}
-                                // User Shoot (D)
-                                else if(keys['d']) {{
-                                    let angle = Math.atan2(250 - ball.y, 800 - ball.x);
-                                    ball.vx = Math.cos(angle) * 25; // Super fast shot
-                                    ball.vy = Math.sin(angle) * 25;
-                                    ball.heldBy = null;
-                                    keys['d'] = false;
-                                }}
-                            }} else {{
-                                // AI Pass/Shoot
-                                if(Math.random() < 0.02) {{
-                                    ball.vx = (p.team === 'home' ? 1 : -1) * (10 + Math.random()*10);
-                                    ball.vy = (Math.random()-0.5)*10;
-                                    ball.heldBy = null;
-                                }}
-                            }}
-                        }} else {{
-                            ball.x += ball.vx; ball.y += ball.vy;
-                            ball.vx *= 0.96; ball.vy *= 0.96;
-                        }}
-
-                        // Wall Bounces & Goals
-                        if(ball.y < 0 || ball.y > 500) ball.vy *= -1;
-                        if(ball.x < 0) {{ score.away++; resetBall(); }} 
-                        if(ball.x > 800) {{ score.home++; resetBall(); }} 
-                        
-                        document.getElementById('homeScore').innerText = score.home;
-                        document.getElementById('awayScore').innerText = score.away;
-                    }}
-
-                    function resetBall() {{ ball.x = 400; ball.y = 250; ball.vx = 0; ball.vy = 0; ball.heldBy = null; }}
-
-                    function draw() {{
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 2;
-                        ctx.beginPath(); ctx.moveTo(400, 0); ctx.lineTo(400, 500); ctx.stroke();
-                        ctx.beginPath(); ctx.arc(400, 250, 60, 0, Math.PI*2); ctx.stroke();
-                        ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.fillRect(0, 150, 10, 200); ctx.fillRect(790, 150, 10, 200);
-
-                        players.forEach(p => {{
-                            ctx.fillStyle = p.color;
-                            ctx.beginPath(); ctx.arc(p.x, p.y, p.isUser ? 12 : 9, 0, Math.PI*2); ctx.fill();
-                            if(p.isUser) {{ ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.fillStyle='white'; ctx.fillText('ME', p.x-6, p.y-15);}}
-                        }});
-
-                        ctx.fillStyle = "white";
-                        ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2); ctx.fill();
-                        if(ball.heldBy) {{ ctx.strokeStyle = 'yellow'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 8, 0, Math.PI*2); ctx.stroke(); }}
-                    }}
-
-                    function loop() {{ update(); draw(); requestAnimationFrame(loop); }}
-                    loop();
-                </script>
-            </body>
-            </html>
-            """
-            components.html(html_code, height=520)
-        else:
-            st.info("좌측에서 참가비를 결제하고 경기를 시작해주세요.")
+    menus = [
+        "🏠 대시보드", "📈 주식 종합 시장", "⚽ 축구 구단주 매니저", 
+        "📡 통신 신호 맞추기", "💻 정보처리기사 모의고사", "🏎️ 레이싱 배팅", 
+        "🎰 럭키 슬롯머신", "⛏️ 코인 채굴장", "🛒 슈퍼 상점", "💬 커뮤니티"
+    ]
+    menu = st.radio("콘텐츠 선택", menus)
 
 # ==============================
-# 📈 주식 마스터 및 기타 메뉴 
-# (데이터 동기화: sync_user_data() 적용)
+# 콘텐츠 1: 홈 대시보드
 # ==============================
-elif menu == "📈 실시간 주식 마스터":
-    st.title("📈 실시간 주식 마스터")
+if menu == "🏠 대시보드":
+    st.title("대시보드")
+    st.markdown("좌측 메뉴에서 10가지 다양한 미니게임과 기능을 즐겨보세요! 모든 자산(Cash)은 연동되어 저장됩니다.")
+    st.image("https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80", caption="Cyberpunk City")
+
+# ==============================
+# 콘텐츠 2: 주식 종합 시장
+# ==============================
+elif menu == "📈 주식 종합 시장":
+    st.title("📈 대한민국 주식 종합 시장")
     
-    auto_refresh = st.checkbox("🔄 실시간 차트 자동 반영 켜기 (3초 단위)", value=False)
+    auto_refresh = st.checkbox("🔄 실시간 차트/뉴스 갱신 (3초)")
     if auto_refresh: st.markdown('<meta http-equiv="refresh" content="3">', unsafe_allow_html=True)
 
     stock_config = [
-        {"id": "SAMJI", "name": "삼지전자(우대)", "vol": 0.05, "trend": 1.01},
-        {"id": "TECH", "name": "테크노밸리", "vol": 0.03, "trend": 1.0},
-        {"id": "AUTO", "name": "현대자동차", "vol": 0.025, "trend": 1.0},
-        {"id": "CRYPTO", "name": "도지코인", "vol": 0.15, "trend": 0.99}
+        {"id": "SAMJI", "name": "삼지전자", "vol": 0.05, "trend": 1.01},
+        {"id": "SAMSUNG", "name": "삼성전자", "vol": 0.02, "trend": 1.0},
+        {"id": "HYUNDAI", "name": "현대차", "vol": 0.025, "trend": 1.0},
+        {"id": "NAVER", "name": "네이버", "vol": 0.03, "trend": 1.0},
+        {"id": "KAKAO", "name": "카카오", "vol": 0.035, "trend": 0.99},
+        {"id": "KAON", "name": "가온브로드밴드", "vol": 0.06, "trend": 1.02},
+        {"id": "HFR", "name": "에이치에프알", "vol": 0.055, "trend": 1.0},
+        {"id": "GOODUS", "name": "굿어스데이터", "vol": 0.04, "trend": 1.0}
     ]
 
     if 'stock_data' not in st.session_state:
-        st.session_state.stock_data = {s['id']: {"name":s['name'], "price": random.randint(10000, 200000), "history": []} for s in stock_config}
+        st.session_state.stock_data = {s['id']: {"name":s['name'], "price": random.randint(10000, 100000), "history": []} for s in stock_config}
     if 'news_feed' not in st.session_state: st.session_state.news_feed = []
 
     # 주가 변동 엔진
+    market_data = []
     for cfg in stock_config:
         sid = cfg['id']
         curr_data = st.session_state.stock_data[sid]
@@ -352,130 +157,317 @@ elif menu == "📈 실시간 주식 마스터":
         new_price = max(500, curr_data['price'] * (1 + change_pct))
         curr_data['price'] = round(new_price)
         curr_data['history'].append(curr_data['price'])
-        curr_data['history'] = curr_data['history'][-30:]
+        curr_data['history'] = curr_data['history'][-20:]
+        
+        market_data.append({"종목명": curr_data['name'], "현재가": curr_data['price'], "등락률": change_pct * 100})
         
         if random.random() < 0.05:
-            st.session_state.news_feed.insert(0, f"[{curr_data['name']}] {'급등 조짐!' if change_pct>0 else '급락 우려!'}")
-            st.session_state.news_feed = st.session_state.news_feed[:4]
+            st.session_state.news_feed.insert(0, f"[{curr_data['name']}] {'어닝 서프라이즈! 기관 대량 매수' if change_pct>0 else '악재 돌출! 외인 매도세 전환'}")
+            st.session_state.news_feed = st.session_state.news_feed[:5]
 
-    col1, col2 = st.columns([1.5, 1])
+    col1, col2 = st.columns([1.2, 1])
+    
     with col1:
-        st.subheader("내 포트폴리오 및 수익률")
-        port_data = []
-        total_eval = 0
-        for sid, p_data in st.session_state.portfolio.items():
-            qty = p_data.get("qty", 0)
-            if qty == 0: continue
-            avg = p_data["avg_price"]
-            curr = st.session_state.stock_data[sid]["price"]
-            eval_amt = qty * curr
-            profit = eval_amt - (qty * avg)
-            profit_pct = (curr - avg) / avg * 100
-            total_eval += eval_amt
-            
-            port_data.append({
-                "종목명": st.session_state.stock_data[sid]["name"],
-                "보유량": qty,
-                "평단가": f"₩{int(avg):,}",
-                "현재가": f"₩{curr:,}",
-                "평가액": f"₩{eval_amt:,}",
-                "손익금(수익률)": f"{'🔴+' if profit>0 else '🔵'}₩{int(profit):,} ({profit_pct:.2f}%)"
-            })
-        if port_data:
-            st.dataframe(pd.DataFrame(port_data), use_container_width=True)
-            st.markdown(f"**💰 현금:** ₩{st.session_state.global_cash:,} | **📊 총 평가액:** ₩{total_eval:,}")
-        else:
-            st.info("보유 주식이 없습니다.")
-            
-        selected_sid = st.selectbox("차트 종목", [s['id'] for s in stock_config])
-        df_chart = pd.DataFrame(st.session_state.stock_data[selected_sid]['history'], columns=["가격"])
-        st.plotly_chart(px.line(df_chart, y="가격", title=st.session_state.stock_data[selected_sid]['name'], template="plotly_dark"), use_container_width=True)
+        st.subheader("📊 시장 전체 현황")
+        df_market = pd.DataFrame(market_data)
+        # 등락률에 따른 히트맵 컬러
+        def color_cells(val):
+            color = '#ff4444' if val < 0 else '#00ff88'
+            return f'color: {color}; font-weight: bold;'
+        
+        st.dataframe(df_market.style.format({"현재가": "₩{:,.0f}", "등락률": "{:.2f}%"}).applymap(color_cells, subset=['등락률']), use_container_width=True)
+        
+        st.subheader("📰 실시간 시장 속보")
+        for n in st.session_state.news_feed: st.info(n)
 
     with col2:
-        st.subheader("속보")
-        for n in st.session_state.news_feed: st.warning(n)
-            
-        curr_price = st.session_state.stock_data[selected_sid]['price']
-        st.markdown(f"**현재가:** <span style='color:#00ff88; font-size:24px;'>₩{curr_price:,}</span>", unsafe_allow_html=True)
-        trade_amount = st.number_input("수량 입력", min_value=1, value=1)
+        st.subheader("💼 내 계좌 및 거래")
+        selected_stock = st.selectbox("거래 종목 선택", [s['name'] for s in stock_config])
+        sid = next(s['id'] for s in stock_config if s['name'] == selected_stock)
+        
+        # 미니 차트
+        df_chart = pd.DataFrame(st.session_state.stock_data[sid]['history'], columns=["가격"])
+        st.plotly_chart(px.line(df_chart, y="가격", template="plotly_dark", height=250).update_layout(margin=dict(l=0,r=0,t=0,b=0)), use_container_width=True)
+        
+        curr_price = st.session_state.stock_data[sid]['price']
+        owned = st.session_state.portfolio.get(sid, {"qty": 0, "avg_price": 0})
+        
+        st.markdown(f"**현재가:** ₩{curr_price:,} | **보유량:** {owned['qty']}주 (평단가: ₩{int(owned['avg_price']):,})")
+        
+        trade_qty = st.number_input("수량", min_value=1, value=1)
         
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("📉 매수"):
-                cost = trade_amount * curr_price
+            if st.button("📈 매수"):
+                cost = trade_qty * curr_price
                 if st.session_state.global_cash >= cost:
                     st.session_state.global_cash -= cost
-                    old = st.session_state.portfolio.get(selected_sid, {"qty": 0, "avg_price": 0})
-                    new_qty = old["qty"] + trade_amount
-                    new_avg = ((old["qty"] * old["avg_price"]) + cost) / new_qty
-                    st.session_state.portfolio[selected_sid] = {"qty": new_qty, "avg_price": new_avg}
+                    new_qty = owned["qty"] + trade_qty
+                    new_avg = ((owned["qty"] * owned["avg_price"]) + cost) / new_qty
+                    st.session_state.portfolio[sid] = {"qty": new_qty, "avg_price": new_avg}
                     sync_user_data()
                     st.rerun()
-            if st.button("💥 풀매수"):
+            if st.button("🔥 풀매수"):
                 max_qty = st.session_state.global_cash // curr_price
                 if max_qty > 0:
                     cost = max_qty * curr_price
                     st.session_state.global_cash -= cost
-                    old = st.session_state.portfolio.get(selected_sid, {"qty": 0, "avg_price": 0})
-                    new_qty = old["qty"] + max_qty
-                    new_avg = ((old["qty"] * old["avg_price"]) + cost) / new_qty
-                    st.session_state.portfolio[selected_sid] = {"qty": new_qty, "avg_price": new_avg}
+                    new_qty = owned["qty"] + max_qty
+                    new_avg = ((owned["qty"] * owned["avg_price"]) + cost) / new_qty
+                    st.session_state.portfolio[sid] = {"qty": new_qty, "avg_price": new_avg}
                     sync_user_data()
                     st.rerun()
-
         with c2:
-            if st.button("📈 매도"):
-                owned = st.session_state.portfolio.get(selected_sid, {"qty": 0})["qty"]
-                if owned >= trade_amount:
-                    st.session_state.global_cash += trade_amount * curr_price
-                    st.session_state.portfolio[selected_sid]["qty"] -= trade_amount
+            if st.button("📉 매도"):
+                if owned["qty"] >= trade_qty:
+                    st.session_state.global_cash += trade_qty * curr_price
+                    st.session_state.portfolio[sid]["qty"] -= trade_qty
                     sync_user_data()
                     st.rerun()
             if st.button("💸 풀매도"):
-                owned = st.session_state.portfolio.get(selected_sid, {"qty": 0})["qty"]
-                if owned > 0:
-                    st.session_state.global_cash += owned * curr_price
-                    st.session_state.portfolio[selected_sid]["qty"] = 0
+                if owned["qty"] > 0:
+                    st.session_state.global_cash += owned["qty"] * curr_price
+                    st.session_state.portfolio[sid]["qty"] = 0
                     sync_user_data()
                     st.rerun()
 
-elif menu == "🛒 쇼핑몰":
-    # (상점 뷰는 이전 구조 유지, 구매/장착 시 sync_user_data()만 추가)
-    st.title("🛒 HYOMIN STORE")
-    items = [
-        {'id':'c1', 'type':'vehicle', 'name':'kia 레이 (2021)', 'price': 15000000},
-        {'id':'c2', 'type':'property', 'name':'힐스테이트 푸르지오 수원', 'price': 800000000},
-        {'id':'c3', 'type':'title', 'name':'삼지전자 수석엔지니어', 'price': 5000000},
+# ==============================
+# 콘텐츠 3: 축구 구단주 매니저
+# ==============================
+elif menu == "⚽ 축구 구단주 매니저":
+    st.title("⚽ 축구 구단주 시뮬레이터")
+    st.markdown("액션 대신 지략으로 승부합니다! 감독이 되어 전술을 지시하고 시뮬레이션 결과를 확인하세요.")
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.subheader("전술 보드")
+        formation = st.selectbox("포메이션", ["4-4-2 (밸런스)", "4-3-3 (공격형)", "5-3-2 (수비형)"])
+        playstyle = st.radio("플레이 스타일", ["티키타카 (점유율)", "게겐프레싱 (전방압박)", "선수비 후역습"])
+        
+        if st.button("경기 시작 (시뮬레이션 돌리기)", use_container_width=True):
+            with st.spinner("90분 경기 시뮬레이션 중..."):
+                time.sleep(2)
+            
+            # 승패 확률 계산 (간단한 로직)
+            win_prob = 50
+            if "4-3-3" in formation and "게겐프레싱" in playstyle: win_prob += 15
+            elif "5-3-2" in formation and "선수비" in playstyle: win_prob += 10
+            
+            result_num = random.randint(1, 100)
+            if result_num <= win_prob:
+                st.success("🎉 경기 종료: 2 - 1 승리! 관중 수입 ₩3,000,000 획득!")
+                st.session_state.global_cash += 3000000
+                st.balloons()
+            elif result_num <= win_prob + 20:
+                st.warning("🤝 경기 종료: 1 - 1 무승부. 관중 수입 ₩1,000,000 획득.")
+                st.session_state.global_cash += 1000000
+            else:
+                st.error("💥 경기 종료: 0 - 2 패배. 수입이 없습니다.")
+            sync_user_data()
+            
+    with col2:
+        st.subheader("현재 내 스쿼드 상태")
+        st.info("팀 사기: 85%\n\n체력: 90%\n\n팬 만족도: 72%")
+        st.markdown("*(향후 상점에서 A급 선수를 영입하여 스쿼드를 강화할 수 있습니다.)*")
+
+# ==============================
+# 콘텐츠 4: 통신 신호 맞추기
+# ==============================
+elif menu == "📡 통신 신호 맞추기":
+    st.title("📡 신호 처리 동기화 미니게임")
+    st.markdown("수신된 잡음 섞인 신호의 주파수와 진폭을 조정하여 타겟 신호와 완벽하게 동기화하세요!")
+    
+    if 'target_freq' not in st.session_state:
+        st.session_state.target_freq = random.randint(2, 10)
+        st.session_state.target_amp = random.randint(2, 10)
+        
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        freq = st.slider("주파수 (Frequency)", 1, 15, 5)
+        amp = st.slider("진폭 (Amplitude)", 1, 15, 5)
+        
+        if st.button("신호 검증하기"):
+            if freq == st.session_state.target_freq and amp == st.session_state.target_amp:
+                st.success("✅ 동기화 완료! 업무 보너스 ₩500,000 획득!")
+                st.session_state.global_cash += 500000
+                sync_user_data()
+                st.session_state.target_freq = random.randint(2, 10) # 리셋
+                st.session_state.target_amp = random.randint(2, 10)
+            else:
+                st.error("❌ 파형이 일치하지 않습니다. 다시 조율하세요.")
+                
+    with col2:
+        import numpy as np
+        x = np.linspace(0, 10, 200)
+        y_target = st.session_state.target_amp * np.sin(st.session_state.target_freq * x)
+        y_user = amp * np.sin(freq * x)
+        
+        df_sig = pd.DataFrame({'시간': x, '타겟 신호': y_target, '내 신호': y_user})
+        st.plotly_chart(px.line(df_sig, x='시간', y=['타겟 신호', '내 신호'], template='plotly_dark'), use_container_width=True)
+
+# ==============================
+# 콘텐츠 5: 정보처리기사 모의고사
+# ==============================
+elif menu == "💻 정보처리기사 모의고사":
+    st.title("💻 정보처리기사 CBT 모의고사")
+    st.markdown("자격증 시험 대비! 정답을 맞히면 1문제당 ₩200,000의 장학금이 지급됩니다.")
+    
+    questions = [
+        {"q": "OSI 7계층 중 물리적 매체를 통해 비트 스트림을 전송하는 계층은?", "opts": ["데이터 링크 계층", "물리 계층", "네트워크 계층", "전송 계층"], "a": "물리 계층"},
+        {"q": "객체지향 프로그래밍에서 하위 클래스가 상위 클래스의 속성과 메서드를 물려받는 것은?", "opts": ["다형성", "캡슐화", "상속", "추상화"], "a": "상속"},
+        {"q": "데이터베이스 이상(Anomaly) 현상의 종류가 아닌 것은?", "opts": ["삽입 이상", "삭제 이상", "갱신 이상", "검색 이상"], "a": "검색 이상"}
     ]
-    cols = st.columns(3)
-    for i, item in enumerate(items):
-        with cols[i%3]:
-            st.markdown(f"### {item['name']}")
-            st.markdown(f"**₩{item['price']:,}**")
+    
+    for i, q in enumerate(questions):
+        st.markdown(f"**Q{i+1}. {q['q']}**")
+        ans = st.radio(f"보기 {i+1}", q['opts'], key=f"q_{i}")
+        if st.button(f"{i+1}번 정답 제출", key=f"btn_{i}"):
+            if ans == q['a']:
+                st.success("정답입니다! ₩200,000 지급 완료.")
+                st.session_state.global_cash += 200000
+                sync_user_data()
+            else:
+                st.error("오답입니다. 다시 복습해보세요!")
+
+# ==============================
+# 콘텐츠 6: 레이싱 배팅
+# ==============================
+elif menu == "🏎️ 레이싱 배팅":
+    st.title("🏎️ 레이싱 우승자 맞추기")
+    
+    cars = ["🚗 2021년식 레이", "🏎️ 페라리", "🚙 포르쉐", "🚜 트랙터"]
+    bet_car = st.selectbox("어떤 차가 우승할까요?", cars)
+    bet_amount = st.number_input("배팅 금액", min_value=10000, max_value=st.session_state.global_cash, step=10000)
+    
+    if st.button("레이스 시작!"):
+        if st.session_state.global_cash >= bet_amount:
+            st.session_state.global_cash -= bet_amount
+            progress_bars = [st.progress(0, text=car) for car in cars]
+            positions = [0, 0, 0, 0]
+            
+            winner = -1
+            while winner == -1:
+                for i in range(4):
+                    positions[i] += random.randint(1, 15)
+                    if positions[i] >= 100:
+                        positions[i] = 100
+                        winner = i
+                    progress_bars[i].progress(positions[i], text=cars[i])
+                time.sleep(0.1)
+                
+            winning_car = cars[winner]
+            st.markdown(f"### 🏁 우승: {winning_car}!")
+            
+            if bet_car == winning_car:
+                st.success(f"예측 성공! 배팅 금액의 3배인 ₩{bet_amount * 3:,} 획득!")
+                st.session_state.global_cash += bet_amount * 3
+            else:
+                st.error("예측 실패. 배팅 금액을 잃었습니다.")
+            sync_user_data()
+        else:
+            st.error("배팅 금액이 보유 자산을 초과합니다.")
+
+# ==============================
+# 콘텐츠 7: 럭키 슬롯머신
+# ==============================
+elif menu == "🎰 럭키 슬롯머신":
+    st.title("🎰 럭키 슬롯머신")
+    st.markdown("1회전 당 ₩100,000. 3개가 일치하면 ₩5,000,000 잭팟!")
+    
+    if st.button("🕹️ 레버 당기기 (₩100,000)"):
+        if st.session_state.global_cash >= 100000:
+            st.session_state.global_cash -= 100000
+            emojis = ["🍒", "🍋", "🔔", "💎", "7️⃣"]
+            with st.empty():
+                for _ in range(10): # 애니메이션 효과
+                    r1, r2, r3 = random.choice(emojis), random.choice(emojis), random.choice(emojis)
+                    st.markdown(f"<h1 style='text-align:center; font-size:80px;'>[ {r1} | {r2} | {r3} ]</h1>", unsafe_allow_html=True)
+                    time.sleep(0.1)
+            
+            if r1 == r2 == r3:
+                st.success("🎉 JACKPOT!!! ₩5,000,000 획득!")
+                st.session_state.global_cash += 5000000
+                st.balloons()
+            else:
+                st.error("아쉽습니다. 다음 기회에!")
+            sync_user_data()
+        else:
+            st.error("현금이 부족합니다.")
+
+# ==============================
+# 콘텐츠 8: 코인 채굴장
+# ==============================
+elif menu == "⛏️ 코인 채굴장":
+    st.title("⛏️ 가상화폐 수동 채굴장")
+    st.markdown("클릭할 때마다 돈이 벌립니다. 단순하지만 확실한 노동의 대가!")
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("💻 열심히 타자 치기 (클릭)", use_container_width=True):
+            st.session_state.global_cash += 15000
+            st.success("+₩15,000 획득")
+            sync_user_data()
+            
+    with col2:
+        st.info("광클릭으로 자본금을 모아 주식 시장이나 상점, 슬롯머신을 이용해 보세요.")
+
+# ==============================
+# 콘텐츠 9: 슈퍼 상점
+# ==============================
+elif menu == "🛒 슈퍼 상점":
+    st.title("🛒 하이엔드 슈퍼 상점")
+    st.markdown("자산을 모아 부와 명예를 보여주는 칭호와 물건을 구매하세요.")
+    
+    items = [
+        {"id": "i1", "name": "VHDL 마스터 칭호", "price": 2000000, "type": "title"},
+        {"id": "i2", "name": "시스템 개발팀장 칭호", "price": 10000000, "type": "title"},
+        {"id": "i3", "name": "힐스테이트 푸르지오 아파트", "price": 800000000, "type": "property"},
+        {"id": "i4", "name": "초고성능 PXI 계측 장비", "price": 50000000, "type": "tech"}
+    ]
+    
+    for item in items:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(f"**{item['name']}** - ₩{item['price']:,}")
+        with col2:
             if item['id'] in st.session_state.inventory:
                 if item['type'] == 'title':
-                    if st.session_state.equipped_title == item['name']: st.button("장착중", key=item['id'], disabled=True)
+                    if st.session_state.equipped_title == item['name']:
+                        st.button("장착 중", key=item['id'], disabled=True)
                     else:
-                        if st.button("장착하기", key=item['id']):
+                        if st.button("칭호 장착", key=item['id']):
                             st.session_state.equipped_title = item['name']
                             sync_user_data()
                             st.rerun()
                 else:
-                    st.button("보유중", key=item['id'], disabled=True)
+                    st.button("보유 중", key=item['id'], disabled=True)
             else:
                 if st.button("구매", key=item['id']):
                     if st.session_state.global_cash >= item['price']:
                         st.session_state.global_cash -= item['price']
                         st.session_state.inventory.append(item['id'])
                         sync_user_data()
+                        st.success("구매 완료!")
                         st.rerun()
+                    else: st.error("현금 부족")
+        st.markdown("---")
 
+# ==============================
+# 콘텐츠 10: 커뮤니티
+# ==============================
 elif menu == "💬 커뮤니티":
-    st.title("💬 포털 커뮤니티")
-    c_text = st.text_area("메시지 남기기")
-    if st.button("댓글등록"):
+    st.title("💬 유저 커뮤니티")
+    
+    c_text = st.text_area("방명록 / 피드백 남기기")
+    if st.button("등록하기"):
         save_comment(st.session_state.logged_in_user, c_text)
         st.success("등록 완료")
         st.rerun()
+        
     for c in reversed(load_comments()):
-        st.info(f"**{c['name']}** ({c['time']}): {c['comment']}")
+        st.markdown(f"""
+        <div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:5px; margin-bottom:10px;'>
+            <span style='color:#00d4ff; font-weight:bold;'>{c['name']}</span> <span style='font-size:12px; color:#aaa;'>({c['time']})</span><br>
+            {c['comment']}
+        </div>
+        """, unsafe_allow_html=True)
