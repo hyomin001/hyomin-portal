@@ -13,7 +13,7 @@ from datetime import datetime
 # ==============================
 USERS_FILE = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
-MARKET_FILE = "market_db.json" # 모든 유저가 100% 동일하게 공유하는 시장 DB
+MARKET_FILE = "market_db.json" # 모든 유저가 공유하는 시장 DB
 
 stock_config = [
     {"id": "NDX", "name": "나스닥100 ETF", "vol": 0.04},       
@@ -59,7 +59,8 @@ def get_market():
             "stock_data": {},
             "news": "시장이 안정적으로 운영 중입니다.",
             "news_time": time.time(),
-            "last_tick": time.time()
+            "last_tick": time.time(),
+            "admin_msg": "" # 창조주 공지사항 추가
         }
         for s in stock_config:
             p = random.randint(50000, 150000)
@@ -78,7 +79,6 @@ def get_market():
         data = init_market()
         save_db(MARKET_FILE, data)
         return data
-        
     return data
 
 def save_market(data): save_db(MARKET_FILE, data)
@@ -95,10 +95,10 @@ def get_rankings(market_data):
     rankings.sort(key=lambda x: x['total'], reverse=True)
     return rankings
 
-st.set_page_config(page_title="HYOMIN UNIVERSE v12.0", page_icon="🐋", layout="wide")
+st.set_page_config(page_title="HYOMIN UNIVERSE v13.0", page_icon="👑", layout="wide")
 
 # ==============================
-# 🔐 로그인 시스템
+# 🔐 로그인 시스템 (관리자 5891 계정 포함)
 # ==============================
 if 'logged_in_user' not in st.session_state:
     st.markdown("""
@@ -110,7 +110,7 @@ if 'logged_in_user' not in st.session_state:
     """, unsafe_allow_html=True)
     
     st.markdown("<h1>🌌 HYOMIN UNIVERSE</h1>", unsafe_allow_html=True)
-    st.markdown("<p>슈퍼개미의 움직임이 시장 전체를 뒤흔듭니다. 눈치싸움에 참전하세요!</p>", unsafe_allow_html=True)
+    st.markdown("<p>슈퍼개미와 창조주가 공존하는 무한한 우주에 오신 것을 환영합니다.</p>", unsafe_allow_html=True)
     
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
@@ -123,19 +123,33 @@ if 'logged_in_user' not in st.session_state:
             l_pw = st.text_input("비밀번호", type="password")
             if st.button("유니버스 입장", use_container_width=True):
                 users = load_db(USERS_FILE, {})
-                if l_id in users and users[l_id]['pw'] == l_pw:
+                
+                # 👑 [관리자 특별 로그인 처리]
+                if l_id == "5891" and l_pw == "5891":
+                    if "5891" not in users:
+                        users["5891"] = {"pw": "5891", "cash": 999999999999, "inventory": [], "equipped_title": "👑 절대신 창조주", "portfolio": {}}
+                        save_db(USERS_FILE, users)
+                    st.session_state.update({
+                        'logged_in_user': "5891", 'global_cash': users["5891"]['cash'], 'inventory': users["5891"]['inventory'],
+                        'equipped_title': users["5891"].get('equipped_title', '👑 절대신 창조주'), 'portfolio': users["5891"].get('portfolio', {}),
+                        'device_mode': device_mode
+                    }); st.rerun()
+                
+                # 일반 유저 로그인
+                elif l_id in users and users[l_id]['pw'] == l_pw:
                     st.session_state.update({
                         'logged_in_user': l_id, 'global_cash': users[l_id]['cash'], 'inventory': users[l_id]['inventory'],
                         'equipped_title': users[l_id].get('equipped_title', '신규시민'), 'portfolio': users[l_id].get('portfolio', {}),
                         'device_mode': device_mode
                     }); st.rerun()
-                else: st.error("정보 불일치")
+                else: st.error("정보가 일치하지 않습니다.")
+                
         with choice[1]:
             n_id = st.text_input("새 아이디")
             n_pw = st.text_input("새 비밀번호", type="password")
             if st.button("시민 등록", use_container_width=True):
                 users = load_db(USERS_FILE, {})
-                if n_id in users: st.error("중복된 이름입니다.")
+                if n_id in users or n_id == "5891": st.error("사용할 수 없는 이름입니다.")
                 else:
                     users[n_id] = {"pw": n_pw, "cash": 100000000, "inventory": [], "equipped_title": "신규시민", "portfolio": {}}
                     save_db(USERS_FILE, users); st.success("가입 성공! 로그인하세요.")
@@ -198,7 +212,6 @@ market = get_market()
 current_time = time.time()
 market_updated = False
 
-# 10초 주가 자동 변동
 if current_time - market.get('last_tick', 0) > 10:
     for s in stock_config:
         curr = market['stock_data'][s['id']]
@@ -209,7 +222,6 @@ if current_time - market.get('last_tick', 0) > 10:
     market['last_tick'] = current_time
     market_updated = True
 
-# 30초 정규 뉴스
 if current_time - market.get('news_time', 0) > 30:
     target = random.choice(stock_config)
     impact = random.uniform(-0.15, 0.15)
@@ -221,13 +233,16 @@ if current_time - market.get('news_time', 0) > 30:
 if market_updated: save_market(market)
 
 # ==============================
-# 🧭 메뉴 분기
+# 🧭 메뉴 분기 (관리자 패널 동적 추가)
 # ==============================
 menu_options = ["🏠 홈 광장", "📈 주식 트레이딩", "⚽ 구단주 매니저", "📡 통신 업무", "💻 CBT 모의고사", "🏎️ 레이싱", "🎰 슬롯머신", "⛏️ 채굴기", "👑 칭호 상점", "💬 랭커 게시판"]
 
+if st.session_state.logged_in_user == "5891":
+    menu_options.append("🛠️ 창조주 통제소")
+
 if st.session_state.device_mode == "🖥️ PC (데스크탑/태블릿)":
     with st.sidebar:
-        st.markdown(f"### 👤 {st.session_state.logged_in_user}님")
+        st.markdown(f"### 👤 {st.session_state.logged_in_user}")
         st.markdown(f"**칭호**: `{st.session_state.equipped_title}`")
         st.metric("💰 보유 자산", f"₩{st.session_state.global_cash:,}")
         if st.button("로그아웃"): sync_user_data(); st.session_state.clear(); st.rerun()
@@ -246,15 +261,117 @@ else:
         if st.button("🔴 로그아웃"): sync_user_data(); st.session_state.clear(); st.rerun()
     st.markdown("---")
 
+# [공통 UI] 창조주 긴급 공지 배너 (공지가 있을 때만 노출)
+if market.get('admin_msg') and menu in ["🏠 홈 광장", "📈 주식 트레이딩"]:
+    st.markdown(f"""
+    <div style='background-color:#500000; border:3px solid #FF0000; padding:15px; border-radius:10px; margin-bottom:20px; text-align:center; box-shadow: 0 0 15px #FF0000;'>
+        <h2 style='color:#FFFFFF; margin:0;'>👑 [창조주 긴급 공지] {market['admin_msg']}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ==============================
+# [0] 🛠️ 관리자 전용 제어소 (창조주 기능 풀업그레이드)
+# ==============================
+if menu == "🛠️ 창조주 통제소":
+    st.title("🛠️ 절대신 창조주 통제 패널")
+    st.error("⚠️ 이 패널에서의 조작은 유니버스 전체 유저에게 즉시 반영됩니다.")
+    
+    a_tab1, a_tab2, a_tab3 = st.tabs(["👥 유저 조롱 & 통제", "📈 주식 시장 강제 개입", "💬 데스노트 (게시판)"])
+    
+    with a_tab1:
+        st.subheader("모든 유저 자산 & 칭호 강제 조작")
+        all_users = load_db(USERS_FILE, {})
+        user_list = list(all_users.keys())
+        if user_list:
+            sel_u = st.selectbox("조작할 유저 선택", user_list, key="admin_u")
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                curr_c = all_users[sel_u].get('cash', 0)
+                st.write(f"현재 자산: ₩{curr_c:,}")
+                new_c = st.number_input("변경할 자산", value=curr_c, step=100000000, key="admin_cash")
+            with c2:
+                curr_t = all_users[sel_u].get('equipped_title', '신규시민')
+                st.write(f"현재 칭호: {curr_t}")
+                new_t = st.text_input("강제 부여할 칭호 (예: 굴욕적인 칭호)", value=curr_t, key="admin_title")
+                
+            if st.button("⚔️ 해당 유저 통제 실행"):
+                all_users[sel_u]['cash'] = new_c
+                all_users[sel_u]['equipped_title'] = new_t
+                save_db(USERS_FILE, all_users)
+                if sel_u == st.session_state.logged_in_user:
+                    st.session_state.global_cash = new_c
+                    st.session_state.equipped_title = new_t
+                st.success(f"[{sel_u}]님의 자산이 ₩{new_c:,}으로, 칭호가 '{new_t}'(으)로 강제 변경되었습니다.")
+        else:
+            st.info("가입한 유저가 없습니다.")
+            
+    with a_tab2:
+        st.subheader("신의 손 (시장 조작)")
+        st.markdown("---")
+        st.markdown("#### 📢 전체 서버 공지사항 발송")
+        admin_notice = st.text_input("모든 유저 화면 상단에 고정될 메시지를 입력하세요 (비우면 공지 삭제)")
+        if st.button("🚨 공지 업데이트"):
+            market['admin_msg'] = admin_notice
+            save_market(market); st.success("서버 공지가 업데이트되었습니다.")
+        
+        st.markdown("---")
+        st.markdown("#### ⚡ 대세 상승장 / 대공황 강제 발동")
+        col_bull, col_bear = st.columns(2)
+        with col_bull:
+            if st.button("🔥 전 종목 50% 폭등 (축제)"):
+                for s in stock_config: market['stock_data'][s['id']]['price'] = int(market['stock_data'][s['id']]['price'] * 1.5)
+                market['news'] = "🔥 [창조주 강림] 전 종목 50% 떡상! 글로벌 대세 상승장 도래!!"
+                save_market(market); st.success("전 종목 펌핑 완료")
+        with col_bear:
+            if st.button("🧊 전 종목 50% 폭락 (공황)"):
+                for s in stock_config: market['stock_data'][s['id']]['price'] = int(market['stock_data'][s['id']]['price'] * 0.5)
+                market['news'] = "🧊 [창조주 분노] 전 종목 50% 폭락! 대공황 시작!!"
+                save_market(market); st.error("전 종목 폭락 완료")
+                
+        st.markdown("---")
+        st.markdown("#### 🎯 특정 종목 핀포인트 조작")
+        sel_s = st.selectbox("조작할 종목 선택", [s['name'] for s in stock_config], key="admin_s")
+        s_id = [s['id'] for s in stock_config if s['name'] == sel_s][0]
+        c_price = market['stock_data'][s_id]['price']
+        n_price = st.number_input("강제 설정할 주가", value=c_price, step=10000, key="admin_p")
+        if st.button("🚀 해당 종목 주가 덮어쓰기"):
+            market['stock_data'][s_id]['price'] = n_price
+            market['stock_data'][s_id]['history'].append(n_price)
+            market['news'] = f"🚨 [창조주 개입] {sel_s} 주가가 강제 재조정되었습니다!!"
+            save_market(market); st.success(f"{sel_s}의 주가를 ₩{n_price:,}으로 조작했습니다.")
+
+    with a_tab3:
+        st.subheader("데스노트 (게시판 타겟 관리)")
+        comments = load_db(COMMENTS_FILE, [])
+        if not comments:
+            st.info("현재 작성된 게시글이 없습니다.")
+        else:
+            # 타겟 삭제 기능
+            c_options = [f"[{i}] {c['name']} : {c['comment'][:20]}..." for i, c in enumerate(comments)]
+            del_target = st.selectbox("삭제할 타겟 댓글 선택", c_options)
+            if st.button("🗑️ 해당 댓글 타겟 삭제"):
+                idx = int(del_target.split("]")[0][1:])
+                deleted = comments.pop(idx)
+                save_db(COMMENTS_FILE, comments)
+                st.success(f"[{deleted['name']}] 유저의 댓글을 삭제했습니다.")
+            
+            st.write("---")
+            if st.button("💥 게시판 싹쓸이 (전체 삭제)"):
+                save_db(COMMENTS_FILE, [])
+                st.success("게시판의 모든 흔적을 지웠습니다.")
+
 # ==============================
 # [1] 홈
 # ==============================
-if menu == "🏠 홈 광장":
+elif menu == "🏠 홈 광장":
     st.title(f"환영합니다 {st.session_state.logged_in_user}님! 🎉")
-    st.markdown("현재 **대주주(고래) 시장 개입 시스템**이 활성화되었습니다. 100억 이상의 대규모 자금이 움직이면 전 서버에 속보가 뜨며 시장이 요동칩니다!")
+    st.markdown("현재 **대주주(고래) 시장 개입 시스템**이 활성화되었습니다. 100억 이상의 자금이 움직이면 전 서버에 속보가 뜹니다!")
     st.image("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200")
     
-
+  
+   
+    
 
 # ==============================
 # [2] 주식 (고래 시스템 탑재)
@@ -262,8 +379,7 @@ if menu == "🏠 홈 광장":
 elif menu == "📈 주식 트레이딩":
     st.title("📈 글로벌 통합 거래소")
     
-    # 상단 뉴스 (가장 눈에 띄게)
-    news_color = "#FF4B4B" if "폭등" in market['news'] else "#1F77B4" if "폭락" in market['news'] else "#FFD600"
+    news_color = "#FF4B4B" if "폭등" in market['news'] or "창조주" in market['news'] or "떡상" in market['news'] else "#1F77B4" if "폭락" in market['news'] or "공황" in market['news'] else "#FFD600"
     st.markdown(f"<div style='background-color:#222; padding:15px; border-left:10px solid {news_color}; margin-bottom:20px;'><h3 style='color:{news_color}; margin:0;'>{market['news']}</h3></div>", unsafe_allow_html=True)
     
     t_mkt, t_acc = st.tabs(["📊 시황", "💼 내 포트폴리오"])
@@ -315,14 +431,11 @@ elif menu == "📈 주식 트레이딩":
                 st.session_state.portfolio[sid] = {'qty': new_q, 'avg_price': new_a}
                 sync_user_data()
                 
-                # 🐋 대주주(고래) 매수 로직: 100억 이상 매수 시 주가 폭등
-                if buy_amt >= 10000000000:
-                    # 1000억당 10% 상승, 최대 50%까지 제한
-                    impact = min((buy_amt / 100000000000) * 0.1, 0.5) 
+                if buy_amt >= 1000000000:
+                    impact = min((buy_amt / 1000000000000) * 0.1, 0.5) 
                     market['stock_data'][sid]['price'] = int(cp * (1 + impact))
-                    market['news'] = f"🚨 [슈퍼개미 출현] {st.session_state.equipped_title} {st.session_state.logged_in_user}님이 {sel_name}에 ₩{buy_amt//100000000:,}억 풀매수!! 주가 폭등!"
-                    market['news_time'] = time.time()
-                    save_market(market)
+                    market['news'] = f"🚨 [슈퍼개미 출현] {st.session_state.equipped_title} {st.session_state.logged_in_user}님이 {sel_name}에 ₩{buy_amt//1000000000:,}억 풀매수!! 주가 폭등!"
+                    market['news_time'] = time.time(); save_market(market)
                 st.rerun()
     with c2:
         if st.button("💸 풀매도"):
@@ -333,13 +446,11 @@ elif menu == "📈 주식 트레이딩":
                 st.session_state.portfolio[sid] = {'qty': 0, 'avg_price': 0}
                 sync_user_data()
                 
-                # 🐋 대주주(고래) 매도 로직: 50억 이상 매도 시 주가 폭락
-                if sell_amt >= 5000000000:
-                    impact = min((sell_amt / 100000000000) * 0.1, 0.5)
+                if sell_amt >= 1000000000:
+                    impact = min((sell_amt / 500000000000) * 0.1, 0.5)
                     market['stock_data'][sid]['price'] = max(1000, int(cp * (1 - impact)))
                     market['news'] = f"📉 [패닉 셀] 대주주 {st.session_state.logged_in_user}님이 {sel_name} ₩{sell_amt//100000000:,}억 물량 투하!! 주가 폭락!"
-                    market['news_time'] = time.time()
-                    save_market(market)
+                    market['news_time'] = time.time(); save_market(market)
                 st.rerun()
     time.sleep(2); st.rerun()
 
@@ -383,11 +494,11 @@ elif menu == "💻 CBT 모의고사":
     st.title("💻 정처기 실전 모의고사")
     if 'hard_q_pool' not in st.session_state:
         st.session_state.hard_q_pool = [
-            {"q": "결합도(Coupling) 중 결합도가 가장 좋은 것은?", "a": "자료 결합도", "w": ["스탬프 결합도", "제어 결합도", "내용 결합도"]},
-            {"q": "응집도(Cohesion) 중 응집도가 가장 좋은 것은?", "a": "기능적 응집도", "w": ["논리적 응집도", "시간적 응집도", "절차적 응집도"]},
+            {"q": "결합도(Coupling) 중 가장 좋은 것은?", "a": "자료 결합도", "w": ["스탬프 결합도", "제어 결합도", "내용 결합도"]},
+            {"q": "응집도(Cohesion) 중 가장 좋은 것은?", "a": "기능적 응집도", "w": ["논리적 응집도", "시간적 응집도", "절차적 응집도"]},
             {"q": "GoF 패턴 중 '생성' 패턴이 아닌 것은?", "a": "Adapter", "w": ["Builder", "Singleton", "Prototype"]},
             {"q": "화이트박스 테스트 기법은?", "a": "기본 경로 검사", "w": ["경계값 분석", "동치 분할 검사", "원인-효과 그래프"]},
-            {"q": "DB 제2정규형(2NF)의 조건은?", "a": "부분 함수 종속 제거", "w": ["이행적 함수 종속 제거", "다치 종속 제거", "결정자가 후보키가 아닌 것 제거"]}
+            {"q": "DB 제2정규형(2NF)의 조건은?", "a": "부분 함수 종속 제거", "w": ["이행적 함수 종속 제거", "다치 종속 제거", "결정자 문제"]}
         ]
     if 'current_q' not in st.session_state:
         st.session_state.current_q = random.choice(st.session_state.hard_q_pool)
