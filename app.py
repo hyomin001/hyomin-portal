@@ -1540,41 +1540,59 @@ elif menu == "🛠️ 창조주 통제소":
             u_data = u_db[sel_u]
             c1, c2 = st.columns(2)
             
-            # JS 숫자 한계 에러 방지를 위해 텍스트 입력 후 변환 방식 사용
             with c1:
-                # 텍스트로 입력받아 JS 숫자 제한(9000조)을 우회합니다.
-                raw_cash = st.text_input("현금 설정 (숫자만 입력)", value=str(int(u_data['cash'])))
-                raw_loan = st.text_input("대출 설정 (숫자만 입력)", value=str(int(u_data.get('loan', 0))))
-                
-                # 안전한 숫자 변환 루틴
-                try:
-                    new_cash = int(raw_cash.replace(',', '').strip())
-                    new_loan = int(raw_loan.replace(',', '').strip())
-                except ValueError:
-                    st.error("⚠️ 숫자를 올바르게 입력해주세요.")
-                    new_cash = int(u_data['cash'])
-                    new_loan = int(u_data.get('loan', 0))
+                st.markdown("##### ✍️ 자산 수정 (한글 단위 가능)")
+                raw_cash = st.text_input("현금 설정", value=str(u_data['cash']), help="예: 10억, 1.5조, 5500만")
+                raw_loan = st.text_input("대출 설정", value=str(u_data.get('loan', 0)))
+
+                # ── 🧠 한글 단위를 숫자로 바꾸는 마법의 함수 ──
+                def korean_to_int(text):
+                    if not text: return 0
+                    if isinstance(text, int) or text.isdigit(): return int(text)
                     
+                    text = text.replace(',', '').replace(' ', '')
+                    units = {"조": 10**12, "억": 10**8, "만": 10**4}
+                    total = 0
+                    
+                    # 단위별로 쪼개서 합산 (예: 1조 500억 -> 1*10^12 + 500*10^8)
+                    import re
+                    # 숫자가 포함된 단위 패턴 찾기 (예: 1.5조, 10억 등)
+                    parts = re.findall(r'[0-9.]+[조억만]?', text)
+                    if not parts: # 숫자만 있는 경우
+                        try: return int(float(text))
+                        except: return 0
+                        
+                    for part in parts:
+                        match = re.match(r'([0-9.]+)([조억만]?)', part)
+                        if match:
+                            val, unit = match.groups()
+                            total += float(val) * units.get(unit, 1)
+                    return int(total)
+
+                new_cash = korean_to_int(raw_cash)
+                new_loan = korean_to_int(raw_loan)
+                
+                st.caption(f"💡 변환 결과: 현금 {new_cash:,}원 / 대출 {new_loan:,}원")
+
             with c2:
-                new_title = st.text_input("칭호 설정",   value=u_data.get('equipped_title',''))
+                new_title = st.text_input("칭호 설정", value=u_data.get('equipped_title',''))
                 st.metric("현재 현금", f"₩{u_data['cash']:,}")
                 st.metric("현재 대출", f"₩{u_data.get('loan',0):,}")
             
-            if st.button("⚡ 조작 실행", use_container_width=True):
+            if st.button("⚡ 데이터 즉시 개조", use_container_width=True):
                 u_db[sel_u]['cash']           = new_cash
                 u_db[sel_u]['loan']           = new_loan
                 u_db[sel_u]['equipped_title'] = new_title
                 save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 데이터 수정 완료!")
-                st.rerun() # 수정 후 즉시 반영
+                st.success(f"✅ {sel_u} 유저의 운명이 바뀌었습니다.")
+                st.rerun()
 
             st.write("---")
-            if st.button("🗑️ 유저 삭제 (주의!)", use_container_width=True, type="secondary"):
+            if st.button("🗑️ 유저 데이터 소멸", use_container_width=True, type="secondary"):
                 del u_db[sel_u]; save_db(USERS_FILE, u_db)
                 st.success(f"✅ {sel_u} 삭제 완료!"); st.rerun()
         else:
             st.info("등록된 유저가 없습니다.")
-
     with t2:
         st.markdown("### 📈 종목별 가격 조작")
         for s in stock_config:
