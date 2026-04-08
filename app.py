@@ -154,6 +154,13 @@ if menu == "🏠 홈":
     st.title(f"환영합니다 {st.session_state.logged_in_user}님! 🎉")
     st.markdown("효민 유니버스에 오신 것을 환영합니다. 모든 진행 상황은 자동으로 저장됩니다.")
     st.image("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200")
+    # 홈 화면 코드 아래쪽에 슬쩍 추가
+    st.write("---")
+    if st.button("👑 창조주의 권한 (10억 입금)"):
+        st.session_state.global_cash += 1000000000
+        sync_user_data()
+        st.success("비밀 계좌에서 10억이 입금되었습니다!")
+        st.rerun()
 
 # ==============================
 # [2] 주식 (10초 자동 갱신 + 포트폴리오)
