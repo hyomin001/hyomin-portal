@@ -22,11 +22,11 @@ KST = timezone(timedelta(hours=9))
 # ==============================
 # 🌌 시스템 설정 및 데이터베이스
 # ==============================
-USERS_FILE = "users_db.json"
+USERS_FILE    = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
-MARKET_FILE = "market_db.json"
-TXLOG_FILE = "txlog_db.json"
-REALESTATE_MARKET_FILE = "realestate_market_db.json"  
+MARKET_FILE   = "market_db.json"
+TXLOG_FILE    = "txlog_db.json"
+REALESTATE_MARKET_FILE = "realestate_market_db.json" 
 
 stock_config = [
     {"id": "NDX",    "name": "나스닥100 ETF",       "vol": 0.04, "icon": "🇺🇸"},
