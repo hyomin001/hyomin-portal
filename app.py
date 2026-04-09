@@ -2394,55 +2394,55 @@ elif menu == "🗡️ 전설의 명검 강화":
                     sync_user_data()
                     st.success(f"✅ 무기를 팔아 {format_korean_money(sell_amt)}을 얻었습니다. 다시 목검부터 시작합니다!")
                     time.sleep(1); st.rerun()
-
+                    
 # =====================================================================
 # 📅 일일 퀘스트
 # =====================================================================
 elif menu == "📅 일일 퀘스트":
-    st.title("📅 일일 퀘스트")
-    st.markdown("<div style='color:#888;margin-bottom:20px;'>매일 자정에 초기화됩니다. 달성하고 보상을 수령하세요!</div>", unsafe_allow_html=True)
-    
-    today_str = datetime.now(KST).strftime("%Y-%m-%d")
-    dq = st.session_state.get('daily_quests', {})
-    today_dq = dq.get(today_str, {})
+    st.title("📅 일일 퀘스트")
+    st.markdown("<div style='color:#888;margin-bottom:20px;'>매일 자정에 초기화됩니다. 달성하고 보상을 수령하세요!</div>", unsafe_allow_html=True)
+    
+    today_str = datetime.now(KST).strftime("%Y-%m-%d")
+    dq = st.session_state.get('daily_quests', {})
+    today_dq = dq.get(today_str, {})
 
-    def check_quest(qid):
-        if qid == "attendance": return True
-        elif qid == "rich5": return nw >= 500_000_000
-        elif qid == "landlord": return any(v > 0 for v in st.session_state.real_estate.values())
-        elif qid == "debtfree": return st.session_state.loan == 0
-        return False # 나머지 복잡한 조건은 텍스트 간소화
+    def check_quest(qid):
+        if qid == "attendance": return True
+        elif qid == "rich5": return nw >= 500_000_000
+        elif qid == "landlord": return any(v > 0 for v in st.session_state.real_estate.values())
+        elif qid == "debtfree": return st.session_state.loan == 0
+        return False # 나머지 복잡한 조건은 텍스트 간소화
 
-    for q in DAILY_QUESTS_CONFIG:
-        is_claimed    = today_dq.get(q['id'], False)
-        is_achievable = check_quest(q['id'])
-        
-        status_col = "#00FF88" if is_claimed else "#FFD600" if is_achievable else "#444"
-        status_txt = "✅ 수령 완료" if is_claimed else "🟡 달성! 클릭하여 수령" if is_achievable else "🔒 미달성"
-        
-        st.markdown(f"""
-        <div style='background:rgba(255,255,255,0.05); border-left:4px solid {status_col}; padding:15px; border-radius:8px; margin-bottom:10px;'>
-            <div style='display:flex; justify-content:space-between; align-items:center;'>
-                <div>
-                    <span style='font-size:1.5rem;'>{q['icon']}</span> <b style='font-size:1.1rem; color:#fff;'>{q['name']}</b>
-                    <div style='color:#888; font-size:0.85rem; margin-top:4px;'>{q['desc']}</div>
-                </div>
-                <div style='text-align:right;'>
-                    <div style='color:#FFD600; font-weight:900;'>{format_korean_money(q['reward'])}</div>
-                    <div style='color:{status_col}; font-size:0.8rem; margin-top:4px;'>{status_txt}</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if is_achievable and not is_claimed:
-            if st.button(f"[{q['name']}] 보상 수령", key=f"q_btn_{q['id']}"):
-                today_dq[q['id']] = True
-                dq[today_str] = today_dq
-                st.session_state.daily_quests = dq
-                st.session_state.global_cash += q['reward']
-                log_tx(st.session_state.logged_in_user, "퀘스트", f"{q['name']} 완료", q['reward'])
-                sync_user_data(); st.rerun()
+    for q in DAILY_QUESTS_CONFIG:
+        is_claimed    = today_dq.get(q['id'], False)
+        is_achievable = check_quest(q['id'])
+        
+        status_col = "#00FF88" if is_claimed else "#FFD600" if is_achievable else "#444"
+        status_txt = "✅ 수령 완료" if is_claimed else "🟡 달성! 클릭하여 수령" if is_achievable else "🔒 미달성"
+        
+        st.markdown(f"""
+        <div style='background:rgba(255,255,255,0.05); border-left:4px solid {status_col}; padding:15px; border-radius:8px; margin-bottom:10px;'>
+            <div style='display:flex; justify-content:space-between; align-items:center;'>
+                <div>
+                    <span style='font-size:1.5rem;'>{q['icon']}</span> <b style='font-size:1.1rem; color:#fff;'>{q['name']}</b>
+                    <div style='color:#888; font-size:0.85rem; margin-top:4px;'>{q['desc']}</div>
+                </div>
+                <div style='text-align:right;'>
+                    <div style='color:#FFD600; font-weight:900;'>{format_korean_money(q['reward'])}</div>
+                    <div style='color:{status_col}; font-size:0.8rem; margin-top:4px;'>{status_txt}</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if is_achievable and not is_claimed:
+            if st.button(f"[{q['name']}] 보상 수령", key=f"q_btn_{q['id']}"):
+                today_dq[q['id']] = True
+                dq[today_str] = today_dq
+                st.session_state.daily_quests = dq
+                st.session_state.global_cash += q['reward']
+                log_tx(st.session_state.logged_in_user, "퀘스트", f"{q['name']} 완료", q['reward'])
+                sync_user_data(); st.rerun()
 
 
 
