@@ -22,7 +22,7 @@ KST = timezone(timedelta(hours=9))
 # ==============================
 # 🌌 시스템 설정 및 데이터베이스
 # ==============================
-USERS_FILE    = "users_db.json"
+USERS_FILE = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
 MARKET_FILE   = "market_db.json"
 TXLOG_FILE    = "txlog_db.json"
