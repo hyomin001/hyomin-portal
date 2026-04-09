@@ -24,8 +24,8 @@ KST = timezone(timedelta(hours=9))
 # ==============================
 USERS_FILE = "users_db.json"
 COMMENTS_FILE = "comments_db.json"
-MARKET_FILE   = "market_db.json"
-TXLOG_FILE    = "txlog_db.json"
+MARKET_FILE = "market_db.json"
+TXLOG_FILE = "txlog_db.json"
 REALESTATE_MARKET_FILE = "realestate_market_db.json"  
 
 stock_config = [
