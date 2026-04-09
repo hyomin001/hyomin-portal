@@ -2632,8 +2632,8 @@ elif menu == "🛠️ 창조주 통제소":
         if not combined_logs:
             st.info("아직 기록된 활동이 없습니다.")
         else:
-            # 최근 100개 출력 (10개는 너무 짧으니 100개로 늘렸습니다)
-            for log in combined_logs[:100]:
+            # 최근 20개 출력 
+            for log in combined_logs[:20]:
                 amt   = log['amount']
                 color = "#FF4B4B" if amt > 0 else "#4B9EFF"
                 sign  = "+" if amt > 0 else ""
