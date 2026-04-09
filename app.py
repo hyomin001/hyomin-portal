@@ -1278,7 +1278,11 @@ elif menu == "🏦 은행 (대출/송금)":
         st.info(f"💡 최대 대출 한도: {format_korean_money(max_loan_limit)} (순자산의 50%)\n💸 현재 대출 가능액: {format_korean_money(avail_loan)}\n⚠️ 대출 실행 시 1%의 선취 수수료가 공제됩니다.")
 
         if avail_loan > 0:
-            l_amt = st.number_input("대출 금액 (원)", min_value=0, max_value=int(avail_loan), step=10_000_000, format="%d", key="loan_in")
+            # 🛡️ 안전 장치: 자바스크립트 최대 정수 제한(약 9000조) 캡 씌우기
+            JS_MAX_INT = 9007199254740991
+            safe_max_loan = min(int(avail_loan), JS_MAX_INT)
+
+            l_amt = st.number_input("대출 금액 (원)", min_value=0, max_value=safe_max_loan, step=10_000_000, format="%d", key="loan_in_safe")
             cd_loan = cooldown_remaining("loan_action", 5.0)
             if cd_loan > 0:
                 st.warning(f"⏱️ 대출 쿨다운 {cd_loan:.1f}초")
