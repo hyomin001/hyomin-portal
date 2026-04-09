@@ -8,6 +8,7 @@ import os
 import time
 import tempfile
 import shutil
+import uuid #추
 from datetime import datetime, timedelta, timezone
 
 # ==============================
@@ -103,18 +104,29 @@ def format_korean_money(num):
 # 🗄️ DB 유틸
 # ════════════════════════════════════
 def _atomic_save(filepath: str, data):
-    tmp = filepath + ".tmp"
-    bak = filepath + ".bak"
+    # 🚨 임시 파일 이름에 고유 번호(UUID)를 붙여서 동시성 충돌을 완벽 차단!
+    unique_id = str(uuid.uuid4())[:8]
+    tmp = f"{filepath}.{unique_id}.tmp"
+    bak = f"{filepath}.bak"
+    
     try:
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
+            
         if os.path.exists(filepath):
             shutil.copy2(filepath, bak)
-        shutil.move(tmp, filepath)
+            
+        # shutil.move 대신 OS 레벨에서 원자성(Atomic)을 보장하는 replace 사용
+        os.replace(tmp, filepath)
+        
     except Exception as e:
-        if os.path.exists(tmp): os.remove(tmp)
+        if os.path.exists(tmp): 
+            try:
+                os.remove(tmp)
+            except:
+                pass
         raise e
-
+        
 def load_db(file, default):
     for target in [file, file + ".bak"]:
         if os.path.exists(target):
