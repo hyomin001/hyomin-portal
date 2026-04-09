@@ -2345,16 +2345,20 @@ elif menu == "📅 일일 퀘스트":
                 sync_user_data(); st.rerun()
 
 # =====================================================================
-# 🛠️ 창조주 통제소
+# 🛠️ 창조주 통제소 (절대신의 권능 V18.2 - 대규모 확장 및 통합)
 # =====================================================================
 elif menu == "🛠️ 창조주 통제소":
     st.title("🛠️ 창조주 통제소")
     st.markdown("<div style='color:#FF4B4B;font-size:0.85rem;margin-bottom:10px;'>⚠️ 창조주 전용 패널입니다. 이곳의 모든 조작은 우주(서버) 전체에 즉시 반영됩니다.</div>", unsafe_allow_html=True)
 
-    t1, t2, t3, t4, t5, t6 = st.tabs([
-        "👤 유저 개조", "🏢 부동산 통제", "💬 게시판 관리", "🌍 글로벌 정책", "📈 시장 조작", "📊 전체 현황"
+    # 탭을 세분화하여 권능을 분류 (기존 탭 + 신규 탭 통합)
+    t1, t2, t3, t4, t5, t6, t7 = st.tabs([
+        "👤 유저 개조", "🏢 부동산 통제", "💬 게시판 관리", "🌍 글로벌 정책", "📈 시장 조작", "📊 전체 현황", "👁️ 전지적 모니터링"
     ])
 
+    # ──────────────────────────────────────────
+    # 탭 1: 유저 개조 (기존 + 빚 탕감 추가)
+    # ──────────────────────────────────────────
     with t1:
         def parse_creator_money(text):
             if not text: return None
@@ -2421,6 +2425,9 @@ elif menu == "🛠️ 창조주 통제소":
         else:
             st.info("관리할 유저가 없습니다.")
 
+    # ──────────────────────────────────────────
+    # 탭 2: 부동산 통제 (개별 몰수 및 마켓 초기화)
+    # ──────────────────────────────────────────
     with t2:
         st.markdown("### 🏢 특정 유저 부동산 압수 (몰수)")
         if uid_list:
@@ -2439,11 +2446,13 @@ elif menu == "🛠️ 창조주 통제소":
                     st.write("") 
                     st.write("")
                     if st.button("🔨 강제 압수 실행", use_container_width=True):
+                        # 1. 유저 인벤토리에서 삭제
                         u_db[re_target]['real_estate'][re_eid] -= re_cnt
                         if u_db[re_target]['real_estate'][re_eid] <= 0:
                             del u_db[re_target]['real_estate'][re_eid]
                         save_db(USERS_FILE, u_db)
 
+                        # 2. 마켓 글로벌 카운트에서 삭감 (시장 꼬임 방지)
                         em_admin = load_estate_market()
                         if re_target in em_admin["owner_counts"] and re_eid in em_admin["owner_counts"][re_target]:
                             em_admin["owner_counts"][re_target][re_eid] -= re_cnt
@@ -2472,6 +2481,9 @@ elif menu == "🛠️ 창조주 통제소":
             save_estate_market({"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}})
             st.success("부동산 마켓 초기화 완료!"); time.sleep(1); st.rerun()
 
+    # ──────────────────────────────────────────
+    # 탭 3: 게시판 관리 (개별 댓글 삭제 추가)
+    # ──────────────────────────────────────────
     with t3:
         st.markdown("### 💬 게시판 개별/전체 관리")
         all_c = load_db(COMMENTS_FILE, [])
@@ -2485,16 +2497,21 @@ elif menu == "🛠️ 창조주 통제소":
         if not all_c:
             st.info("등록된 게시물이 없습니다.")
         else:
+            # 리스트를 뒤집어서 최신 글부터 보여주되, 원본 인덱스를 추적하기 위해 enumerate 사용
             for idx, c in reversed(list(enumerate(all_c))):
                 col_txt, col_btn = st.columns([6, 1])
                 with col_txt:
                     st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;'><b style='color:#00E5FF;'>{c['name']}</b>: {c['comment']} <span style='color:#888; font-size:0.8rem;'>({c.get('time','')})</span></div>", unsafe_allow_html=True)
                 with col_btn:
+                    # 개별 삭제 버튼
                     if st.button("🗑️ 삭제", key=f"del_board_{idx}", use_container_width=True):
-                        all_c.pop(idx) 
+                        all_c.pop(idx) # 원본 리스트에서 해당 인덱스 삭제
                         save_db(COMMENTS_FILE, all_c)
                         st.rerun()
 
+    # ──────────────────────────────────────────
+    # 탭 4: 글로벌 정책 (에어드랍 & 부유세)
+    # ──────────────────────────────────────────
     with t4:
         st.markdown("### 🕊️ 창조주의 은총 (에어드랍)")
         st.caption("모든 유저(관리자 제외)에게 동일한 현금을 일괄 지급합니다.")
@@ -2519,6 +2536,9 @@ elif menu == "🛠️ 창조주 통제소":
             market['news'] = f"🌪️ [창조주의 분노] 전 우주를 대상으로 {tax_rate}%의 부유세가 강제 징수되었습니다!"
             save_market(market); st.success("세금 징수 완료!"); time.sleep(1.5); st.rerun()
 
+    # ──────────────────────────────────────────
+    # 탭 5: 시장 조작 & 공지 (기존 기능)
+    # ──────────────────────────────────────────
     with t5:
         st.markdown("### 📈 종목별 가격 조작")
         for s in stock_config:
@@ -2553,6 +2573,9 @@ elif menu == "🛠️ 창조주 통제소":
         if cc2.button("🗑️ 공지 삭제", use_container_width=True):
             market['admin_msg'] = ""; save_market(market); st.success("완료!")
 
+    # ──────────────────────────────────────────
+    # 탭 6: 전체 현황 (서버 상태)
+    # ──────────────────────────────────────────
     with t6:
         st.markdown("### 📊 전체 유저 현황")
         u_db2 = load_db(USERS_FILE, {})
@@ -2566,3 +2589,39 @@ elif menu == "🛠️ 창조주 통제소":
             exists = "✅ 정상" if os.path.exists(f) else "❌ 없음"
             size = f"{os.path.getsize(f):,} bytes" if os.path.exists(f) else "—"
             st.markdown(f"<div style='color:#ccc;font-size:0.9rem;'>{exists} | <b>{f}</b> ({size})</div>", unsafe_allow_html=True)
+
+    # ──────────────────────────────────────────
+    # 탭 7: 전지적 모니터링 (서버 로그 훔쳐보기)
+    # ──────────────────────────────────────────
+    with t7:
+        st.markdown("### 👁️ 실시간 유저 활동 로그")
+        st.caption("우주에서 일어나는 모든 거래의 은밀한 기록입니다.")
+        
+        all_logs = load_db(TXLOG_FILE, {})
+        
+        # 모든 유저의 로그를 모아서 시간순으로 정렬
+        combined_logs = []
+        for user_id, user_logs in all_logs.items():
+            for log in user_logs:
+                log['uid'] = user_id  # 로그에 유저 ID 태그 붙이기
+                combined_logs.append(log)
+                
+        # 시간(문자열) 기준 내림차순 정렬
+        combined_logs.sort(key=lambda x: x['time'], reverse=True)
+        
+        if not combined_logs:
+            st.info("아직 기록된 활동이 없습니다.")
+        else:
+            # 최근 100개만 출력
+            for log in combined_logs[:100]:
+                amt   = log['amount']
+                color = "#FF4B4B" if amt > 0 else "#4B9EFF"
+                sign  = "+" if amt > 0 else ""
+                st.markdown(f"""
+                <div style='font-size:0.85rem; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);'>
+                    <span style='color:#555;'>[{log['time']}]</span> 
+                    <b style='color:#00E5FF;'>{log['uid']}</b>님이 
+                    <span style='color:#aaa;'>{log['desc']}</span> 
+                    <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
+                </div>
+                """, unsafe_allow_html=True)
