@@ -1684,11 +1684,12 @@ elif menu == "🎰 럭키 슬롯":
 
                 sync_user_data(); time.sleep(2); st.rerun()
 
-# =====================================================================
+# ════════════════════════════════════════════════
 # 🃏 블랙잭 카지노
-# =====================================================================
+# ════════════════════════════════════════════════
 elif menu == "🃏 블랙잭 카지노":
     st.title("🃏 블랙잭 카지노")
+
     CARD_VALS = {'A':11,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':10,'Q':10,'K':10}
     SUITS = ['♠','♥','♦','♣']
 
@@ -1718,25 +1719,29 @@ elif menu == "🃏 블랙잭 카지노":
             dealer.append(deck.pop())
         return dealer, deck
 
+    # 초기화
     if 'bj_state' not in st.session_state:
         st.session_state.update({
             'bj_state': 'betting', 'bj_deck': bj_make_deck(),
             'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 'bj_result': None
         })
+
     state = st.session_state.bj_state
 
+    # ── 베팅 화면 ──
     if state == 'betting':
         st.markdown(f"""
-        <div style='text-align:center;padding:30px;background:linear-gradient(135deg,rgba(180,0,0,0.15),rgba(0,100,0,0.15));
-             border:2px solid rgba(255,215,0,0.3);border-radius:18px;margin-bottom:24px;'>
-          <div style='font-size:4rem;'>🃏</div>
-          <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#FFD600;margin-top:8px;font-weight:900;'>BLACKJACK</div>
-          <div style='color:#888;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 더블다운 가능</div>
-        </div>
-        """, unsafe_allow_html=True)
-        bet = st.number_input("베팅 금액 (원)", min_value=1_000_000, step=1_000_000, value=1_000_000, format="%d")
+<div style='text-align:center;padding:30px;background:linear-gradient(135deg,rgba(180,0,0,0.15),rgba(0,100,0,0.15));
+     border:2px solid rgba(255,215,0,0.3);border-radius:18px;margin-bottom:24px;'>
+  <div style='font-size:4rem;'>🃏</div>
+  <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#FFD600;margin-top:8px;font-weight:900;'>BLACKJACK</div>
+  <div style='color:#888;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 더블다운 가능 &nbsp;|&nbsp; 딜러 16 이하 히트</div>
+</div>""", unsafe_allow_html=True)
+
+        bet = st.number_input("베팅 금액 (원)", min_value=1_000_000, step=1_000_000,
+                               value=min(10_000_000, st.session_state.global_cash), format="%d")
         st.caption(f"💵 베팅 예정: {format_korean_money(bet)} | 잔액: {format_korean_money(st.session_state.global_cash)}")
-        
+
         cd_deal = cooldown_remaining("bj_deal", 2.0)
         if cd_deal > 0:
             st.warning(f"⏱️ {cd_deal:.1f}초 후 딜 가능")
@@ -1747,21 +1752,23 @@ elif menu == "🃏 블랙잭 카지노":
                 set_cooldown("bj_deal")
                 st.session_state.global_cash -= bet
                 st.session_state.bj_bet = bet
+
                 deck = st.session_state.bj_deck if len(st.session_state.bj_deck) > 30 else bj_make_deck()
                 player = [deck.pop(), deck.pop()]
                 dealer = [deck.pop(), deck.pop()]
                 st.session_state.bj_player = player
-                st.session_state.bj_dealer = dealer
                 st.session_state.bj_deck   = deck
                 st.session_state.bj_result = None
-                
+
                 if bj_value(player) == 21:
-                    dl, dk = bj_dealer_play(dealer, deck)
-                    st.session_state.bj_dealer = dl
-                    st.session_state.bj_deck   = dk
+                    dealer, deck = bj_dealer_play(dealer, deck)
+                    st.session_state.bj_dealer = dealer
+                    st.session_state.bj_deck   = deck
                     st.session_state.bj_state  = 'done'
                 else:
+                    st.session_state.bj_dealer = dealer
                     st.session_state.bj_state  = 'playing'
+
                 sync_user_data(); st.rerun()
 
     elif state in ['playing', 'done']:
@@ -1770,6 +1777,7 @@ elif menu == "🃏 블랙잭 카지노":
         bet    = st.session_state.bj_bet
         pval   = bj_value(player)
 
+        # ── 딜러 패 ──
         st.markdown("### 🎩 딜러의 패")
         if state == 'playing':
             dv_shown = bj_value([dealer[0]])
@@ -1779,33 +1787,39 @@ elif menu == "🃏 블랙잭 카지노":
             dval = bj_value(dealer)
             dcol = "#FF4B4B" if dval > 21 else "#fff"
             st.markdown(f"{bj_render(dealer)} <span style='color:{dcol};font-size:1.1rem;font-weight:900;margin-left:12px;'>{dval}점{'  💥BUST' if dval>21 else ''}</span>", unsafe_allow_html=True)
+
         st.write("")
 
+        # ── 플레이어 패 ──
         st.markdown("### 🎴 내 패")
         pcol = "#FF4B4B" if pval > 21 else "#00FF88" if pval == 21 else "#fff"
         st.markdown(f"{bj_render(player)} <span style='color:{pcol};font-size:1.2rem;font-weight:900;margin-left:12px;'>{pval}점{'  💥BUST' if pval>21 else '  🃏BJ!' if pval==21 and len(player)==2 else ''}</span>", unsafe_allow_html=True)
-        st.write("")
 
+        st.write("")
         c_bet, c_pot = st.columns(2)
         c_bet.metric("💰 베팅", format_korean_money(bet))
-        c_pot.metric("🏆 승리 시", format_korean_money(bet * 2))
+        c_pot.metric("🏆 승리 시 지급", format_korean_money(bet * 2))
 
         if state == 'playing':
             st.write("")
             c1, c2, c3 = st.columns(3)
             cd_act = cooldown_remaining("bj_action", 0.8)
+
             with c1:
                 if st.button("👊 히트", use_container_width=True, disabled=cd_act > 0):
                     set_cooldown("bj_action")
                     deck = st.session_state.bj_deck
                     st.session_state.bj_player.append(deck.pop())
                     st.session_state.bj_deck = deck
-                    if bj_value(st.session_state.bj_player) >= 21:
-                        dl, dk = bj_dealer_play(st.session_state.bj_dealer, st.session_state.bj_deck)
-                        st.session_state.bj_dealer = dl
-                        st.session_state.bj_deck   = dk
+                    new_val = bj_value(st.session_state.bj_player)
+                    if new_val >= 21:
+                        if new_val == 21:
+                            dl, dk = bj_dealer_play(st.session_state.bj_dealer, st.session_state.bj_deck)
+                            st.session_state.bj_dealer = dl
+                            st.session_state.bj_deck   = dk
                         st.session_state.bj_state = 'done'
                     st.rerun()
+
             with c2:
                 if st.button("🛑 스탠드", use_container_width=True, disabled=cd_act > 0):
                     set_cooldown("bj_action")
@@ -1814,9 +1828,12 @@ elif menu == "🃏 블랙잭 카지노":
                     st.session_state.bj_deck   = dk
                     st.session_state.bj_state  = 'done'
                     st.rerun()
+
             with c3:
                 can_dd = st.session_state.global_cash >= bet and len(player) == 2
-                if st.button("💥 더블다운", use_container_width=True, disabled=(cd_act > 0 or not can_dd)):
+                if st.button("💥 더블다운", use_container_width=True,
+                              disabled=(cd_act > 0 or not can_dd),
+                              help="현재 패 2장일 때만 가능. 추가 베팅 후 카드 1장만 받습니다."):
                     set_cooldown("bj_action")
                     st.session_state.global_cash -= bet
                     st.session_state.bj_bet = bet * 2
@@ -1830,12 +1847,13 @@ elif menu == "🃏 블랙잭 카지노":
                         st.session_state.bj_deck = deck
                     st.session_state.bj_state = 'done'
                     sync_user_data(); st.rerun()
-        else:
+
+        else:  # done
             pval_f = bj_value(player)
             dval_f = bj_value(dealer)
             bet_f  = st.session_state.bj_bet
             is_bj  = (pval_f == 21 and len(player) == 2)
-            
+
             if pval_f > 21:
                 result, res_col, prize = "💥 버스트! 패배", "#4B9EFF", 0
             elif dval_f > 21:
@@ -1845,21 +1863,26 @@ elif menu == "🃏 블랙잭 카지노":
             elif pval_f > dval_f:
                 result, res_col, prize = "🎉 승리!", "#00FF88", bet_f * 2
             elif pval_f == dval_f:
-                result, res_col, prize = "🤝 푸시 (무승부)", "#888888", bet_f
+                result, res_col, prize = "🤝 푸시 (타이)", "#888888", bet_f
             else:
                 result, res_col, prize = "😢 패배...", "#4B9EFF", 0
 
             net = prize - bet_f
+            net_str = f"+{format_korean_money(net)}" if net > 0 else f"-{format_korean_money(abs(net))}" if net < 0 else "베팅금 반환"
+            net_col = "#FF4B4B" if net > 0 else "#4B9EFF" if net < 0 else "#888"
+
             st.markdown(f"""
-            <div style='text-align:center;background:rgba(0,0,0,0.4);border:2px solid {res_col};
-                 border-radius:18px;padding:28px;margin:20px 0;box-shadow:0 0 30px {res_col}44;'>
-              <div style='font-size:1.8rem;font-weight:900;color:{res_col};'>{result}</div>
-              <div style='color:#666;font-size:0.9rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
-            </div>
-            """, unsafe_allow_html=True)
+<div style='text-align:center;background:rgba(0,0,0,0.4);border:2px solid {res_col};
+     border-radius:18px;padding:28px;margin:20px 0;
+     box-shadow:0 0 30px {res_col}44;'>
+  <div style='font-size:1.8rem;font-weight:900;color:{res_col};'>{result}</div>
+  <div style='font-size:1.3rem;font-weight:900;color:{net_col};margin-top:10px;'>{net_str}</div>
+  <div style='color:#666;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
+</div>""", unsafe_allow_html=True)
 
             if st.session_state.bj_result != 'logged':
-                if prize > 0: st.session_state.global_cash += prize
+                if prize > 0:
+                    st.session_state.global_cash += prize
                 log_tx(st.session_state.logged_in_user, "블랙잭", result, net)
                 sync_user_data()
                 st.session_state.bj_result = 'logged'
@@ -1869,14 +1892,16 @@ elif menu == "🃏 블랙잭 카지노":
                     if k in st.session_state: del st.session_state[k]
                 st.rerun()
 
-# =====================================================================
+# ════════════════════════════════════════════════
 # 🪙 코인 거래소
-# =====================================================================
+# ════════════════════════════════════════════════
 elif menu == "🪙 코인 거래소":
     st.title("🪙 가상화폐 거래소")
+
     if 'crypto_data' not in market:
-        st.warning("코인 시장 개장 중... 잠시 후 새로고침 해주세요.")
+        st.warning("코인 데이터 초기화 중... 잠시 후 새로고침 해주세요.")
         st.stop()
+
     cdata = market['crypto_data']
 
     def fmt_crypto_price(price):
@@ -1884,28 +1909,29 @@ elif menu == "🪙 코인 거래소":
         elif price >= 1:         return f"₩{price:,.2f}"
         elif price >= 0.01:      return f"₩{price:,.4f}"
         else:                    return f"₩{price:.8f}"
-    
+
     def fmt_crypto_qty(qty, cid):
         if cid in ['BTC','ETH']:  return f"{qty:.6f}"
         elif cid in ['SOL','HYO']:return f"{qty:.4f}"
         else:                     return f"{qty:,.2f}"
 
     tab_market, tab_port, tab_trade = st.tabs(["📊 코인 시황", "💼 내 코인 지갑", "⚡ 거래"])
-    
+
     with tab_market:
         st.markdown("### 🔥 실시간 코인 시황")
         st.caption("⚡ 5초마다 자동 업데이트 | 주식보다 최대 3배 높은 변동성")
-        rows_html = "<table class='stock-table'><thead><tr><th>코인</th><th style='text-align:right;'>현재가</th><th style='text-align:right;'>변동률</th></tr></thead><tbody>"
+        rows_html = "<table class='stock-table'><thead><tr><th>코인</th><th style='text-align:right;'>현재가</th><th style='text-align:right;'>변동률</th><th style='text-align:right;'>변동성</th></tr></thead><tbody>"
         for c in CRYPTO_CONFIG:
             d    = cdata[c['id']]
             diff = d['price'] - d['history'][-2] if len(d['history']) > 1 else 0
             pct  = diff / d['history'][-2] * 100 if len(d['history']) > 1 and d['history'][-2] > 0 else 0
             cls  = "p-up" if diff > 0 else "p-down" if diff < 0 else "p-flat"
             arr  = "▲" if diff > 0 else "▼" if diff < 0 else "━"
-            rows_html += f"<tr><td>{c['icon']} {d['name']}</td><td style='text-align:right;font-weight:900;color:#fff;'>{fmt_crypto_price(d['price'])}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td></tr>"
+            vol_stars = "🔥" * int(c['vol'] / 0.05)
+            rows_html += f"<tr><td>{c['icon']} {d['name']}</td><td style='text-align:right;font-weight:900;color:#fff;'>{fmt_crypto_price(d['price'])}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td><td style='text-align:right;color:#FF6600;'>{vol_stars}</td></tr>"
         rows_html += "</tbody></table>"
         st.markdown(rows_html, unsafe_allow_html=True)
-        
+
     with tab_port:
         cp = st.session_state.get('crypto_portfolio', {})
         total_val = 0
@@ -1915,61 +1941,130 @@ elif menu == "🪙 코인 거래소":
             rows = []
             for cid, info in cp.items():
                 qty = info.get('qty', 0)
-                if qty <= 0 or cid not in cdata: continue
+                if qty <= 0: continue
+                if cid not in cdata: continue
                 cur_p  = cdata[cid]['price']
                 avg_p  = info.get('avg_price', 0)
                 ev     = qty * cur_p; total_val += ev
                 roi    = (cur_p - avg_p) / avg_p * 100 if avg_p > 0 else 0
-                rows.append({"코인": f"{cdata[cid]['name']}", "보유량": fmt_crypto_qty(qty, cid), "평균단가": fmt_crypto_price(avg_p), "평가액": format_korean_money(int(ev)), "수익률": f"{roi:+.2f}%"})
+                rows.append({
+                    "코인":    f"{next((c['icon'] for c in CRYPTO_CONFIG if c['id']==cid),'?')} {cdata[cid]['name']}",
+                    "보유량":   fmt_crypto_qty(qty, cid),
+                    "평균단가": fmt_crypto_price(avg_p),
+                    "현재가":   fmt_crypto_price(cur_p),
+                    "평가액":   format_korean_money(int(ev)),
+                    "수익률":   f"{roi:+.2f}%",
+                })
             if rows:
                 st.table(pd.DataFrame(rows))
                 st.metric("🪙 코인 총 평가액", format_korean_money(int(total_val)))
 
     with tab_trade:
-        sel_c = st.selectbox("거래 코인 선택", [c['id'] for c in CRYPTO_CONFIG], format_func=lambda cid: f"{next(c['icon'] for c in CRYPTO_CONFIG if c['id']==cid)} {cdata[cid]['name']} — {fmt_crypto_price(cdata[cid]['price'])}")
+        sel_c = st.selectbox(
+            "거래할 코인 선택",
+            [c['id'] for c in CRYPTO_CONFIG],
+            format_func=lambda cid: f"{next(c['icon'] for c in CRYPTO_CONFIG if c['id']==cid)} {cdata[cid]['name']} — {fmt_crypto_price(cdata[cid]['price'])}"
+        )
         cd    = cdata[sel_c]
         cur_p = cd['price']
-        
+
+        # 차트
+        if len(cd['history']) > 1:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(y=cd['history'], mode='lines',
+                                     line=dict(color='#FF9900', width=2),
+                                     fill='tozeroy', fillcolor='rgba(255,153,0,0.05)'))
+            fig.update_layout(height=200, template='plotly_dark',
+                              margin=dict(l=0,r=0,t=0,b=0),
+                              paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                              xaxis=dict(showgrid=False, showticklabels=False),
+                              yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)'))
+            st.plotly_chart(fig, use_container_width=True)
+
+        diff_c = cur_p - cd['history'][-2] if len(cd['history']) > 1 else 0
+        pct_c  = diff_c / cd['history'][-2] * 100 if len(cd['history']) > 1 and cd['history'][-2] > 0 else 0
+        clr_c  = "#FF4B4B" if diff_c >= 0 else "#4B9EFF"
+        arr_c  = "▲" if diff_c >= 0 else "▼"
+        st.markdown(f"<div style='text-align:center;margin:10px 0;'><span style='font-size:1.8rem;font-weight:900;color:#fff;font-family:Orbitron;'>{fmt_crypto_price(cur_p)}</span> <span style='color:{clr_c};font-weight:900;'>{arr_c} {abs(pct_c):.2f}%</span></div>", unsafe_allow_html=True)
+
         # 보유 현황
         my_qty = st.session_state.get('crypto_portfolio', {}).get(sel_c, {}).get('qty', 0)
-        st.metric("보유량",  fmt_crypto_qty(my_qty, sel_c))
-        
+        my_avg = st.session_state.get('crypto_portfolio', {}).get(sel_c, {}).get('avg_price', 0)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("보유량",  fmt_crypto_qty(my_qty, sel_c))
+        c2.metric("평균단가", fmt_crypto_price(my_avg) if my_avg > 0 else "-")
+        c3.metric("평가액",  format_korean_money(int(my_qty * cur_p)))
+
+        st.write("")
         tab_buy, tab_sell = st.tabs(["🟢 매수", "🔴 매도"])
+
         with tab_buy:
-            buy_won = st.number_input("투자 금액 (원)", min_value=0, step=10_000, value=0, format="%d", key="c_buy")
-            if st.button("🟢 매수하기", use_container_width=True):
-                if buy_won <= 0: st.error("금액 입력 오류")
-                elif st.session_state.global_cash < buy_won: st.error("잔액 부족!")
+            buy_won = st.number_input("투자 금액 (원)", min_value=0, step=10_000,
+                                       max_value=int(st.session_state.global_cash), value=0, format="%d")
+            if buy_won > 0 and cur_p > 0:
+                buy_qty = buy_won / cur_p
+                st.markdown(f"<div style='color:#888;font-size:0.85rem;'>약 <b style='color:#00FF88;'>{fmt_crypto_qty(buy_qty, sel_c)}</b> {cd['name']} 매수 예정</div>", unsafe_allow_html=True)
+
+            cd_cbuy = cooldown_remaining(f"crypto_buy_{sel_c}", 2.0)
+            if cd_cbuy > 0:
+                st.warning(f"⏱️ {cd_cbuy:.1f}초")
+            elif st.button("🟢 매수하기", use_container_width=True):
+                if buy_won <= 0:
+                    st.error("금액을 입력하세요.")
+                elif st.session_state.global_cash < buy_won:
+                    st.error("잔액 부족!")
                 else:
+                    set_cooldown(f"crypto_buy_{sel_c}")
                     qty_to_buy = buy_won / cur_p
                     st.session_state.global_cash -= buy_won
-                    cp = st.session_state.get('crypto_portfolio', {})
-                    old = cp.get(sel_c, {'qty': 0, 'avg_price': 0})
-                    new_q = old['qty'] + qty_to_buy
-                    new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
-                    cp[sel_c] = {'qty': new_q, 'avg_price': new_a}
-                    st.session_state.crypto_portfolio = cp
-                    log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} 매수", -int(buy_won))
-                    sync_user_data(); st.success("✅ 매수 완료!"); time.sleep(1); st.rerun()
-                    
+                    if st.session_state.global_cash < 0:
+                        st.session_state.global_cash += buy_won
+                        st.error("거래 취소 (잔액 보호)")
+                    else:
+                        cp = st.session_state.get('crypto_portfolio', {})
+                        old = cp.get(sel_c, {'qty': 0, 'avg_price': 0})
+                        new_q = old['qty'] + qty_to_buy
+                        new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
+                        cp[sel_c] = {'qty': new_q, 'avg_price': new_a}
+                        st.session_state.crypto_portfolio = cp
+                        log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} {fmt_crypto_qty(qty_to_buy, sel_c)} 매수", -int(buy_won))
+                        sync_user_data()
+                        st.success(f"✅ {fmt_crypto_qty(qty_to_buy, sel_c)} {cd['name']} 매수 완료!")
+                        time.sleep(1); st.rerun()
+
         with tab_sell:
-            if my_qty <= 0: st.info("보유 중인 코인이 없습니다.")
+            if my_qty <= 0:
+                st.info("보유 중인 코인이 없습니다.")
             else:
                 sell_pct = st.slider("매도 비율", min_value=1, max_value=100, value=100, step=1, format="%d%%")
                 sell_qty = my_qty * sell_pct / 100
                 sell_won = sell_qty * cur_p
-                st.caption(f"예상 수령액: {format_korean_money(int(sell_won))}")
-                if st.button(f"🔴 매도하기", use_container_width=True):
+                roi_sell = (cur_p - my_avg) / my_avg * 100 if my_avg > 0 else 0
+                roi_col  = "#FF4B4B" if roi_sell >= 0 else "#4B9EFF"
+                st.markdown(f"""
+<div class='card' style='text-align:center;padding:14px;'>
+  <div style='color:#aaa;font-size:0.82rem;'>매도 예정: <b style='color:#fff;'>{fmt_crypto_qty(sell_qty, sel_c)}</b> {cd['name']}</div>
+  <div style='font-size:1.2rem;font-weight:900;color:#FFD600;margin:6px 0;'>{format_korean_money(int(sell_won))}</div>
+  <div style='color:{roi_col};font-size:0.9rem;font-weight:900;'>수익률: {roi_sell:+.2f}%</div>
+</div>""", unsafe_allow_html=True)
+
+                cd_csell = cooldown_remaining(f"crypto_sell_{sel_c}", 2.0)
+                if cd_csell > 0:
+                    st.warning(f"⏱️ {cd_csell:.1f}초")
+                elif st.button(f"🔴 {sell_pct}% 매도하기", use_container_width=True):
+                    set_cooldown(f"crypto_sell_{sel_c}")
                     cp = st.session_state.get('crypto_portfolio', {})
                     cp[sel_c]['qty'] -= sell_qty
-                    if cp[sel_c]['qty'] < 1e-10: del cp[sel_c]
+                    if cp[sel_c]['qty'] < 1e-10:
+                        del cp[sel_c]
                     st.session_state.crypto_portfolio = cp
                     st.session_state.global_cash += int(sell_won)
-                    log_tx(st.session_state.logged_in_user, "코인매도", f"{cd['name']} 매도", int(sell_won))
-                    sync_user_data(); st.success("✅ 매도 완료!"); time.sleep(1); st.rerun()
+                    log_tx(st.session_state.logged_in_user, "코인매도", f"{cd['name']} {fmt_crypto_qty(sell_qty, sel_c)} 매도", int(sell_won))
+                    sync_user_data()
+                    st.success(f"✅ {format_korean_money(int(sell_won))} 수령 완료!")
+                    time.sleep(1); st.rerun()
 
     time.sleep(5); st.rerun()
-
 # =====================================================================
 # ⛏️ 광산 (노가다)
 # =====================================================================
