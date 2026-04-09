@@ -84,6 +84,28 @@ DAILY_QUESTS_CONFIG = [
     {"id": "billionaire","icon": "👑", "name": "억만장자 인증",     "desc": "순자산 1000억 이상 달성",            "reward": 500_000_000},
 ]
 
+# ── 🗡️ 전설의 명검 강화 확률 및 설정 ──
+FORGE_DATA = {
+    0: {"rate": 1.0,  "cost": 10_000_000,    "sell": 0, "name": "🪵 평범한 나무검", "color": "#aaa"},
+    1: {"rate": 1.0,  "cost": 20_000_000,    "sell": 5_000_000, "name": "🗡️ 강철 장검 +1", "color": "#ddd"},
+    2: {"rate": 0.95, "cost": 50_000_000,    "sell": 20_000_000, "name": "🗡️ 강철 장검 +2", "color": "#ddd"},
+    3: {"rate": 0.90, "cost": 100_000_000,   "sell": 100_000_000, "name": "🗡️ 강철 장검 +3", "color": "#ddd"},
+    4: {"rate": 0.85, "cost": 300_000_000,   "sell": 300_000_000, "name": "🗡️ 정예 기사의 검 +4", "color": "#00E5FF"},
+    # 👇 5강부터 파괴 확률 발생!
+    5: {"rate": 0.70, "cost": 1_000_000_000,  "sell": 1_500_000_000, "name": "⚔️ 은빛 대검 +5", "color": "#00FF88"},
+    6: {"rate": 0.55, "cost": 3_000_000_000,  "sell": 5_000_000_000, "name": "⚔️ 은빛 대검 +6", "color": "#00FF88"},
+    7: {"rate": 0.40, "cost": 8_000_000_000,  "sell": 15_000_000_000, "name": "🔥 타오르는 흑염검 +7", "color": "#FF8800"},
+    8: {"rate": 0.30, "cost": 20_000_000_000, "sell": 40_000_000_000, "name": "🔥 타오르는 흑염검 +8", "color": "#FF8800"},
+    9: {"rate": 0.20, "cost": 50_000_000_000, "sell": 150_000_000_000, "name": "🩸 마왕의 재림 +9", "color": "#FF4B4B"},
+    # 👇 10강부터 극악의 확률
+    10: {"rate": 0.10, "cost": 100_000_000_000, "sell": 500_000_000_000, "name": "⚡ 영웅의 성검 +10", "color": "#FFD600"},
+    11: {"rate": 0.07, "cost": 300_000_000_000, "sell": 1_500_000_000_000, "name": "⚡ 영웅의 성검 +11", "color": "#FFD600"},
+    12: {"rate": 0.04, "cost": 800_000_000_000, "sell": 5_000_000_000_000, "name": "🌌 우주의 지배자 +12", "color": "#FF00FF"},
+    13: {"rate": 0.02, "cost": 2_000_000_000_000, "sell": 20_000_000_000_000, "name": "🌌 우주의 지배자 +13", "color": "#FF00FF"},
+    14: {"rate": 0.005, "cost": 5_000_000_000_000, "sell": 100_000_000_000_000, "name": "🌌 우주의 지배자 +14", "color": "#FF00FF"},
+    15: {"rate": 0.0, "cost": 0, "sell": 500_000_000_000_000, "name": "👑 [신화] 엑스칼리버 +15", "color": "#FFFFFF"} # 만렙
+}
+
 def format_korean_money(num):
     if num is None or (isinstance(num, float) and np.isnan(num)) or num == 0: return "0원"
     is_neg = num < 0
@@ -187,6 +209,10 @@ def get_net_worth(uid, market_data):
         if sid in prices: w += p_data.get('qty', 0) * prices[sid]
     for eid, count in u.get('real_estate', {}).items():
         if eid in estate_config: w += estate_config[eid]['base_price'] * count * 0.8
+    # 무기도 순자산에 포함
+    w_lv = u.get('weapon_level', 0)
+    if w_lv > 0:
+        w += FORGE_DATA[w_lv]['sell']
     return w
 
 def sync_user_data():
@@ -2459,8 +2485,28 @@ elif menu == "🛠️ 창조주 통제소":
 
             if c_btn3.button("🗑️ 해당 유저 계정 삭제", use_container_width=True, type="secondary"):
                 del u_db[sel_u]; save_db(USERS_FILE, u_db); st.rerun()
+            # 
+            st.write("---")
+            st.markdown("##### 🗡️ 전설의 명검 강제 통제소")
+            c_w1, c_w2, c_w3 = st.columns(3)
+            
+            if c_w1.button("👑 신의 망치 (+15강 투척)", use_container_width=True):
+                u_db[sel_u]['weapon_level'] = 15
+                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}에게 엑스칼리버를 하사했습니다!"); time.sleep(1); st.rerun()
+                
+            if c_w2.button("💀 파괴의 저주 (다음 강화 무조건 파괴)", use_container_width=True):
+                u_db[sel_u]['cursed_forge'] = True
+                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}의 무기에 저주를 내렸습니다!"); time.sleep(1); st.rerun()
+                
+            if c_w3.button("🔨 무기 강제 압수 (0강으로)", use_container_width=True):
+                u_db[sel_u]['weapon_level'] = 0
+                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}의 무기를 분쇄했습니다!"); time.sleep(1); st.rerun()
+            # 
         else:
             st.info("관리할 유저가 없습니다.")
+        else:
+            st.info("관리할 유저가 없습니다.")
+        
 
     # ──────────────────────────────────────────
     # 탭 2: 부동산 통제 (개별 몰수 및 마켓 초기화)
@@ -2614,9 +2660,16 @@ elif menu == "🛠️ 창조주 통제소":
     # 탭 6: 전체 현황 (서버 상태)
     # ──────────────────────────────────────────
     with t6:
-        st.markdown("### 📊 전체 유저 현황")
         u_db2 = load_db(USERS_FILE, {})
-        rows = [{"ID": uid_r, "칭호": ud.get('equipped_title',''), "현금": format_korean_money(ud.get('cash',0)), "대출": format_korean_money(ud.get('loan',0))} for uid_r, ud in u_db2.items() if uid_r != "admin"]
+        # 👇 1. 누적 접속자 수 표시 추가된 부분
+        total_users = len([u for u in u_db2.keys() if u != "admin"])
+        
+        st.markdown(f"### 📈 누적 가입(접속) 유저 수: <b style='color:#00E5FF; font-size:1.8rem;'>{total_users}명</b>", unsafe_allow_html=True)
+        st.write("---")
+        
+        st.markdown("### 📊 전체 유저 현황")
+        # 👇 2. 리스트에 "무기" 항목이 추가된 부분
+        rows = [{"ID": uid_r, "칭호": ud.get('equipped_title',''), "현금": format_korean_money(ud.get('cash',0)), "무기": f"+{ud.get('weapon_level',0)}강", "대출": format_korean_money(ud.get('loan',0))} for uid_r, ud in u_db2.items() if uid_r != "admin"]
         if rows: st.table(pd.DataFrame(rows))
         else: st.info("등록된 유저가 없습니다.")
 
