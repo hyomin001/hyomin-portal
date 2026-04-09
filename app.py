@@ -91,19 +91,17 @@ FORGE_DATA = {
     2: {"rate": 0.95, "cost": 50_000_000,    "sell": 20_000_000, "name": "🗡️ 강철 장검 +2", "color": "#ddd"},
     3: {"rate": 0.90, "cost": 100_000_000,   "sell": 100_000_000, "name": "🗡️ 강철 장검 +3", "color": "#ddd"},
     4: {"rate": 0.85, "cost": 300_000_000,   "sell": 300_000_000, "name": "🗡️ 정예 기사의 검 +4", "color": "#00E5FF"},
-    # 👇 5강부터 파괴 확률 발생!
     5: {"rate": 0.70, "cost": 1_000_000_000,  "sell": 1_500_000_000, "name": "⚔️ 은빛 대검 +5", "color": "#00FF88"},
     6: {"rate": 0.65, "cost": 3_000_000_000,  "sell": 5_000_000_000, "name": "⚔️ 은빛 대검 +6", "color": "#00FF88"},
     7: {"rate": 0.55, "cost": 8_000_000_000,  "sell": 15_000_000_000, "name": "🔥 타오르는 흑염검 +7", "color": "#FF8800"},
     8: {"rate": 0.50, "cost": 20_000_000_000, "sell": 40_000_000_000, "name": "🔥 타오르는 흑염검 +8", "color": "#FF8800"},
     9: {"rate": 0.45, "cost": 50_000_000_000, "sell": 150_000_000_000, "name": "🩸 마왕의 재림 +9", "color": "#FF4B4B"},
-    # 👇 10강부터 극악의 확률
     10: {"rate": 0.20, "cost": 100_000_000_000, "sell": 500_000_000_000, "name": "⚡ 영웅의 성검 +10", "color": "#FFD600"},
     11: {"rate": 0.1, "cost": 300_000_000_000, "sell": 1_500_000_000_000, "name": "⚡ 영웅의 성검 +11", "color": "#FFD600"},
     12: {"rate": 0.05, "cost": 800_000_000_000, "sell": 5_000_000_000_000, "name": "🌌 우주의 지배자 +12", "color": "#FF00FF"},
     13: {"rate": 0.02, "cost": 2_000_000_000_000, "sell": 20_000_000_000_000, "name": "🌌 우주의 지배자 +13", "color": "#FF00FF"},
     14: {"rate": 0.005, "cost": 5_000_000_000_000, "sell": 100_000_000_000_000, "name": "🌌 우주의 지배자 +14", "color": "#FF00FF"},
-    15: {"rate": 0.00001, "cost": 0, "sell": 500_000_000_000_000, "name": "👑 [신화] 엑스칼리버 +15", "color": "#FFFFFF"} # 만렙
+    15: {"rate": 0.00001, "cost": 0, "sell": 500_000_000_000_000, "name": "👑 [신화] 엑스칼리버 +15", "color": "#FFFFFF"}
 }
 
 def format_korean_money(num):
@@ -271,6 +269,7 @@ def get_market():
         d["lotto_tickets"]   = lt
         d["lotto_last_draw"] = ll
         save_db(MARKET_FILE, d); return d
+    return d
 
 def save_market(data): save_db(MARKET_FILE, data)
 
@@ -674,9 +673,7 @@ if IS_PC:
             st.metric("💳 대출잔액", format_korean_money(st.session_state.loan))
         st.write("---")
 
-        # ✅ 이 두 줄로 교체
-        cur_idx = menu_ops.index(st.session_state.current_page) \
-                  if st.session_state.current_page in menu_ops else 0
+        cur_idx = menu_ops.index(st.session_state.current_page) if st.session_state.current_page in menu_ops else 0
         selected_menu = st.radio("메뉴", menu_ops, index=cur_idx, label_visibility="collapsed")
 
         if selected_menu != st.session_state.current_page:
@@ -694,9 +691,7 @@ else:
         if st.button("로그아웃"):
             sync_user_data(); st.session_state.clear(); st.rerun()
 
-    # ✅ 이 두 줄로 교체
-    cur_idx = menu_ops.index(st.session_state.current_page) \
-              if st.session_state.current_page in menu_ops else 0
+    cur_idx = menu_ops.index(st.session_state.current_page) if st.session_state.current_page in menu_ops else 0
     selected_menu = st.selectbox("메뉴 선택", menu_ops, index=cur_idx, label_visibility="collapsed")
 
     if selected_menu != st.session_state.current_page:
@@ -1002,25 +997,18 @@ elif menu == "🪙 코인 거래소":
     if 'crypto_data' not in market:
         st.warning("코인 시장 개장 중... 잠시 후 새로고침 해주세요.")
         st.stop()
-        cdata = market['crypto_data']
-        
-        def fmt_crypto_price(price):
-            if price >= 1_000_000:   
-                return f"₩{price:,.0f}"
-            elif price >= 1:
-                return f"₩{price:,.2f}"
-            elif price >= 0.01:      
-                return f"₩{price:,.4f}"
-            else:                    
-                return f"₩{price:.8f}"
+    cdata = market['crypto_data']
+
+    def fmt_crypto_price(price):
+        if price >= 1_000_000:   return f"₩{price:,.0f}"
+        elif price >= 1:         return f"₩{price:,.2f}"
+        elif price >= 0.01:      return f"₩{price:,.4f}"
+        else:                    return f"₩{price:.8f}"
     
     def fmt_crypto_qty(qty, cid):
-        if cid in ['BTC','ETH']:  
-            return f"{qty:.6f}"
-        elif cid in ['SOL','HYO']:
-            return f"{qty:.4f}"
-        else:                     
-            return f"{qty:,.2f}"
+        if cid in ['BTC','ETH']:  return f"{qty:.6f}"
+        elif cid in ['SOL','HYO']:return f"{qty:.4f}"
+        else:                     return f"{qty:,.2f}"
 
     tab_market, tab_port, tab_trade = st.tabs(["📊 코인 시황", "💼 내 코인 지갑", "⚡ 거래"])
     
@@ -1097,26 +1085,32 @@ elif menu == "🪙 코인 거래소":
                 key="coin_buy_input_safe" 
             )
             if st.button("🟢 매수하기", use_container_width=True):
-                if buy_won <= 0: st.error("금액 입력 오류")
-                    elif st.session_state.global_cash < buy_won: st.error("잔액 부족!")
-                        else:
-                            qty_to_buy = buy_won / cur_p
-                            st.session_state.global_cash -= buy_won
-                            if st.session_state.global_cash < 0:
-                                st.session_state.global_cash += buy_won
-                                st.error("거래 취소 (잔액 보호)")
-                            else:
-                                cp = st.session_state.get('crypto_portfolio', {})
-                                old = cp.get(sel_c, {'qty': 0, 'avg_price': 0})
-                                new_q = old['qty'] + qty_to_buy
-                                new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
-                                cp[sel_c] = {'qty': new_q, 'avg_price': new_a}
-                                st.session_state.crypto_portfolio = cp
-                                log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} 매수", -int(buy_won))
-                                sync_user_data(); st.success("✅ 매수 완료!"); time.sleep(1); st.rerun()
+                if buy_won <= 0: 
+                    st.error("금액 입력 오류")
+                elif st.session_state.global_cash < buy_won: 
+                    st.error("잔액 부족!")
+                else:
+                    qty_to_buy = buy_won / cur_p
+                    st.session_state.global_cash -= buy_won
+                    if st.session_state.global_cash < 0:
+                        st.session_state.global_cash += buy_won
+                        st.error("거래 취소 (잔액 보호)")
+                    else:
+                        cp = st.session_state.get('crypto_portfolio', {})
+                        old = cp.get(sel_c, {'qty': 0, 'avg_price': 0})
+                        new_q = old['qty'] + qty_to_buy
+                        new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
+                        cp[sel_c] = {'qty': new_q, 'avg_price': new_a}
+                        st.session_state.crypto_portfolio = cp
+                        log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} 매수", -int(buy_won))
+                        sync_user_data()
+                        st.success("✅ 매수 완료!")
+                        time.sleep(1)
+                        st.rerun()
                     
         with tab_sell:
-            if my_qty <= 0: st.info("보유 중인 코인이 없습니다.")
+            if my_qty <= 0: 
+                st.info("보유 중인 코인이 없습니다.")
             else:
                 sell_pct = st.slider("매도 비율", min_value=1, max_value=100, value=100, step=1, format="%d%%")
                 sell_qty = my_qty * sell_pct / 100
@@ -1129,7 +1123,10 @@ elif menu == "🪙 코인 거래소":
                     st.session_state.crypto_portfolio = cp
                     st.session_state.global_cash += int(sell_won)
                     log_tx(st.session_state.logged_in_user, "코인매도", f"{cd['name']} 매도", int(sell_won))
-                    sync_user_data(); st.success("✅ 매도 완료!"); time.sleep(1); st.rerun()
+                    sync_user_data()
+                    st.success("✅ 매도 완료!")
+                    time.sleep(1)
+                    st.rerun()
 
     time.sleep(5); st.rerun()
 
@@ -1891,191 +1888,6 @@ elif menu == "🎰 럭키 슬롯":
 
                 sync_user_data(); time.sleep(2); st.rerun()
 
-# ════════════════════════════════════════════════
-# 🃏 블랙잭 카지노
-# ════════════════════════════════════════════════
-elif menu == "🃏 블랙잭 카지노":
-    st.title("🃏 블랙잭 카지노")
-
-    CARD_VALS = {'A':11,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':10,'Q':10,'K':10}
-    SUITS = ['♠','♥','♦','♣']
-
-    def bj_make_deck():
-        deck = [(r, s) for r in CARD_VALS for s in SUITS] * 6
-        random.shuffle(deck); return deck
-
-    def bj_value(hand):
-        val  = sum(CARD_VALS[r] for r, s in hand)
-        aces = sum(1 for r, s in hand if r == 'A')
-        while val > 21 and aces:
-            val -= 10; aces -= 1
-        return val
-
-    def bj_render(hand, hide_second=False):
-        parts = []
-        for i, (r, s) in enumerate(hand):
-            if i == 1 and hide_second:
-                parts.append("<span style='font-size:2.2rem;background:#222;border:2px solid #555;padding:6px 10px;border-radius:8px;margin:3px;display:inline-block;'>🂠</span>")
-            else:
-                col = "color:#FF4B4B;" if s in ['♥','♦'] else "color:#1a1a1a;"
-                parts.append(f"<span style='font-size:1.5rem;font-weight:900;background:#fff;{col}padding:6px 12px;border-radius:8px;margin:3px;display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,0.4);'>{r}{s}</span>")
-        return " ".join(parts)
-
-    def bj_dealer_play(dealer, deck):
-        while bj_value(dealer) < 17:
-            dealer.append(deck.pop())
-        return dealer, deck
-
-    # 초기화
-    if 'bj_state' not in st.session_state:
-        st.session_state.update({
-            'bj_state': 'betting', 'bj_deck': bj_make_deck(),
-            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 'bj_result': None
-        })
-
-    state = st.session_state.bj_state
-
-    # ── 베팅 화면 ──
-    if state == 'betting':
-        st.markdown(f"""
-        <div style='text-align:center;padding:30px;background:linear-gradient(135deg,rgba(180,0,0,0.15),rgba(0,100,0,0.15));
-             border:2px solid rgba(255,215,0,0.3);border-radius:18px;margin-bottom:24px;'>
-          <div style='font-size:4rem;'>🃏</div>
-          <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#FFD600;margin-top:8px;font-weight:900;'>BLACKJACK</div>
-          <div style='color:#888;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 딜러 16 이하 히트</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        bet = st.number_input("베팅 금액 (원)", min_value=1_000_000, step=1_000_000, value=1_000_000, format="%d", key="bj_bet_input")
-        st.caption(f"💵 베팅 예정: {format_korean_money(bet)} | 잔액: {format_korean_money(st.session_state.global_cash)}")
-        
-        cd_deal = cooldown_remaining("bj_deal", 1.0)
-        if cd_deal > 0:
-            st.warning(f"⏱️ {cd_deal:.1f}초 후 딜 가능")
-        elif st.button("🃏 카드 딜!", use_container_width=True):
-            if st.session_state.global_cash < bet:
-                st.error("잔액 부족!")
-            else:
-                set_cooldown("bj_deal")
-                st.session_state.global_cash -= bet
-                st.session_state.bj_bet = bet
-                deck = st.session_state.bj_deck if len(st.session_state.bj_deck) > 30 else bj_make_deck()
-                player = [deck.pop(), deck.pop()]
-                dealer = [deck.pop(), deck.pop()]
-                st.session_state.bj_player = player
-                st.session_state.bj_dealer = dealer
-                st.session_state.bj_deck   = deck
-                st.session_state.bj_result = None
-                
-                if bj_value(player) == 21:
-                    dl, dk = bj_dealer_play(dealer, deck)
-                    st.session_state.bj_dealer = dl
-                    st.session_state.bj_deck   = dk
-                    st.session_state.bj_state  = 'done'
-                else:
-                    st.session_state.bj_state  = 'playing'
-                sync_user_data()
-                st.rerun()
-
-    # ── 플레이 화면 ──
-    elif state in ['playing', 'done']:
-        player = st.session_state.bj_player
-        dealer = st.session_state.bj_dealer
-        bet    = st.session_state.bj_bet
-        pval   = bj_value(player)
-
-        st.markdown("### 🎩 딜러의 패")
-        if state == 'playing':
-            dv_shown = bj_value([dealer[0]])
-            st.markdown(f"{bj_render(dealer, hide_second=True)}", unsafe_allow_html=True)
-            st.caption(f"딜러 공개 패: {dv_shown}점 + ?")
-        else:
-            dval = bj_value(dealer)
-            dcol = "#FF4B4B" if dval > 21 else "#fff"
-            st.markdown(f"{bj_render(dealer)} <span style='color:{dcol};font-size:1.1rem;font-weight:900;margin-left:12px;'>{dval}점{'  💥BUST' if dval>21 else ''}</span>", unsafe_allow_html=True)
-        st.write("")
-
-        st.markdown("### 🎴 내 패")
-        pcol = "#FF4B4B" if pval > 21 else "#00FF88" if pval == 21 else "#fff"
-        st.markdown(f"{bj_render(player)} <span style='color:{pcol};font-size:1.2rem;font-weight:900;margin-left:12px;'>{pval}점{'  💥BUST' if pval>21 else '  🃏BJ!' if pval==21 and len(player)==2 else ''}</span>", unsafe_allow_html=True)
-        st.write("")
-
-        c_bet, c_pot = st.columns(2)
-        c_bet.metric("💰 베팅", format_korean_money(bet))
-        c_pot.metric("🏆 승리 시 지급", format_korean_money(bet * 2))
-
-        if state == 'playing':
-            st.write("")
-            c1, c2 = st.columns(2)  # 🚨 더블다운 삭제 (에러의 주범이었음)
-            
-            with c1:
-                if st.button("👊 히트 (Hit)", use_container_width=True):
-                    deck = st.session_state.bj_deck
-                    st.session_state.bj_player.append(deck.pop())
-                    st.session_state.bj_deck = deck
-                    new_val = bj_value(st.session_state.bj_player)
-                    if new_val >= 21:
-                        if new_val == 21:
-                            dl, dk = bj_dealer_play(st.session_state.bj_dealer, st.session_state.bj_deck)
-                            st.session_state.bj_dealer = dl
-                            st.session_state.bj_deck   = dk
-                        st.session_state.bj_state = 'done'
-                    st.rerun()
-            with c2:
-                if st.button("🛑 스탠드 (Stand)", use_container_width=True):
-                    dl, dk = bj_dealer_play(st.session_state.bj_dealer, st.session_state.bj_deck)
-                    st.session_state.bj_dealer = dl
-                    st.session_state.bj_deck   = dk
-                    st.session_state.bj_state  = 'done'
-                    st.rerun()
-
-        # ── 결과 화면 ──
-        else:
-            pval_f = bj_value(player)
-            dval_f = bj_value(dealer)
-            bet_f  = st.session_state.bj_bet
-            is_bj  = (pval_f == 21 and len(player) == 2)
-            
-            if pval_f > 21:
-                result, res_col, prize = "💥 버스트! 패배", "#4B9EFF", 0
-            elif dval_f > 21:
-                result, res_col, prize = "🎉 딜러 버스트! 승리!", "#FF4B4B", bet_f * 2
-            elif is_bj and dval_f != 21:
-                result, res_col, prize = "🃏 블랙잭!! 1.5배!", "#FFD600", int(bet_f * 2.5)
-            elif pval_f > dval_f:
-                result, res_col, prize = "🎉 승리!", "#00FF88", bet_f * 2
-            elif pval_f == dval_f:
-                result, res_col, prize = "🤝 푸시 (타이)", "#888888", bet_f
-            else:
-                result, res_col, prize = "😢 패배...", "#4B9EFF", 0
-
-            net = prize - bet_f
-            net_str = f"+{format_korean_money(net)}" if net > 0 else f"-{format_korean_money(abs(net))}" if net < 0 else "베팅금 반환"
-            net_col = "#FF4B4B" if net > 0 else "#4B9EFF" if net < 0 else "#888"
-
-            st.markdown(f"""
-            <div style='text-align:center;background:rgba(0,0,0,0.4);border:2px solid {res_col};
-                 border-radius:18px;padding:28px;margin:20px 0;box-shadow:0 0 30px {res_col}44;'>
-              <div style='font-size:1.8rem;font-weight:900;color:{res_col};'>{result}</div>
-              <div style='font-size:1.3rem;font-weight:900;color:{net_col};margin-top:10px;'>{net_str}</div>
-              <div style='color:#666;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            if st.session_state.bj_result != 'logged':
-                if prize > 0: 
-                    st.session_state.global_cash += prize
-                log_tx(st.session_state.logged_in_user, "블랙잭", result, net)
-                sync_user_data()
-                st.session_state.bj_result = 'logged'
-
-            if st.button("🔄 다시 하기!", use_container_width=True):
-                for k in ['bj_state','bj_player','bj_dealer','bj_bet','bj_result']:
-                    if k in st.session_state: del st.session_state[k]
-                st.rerun()
-
-
-
 # =====================================================================
 # ⛏️ 광산 (노가다)
 # =====================================================================
@@ -2316,6 +2128,67 @@ elif menu == "🏅 랭킹 & 게시판":
 </div>""", unsafe_allow_html=True)
 
 # =====================================================================
+# 📅 일일 퀘스트
+# =====================================================================
+elif menu == "📅 일일 퀘스트":
+    st.title("📅 일일 퀘스트")
+    st.markdown("<div style='color:#888;margin-bottom:20px;'>매일 자정에 초기화됩니다. 달성하고 보상을 수령하세요!</div>", unsafe_allow_html=True)
+    
+    today_str = datetime.now(KST).strftime("%Y-%m-%d")
+    dq = st.session_state.get('daily_quests', {})
+    today_dq = dq.get(today_str, {})
+
+    def check_quest(qid):
+        if qid == "attendance": return True
+        elif qid == "rich5": return nw >= 500_000_000
+        elif qid == "landlord": return any(v > 0 for v in st.session_state.real_estate.values())
+        elif qid == "debtfree": return st.session_state.loan == 0
+        elif qid == "investor":
+            return sum(
+                st.session_state.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price']
+                for s in stock_config
+            ) >= 100_000_000
+        elif qid == "coin100m":
+            if 'crypto_data' not in market: return False
+            return sum(
+                ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0)
+                for cid, ci in st.session_state.get('crypto_portfolio', {}).items()
+            ) >= 100_000_000
+        elif qid == "billionaire": return nw >= 100_000_000_000
+        return False
+    
+    for q in DAILY_QUESTS_CONFIG:
+        is_claimed    = today_dq.get(q['id'], False)
+        is_achievable = check_quest(q['id'])
+        
+        status_col = "#00FF88" if is_claimed else "#FFD600" if is_achievable else "#444"
+        status_txt = "✅ 수령 완료" if is_claimed else "🟡 달성! 클릭하여 수령" if is_achievable else "🔒 미달성"
+        
+        st.markdown(f"""
+        <div style='background:rgba(255,255,255,0.05); border-left:4px solid {status_col}; padding:15px; border-radius:8px; margin-bottom:10px;'>
+            <div style='display:flex; justify-content:space-between; align-items:center;'>
+                <div>
+                    <span style='font-size:1.5rem;'>{q['icon']}</span> <b style='font-size:1.1rem; color:#fff;'>{q['name']}</b>
+                    <div style='color:#888; font-size:0.85rem; margin-top:4px;'>{q['desc']}</div>
+                </div>
+                <div style='text-align:right;'>
+                    <div style='color:#FFD600; font-weight:900;'>{format_korean_money(q['reward'])}</div>
+                    <div style='color:{status_col}; font-size:0.8rem; margin-top:4px;'>{status_txt}</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if is_achievable and not is_claimed:
+            if st.button(f"[{q['name']}] 보상 수령", key=f"q_btn_{q['id']}"):
+                today_dq[q['id']] = True
+                dq[today_str] = today_dq
+                st.session_state.daily_quests = dq
+                st.session_state.global_cash += q['reward']
+                log_tx(st.session_state.logged_in_user, "퀘스트", f"{q['name']} 완료", q['reward'])
+                sync_user_data(); st.rerun()
+
+# =====================================================================
 # 🗡️ 전설의 명검 강화 (신규 매운맛)
 # =====================================================================
 elif menu == "🗡️ 전설의 명검 강화":
@@ -2423,76 +2296,6 @@ elif menu == "🗡️ 전설의 명검 강화":
                     sync_user_data()
                     st.success(f"✅ 무기를 팔아 {format_korean_money(sell_amt)}을 얻었습니다. 다시 목검부터 시작합니다!")
                     time.sleep(1); st.rerun()
-                    
-# =====================================================================
-# 📅 일일 퀘스트
-# =====================================================================
-elif menu == "📅 일일 퀘스트":
-    st.title("📅 일일 퀘스트")
-    st.markdown("<div style='color:#888;margin-bottom:20px;'>매일 자정에 초기화됩니다. 달성하고 보상을 수령하세요!</div>", unsafe_allow_html=True)
-    
-    today_str = datetime.now(KST).strftime("%Y-%m-%d")
-    dq = st.session_state.get('daily_quests', {})
-    today_dq = dq.get(today_str, {})
-
-    def check_quest(qid):
-        if qid == "attendance": 
-            return True
-        elif qid == "rich5": 
-            return nw >= 500_000_000
-        elif qid == "landlord": 
-            return any(v > 0 for v in st.session_state.real_estate.values())
-        elif qid == "debtfree": 
-            return st.session_state.loan == 0
-        elif qid == "investor":
-            return sum(
-                st.session_state.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price']
-                for s in stock_config
-            ) >= 100_000_000
-        elif qid == "coin100m":
-            if 'crypto_data' not in market: 
-                return False
-                return sum(
-                    ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0)
-                    for cid, ci in st.session_state.get('crypto_portfolio', {}).items()
-                ) >= 100_000_000
-            elif qid == "billionaire": 
-                return nw >= 100_000_000_000
-                return False
-    
-
-    for q in DAILY_QUESTS_CONFIG:
-        is_claimed    = today_dq.get(q['id'], False)
-        is_achievable = check_quest(q['id'])
-        
-        status_col = "#00FF88" if is_claimed else "#FFD600" if is_achievable else "#444"
-        status_txt = "✅ 수령 완료" if is_claimed else "🟡 달성! 클릭하여 수령" if is_achievable else "🔒 미달성"
-        
-        st.markdown(f"""
-        <div style='background:rgba(255,255,255,0.05); border-left:4px solid {status_col}; padding:15px; border-radius:8px; margin-bottom:10px;'>
-            <div style='display:flex; justify-content:space-between; align-items:center;'>
-                <div>
-                    <span style='font-size:1.5rem;'>{q['icon']}</span> <b style='font-size:1.1rem; color:#fff;'>{q['name']}</b>
-                    <div style='color:#888; font-size:0.85rem; margin-top:4px;'>{q['desc']}</div>
-                </div>
-                <div style='text-align:right;'>
-                    <div style='color:#FFD600; font-weight:900;'>{format_korean_money(q['reward'])}</div>
-                    <div style='color:{status_col}; font-size:0.8rem; margin-top:4px;'>{status_txt}</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if is_achievable and not is_claimed:
-            if st.button(f"[{q['name']}] 보상 수령", key=f"q_btn_{q['id']}"):
-                today_dq[q['id']] = True
-                dq[today_str] = today_dq
-                st.session_state.daily_quests = dq
-                st.session_state.global_cash += q['reward']
-                log_tx(st.session_state.logged_in_user, "퀘스트", f"{q['name']} 완료", q['reward'])
-                sync_user_data(); st.rerun()
-
-
 
 # =====================================================================
 # 🛠️ 창조주 통제소
