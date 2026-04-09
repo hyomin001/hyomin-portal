@@ -203,6 +203,10 @@ def get_net_worth(uid, market_data):
     prices = {k: v['price'] for k, v in market_data.get('stock_data', {}).items()}
     for sid, p_data in u.get('portfolio', {}).items():
         if sid in prices: w += p_data.get('qty', 0) * prices[sid]
+    if 'crypto_data' in market_data:
+        for cid, cinfo in u.get('crypto_portfolio', {}).items():
+            if cid in market_data['crypto_data']:
+                w += cinfo.get('qty', 0) * market_data['crypto_data'][cid]['price']
     for eid, count in u.get('real_estate', {}).items():
         if eid in estate_config: w += estate_config[eid]['base_price'] * count * 0.8
     w_lv = u.get('weapon_level', 0)
@@ -258,8 +262,15 @@ def get_market():
         d = init_m(); save_db(MARKET_FILE, d); return d
     d = load_db(MARKET_FILE, {})
     if d.get("version") != 6:
-        d = init_m(); save_db(MARKET_FILE, d); return d
-    return d
+        # ✅ 수정: 로또 관련 값만 백업 후 복원
+        lp = d.get("lotto_pool",      5_000_000_000)
+        lt = d.get("lotto_tickets",   {})
+        ll = d.get("lotto_last_draw", time.time())
+        d  = init_m()
+        d["lotto_pool"]      = lp
+        d["lotto_tickets"]   = lt
+        d["lotto_last_draw"] = ll
+        save_db(MARKET_FILE, d); return d
 
 def save_market(data): save_db(MARKET_FILE, data)
 
@@ -662,7 +673,12 @@ if IS_PC:
         if st.session_state.loan > 0:
             st.metric("💳 대출잔액", format_korean_money(st.session_state.loan))
         st.write("---")
-        selected_menu = st.radio("메뉴", menu_ops, index=menu_ops.index(st.session_state.current_page), label_visibility="collapsed")
+
+        # ✅ 이 두 줄로 교체
+        cur_idx = menu_ops.index(st.session_state.current_page) \
+                  if st.session_state.current_page in menu_ops else 0
+        selected_menu = st.radio("메뉴", menu_ops, index=cur_idx, label_visibility="collapsed")
+
         if selected_menu != st.session_state.current_page:
             st.session_state.current_page = selected_menu
             st.rerun()
@@ -677,7 +693,12 @@ else:
     with col_b:
         if st.button("로그아웃"):
             sync_user_data(); st.session_state.clear(); st.rerun()
-    selected_menu = st.selectbox("메뉴 선택", menu_ops, index=menu_ops.index(st.session_state.current_page), label_visibility="collapsed")
+
+    # ✅ 이 두 줄로 교체
+    cur_idx = menu_ops.index(st.session_state.current_page) \
+              if st.session_state.current_page in menu_ops else 0
+    selected_menu = st.selectbox("메뉴 선택", menu_ops, index=cur_idx, label_visibility="collapsed")
+
     if selected_menu != st.session_state.current_page:
         st.session_state.current_page = selected_menu
         st.rerun()
@@ -1070,18 +1091,22 @@ elif menu == "🪙 코인 거래소":
             )
             if st.button("🟢 매수하기", use_container_width=True):
                 if buy_won <= 0: st.error("금액 입력 오류")
-                elif st.session_state.global_cash < buy_won: st.error("잔액 부족!")
-                else:
-                    qty_to_buy = buy_won / cur_p
-                    st.session_state.global_cash -= buy_won
-                    cp = st.session_state.get('crypto_portfolio', {})
-                    old = cp.get(sel_c, {'qty': 0, 'avg_price': 0})
-                    new_q = old['qty'] + qty_to_buy
-                    new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
-                    cp[sel_c] = {'qty': new_q, 'avg_price': new_a}
-                    st.session_state.crypto_portfolio = cp
-                    log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} 매수", -int(buy_won))
-                    sync_user_data(); st.success("✅ 매수 완료!"); time.sleep(1); st.rerun()
+                    elif st.session_state.global_cash < buy_won: st.error("잔액 부족!")
+                        else:
+                            qty_to_buy = buy_won / cur_p
+                            st.session_state.global_cash -= buy_won
+                            if st.session_state.global_cash < 0:
+                                st.session_state.global_cash += buy_won
+                                st.error("거래 취소 (잔액 보호)")
+                            else:
+                                cp = st.session_state.get('crypto_portfolio', {})
+                                old = cp.get(sel_c, {'qty': 0, 'avg_price': 0})
+                                new_q = old['qty'] + qty_to_buy
+                                new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
+                                cp[sel_c] = {'qty': new_q, 'avg_price': new_a}
+                                st.session_state.crypto_portfolio = cp
+                                log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} 매수", -int(buy_won))
+                                sync_user_data(); st.success("✅ 매수 완료!"); time.sleep(1); st.rerun()
                     
         with tab_sell:
             if my_qty <= 0: st.info("보유 중인 코인이 없습니다.")
@@ -1862,9 +1887,6 @@ elif menu == "🎰 럭키 슬롯":
 # ════════════════════════════════════════════════
 # 🃏 블랙잭 카지노
 # ════════════════════════════════════════════════
-# =====================================================================
-# 🃏 블랙잭 카지노 (멈춤 현상 완벽 패치)
-# =====================================================================
 elif menu == "🃏 블랙잭 카지노":
     st.title("🃏 블랙잭 카지노")
 
@@ -2407,11 +2429,24 @@ elif menu == "📅 일일 퀘스트":
     today_dq = dq.get(today_str, {})
 
     def check_quest(qid):
-        if qid == "attendance": return True
-        elif qid == "rich5": return nw >= 500_000_000
-        elif qid == "landlord": return any(v > 0 for v in st.session_state.real_estate.values())
-        elif qid == "debtfree": return st.session_state.loan == 0
-        return False # 나머지 복잡한 조건은 텍스트 간소화
+    if qid == "attendance": return True
+    elif qid == "rich5": return nw >= 500_000_000
+    elif qid == "landlord": return any(v > 0 for v in st.session_state.real_estate.values())
+    elif qid == "debtfree": return st.session_state.loan == 0
+    elif qid == "investor":
+        return sum(
+            st.session_state.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price']
+            for s in stock_config
+        ) >= 100_000_000
+    elif qid == "coin100m":
+        if 'crypto_data' not in market: return False
+        return sum(
+            ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0)
+            for cid, ci in st.session_state.get('crypto_portfolio', {}).items()
+        ) >= 100_000_000
+    elif qid == "billionaire": return nw >= 100_000_000_000
+    return False
+    
 
     for q in DAILY_QUESTS_CONFIG:
         is_claimed    = today_dq.get(q['id'], False)
