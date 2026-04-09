@@ -319,14 +319,14 @@ if 'logged_in_user' not in st.session_state:
                         'stats':          u.get('stats', {'wins':0,'losses':0,'races_won':0,'lotto_spent':0}),
                     })
                     st.rerun()
-                if l_id == "" and l_pw == "5891":
-                    if "5891" not in users:
-                        users["5891"] = {"pw":"5891","cash":999_999_999_999,"inventory":[],
+                if l_id == "admin" and l_pw == "****":
+                    if "admin" not in users:
+                        users["admin"] = {"pw":"1234","cash":999_999_999_999,"inventory":[],
                                          "equipped_title":"👑 절대신 창조주","portfolio":{},
                                          "real_estate":{},"rent_time":time.time(),
                                          "loan":0,"loan_time":time.time(),"stats":{}}
                         save_db(USERS_FILE, users)
-                    _do_login("5891")
+                    _do_login("admin")
                 elif l_id in users and users[l_id]['pw'] == l_pw:
                     _do_login(l_id)
                 else:
@@ -336,7 +336,7 @@ if 'logged_in_user' not in st.session_state:
             n_pw = st.text_input("새 비밀번호", type="password", placeholder="비밀번호 설정")
             if st.button("✨ 시민 등록하기", use_container_width=True):
                 users = load_db(USERS_FILE, {})
-                if n_id in users or n_id == "5891":
+                if n_id in users or n_id == "admin":
                     st.error("⚠️ 이미 존재하는 아이디입니다.")
                 elif len(n_id) < 2:
                     st.error("아이디는 2자 이상이어야 합니다.")
@@ -586,7 +586,7 @@ if st.session_state.loan > 0 and nw < 0:
 # ==============================
 # 🧭 메뉴
 # ==============================
-is_admin = st.session_state.logged_in_user == "5891"
+is_admin = st.session_state.logged_in_user == "admin"
 is_vip   = nw >= 100_000_000_000 or is_admin
 
 menu_ops = [
@@ -735,7 +735,7 @@ elif menu == "🏠 홈 광장":
     users_all = load_db(USERS_FILE, {})
     rank_data = []
     for uid, udata in users_all.items():
-        if uid == "5891": continue
+        if uid == "admin": continue
         w = udata.get('cash', 0) - udata.get('loan', 0)
         for sid, p in udata.get('portfolio', {}).items():
             if sid in market['stock_data']: w += p.get('qty', 0) * market['stock_data'][sid]['price']
@@ -1891,7 +1891,7 @@ elif menu == "🏅 랭킹 & 게시판":
         users_all = load_db(USERS_FILE, {})
         rank_data = []
         for uid_r, udata in users_all.items():
-            if uid_r == "5891": continue
+            if uid_r == "admin": continue
             w = udata.get('cash', 0) - udata.get('loan', 0)
             for sid, p in udata.get('portfolio', {}).items():
                 if sid in market['stock_data']: w += p.get('qty', 0) * market['stock_data'][sid]['price']
@@ -1976,7 +1976,7 @@ elif menu == "🛠️ 창조주 통제소":
             return int(total)
 
         u_db = load_db(USERS_FILE, {})
-        uid_list = [u for u in u_db.keys() if u != "5891"]
+        uid_list = [u for u in u_db.keys() if u != "admin"]
 
         if uid_list:
             sel_u  = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
@@ -2116,7 +2116,7 @@ elif menu == "🛠️ 창조주 통제소":
         airdrop_amt = st.number_input("지급할 금액", min_value=0, step=10_000_000, value=100_000_000)
         if st.button("💸 전 우주에 현금 살포하기", use_container_width=True):
             for u in u_db:
-                if u != "5891": u_db[u]['cash'] += airdrop_amt
+                if u != "admin": u_db[u]['cash'] += airdrop_amt
             save_db(USERS_FILE, u_db)
             market['news'] = f"🕊️ [창조주의 은총] 모든 시민에게 {format_korean_money(airdrop_amt)}이 지급되었습니다!"
             save_market(market); st.success("에어드랍 완료!"); time.sleep(1.5); st.rerun()
@@ -2127,7 +2127,7 @@ elif menu == "🛠️ 창조주 통제소":
         tax_rate = st.slider("징수율 (%)", min_value=1, max_value=99, value=10)
         if st.button("🌪️ 전 우주 부유세 징수 실행", use_container_width=True):
             for u in u_db:
-                if u != "5891":
+                if u != "admin":
                     tax_amount = int(u_db[u]['cash'] * (tax_rate / 100.0))
                     u_db[u]['cash'] -= tax_amount
             save_db(USERS_FILE, u_db)
@@ -2177,7 +2177,7 @@ elif menu == "🛠️ 창조주 통제소":
     with t6:
         st.markdown("### 📊 전체 유저 현황")
         u_db2 = load_db(USERS_FILE, {})
-        rows = [{"ID": uid_r, "칭호": ud.get('equipped_title',''), "현금": format_korean_money(ud.get('cash',0)), "대출": format_korean_money(ud.get('loan',0))} for uid_r, ud in u_db2.items() if uid_r != "5891"]
+        rows = [{"ID": uid_r, "칭호": ud.get('equipped_title',''), "현금": format_korean_money(ud.get('cash',0)), "대출": format_korean_money(ud.get('loan',0))} for uid_r, ud in u_db2.items() if uid_r != "admin"]
         if rows: st.table(pd.DataFrame(rows))
         else: st.info("등록된 유저가 없습니다.")
 
