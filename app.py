@@ -2793,6 +2793,22 @@ elif menu == "🛠️ 창조주 통제소":
             exists = "✅ 정상" if os.path.exists(f) else "❌ 없음"
             size = f"{os.path.getsize(f):,} bytes" if os.path.exists(f) else "—"
             st.markdown(f"<div style='color:#ccc;font-size:0.9rem;'>{exists} | <b>{f}</b> ({size})</div>", unsafe_allow_html=True)
+            
+        st.write("---")
+        st.markdown("### 🚨 긴급 데이터 백업 (다운로드)")
+        
+        # 파일이 존재하면 다운로드 버튼 생성
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, "rb") as f:
+                st.download_button("📥 유저 데이터 (users_db) 백업", f, file_name=f"backup_{USERS_FILE}", mime="application/json")
+                
+        if os.path.exists(MARKET_FILE):
+            with open(MARKET_FILE, "rb") as f:
+                st.download_button("📥 시장 데이터 (market_db) 백업", f, file_name=f"backup_{MARKET_FILE}", mime="application/json")
+                
+        if os.path.exists(REALESTATE_MARKET_FILE):
+            with open(REALESTATE_MARKET_FILE, "rb") as f:
+                st.download_button("📥 부동산 데이터 백업", f, file_name=f"backup_{REALESTATE_MARKET_FILE}", mime="application/json")   
 
     with t7:
         c_title, c_btn = st.columns([5, 1])
