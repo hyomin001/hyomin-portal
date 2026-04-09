@@ -2608,9 +2608,15 @@ elif menu == "🛠️ 창조주 통제소":
     # 탭 7: 전지적 모니터링 (서버 로그 훔쳐보기)
     # ──────────────────────────────────────────
     with t7:
-        st.markdown("### 👁️ 실시간 유저 활동 로그")
-        st.caption("우주에서 일어나는 모든 거래의 은밀한 기록입니다.")
-        
+        c_title, c_btn = st.columns([5, 1])
+        with c_title:
+            st.markdown("### 👁️ 실시간 유저 활동 로그")
+            st.caption("우주에서 일어나는 모든 거래의 은밀한 기록입니다.")
+        with c_btn:
+            # 🔄 앙증맞은 수동 새로고침 버튼
+            if st.button("🔄 새로고침", use_container_width=True):
+                st.rerun()
+
         all_logs = load_db(TXLOG_FILE, {})
         
         # 모든 유저의 로그를 모아서 시간순으로 정렬
@@ -2626,8 +2632,8 @@ elif menu == "🛠️ 창조주 통제소":
         if not combined_logs:
             st.info("아직 기록된 활동이 없습니다.")
         else:
-            # 최근 100개만 출력
-            for log in combined_logs[:10]:
+            # 최근 100개 출력 (10개는 너무 짧으니 100개로 늘렸습니다)
+            for log in combined_logs[:100]:
                 amt   = log['amount']
                 color = "#FF4B4B" if amt > 0 else "#4B9EFF"
                 sign  = "+" if amt > 0 else ""
@@ -2639,6 +2645,3 @@ elif menu == "🛠️ 창조주 통제소":
                     <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
                 </div>
                 """, unsafe_allow_html=True)
-                if menu == "🛠️ 창조주 통제소":
-                    time.sleep(5)
-                    st.rerun()
