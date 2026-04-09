@@ -2644,30 +2644,26 @@ elif menu == "🛠️ 창조주 통제소":
             st.info("관리할 유저가 없습니다.")
 
     with t2:
-        # 👇 1. [신규 추가] 부동산 신규 공급 물량 조작
+        # 1. 부동산 신규 공급 물량 조작 (새로 추가된 기능!)
         st.markdown("### 🏗️ 부동산 신규 공급량(초기 재고) 조작")
         st.caption("운영사 직판 물량(initial_stock)을 늘리거나 줄여서 시장에 개입합니다.")
         
         em_admin = load_estate_market()
-        # 현재 시장에 풀린 재고량 계산을 위해 데이터 준비
         initial_stock_data = em_admin.get("initial_stock", {eid: info["total_supply"] for eid, info in estate_config.items()})
         
         c_sup1, c_sup2, c_sup3, c_sup4 = st.columns([3, 2, 2, 2])
         
         with c_sup1:
-            # 조작할 매물 선택
             sup_eid = st.selectbox(
                 "조작할 매물 선택", 
                 list(estate_config.keys()), 
                 format_func=lambda x: f"{estate_config[x]['icon']} {estate_config[x]['name']} (기본공급: {estate_config[x]['total_supply']}개)"
             )
         
-        # 현재 이 매물이 서버 전체에 몇 개 존재하는지(유저 보유 + 중고 매물) 계산
         owned_total = sum(v.get(sup_eid, 0) for v in em_admin["owner_counts"].values())
         listed_count = sum(1 for l in em_admin["listings"] if l["eid"] == sup_eid)
         initial_released = owned_total + listed_count
         
-        # 설정된 한도 내에서 남은 수량 계산
         current_limit = initial_stock_data.get(sup_eid, estate_config[sup_eid]["total_supply"])
         remaining_sup = max(0, current_limit - initial_released)
         
@@ -2677,7 +2673,6 @@ elif menu == "🛠️ 창조주 통제소":
             st.markdown(f"**마켓 잔여 물량:** <b style='color:#00FF88;'>{remaining_sup}개</b>", unsafe_allow_html=True)
             
         with c_sup3:
-            # 얼마나 더하거나 뺄지 입력
             sup_mod = st.number_input("조작 수량 (개)", min_value=1, step=1, value=1)
             
         with c_sup4:
@@ -2686,7 +2681,6 @@ elif menu == "🛠️ 창조주 통제소":
             col_a, col_b = st.columns(2)
             with col_a:
                 if st.button("➕ 늘리기", use_container_width=True):
-                    # 한도를 높여서 시장에 매물을 더 풂
                     initial_stock_data[sup_eid] = current_limit + sup_mod
                     em_admin["initial_stock"] = initial_stock_data
                     save_estate_market(em_admin)
@@ -2696,7 +2690,6 @@ elif menu == "🛠️ 창조주 통제소":
                     time.sleep(1); st.rerun()
             with col_b:
                 if st.button("➖ 줄이기", use_container_width=True):
-                    # 한도를 낮춰서 매물을 잠금 (이미 팔린 건 회수 안 됨)
                     new_limit = max(initial_released, current_limit - sup_mod)
                     initial_stock_data[sup_eid] = new_limit
                     em_admin["initial_stock"] = initial_stock_data
@@ -2741,7 +2734,8 @@ elif menu == "🛠️ 창조주 통제소":
              st.info("관리할 유저가 없습니다.")
 
         st.write("---")
-        # 3. 유저 중고 매물 강제 삭제
+        
+        # 3. 유저 등록 중고 매물 강제 삭제
         st.markdown("### 🔄 유저 등록 중고 매물 강제 삭제")
         if em_admin["listings"]:
             for li in em_admin["listings"]:
@@ -2755,7 +2749,8 @@ elif menu == "🛠️ 창조주 통제소":
             st.info("현재 유저가 등록한 중고 매물이 없습니다.")
             
         st.write("---")
-        # 4. 마켓 완전 초기화
+        
+        # 4. 부동산 마켓 전체 초기화
         st.markdown("### 💣 부동산 마켓 전체 초기화")
         if st.button("🔄 부동산 마켓 전체 초기화 (경매장 싹쓸이 & 공급량 리셋)", type="secondary"):
             save_estate_market({"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}})
