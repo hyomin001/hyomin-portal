@@ -1992,8 +1992,22 @@ elif menu == "🪙 코인 거래소":
         tab_buy, tab_sell = st.tabs(["🟢 매수", "🔴 매도"])
 
         with tab_buy:
-            buy_won = st.number_input("투자 금액 (원)", min_value=0, step=10_000,
-                                       max_value=int(st.session_state.global_cash), value=0, format="%d")
+            # 🛡️ 안전 장치 1: 잔액이 마이너스면 0으로 처리해서 에러 방지
+            current_cash = max(0, int(st.session_state.global_cash))
+            
+            # 🛡️ 안전 장치 2: 자바스크립트 최대 정수 제한(약 9000조) 캡 씌우기
+            JS_MAX_INT = 9007199254740991
+            safe_max = min(current_cash, JS_MAX_INT)
+
+            buy_won = st.number_input(
+                "투자 금액 (원)", 
+                min_value=0, 
+                step=10_000,
+                max_value=safe_max, # 👈 이제 잔액이 아무리 많아도 에러가 안 납니다!
+                value=0, 
+                format="%d",
+                key="coin_buy_input_safe" # 👈 키값도 안 겹치게 살짝 변경
+            )
             if buy_won > 0 and cur_p > 0:
                 buy_qty = buy_won / cur_p
                 st.markdown(f"<div style='color:#888;font-size:0.85rem;'>약 <b style='color:#00FF88;'>{fmt_crypto_qty(buy_qty, sel_c)}</b> {cd['name']} 매수 예정</div>", unsafe_allow_html=True)
