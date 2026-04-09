@@ -2429,23 +2429,23 @@ elif menu == "📅 일일 퀘스트":
     today_dq = dq.get(today_str, {})
 
     def check_quest(qid):
-    if qid == "attendance": return True
-    elif qid == "rich5": return nw >= 500_000_000
-    elif qid == "landlord": return any(v > 0 for v in st.session_state.real_estate.values())
-    elif qid == "debtfree": return st.session_state.loan == 0
-    elif qid == "investor":
-        return sum(
-            st.session_state.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price']
-            for s in stock_config
-        ) >= 100_000_000
-    elif qid == "coin100m":
-        if 'crypto_data' not in market: return False
-        return sum(
-            ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0)
-            for cid, ci in st.session_state.get('crypto_portfolio', {}).items()
-        ) >= 100_000_000
-    elif qid == "billionaire": return nw >= 100_000_000_000
-    return False
+        if qid == "attendance": return True
+            elif qid == "rich5": return nw >= 500_000_000
+                elif qid == "landlord": return any(v > 0 for v in st.session_state.real_estate.values())
+                    elif qid == "debtfree": return st.session_state.loan == 0
+                        elif qid == "investor":
+                            return sum(
+                                st.session_state.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price']
+                                for s in stock_config
+                            ) >= 100_000_000
+        elif qid == "coin100m":
+            if 'crypto_data' not in market: return False
+                return sum(
+                ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0)
+                for cid, ci in st.session_state.get('crypto_portfolio', {}).items()
+            ) >= 100_000_000
+        elif qid == "billionaire": return nw >= 100_000_000_000
+            return False
     
 
     for q in DAILY_QUESTS_CONFIG:
