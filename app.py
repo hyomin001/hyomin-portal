@@ -8,10 +8,11 @@ import os
 import time
 import tempfile
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 # 그 바로 아랫줄에 한국 시간(KST) 세팅을 추가해 줍니다.
 KST = timezone(timedelta(hours=9))
+
 
 # ==============================
 # 🌌 시스템 설정 및 데이터베이스
