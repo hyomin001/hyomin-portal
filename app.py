@@ -1551,20 +1551,21 @@ elif menu == "💻 정처기 CBT":
         st.rerun()
 
 # =====================================================================
-# 🏎️ 하이퍼카 레이싱
+# 🏎️ 하이퍼카 레이싱 (역배당/부스터 패치)
 # =====================================================================
 elif menu == "🏎️ 하이퍼카 레이싱":
     st.title("🏎️ 하이퍼카 레이싱")
     st.caption("배당률이 높을수록 우승 확률은 낮지만 당첨 시 고수익!")
 
+    # 🚨 속도 편차를 줄여서 모든 차가 이길 가능성을 열어둠
     CARS = [
-        {"name": "부가티 시론 SS",        "emoji": "🏎️", "odds": 20.0, "spd": (2, 7),   "color": "#FF0066"},
-        {"name": "람보르기니 레부엘토",    "emoji": "🐂",  "odds": 12.0, "spd": (3, 10),  "color": "#FF6600"},
-        {"name": "페라리 SF90 XX",         "emoji": "🐎",  "odds": 8.0,  "spd": (4, 12),  "color": "#FF2200"},
-        {"name": "맥라렌 P1 GTR",          "emoji": "🚀",  "odds": 6.0,  "spd": (5, 13),  "color": "#FF9900"},
-        {"name": "포르쉐 918 스파이더",    "emoji": "⚡",  "odds": 4.0,  "spd": (6, 15),  "color": "#FFCC00"},
-        {"name": "테슬라 로드스터 2",       "emoji": "⚡",  "odds": 2.5,  "spd": (8, 17),  "color": "#00FF88"},
-        {"name": "토요타 GR010 하이브리드","emoji": "🏁",  "odds": 1.8,  "spd": (10, 20), "color": "#00CCFF"},
+        {"name": "부가티 시론 SS",        "emoji": "🏎️", "odds": 20.0, "spd": (0, 15),  "color": "#FF0066"},
+        {"name": "람보르기니 레부엘토",    "emoji": "🐂",  "odds": 12.0, "spd": (1, 14),  "color": "#FF6600"},
+        {"name": "페라리 SF90 XX",         "emoji": "🐎",  "odds": 8.0,  "spd": (1, 13),  "color": "#FF2200"},
+        {"name": "맥라렌 P1 GTR",          "emoji": "🚀",  "odds": 6.0,  "spd": (2, 12),  "color": "#FF9900"},
+        {"name": "포르쉐 918 스파이더",    "emoji": "⚡",  "odds": 4.0,  "spd": (2, 11),  "color": "#FFCC00"},
+        {"name": "테슬라 로드스터 2",       "emoji": "⚡",  "odds": 2.5,  "spd": (3, 10),  "color": "#00FF88"},
+        {"name": "토요타 GR010 하이브리드","emoji": "🏁",  "odds": 1.8,  "spd": (3,  9),  "color": "#00CCFF"},
     ]
 
     car_names = [f"{c['emoji']} {c['name']} ({c['odds']}배)" for c in CARS]
@@ -1592,7 +1593,13 @@ elif menu == "🏎️ 하이퍼카 레이싱":
             while winner is None:
                 time.sleep(0.12)
                 for c in CARS:
-                    positions[c['name']] = min(100, positions[c['name']] + random.randint(c['spd'][0], c['spd'][1]))
+                    # 🚨 부스터 시스템 (5% 확률로 +15 전진!)
+                    base_move = random.randint(c['spd'][0], c['spd'][1])
+                    if random.random() < 0.05:
+                        base_move += 15
+                        
+                    positions[c['name']] = min(100, positions[c['name']] + base_move)
+                    
                     rank     = sorted(positions.items(), key=lambda x: x[1], reverse=True)
                     pos_num  = next(i+1 for i, (n, _) in enumerate(rank) if n == c['name'])
                     bars[c['name']].progress(positions[c['name']]/100, text=f"{c['emoji']} {c['name']} {pos_num}위 | {positions[c['name']]:.0f}%")
