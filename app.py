@@ -1687,6 +1687,9 @@ elif menu == "🎰 럭키 슬롯":
 # ════════════════════════════════════════════════
 # 🃏 블랙잭 카지노
 # ════════════════════════════════════════════════
+# =====================================================================
+# 🃏 블랙잭 카지노 (멈춤 현상 완벽 패치)
+# =====================================================================
 elif menu == "🃏 블랙잭 카지노":
     st.title("🃏 블랙잭 카지노")
 
@@ -1731,18 +1734,18 @@ elif menu == "🃏 블랙잭 카지노":
     # ── 베팅 화면 ──
     if state == 'betting':
         st.markdown(f"""
-<div style='text-align:center;padding:30px;background:linear-gradient(135deg,rgba(180,0,0,0.15),rgba(0,100,0,0.15));
-     border:2px solid rgba(255,215,0,0.3);border-radius:18px;margin-bottom:24px;'>
-  <div style='font-size:4rem;'>🃏</div>
-  <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#FFD600;margin-top:8px;font-weight:900;'>BLACKJACK</div>
-  <div style='color:#888;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 더블다운 가능 &nbsp;|&nbsp; 딜러 16 이하 히트</div>
-</div>""", unsafe_allow_html=True)
-
-        bet = st.number_input("베팅 금액 (원)", min_value=1_000_000, step=1_000_000,
-                               value=min(10_000_000, st.session_state.global_cash), format="%d")
+        <div style='text-align:center;padding:30px;background:linear-gradient(135deg,rgba(180,0,0,0.15),rgba(0,100,0,0.15));
+             border:2px solid rgba(255,215,0,0.3);border-radius:18px;margin-bottom:24px;'>
+          <div style='font-size:4rem;'>🃏</div>
+          <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#FFD600;margin-top:8px;font-weight:900;'>BLACKJACK</div>
+          <div style='color:#888;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 딜러 16 이하 히트</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        bet = st.number_input("베팅 금액 (원)", min_value=1_000_000, step=1_000_000, value=1_000_000, format="%d", key="bj_bet_input")
         st.caption(f"💵 베팅 예정: {format_korean_money(bet)} | 잔액: {format_korean_money(st.session_state.global_cash)}")
-
-        cd_deal = cooldown_remaining("bj_deal", 2.0)
+        
+        cd_deal = cooldown_remaining("bj_deal", 1.0)
         if cd_deal > 0:
             st.warning(f"⏱️ {cd_deal:.1f}초 후 딜 가능")
         elif st.button("🃏 카드 딜!", use_container_width=True):
@@ -1752,32 +1755,31 @@ elif menu == "🃏 블랙잭 카지노":
                 set_cooldown("bj_deal")
                 st.session_state.global_cash -= bet
                 st.session_state.bj_bet = bet
-
                 deck = st.session_state.bj_deck if len(st.session_state.bj_deck) > 30 else bj_make_deck()
                 player = [deck.pop(), deck.pop()]
                 dealer = [deck.pop(), deck.pop()]
                 st.session_state.bj_player = player
+                st.session_state.bj_dealer = dealer
                 st.session_state.bj_deck   = deck
                 st.session_state.bj_result = None
-
+                
                 if bj_value(player) == 21:
-                    dealer, deck = bj_dealer_play(dealer, deck)
-                    st.session_state.bj_dealer = dealer
-                    st.session_state.bj_deck   = deck
+                    dl, dk = bj_dealer_play(dealer, deck)
+                    st.session_state.bj_dealer = dl
+                    st.session_state.bj_deck   = dk
                     st.session_state.bj_state  = 'done'
                 else:
-                    st.session_state.bj_dealer = dealer
                     st.session_state.bj_state  = 'playing'
+                sync_user_data()
+                st.rerun()
 
-                sync_user_data(); st.rerun()
-
+    # ── 플레이 화면 ──
     elif state in ['playing', 'done']:
         player = st.session_state.bj_player
         dealer = st.session_state.bj_dealer
         bet    = st.session_state.bj_bet
         pval   = bj_value(player)
 
-        # ── 딜러 패 ──
         st.markdown("### 🎩 딜러의 패")
         if state == 'playing':
             dv_shown = bj_value([dealer[0]])
@@ -1787,27 +1789,23 @@ elif menu == "🃏 블랙잭 카지노":
             dval = bj_value(dealer)
             dcol = "#FF4B4B" if dval > 21 else "#fff"
             st.markdown(f"{bj_render(dealer)} <span style='color:{dcol};font-size:1.1rem;font-weight:900;margin-left:12px;'>{dval}점{'  💥BUST' if dval>21 else ''}</span>", unsafe_allow_html=True)
-
         st.write("")
 
-        # ── 플레이어 패 ──
         st.markdown("### 🎴 내 패")
         pcol = "#FF4B4B" if pval > 21 else "#00FF88" if pval == 21 else "#fff"
         st.markdown(f"{bj_render(player)} <span style='color:{pcol};font-size:1.2rem;font-weight:900;margin-left:12px;'>{pval}점{'  💥BUST' if pval>21 else '  🃏BJ!' if pval==21 and len(player)==2 else ''}</span>", unsafe_allow_html=True)
-
         st.write("")
+
         c_bet, c_pot = st.columns(2)
         c_bet.metric("💰 베팅", format_korean_money(bet))
         c_pot.metric("🏆 승리 시 지급", format_korean_money(bet * 2))
 
         if state == 'playing':
             st.write("")
-            c1, c2, c3 = st.columns(3)
-            cd_act = cooldown_remaining("bj_action", 0.8)
-
+            c1, c2 = st.columns(2)  # 🚨 더블다운 삭제 (에러의 주범이었음)
+            
             with c1:
-                if st.button("👊 히트", use_container_width=True, disabled=cd_act > 0):
-                    set_cooldown("bj_action")
+                if st.button("👊 히트 (Hit)", use_container_width=True):
                     deck = st.session_state.bj_deck
                     st.session_state.bj_player.append(deck.pop())
                     st.session_state.bj_deck = deck
@@ -1819,41 +1817,21 @@ elif menu == "🃏 블랙잭 카지노":
                             st.session_state.bj_deck   = dk
                         st.session_state.bj_state = 'done'
                     st.rerun()
-
             with c2:
-                if st.button("🛑 스탠드", use_container_width=True, disabled=cd_act > 0):
-                    set_cooldown("bj_action")
+                if st.button("🛑 스탠드 (Stand)", use_container_width=True):
                     dl, dk = bj_dealer_play(st.session_state.bj_dealer, st.session_state.bj_deck)
                     st.session_state.bj_dealer = dl
                     st.session_state.bj_deck   = dk
                     st.session_state.bj_state  = 'done'
                     st.rerun()
 
-            with c3:
-                can_dd = st.session_state.global_cash >= bet and len(player) == 2
-                if st.button("💥 더블다운", use_container_width=True,
-                              disabled=(cd_act > 0 or not can_dd),
-                              help="현재 패 2장일 때만 가능. 추가 베팅 후 카드 1장만 받습니다."):
-                    set_cooldown("bj_action")
-                    st.session_state.global_cash -= bet
-                    st.session_state.bj_bet = bet * 2
-                    deck = st.session_state.bj_deck
-                    st.session_state.bj_player.append(deck.pop())
-                    if bj_value(st.session_state.bj_player) <= 21:
-                        dl, dk = bj_dealer_play(dealer, deck)
-                        st.session_state.bj_dealer = dl
-                        st.session_state.bj_deck   = dk
-                    else:
-                        st.session_state.bj_deck = deck
-                    st.session_state.bj_state = 'done'
-                    sync_user_data(); st.rerun()
-
-        else:  # done
+        # ── 결과 화면 ──
+        else:
             pval_f = bj_value(player)
             dval_f = bj_value(dealer)
             bet_f  = st.session_state.bj_bet
             is_bj  = (pval_f == 21 and len(player) == 2)
-
+            
             if pval_f > 21:
                 result, res_col, prize = "💥 버스트! 패배", "#4B9EFF", 0
             elif dval_f > 21:
@@ -1872,16 +1850,16 @@ elif menu == "🃏 블랙잭 카지노":
             net_col = "#FF4B4B" if net > 0 else "#4B9EFF" if net < 0 else "#888"
 
             st.markdown(f"""
-<div style='text-align:center;background:rgba(0,0,0,0.4);border:2px solid {res_col};
-     border-radius:18px;padding:28px;margin:20px 0;
-     box-shadow:0 0 30px {res_col}44;'>
-  <div style='font-size:1.8rem;font-weight:900;color:{res_col};'>{result}</div>
-  <div style='font-size:1.3rem;font-weight:900;color:{net_col};margin-top:10px;'>{net_str}</div>
-  <div style='color:#666;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
-</div>""", unsafe_allow_html=True)
+            <div style='text-align:center;background:rgba(0,0,0,0.4);border:2px solid {res_col};
+                 border-radius:18px;padding:28px;margin:20px 0;box-shadow:0 0 30px {res_col}44;'>
+              <div style='font-size:1.8rem;font-weight:900;color:{res_col};'>{result}</div>
+              <div style='font-size:1.3rem;font-weight:900;color:{net_col};margin-top:10px;'>{net_str}</div>
+              <div style='color:#666;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
             if st.session_state.bj_result != 'logged':
-                if prize > 0:
+                if prize > 0: 
                     st.session_state.global_cash += prize
                 log_tx(st.session_state.logged_in_user, "블랙잭", result, net)
                 sync_user_data()
@@ -1960,11 +1938,26 @@ elif menu == "🪙 코인 거래소":
                 st.metric("🪙 코인 총 평가액", format_korean_money(int(total_val)))
 
     with tab_trade:
+        # 🚨 선택 유지 패치: 세션 스테이트에 선택한 코인을 저장합니다.
+        if 'selected_coin' not in st.session_state:
+            st.session_state.selected_coin = CRYPTO_CONFIG[0]['id']
+
+        # 현재 인덱스 찾기
+        coin_ids = [c['id'] for c in CRYPTO_CONFIG]
+        current_index = coin_ids.index(st.session_state.selected_coin) if st.session_state.selected_coin in coin_ids else 0
+
         sel_c = st.selectbox(
             "거래할 코인 선택",
-            [c['id'] for c in CRYPTO_CONFIG],
+            coin_ids,
+            index=current_index, # 👈 인덱스를 고정!
             format_func=lambda cid: f"{next(c['icon'] for c in CRYPTO_CONFIG if c['id']==cid)} {cdata[cid]['name']} — {fmt_crypto_price(cdata[cid]['price'])}"
         )
+        
+        # 유저가 코인을 바꾸면 세션에 저장해 줍니다.
+        if sel_c != st.session_state.selected_coin:
+            st.session_state.selected_coin = sel_c
+            st.rerun()
+
         cd    = cdata[sel_c]
         cur_p = cd['price']
 
