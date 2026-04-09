@@ -2625,3 +2625,6 @@ elif menu == "🛠️ 창조주 통제소":
                     <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
                 </div>
                 """, unsafe_allow_html=True)
+                if menu == "🛠️ 창조주 통제소":
+                    time.sleep(5)
+                    st.rerun()
