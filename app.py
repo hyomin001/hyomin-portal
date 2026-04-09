@@ -1694,25 +1694,93 @@ elif menu == "💻 정처기 CBT":
     st.title("💻 정보처리기사 실전 CBT")
     st.caption("실제 정처기 수준의 문제입니다. 정답 시 50만원 지급!")
 
+    # 👇 이 아래부터 덮어쓰기 시작 👇
     QUESTION_POOL = [
-        {"q": "제2정규형(2NF)의 조건은?", "a": "부분 함수 종속 제거", "w": ["이행 함수 종속 제거","다치 종속 제거","조인 종속 제거"], "cat": "데이터베이스"},
-        {"q": "OSI 7계층에서 세그먼트(Segment)를 데이터 단위로 사용하는 계층은?", "a": "전송 계층(Transport Layer)", "w": ["네트워크 계층","세션 계층","데이터링크 계층"], "cat": "네트워크"},
-        {"q": "스크럼(Scrum)에서 반복 개발 주기를 의미하는 용어는?", "a": "스프린트(Sprint)", "w": ["이터레이션","릴리즈","에픽"], "cat": "소프트웨어공학"},
-        {"q": "트랜잭션의 원자성(Atomicity)이란?", "a": "모두 실행되거나 모두 취소되어야 함", "w": ["동시 트랜잭션 간 독립성 보장","완료 후 영구 반영","실행 전후 무결성 유지"], "cat": "데이터베이스"},
-        {"q": "객체 생성을 서브클래스에서 결정하도록 위임하는 패턴은?", "a": "팩토리 메서드(Factory Method)", "w": ["싱글톤","어댑터","옵저버"], "cat": "디자인패턴"},
-        {"q": "IP 주소 192.168.1.0/24의 서브넷 마스크는?", "a": "255.255.255.0", "w": ["255.255.0.0","255.0.0.0","255.255.255.128"], "cat": "네트워크"},
-        {"q": "SQL LEFT OUTER JOIN의 결과로 옳은 설명은?", "a": "왼쪽 테이블 전체 + 오른쪽 매칭값(없으면 NULL)", "w": ["양쪽 매칭 행만 출력","오른쪽 테이블 전체 포함","매칭 안 되는 행은 제외"], "cat": "데이터베이스"},
-        {"q": "퀵 정렬(Quick Sort)의 평균 시간 복잡도는?", "a": "O(n log n)", "w": ["O(n²)","O(n)","O(log n)"], "cat": "알고리즘"},
-        {"q": "TCP와 UDP의 핵심 차이점은?", "a": "TCP는 연결 지향, UDP는 비연결 지향", "w": ["TCP가 더 빠름","UDP가 신뢰성 보장","둘 다 응용 계층 프로토콜"], "cat": "네트워크"},
-        {"q": "REST API에서 리소스 삭제 시 사용하는 HTTP 메서드는?", "a": "DELETE", "w": ["GET","POST","PUT"], "cat": "웹"},
-        {"q": "NoSQL의 특징으로 올바른 것은?", "a": "유연한 스키마 + 수평 확장(Scale-out) 용이", "w": ["ACID 반드시 보장","관계형 모델 전용","수직 확장만 가능"], "cat": "데이터베이스"},
-        {"q": "페이징(Paging) 기법의 주요 장점은?", "a": "외부 단편화 제거", "w": ["내부 단편화 제거","메모리 접근 속도 향상","TLB 불필요"], "cat": "운영체제"},
-        {"q": "Git에서 원격 저장소 변경사항을 로컬에 병합하는 명령어는?", "a": "git pull", "w": ["git push","git fetch","git clone"], "cat": "개발도구"},
-        {"q": "해시 테이블의 평균 검색 시간 복잡도는?", "a": "O(1)", "w": ["O(n)","O(log n)","O(n log n)"], "cat": "자료구조"},
-        {"q": "프로세스와 스레드의 차이점으로 올바른 것은?", "a": "스레드는 같은 프로세스 내 메모리를 공유", "w": ["프로세스가 더 가벼움","스레드는 독립적인 메모리 공간 가짐","스레드 생성 비용이 더 큼"], "cat": "운영체제"},
-        {"q": "대칭키 암호화 방식의 특징은?", "a": "암호화·복호화에 동일한 키 사용, 처리 속도 빠름", "w": ["공개키·개인키 쌍 사용","키 분배가 안전함","전자서명에 주로 사용"], "cat": "보안"},
-    ]
+        {"q": "함수 종속에서 X → Y 의미는?", "a": "X 값이 Y를 결정", "w": ["Y가 X 결정","서로 독립","무관"], "cat": "데이터베이스"},
+        {"q": "정규화 목적은?", "a": "데이터 중복 최소화", "w": ["속도 향상","보안 강화","암호화"], "cat": "데이터베이스"},
+        {"q": "카디널리티 의미는?", "a": "튜플 수", "w": ["속성 수","키 수","인덱스 수"], "cat": "데이터베이스"},
+        {"q": "차수(Degree)는?", "a": "속성 수", "w": ["튜플 수","키 수","인덱스"], "cat": "데이터베이스"},
+        {"q": "후보키 특징은?", "a": "유일성+최소성", "w": ["유일성만","최소성만","중복 허용"], "cat": "데이터베이스"},
+        {"q": "기본키 특징은?", "a": "NULL 불가", "w": ["중복 허용","여러 개 필수","변경 불가"], "cat": "데이터베이스"},
+        {"q": "외래키 역할은?", "a": "참조 무결성 유지", "w": ["속도 향상","정렬","암호화"], "cat": "데이터베이스"},
+        {"q": "트랜잭션 COMMIT 의미는?", "a": "영구 반영", "w": ["취소","대기","삭제"], "cat": "데이터베이스"},
+        {"q": "ROLLBACK 의미는?", "a": "작업 취소", "w": ["반영","저장","병합"], "cat": "데이터베이스"},
+        {"q": "뷰(View) 장점은?", "a": "보안성 향상", "w": ["속도 증가","저장 공간 증가","정렬"], "cat": "데이터베이스"},
 
+        {"q": "프로세스 상태 중 실행 상태는?", "a": "CPU 사용 중", "w": ["대기","생성","종료"], "cat": "운영체제"},
+        {"q": "스레드 장점은?", "a": "경량 프로세스", "w": ["무겁다","독립 메모리","느림"], "cat": "운영체제"},
+        {"q": "문맥교환 의미는?", "a": "CPU 상태 전환", "w": ["메모리 삭제","파일 저장","네트워크 연결"], "cat": "운영체제"},
+        {"q": "데드락 해결 중 회피는?", "a": "안전 상태 유지", "w": ["무시","강제 종료","롤백"], "cat": "운영체제"},
+        {"q": "페이징 단위는?", "a": "페이지", "w": ["세그먼트","블록","파일"], "cat": "운영체제"},
+
+        {"q": "IP 클래스 A 범위 시작은?", "a": "0", "w": ["128","192","224"], "cat": "네트워크"},
+        {"q": "서브넷 목적은?", "a": "네트워크 분할", "w": ["속도 감소","보안 약화","주소 제거"], "cat": "네트워크"},
+        {"q": "FTP 포트는?", "a": "21", "w": ["80","443","25"], "cat": "네트워크"},
+        {"q": "SMTP 역할은?", "a": "메일 송신", "w": ["수신","라우팅","DNS"], "cat": "네트워크"},
+        {"q": "POP3 역할은?", "a": "메일 수신", "w": ["송신","DNS","라우팅"], "cat": "네트워크"},
+
+        {"q": "정렬 알고리즘 중 안정 정렬은?", "a": "버블 정렬", "w": ["퀵 정렬","힙 정렬","선택 정렬"], "cat": "알고리즘"},
+        {"q": "힙 특징은?", "a": "완전 이진 트리", "w": ["그래프","리스트","배열"], "cat": "자료구조"},
+        {"q": "해시 충돌 해결 방법은?", "a": "체이닝", "w": ["정렬","삭제","병합"], "cat": "자료구조"},
+        {"q": "그래프 간선 수 의미는?", "a": "연결 수", "w": ["노드 수","트리 수","경로"], "cat": "자료구조"},
+        {"q": "큐 활용 예는?", "a": "프린터 대기열", "w": ["재귀","정렬","검색"], "cat": "자료구조"},
+
+        {"q": "팩토리 패턴 목적은?", "a": "객체 생성 캡슐화", "w": ["삭제","정렬","압축"], "cat": "디자인패턴"},
+        {"q": "전략 패턴 특징은?", "a": "알고리즘 교체", "w": ["고정","삭제","압축"], "cat": "디자인패턴"},
+        {"q": "어댑터 패턴은?", "a": "인터페이스 변환", "w": ["생성","삭제","정렬"], "cat": "디자인패턴"},
+
+        {"q": "폭포수 모델 단점은?", "a": "변경 어려움", "w": ["유연함","빠름","반복"], "cat": "소프트웨어공학"},
+        {"q": "스크럼 역할 중 제품 책임자는?", "a": "PO", "w": ["SM","개발자","QA"], "cat": "소프트웨어공학"},
+        {"q": "유스케이스 다이어그램 목적은?", "a": "사용자 요구 표현", "w": ["코드 작성","DB 설계","테스트"], "cat": "소프트웨어공학"},
+
+        {"q": "악성코드 중 자기 복제는?", "a": "웜", "w": ["트로이목마","스파이웨어","랜섬웨어"], "cat": "보안"},
+        {"q": "랜섬웨어 특징은?", "a": "금전 요구", "w": ["삭제만","속도 증가","백업"], "cat": "보안"},
+        {"q": "SSL 역할은?", "a": "암호화 통신", "w": ["라우팅","DNS","파일 전송"], "cat": "보안"},
+
+        {"q": "HTTP 상태코드 200 의미는?", "a": "성공", "w": ["오류","리다이렉트","서버 오류"], "cat": "웹"},
+        {"q": "404 의미는?", "a": "페이지 없음", "w": ["성공","서버 오류","리다이렉트"], "cat": "웹"},
+        {"q": "REST 특징은?", "a": "자원 기반", "w": ["상태 유지","고정","비표준"], "cat": "웹"},
+        {"q": "ERD에서 관계(Relationship)의 의미는?", "a": "엔터티 간 연관", "w": ["속성","키","도메인"], "cat": "데이터베이스"},
+        {"q": "도메인(Domain)의 의미는?", "a": "속성 값 범위", "w": ["테이블","키","레코드"], "cat": "데이터베이스"},
+        {"q": "무결성 제약 조건의 목적은?", "a": "데이터 정확성 유지", "w": ["속도 증가","압축","삭제"], "cat": "데이터베이스"},
+        {"q": "CHECK 제약 조건은?", "a": "조건 만족 데이터만 허용", "w": ["NULL 허용","중복 허용","삭제"], "cat": "데이터베이스"},
+        {"q": "UNIQUE 제약 조건은?", "a": "중복 방지", "w": ["NULL 금지","삭제","정렬"], "cat": "데이터베이스"},
+
+        {"q": "프로세스 생성 함수는?", "a": "fork()", "w": ["exec()","exit()","wait()"], "cat": "운영체제"},
+        {"q": "exec() 역할은?", "a": "프로그램 교체 실행", "w": ["생성","종료","대기"], "cat": "운영체제"},
+        {"q": "임계구역 문제 해결 조건은?", "a": "상호배제", "w": ["중복 허용","비동기","랜덤"], "cat": "운영체제"},
+        {"q": "뮤텍스 특징은?", "a": "상호배제 락", "w": ["동시 실행","비동기","큐"], "cat": "운영체제"},
+        {"q": "스케줄링 중 RR 특징은?", "a": "순환 할당", "w": ["우선순위 고정","비선점","단일"], "cat": "운영체제"},
+
+        {"q": "라우팅 프로토콜 예는?", "a": "RIP", "w": ["HTTP","FTP","SMTP"], "cat": "네트워크"},
+        {"q": "게이트웨이 역할은?", "a": "네트워크 간 연결", "w": ["증폭","저장","삭제"], "cat": "네트워크"},
+        {"q": "허브 특징은?", "a": "브로드캐스트", "w": ["필터링","라우팅","암호화"], "cat": "네트워크"},
+        {"q": "스위치 특징은?", "a": "MAC 기반 전달", "w": ["IP 기반","암호화","라우팅"], "cat": "네트워크"},
+        {"q": "ICMP 역할은?", "a": "오류 메시지", "w": ["파일 전송","메일","DNS"], "cat": "네트워크"},
+
+        {"q": "삽입 정렬 특징은?", "a": "부분 정렬 활용", "w": ["완전 랜덤","트리","그래프"], "cat": "알고리즘"},
+        {"q": "선택 정렬 특징은?", "a": "최솟값 선택", "w": ["재귀","트리","그래프"], "cat": "알고리즘"},
+        {"q": "병합 정렬 특징은?", "a": "분할 정복", "w": ["그리디","완전탐색","랜덤"], "cat": "알고리즘"},
+        {"q": "힙 정렬 특징은?", "a": "힙 구조 사용", "w": ["리스트","그래프","큐"], "cat": "알고리즘"},
+        {"q": "이진 트리 특징은?", "a": "최대 2개 자식", "w": ["3개","무한","0개"], "cat": "자료구조"},
+
+        {"q": "브리지 패턴은?", "a": "추상과 구현 분리", "w": ["생성","삭제","정렬"], "cat": "디자인패턴"},
+        {"q": "커맨드 패턴은?", "a": "요청 캡슐화", "w": ["삭제","정렬","압축"], "cat": "디자인패턴"},
+        {"q": "템플릿 메서드 패턴은?", "a": "알고리즘 구조 정의", "w": ["삭제","압축","정렬"], "cat": "디자인패턴"},
+
+        {"q": "형상관리 목적은?", "a": "변경 추적", "w": ["삭제","압축","정렬"], "cat": "소프트웨어공학"},
+        {"q": "테스트 종류 중 단위 테스트는?", "a": "모듈 단위", "w": ["시스템","통합","인수"], "cat": "소프트웨어공학"},
+        {"q": "통합 테스트 목적은?", "a": "모듈 간 인터페이스 검증", "w": ["단일","사용자","배포"], "cat": "소프트웨어공학"},
+
+        {"q": "방화벽 역할은?", "a": "접근 제어", "w": ["암호화","저장","삭제"], "cat": "보안"},
+        {"q": "IDS 역할은?", "a": "침입 탐지", "w": ["차단","삭제","압축"], "cat": "보안"},
+        {"q": "IPS 역할은?", "a": "침입 차단", "w": ["탐지","저장","압축"], "cat": "보안"},
+
+        {"q": "쿠키 특징은?", "a": "클라이언트 저장", "w": ["서버 저장","암호화","삭제"], "cat": "웹"},
+        {"q": "세션 특징은?", "a": "서버 저장", "w": ["클라이언트","파일","삭제"], "cat": "웹"},
+        {"q": "AJAX 특징은?", "a": "비동기 통신", "w": ["동기","정적","삭제"], "cat": "웹"}
+    ]
+    
     if 'cbt_q' not in st.session_state:
         q    = random.choice(QUESTION_POOL)
         opts = q['w'] + [q['a']]; random.shuffle(opts)
@@ -1887,6 +1955,189 @@ elif menu == "🎰 럭키 슬롯":
                     st.error("꽝! 다음 기회를 노려보세요!")
 
                 sync_user_data(); time.sleep(2); st.rerun()
+
+# ════════════════════════════════════════════════
+# 🃏 블랙잭 카지노
+# ════════════════════════════════════════════════
+elif menu == "🃏 블랙잭 카지노":
+    st.title("🃏 블랙잭 카지노")
+
+    CARD_VALS = {'A':11,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':10,'Q':10,'K':10}
+    SUITS = ['♠','♥','♦','♣']
+
+    def bj_make_deck():
+        deck = [(r, s) for r in CARD_VALS for s in SUITS] * 6
+        random.shuffle(deck); return deck
+
+    def bj_value(hand):
+        val  = sum(CARD_VALS[r] for r, s in hand)
+        aces = sum(1 for r, s in hand if r == 'A')
+        while val > 21 and aces:
+            val -= 10; aces -= 1
+        return val
+
+    def bj_render(hand, hide_second=False):
+        parts = []
+        for i, (r, s) in enumerate(hand):
+            if i == 1 and hide_second:
+                parts.append("<span style='font-size:2.2rem;background:#222;border:2px solid #555;padding:6px 10px;border-radius:8px;margin:3px;display:inline-block;'>🂠</span>")
+            else:
+                col = "color:#FF4B4B;" if s in ['♥','♦'] else "color:#1a1a1a;"
+                parts.append(f"<span style='font-size:1.5rem;font-weight:900;background:#fff;{col}padding:6px 12px;border-radius:8px;margin:3px;display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,0.4);'>{r}{s}</span>")
+        return " ".join(parts)
+
+    def bj_dealer_play(dealer, deck):
+        while bj_value(dealer) < 17:
+            dealer.append(deck.pop())
+        return dealer, deck
+
+    # 초기화
+    if 'bj_state' not in st.session_state:
+        st.session_state.update({
+            'bj_state': 'betting', 'bj_deck': bj_make_deck(),
+            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 'bj_result': None
+        })
+
+    state = st.session_state.bj_state
+
+    # ── 베팅 화면 ──
+    if state == 'betting':
+        st.markdown(f"""
+        <div style='text-align:center;padding:30px;background:linear-gradient(135deg,rgba(180,0,0,0.15),rgba(0,100,0,0.15));
+             border:2px solid rgba(255,215,0,0.3);border-radius:18px;margin-bottom:24px;'>
+          <div style='font-size:4rem;'>🃏</div>
+          <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#FFD600;margin-top:8px;font-weight:900;'>BLACKJACK</div>
+          <div style='color:#888;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 딜러 16 이하 히트</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        bet = st.number_input("베팅 금액 (원)", min_value=1_000_000, step=1_000_000, value=1_000_000, format="%d", key="bj_bet_input")
+        st.caption(f"💵 베팅 예정: {format_korean_money(bet)} | 잔액: {format_korean_money(st.session_state.global_cash)}")
+        
+        cd_deal = cooldown_remaining("bj_deal", 1.0)
+        if cd_deal > 0:
+            st.warning(f"⏱️ {cd_deal:.1f}초 후 딜 가능")
+        elif st.button("🃏 카드 딜!", use_container_width=True):
+            if st.session_state.global_cash < bet:
+                st.error("잔액 부족!")
+            else:
+                set_cooldown("bj_deal")
+                st.session_state.global_cash -= bet
+                st.session_state.bj_bet = bet
+                deck = st.session_state.bj_deck if len(st.session_state.bj_deck) > 30 else bj_make_deck()
+                player = [deck.pop(), deck.pop()]
+                dealer = [deck.pop(), deck.pop()]
+                st.session_state.bj_player = player
+                st.session_state.bj_dealer = dealer
+                st.session_state.bj_deck   = deck
+                st.session_state.bj_result = None
+                
+                if bj_value(player) == 21:
+                    dl, dk = bj_dealer_play(dealer, deck)
+                    st.session_state.bj_dealer = dl
+                    st.session_state.bj_deck   = dk
+                    st.session_state.bj_state  = 'done'
+                else:
+                    st.session_state.bj_state  = 'playing'
+                sync_user_data()
+                st.rerun()
+
+    # ── 플레이 화면 ──
+    elif state in ['playing', 'done']:
+        player = st.session_state.bj_player
+        dealer = st.session_state.bj_dealer
+        bet    = st.session_state.bj_bet
+        pval   = bj_value(player)
+
+        st.markdown("### 🎩 딜러의 패")
+        if state == 'playing':
+            dv_shown = bj_value([dealer[0]])
+            st.markdown(f"{bj_render(dealer, hide_second=True)}", unsafe_allow_html=True)
+            st.caption(f"딜러 공개 패: {dv_shown}점 + ?")
+        else:
+            dval = bj_value(dealer)
+            dcol = "#FF4B4B" if dval > 21 else "#fff"
+            st.markdown(f"{bj_render(dealer)} <span style='color:{dcol};font-size:1.1rem;font-weight:900;margin-left:12px;'>{dval}점{'  💥BUST' if dval>21 else ''}</span>", unsafe_allow_html=True)
+        st.write("")
+
+        st.markdown("### 🎴 내 패")
+        pcol = "#FF4B4B" if pval > 21 else "#00FF88" if pval == 21 else "#fff"
+        st.markdown(f"{bj_render(player)} <span style='color:{pcol};font-size:1.2rem;font-weight:900;margin-left:12px;'>{pval}점{'  💥BUST' if pval>21 else '  🃏BJ!' if pval==21 and len(player)==2 else ''}</span>", unsafe_allow_html=True)
+        st.write("")
+
+        c_bet, c_pot = st.columns(2)
+        c_bet.metric("💰 베팅", format_korean_money(bet))
+        c_pot.metric("🏆 승리 시 지급", format_korean_money(bet * 2))
+
+        if state == 'playing':
+            st.write("")
+            c1, c2 = st.columns(2)  # 🚨 더블다운 삭제 (에러의 주범이었음)
+            
+            with c1:
+                if st.button("👊 히트 (Hit)", use_container_width=True):
+                    deck = st.session_state.bj_deck
+                    st.session_state.bj_player.append(deck.pop())
+                    st.session_state.bj_deck = deck
+                    new_val = bj_value(st.session_state.bj_player)
+                    if new_val >= 21:
+                        if new_val == 21:
+                            dl, dk = bj_dealer_play(st.session_state.bj_dealer, st.session_state.bj_deck)
+                            st.session_state.bj_dealer = dl
+                            st.session_state.bj_deck   = dk
+                        st.session_state.bj_state = 'done'
+                    st.rerun()
+            with c2:
+                if st.button("🛑 스탠드 (Stand)", use_container_width=True):
+                    dl, dk = bj_dealer_play(st.session_state.bj_dealer, st.session_state.bj_deck)
+                    st.session_state.bj_dealer = dl
+                    st.session_state.bj_deck   = dk
+                    st.session_state.bj_state  = 'done'
+                    st.rerun()
+
+        # ── 결과 화면 ──
+        else:
+            pval_f = bj_value(player)
+            dval_f = bj_value(dealer)
+            bet_f  = st.session_state.bj_bet
+            is_bj  = (pval_f == 21 and len(player) == 2)
+            
+            if pval_f > 21:
+                result, res_col, prize = "💥 버스트! 패배", "#4B9EFF", 0
+            elif dval_f > 21:
+                result, res_col, prize = "🎉 딜러 버스트! 승리!", "#FF4B4B", bet_f * 2
+            elif is_bj and dval_f != 21:
+                result, res_col, prize = "🃏 블랙잭!! 1.5배!", "#FFD600", int(bet_f * 2.5)
+            elif pval_f > dval_f:
+                result, res_col, prize = "🎉 승리!", "#00FF88", bet_f * 2
+            elif pval_f == dval_f:
+                result, res_col, prize = "🤝 푸시 (타이)", "#888888", bet_f
+            else:
+                result, res_col, prize = "😢 패배...", "#4B9EFF", 0
+
+            net = prize - bet_f
+            net_str = f"+{format_korean_money(net)}" if net > 0 else f"-{format_korean_money(abs(net))}" if net < 0 else "베팅금 반환"
+            net_col = "#FF4B4B" if net > 0 else "#4B9EFF" if net < 0 else "#888"
+
+            st.markdown(f"""
+            <div style='text-align:center;background:rgba(0,0,0,0.4);border:2px solid {res_col};
+                 border-radius:18px;padding:28px;margin:20px 0;box-shadow:0 0 30px {res_col}44;'>
+              <div style='font-size:1.8rem;font-weight:900;color:{res_col};'>{result}</div>
+              <div style='font-size:1.3rem;font-weight:900;color:{net_col};margin-top:10px;'>{net_str}</div>
+              <div style='color:#666;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.session_state.bj_result != 'logged':
+                if prize > 0: 
+                    st.session_state.global_cash += prize
+                log_tx(st.session_state.logged_in_user, "블랙잭", result, net)
+                sync_user_data()
+                st.session_state.bj_result = 'logged'
+
+            if st.button("🔄 다시 하기!", use_container_width=True):
+                for k in ['bj_state','bj_player','bj_dealer','bj_bet','bj_result']:
+                    if k in st.session_state: del st.session_state[k]
+                st.rerun()
 
 # =====================================================================
 # ⛏️ 광산 (노가다)
