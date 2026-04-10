@@ -2756,9 +2756,23 @@ elif menu == "🛠️ 창조주 통제소":
         
         # 4. 부동산 마켓 전체 초기화
         st.markdown("### 💣 부동산 마켓 전체 초기화")
-        if st.button("🔄 부동산 마켓 전체 초기화 (경매장 싹쓸이 & 공급량 리셋)", type="secondary"):
+        if st.button("🔄 부동산 마켓 전체 초기화 (경매장 싹쓸이 & 전 유저 몰수 & 공급량 리셋)", type="secondary"):
+            # 1. 마켓 DB 초기화 (경매장 매물, 소유자 통계, 초기 공급량 리셋)
             save_estate_market({"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}})
-            st.success("부동산 마켓 초기화 완료!"); time.sleep(1); st.rerun()
+            
+            # 2. 모든 유저의 개인 부동산 보유 내역 싹쓸이 (users_db 수정)
+            u_db_reset = load_db(USERS_FILE, {})
+            now_time = time.time()
+            for uid_k in u_db_reset:
+                u_db_reset[uid_k]['real_estate'] = {} # 보유 부동산 전부 회수
+                u_db_reset[uid_k]['rent_time'] = now_time # 임대 수익 시간도 초기화
+            save_db(USERS_FILE, u_db_reset)
+            
+            # 3. 현재 접속 중인 창조주(어드민)의 세션 상태도 즉시 동기화
+            st.session_state.real_estate = {}
+            st.session_state.rent_time = now_time
+            
+            st.success("💣 부동산 마켓 및 모든 유저의 보유 부동산이 완벽히 초기화되었습니다!"); time.sleep(1.5); st.rerun()
 
     with t3:
         st.markdown("### 💬 게시판 개별/전체 관리")
