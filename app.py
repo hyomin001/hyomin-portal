@@ -290,6 +290,15 @@ def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
 
 st.set_page_config(page_title="HYOMIN UNIVERSE v18.2", page_icon="🌌", layout="wide")
 
+if 'logged_in_user' in st.session_state:
+    us_check = load_db(USERS_FILE, {})
+    my_uid = st.session_state.logged_in_user
+    if my_uid in us_check:
+        db_cash = us_check[my_uid].get('cash', 0)
+        # 만약 DB에 있는 내 돈이 세션(화면)에 있는 돈보다 많다면? (누가 돈을 보냈거나 당첨됨)
+        if db_cash > st.session_state.global_cash:
+            st.session_state.global_cash = db_cash
+
 # ==============================
 # 🔐 로그인
 # ==============================
@@ -616,8 +625,9 @@ if cur_t - market.get('lotto_last_draw', 0) > 3600:
         if win in us:
             us[win]['cash'] += prize
             save_db(USERS_FILE, us)
-            if win == st.session_state.logged_in_user:
-                st.session_state.global_cash += prize
+            log_tx(win, "로또당첨", f"글로벌 로또 1등 잭팟!!", prize) # 로그 추가
+            # 세션 조작은 제거함. 동기화 로직에서 알아서 처리하도록 함.
+            
         market['news'] = f"🎊 [당첨 확정] {win}님이 {format_korean_money(prize)} 대박 상금을 수령하셨습니다!!"
         market['lotto_pool'] = 5_000_000_000
         market['lotto_tickets'] = {}
