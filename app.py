@@ -903,6 +903,26 @@ elif menu == "📈 주식 트레이딩":
         arr  = "▲" if diff >= 0 else "▼"
         st.markdown(f"<div style='text-align:center;margin:10px 0;'><span style='font-size:1.8rem;font-weight:900;color:#fff;font-family:Orbitron;'>₩{cp:,}</span> <span style='color:{clr};font-weight:900;'>{arr} {abs(pct):.2f}%</span></div>", unsafe_allow_html=True)
 
+       
+        my_info = st.session_state.portfolio.get(sid, {'qty': 0, 'avg_price': 0})
+        my_qty = my_info.get('qty', 0)
+        my_avg = my_info.get('avg_price', 0)
+        
+        if my_qty > 0:
+            my_roi = (cp - my_avg) / my_avg * 100 if my_avg > 0 else 0
+            roi_col = "#FF4B4B" if my_roi > 0 else "#4B9EFF" if my_roi < 0 else "#888"
+            roi_arr = "▲" if my_roi > 0 else "▼" if my_roi < 0 else ""
+            st.markdown(f"""
+            <div style='background:linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border:1px solid rgba(255,255,255,0.1); padding:14px; border-radius:10px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;'>
+                <div><span style='color:#aaa;font-size:0.85rem;'>보유 수량</span><br><b style='color:#fff;font-size:1.1rem;'>{my_qty}주</b></div>
+                <div><span style='color:#aaa;font-size:0.85rem;'>평균 단가</span><br><b style='color:#fff;font-size:1.1rem;'>{format_korean_money(my_avg)}</b></div>
+                <div style='text-align:right;'><span style='color:#aaa;font-size:0.85rem;'>수익률</span><br><b style='color:{roi_col};font-size:1.2rem;'>{roi_arr} {my_roi:+.2f}%</b></div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='background:rgba(255,255,255,0.03); border:1px dashed rgba(255,255,255,0.1); padding:12px; border-radius:10px; margin-bottom:18px; color:#888; text-align:center;'>현재 보유 중인 주식이 없습니다.</div>", unsafe_allow_html=True)
+   
+        
         qty_input = st.number_input("거래 수량 (주)", min_value=1, step=1, value=1)
         cost = qty_input * cp
         st.caption(f"예상 거래금액: {format_korean_money(cost)}")
@@ -1078,10 +1098,28 @@ elif menu == "🪙 코인 거래소":
         cd    = cdata[sel_c]
         cur_p = cd['price']
         
-        my_qty = st.session_state.get('crypto_portfolio', {}).get(sel_c, {}).get('qty', 0)
-        st.metric("보유량",  fmt_crypto_qty(my_qty, sel_c))
+        
+        my_info = st.session_state.get('crypto_portfolio', {}).get(sel_c, {'qty': 0, 'avg_price': 0})
+        my_qty = my_info.get('qty', 0)
+        my_avg = my_info.get('avg_price', 0)
+        
+        if my_qty > 0:
+            my_roi = (cur_p - my_avg) / my_avg * 100 if my_avg > 0 else 0
+            roi_col = "#FF4B4B" if my_roi > 0 else "#4B9EFF" if my_roi < 0 else "#888"
+            roi_arr = "▲" if my_roi > 0 else "▼" if my_roi < 0 else ""
+            st.markdown(f"""
+            <div style='background:linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border:1px solid rgba(255,255,255,0.1); padding:14px; border-radius:10px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;'>
+                <div><span style='color:#aaa;font-size:0.85rem;'>보유량</span><br><b style='color:#fff;font-size:1.1rem;'>{fmt_crypto_qty(my_qty, sel_c)}</b></div>
+                <div><span style='color:#aaa;font-size:0.85rem;'>평균 단가</span><br><b style='color:#fff;font-size:1.1rem;'>{fmt_crypto_price(my_avg)}</b></div>
+                <div style='text-align:right;'><span style='color:#aaa;font-size:0.85rem;'>수익률</span><br><b style='color:{roi_col};font-size:1.2rem;'>{roi_arr} {my_roi:+.2f}%</b></div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='background:rgba(255,255,255,0.03); border:1px dashed rgba(255,255,255,0.1); padding:12px; border-radius:10px; margin-bottom:18px; color:#888; text-align:center;'>현재 보유 중인 코인이 없습니다.</div>", unsafe_allow_html=True)
+        
         
         tab_buy, tab_sell = st.tabs(["🟢 매수", "🔴 매도"])
+        
         with tab_buy:
             current_cash = max(0, int(st.session_state.global_cash))
             JS_MAX_INT = 9007199254740991
