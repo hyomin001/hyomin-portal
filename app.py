@@ -552,12 +552,12 @@ market = get_market()
 cur_t  = time.time()
 m_up   = False
 
-
-if st.session_state.get('last_estate_reset', 0) < market.get('force_estate_reset', 0):
-    st.session_state.real_estate = {}
-    st.session_state.rent_time = time.time()
-    st.session_state.last_estate_reset = market.get('force_estate_reset', 0)
-    sync_user_data()
+if 'logged_in_user' in st.session_state:
+    if st.session_state.get('last_estate_reset', 0) < market.get('force_estate_reset', 0):
+        st.session_state.real_estate = {}
+        st.session_state.rent_time = cur_t
+        st.session_state.last_estate_reset = market.get('force_estate_reset', 0)
+        sync_user_data()
 
 if cur_t - market.get('last_tick', 0) > 10:
     for s in stock_config:
