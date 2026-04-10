@@ -2532,9 +2532,13 @@ elif menu == "🗡️ 전설의 명검 강화":
                         set_cooldown("forge_action")
                         st.session_state.global_cash -= cost
                         
-                        # [추가] 방지권을 사용한다고 체크했다면 인벤토리에서 차감
+                        # [추가/수정] 방지권을 사용한다고 체크했다면 인벤토리에서 차감 (중복 클릭 방어)
                         if use_ticket:
-                            st.session_state.inventory.remove("파괴방지권")
+                            if "파괴방지권" in st.session_state.inventory:
+                                st.session_state.inventory.remove("파괴방지권")
+                            else:
+                                st.error("⚠️ 파괴 방지권이 없습니다! (중복 클릭 감지)")
+                                st.stop() # 에러를 띄우고 강화를 즉시 중단시킴
                         
                         us = load_db(USERS_FILE, {})
                         uid = st.session_state.logged_in_user
