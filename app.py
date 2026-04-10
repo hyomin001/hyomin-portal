@@ -863,20 +863,31 @@ elif menu == "📈 주식 트레이딩":
         st.markdown(f"<table class='stock-table'><thead><tr><th>종목</th><th style='text-align:right;'>현재가</th><th style='text-align:right;'>변동률</th><th style='text-align:right;'>전일가</th></tr></thead><tbody>{rows}</tbody></table>", unsafe_allow_html=True)
 
     with tab_port:
-        p_rows = []; total_eval = 0
+        p_rows = []; total_eval = 0; total_invested = 0
         for sid, info in st.session_state.portfolio.items():
             qty = info.get('qty', 0)
             if qty > 0 and sid in market['stock_data']:
                 cp  = market['stock_data'][sid]['price']
                 ap  = info.get('avg_price', 0)
+                inv = qty * ap; total_invested += inv
                 ev  = qty * cp; total_eval += ev
+                pnl = ev - inv
                 roi = (cp - ap) / ap * 100 if ap > 0 else 0
-                p_rows.append({"종목": market['stock_data'][sid]['name'], "수량": f"{qty}주",
-                                "평균단가": f"₩{int(ap):,}", "평가액": f"₩{int(ev):,}",
-                                "수익률": f"{roi:+.2f}%"})
+                p_rows.append({
+                    "종목": market['stock_data'][sid]['name'], 
+                    "수량": f"{qty}주",
+                    "평균단가": f"₩{int(ap):,}", 
+                    "현재가": f"₩{int(cp):,}",
+                    "평가액": f"₩{int(ev):,}",
+                    "평가손익": f"₩{int(pnl):,}",
+                    "수익률": f"{roi:+.2f}%"
+                })
         if p_rows:
             st.table(pd.DataFrame(p_rows))
-            st.metric("📊 주식 총 평가액", format_korean_money(total_eval))
+            c1, c2, c3 = st.columns(3)
+            c1.metric("💰 총 매수금액", format_korean_money(total_invested))
+            c2.metric("📊 총 평가액", format_korean_money(total_eval))
+            c3.metric("📈 총 평가손익", format_korean_money(total_eval - total_invested))
         else:
             st.info("보유 중인 주식이 없습니다.")
 
@@ -1063,24 +1074,37 @@ elif menu == "🪙 코인 거래소":
         st.markdown(rows_html, unsafe_allow_html=True)
         
     with tab_port:
-        cp = st.session_state.get('crypto_portfolio', {})
-        total_val = 0
-        if not cp:
+        cp_dict = st.session_state.get('crypto_portfolio', {})
+        total_eval = 0; total_invested = 0
+        if not cp_dict:
             st.info("보유 중인 코인이 없습니다.")
         else:
             rows = []
-            for cid, info in cp.items():
+            for cid, info in cp_dict.items():
                 qty = info.get('qty', 0)
                 if qty <= 0 or cid not in cdata: continue
                 cur_p  = cdata[cid]['price']
                 avg_p  = info.get('avg_price', 0)
-                ev     = qty * cur_p; total_val += ev
+                inv = qty * avg_p; total_invested += inv
+                ev     = qty * cur_p; total_eval += ev
+                pnl = ev - inv
                 roi    = (cur_p - avg_p) / avg_p * 100 if avg_p > 0 else 0
-                rows.append({"코인": f"{cdata[cid]['name']}", "보유량": fmt_crypto_qty(qty, cid), "평균단가": fmt_crypto_price(avg_p), "평가액": format_korean_money(int(ev)), "수익률": f"{roi:+.2f}%"})
+                rows.append({
+                    "코인": f"{cdata[cid]['name']}", 
+                    "보유량": fmt_crypto_qty(qty, cid), 
+                    "평균단가": fmt_crypto_price(avg_p), 
+                    "현재가": fmt_crypto_price(cur_p),
+                    "평가액": format_korean_money(int(ev)), 
+                    "평가손익": format_korean_money(int(pnl)),
+                    "수익률": f"{roi:+.2f}%"
+                })
             if rows:
                 st.table(pd.DataFrame(rows))
-                st.metric("🪙 코인 총 평가액", format_korean_money(int(total_val)))
-
+                c1, c2, c3 = st.columns(3)
+                c1.metric("💰 총 매수금액", format_korean_money(int(total_invested)))
+                c2.metric("🪙 총 평가액", format_korean_money(int(total_eval)))
+                c3.metric("📈 총 평가손익", format_korean_money(int(total_eval - total_invested)))
+                
     with tab_trade:
         if 'selected_coin' not in st.session_state:
             st.session_state.selected_coin = CRYPTO_CONFIG[0]['id']
