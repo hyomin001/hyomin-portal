@@ -188,7 +188,11 @@ def get_estate_initial_listings(em):
         owned_total = sum(v.get(eid, 0) for v in em["owner_counts"].values())
         listed_count = sum(1 for l in em["listings"] if l["eid"] == eid)
         initial_released = owned_total + listed_count
-        remaining_initial = max(0, info["total_supply"] - initial_released)
+        
+        
+        current_limit = em.get("initial_stock", {}).get(eid, info["total_supply"])
+        remaining_initial = max(0, current_limit - initial_released)
+        
         if remaining_initial > 0:
             result.append({"eid": eid, "remaining": remaining_initial, "price": info["base_price"], "is_initial": True})
     return result
