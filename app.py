@@ -2477,17 +2477,34 @@ elif menu == "🗡️ 전설의 명검 강화":
         cost = next_info['cost']
         rate = next_info['rate'] * 100
         
+        # [추가] 내 인벤토리에서 파괴 방지권 개수 확인
+        ticket_count = st.session_state.inventory.count("파괴방지권")
+        
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f"#### 🛠️ 강화 정보 (+{u_lv+1} 도전)")
             st.write(f"- **강화 비용:** {format_korean_money(cost)}")
             st.write(f"- **성공 확률:** {rate}%")
-            if u_lv >= 9: # 10강 도전부터
+            
+            if u_lv >= 9:
                 st.markdown("<b style='color:#FF4B4B;'>⚠️ 경고: 실패 시 무기가 무조건 파괴됩니다!</b>", unsafe_allow_html=True)
-            elif u_lv >= 4: # 5~9강 도전
+            elif u_lv >= 4:
                 st.markdown("<b style='color:#FF8800;'>⚠️ 경고: 실패 시 50% 확률로 무기가 파괴됩니다!</b>", unsafe_allow_html=True)
-            else: # 1~4강 도전
+            else:
                 st.markdown("<span style='color:#00FF88;'>안전 강화 구간입니다. 실패해도 레벨이 유지됩니다.</span>", unsafe_allow_html=True)
+            
+            # [추가] 파괴 방지권 구매 UI
+            st.markdown("---")
+            st.markdown(f"**🎟️ 내 파괴 방지권:** {ticket_count}개")
+            if st.button("🎟️ 파괴 방지권 구매 (500억원)", key="buy_ticket", use_container_width=True):
+                if st.session_state.global_cash >= 50_000_000_000:  # 500억으로 수정
+                    st.session_state.global_cash -= 50_000_000_000  # 500억으로 수정
+                    st.session_state.inventory.append("파괴방지권")
+                    sync_user_data()
+                    st.success("✅ 파괴 방지권 구매 완료!")
+                    time.sleep(1); st.rerun()
+                else:
+                    st.error("잔액이 부족합니다.")
                 
         with c2:
             st.markdown("#### 🎯 선택")
@@ -2496,9 +2513,15 @@ elif menu == "🗡️ 전설의 명검 강화":
             
             if u_lv == 0:
                 btn_label = f"🪵 목검 구매하기 ({format_korean_money(cost)})"
+                use_ticket = False
             else:
                 btn_label = f"🔨 강화하기! ({format_korean_money(cost)})"
-                
+                # [추가] 5강 이상부터만 방지권 사용 체크박스 활성화
+                if u_lv >= 4:
+                    use_ticket = st.checkbox("🛡️ 파괴 방지권 사용", disabled=(ticket_count == 0))
+                else:
+                    use_ticket = False
+                    
             if cd_forge > 0:
                 st.warning(f"⏱️ 망치질 쿨다운... {cd_forge:.1f}초")
             else:
@@ -2508,6 +2531,10 @@ elif menu == "🗡️ 전설의 명검 강화":
                     else:
                         set_cooldown("forge_action")
                         st.session_state.global_cash -= cost
+                        
+                        # [추가] 방지권을 사용한다고 체크했다면 인벤토리에서 차감
+                        if use_ticket:
+                            st.session_state.inventory.remove("파괴방지권")
                         
                         us = load_db(USERS_FILE, {})
                         uid = st.session_state.logged_in_user
@@ -2535,35 +2562,40 @@ elif menu == "🗡️ 전설의 명검 강화":
                             st.success(f"✨ 강화 성공!! [{next_info['name']}]을(를) 획득했습니다!")
                             time.sleep(1); st.rerun()
                         else:
-                            # 🎲 파괴 여부 판정
-                            is_destroyed = False
-                            if u_lv >= 9:       # 10강 이상 도전 시 100% 파괴
-                                is_destroyed = True 
-                            elif u_lv >= 4:     # 5~9강 도전 시 50% 파괴
-                                is_destroyed = random.random() < 0.5 
-                            
-                            if is_destroyed:
-                                st.session_state.weapon_level = 0
-                                log_tx(uid, "강화", f"+{u_lv+1} 강화 파괴됨", -cost)
+                            # [추가] 방지권을 사용했다면 무조건 무기 보호
+                            if use_ticket:
+                                log_tx(uid, "강화", f"+{u_lv+1} 강화 실패 (방지권 사용)", -cost)
                                 sync_user_data()
-                                if u_lv >= 9:
-                                    market['news'] = f"💥 [단독] {uid}님의 {w_info['name']}이(가) 산산조각 났습니다..."
-                                    save_market(market)
-                                st.error("💥 쿠장창! 무기가 처참하게 파괴되었습니다...")
-                                st.snow()
+                                st.info("🛡️ 파괴 방지권이 빛을 발하며 무기를 보호했습니다! (수치 유지)")
                                 time.sleep(1.5); st.rerun()
                             else:
-                                if u_lv >= 4:
-                                    # 5~9강 도전 중 50% 확률로 파괴를 모면한 경우
-                                    log_tx(uid, "강화", f"+{u_lv+1} 강화 실패 (파괴 모면)", -cost)
+                                # 기존 로직 (방지권 미사용 시)
+                                is_destroyed = False
+                                if u_lv >= 9:
+                                    is_destroyed = True 
+                                elif u_lv >= 4:
+                                    is_destroyed = random.random() < 0.5 
+                                
+                                if is_destroyed:
+                                    st.session_state.weapon_level = 0
+                                    log_tx(uid, "강화", f"+{u_lv+1} 강화 파괴됨", -cost)
                                     sync_user_data()
-                                    st.warning("💦 휴... 강화에 실패했지만, 기적적으로 무기가 파괴되지 않았습니다!")
+                                    if u_lv >= 9:
+                                        market['news'] = f"💥 [단독] {uid}님의 {w_info['name']}이(가) 산산조각 났습니다..."
+                                        save_market(market)
+                                    st.error("💥 쿠장창! 무기가 처참하게 파괴되었습니다...")
+                                    st.snow()
+                                    time.sleep(1.5); st.rerun()
                                 else:
-                                    # 안전 구간 실패
-                                    log_tx(uid, "강화", f"+{u_lv+1} 강화 실패", -cost)
-                                    sync_user_data()
-                                    st.warning("💦 앗... 강화에 실패했습니다. (무기는 무사합니다)")
-                                time.sleep(1.5); st.rerun()
+                                    if u_lv >= 4:
+                                        log_tx(uid, "강화", f"+{u_lv+1} 강화 실패 (파괴 모면)", -cost)
+                                        sync_user_data()
+                                        st.warning("💦 휴... 강화에 실패했지만, 기적적으로 무기가 파괴되지 않았습니다!")
+                                    else:
+                                        log_tx(uid, "강화", f"+{u_lv+1} 강화 실패", -cost)
+                                        sync_user_data()
+                                        st.warning("💦 앗... 강화에 실패했습니다. (무기는 무사합니다)")
+                                    time.sleep(1.5); st.rerun()
                                 
             if u_lv > 0:
                 if st.button(f"💰 무기 판매 (익절): {format_korean_money(w_info['sell'])}", use_container_width=True, type="secondary"):
