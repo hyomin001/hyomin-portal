@@ -658,6 +658,7 @@ menu_ops = [
     "⚽ 구단주 시뮬레이터",
     "💻 정처기 CBT",
     "🏎️ 하이퍼카 레이싱",
+    "🛠️ 커스텀 튜닝 차고지",
     "🎰 럭키 슬롯",
     "🃏 블랙잭 카지노",     
     "⛏️ 광산 (노가다)",
@@ -2612,14 +2613,171 @@ elif menu == "🗡️ 전설의 명검 강화":
                     time.sleep(1); st.rerun()
 
 # =====================================================================
+# 🛠️ 커스텀 튜닝 차고지
+# =====================================================================
+elif menu == "🛠️ 커스텀 튜닝 차고지":
+    st.title("🛠️ 커스텀 튜닝 차고지")
+    st.markdown("<div style='color:#888;margin-bottom:16px;'>가벼운 박스카부터 시작해 우주 최고의 하이퍼카로 개조하세요! 튜닝 중 돌발 사고에 주의하십시오.</div>", unsafe_allow_html=True)
+
+    uid = st.session_state.logged_in_user
+    us = load_db(USERS_FILE, {})
+    my_data = us.get(uid, {})
+
+    if 'garage' not in my_data:
+        my_data['garage'] = {
+            "owned": False, "tier": 0, "engine_lv": 0, "suspension_lv": 0, "bumper_lv": 0, "needs_repair": False
+        }
+
+    garage = my_data['garage']
+
+    CAR_TIERS = [
+        {"tier": 0, "name": "2021년형 컴팩트 박스카", "emoji": "🚙", "color": "#A0A0A0"},
+        {"tier": 1, "name": "터보차저 스포츠 세단", "emoji": "🚗", "color": "#00E5FF"},
+        {"tier": 2, "name": "V12 럭셔리 하이퍼카", "emoji": "🏎️", "color": "#FFD600"},
+        {"tier": 3, "name": "🌌 우주 뚫은 은하철도", "emoji": "🚀", "color": "#FF00FF"}
+    ]
+
+    if not garage['owned']:
+        st.info("🚗 아직 소유한 차량이 없습니다. 첫 차를 뽑아보세요!")
+        # 출고가 100억으로 인상
+        if st.button("🚙 2021년형 박스카 출고 (100억원)", use_container_width=True):
+            if st.session_state.global_cash >= 10_000_000_000:
+                st.session_state.global_cash -= 10_000_000_000
+                garage['owned'] = True
+                my_data['garage'] = garage
+                us[uid] = my_data
+                save_db(USERS_FILE, us)
+                sync_user_data()
+                log_tx(uid, "차량구매", "첫 차 출고", -10_000_000_000)
+                st.success("🎉 첫 차 출고 완료! 이제 튜닝을 시작해 보세요.")
+                time.sleep(1); st.rerun()
+            else:
+                st.error("잔액이 부족합니다.")
+    else:
+        cur_tier = CAR_TIERS[garage['tier']]
+        total_lv = garage['engine_lv'] + garage['suspension_lv'] + garage['bumper_lv']
+
+        st.markdown(f"""
+        <div style='text-align:center; padding:30px; background:linear-gradient(135deg, rgba(20,20,20,0.8), rgba(40,40,60,0.9)); border:2px solid {cur_tier['color']}; border-radius:15px; box-shadow:0 0 20px {cur_tier['color']}44;'>
+            <div style='font-size:5rem; margin-bottom:10px;'>{cur_tier['emoji']}</div>
+            <div style='font-size:1.8rem; font-weight:900; color:{cur_tier['color']};'>{cur_tier['name']}</div>
+            <div style='color:#aaa; margin-top:15px; font-size:1rem;'>현재 총합 튜닝 레벨: <b style='color:#FFD600;'>Lv.{total_lv}</b> / 15</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.write("---")
+
+        if garage['needs_repair']:
+            st.error("🚨 앗! 튜닝 후 시운전 중 후방 추돌 사고가 발생했습니다!")
+            st.markdown("### 💥 뒷범퍼 및 백판넬 심각한 파손")
+            st.caption("차량이 파손된 상태에서는 어떠한 튜닝도 진행할 수 없습니다. 서둘러 부품 도색과 교체 작업을 진행해야 합니다.")
+            
+            # 수리비: 티어별로 87억 -> 870억 -> 8700억 (악랄한 배수 적용)
+            repair_cost = 8_700_000_000 * (10 ** garage['tier']) 
+
+            if st.button(f"🛠️ 눈물을 머금고 수리하기 ({format_korean_money(repair_cost)})", use_container_width=True):
+                if st.session_state.global_cash >= repair_cost:
+                    st.session_state.global_cash -= repair_cost
+                    garage['needs_repair'] = False
+                    my_data['garage'] = garage
+                    us[uid] = my_data
+                    save_db(USERS_FILE, us)
+                    sync_user_data()
+                    log_tx(uid, "차량수리", f"뒷범퍼/백판넬 판금 및 교체", -repair_cost)
+                    st.success("✨ 수리가 완료되었습니다. 다음부터는 안전 운전 하세요... ㅠㅠ")
+                    time.sleep(1.5); st.rerun()
+                else:
+                    st.error("수리비가 부족합니다! (대출을 받거나 광산에 다녀오세요)")
+        else:
+            st.markdown("### 🔧 파츠 튜닝샵")
+            st.caption("각 파츠가 5레벨에 도달하면 다음 등급의 차량으로 승급(풀체인지) 할 수 있습니다.")
+
+            def tune_part(part_key, part_name):
+                current_lv = garage[part_key]
+                current_tier = garage['tier']
+                if current_lv >= 5:
+                    st.success(f"✅ {part_name} 파츠는 이미 최고 레벨(MAX)입니다!")
+                    return
+
+                # 튜닝 비용: (현재레벨+1) * 100억 * (10^현재티어)
+                # Tier 0: 100억~500억 / Tier 1: 1000억~5000억 / Tier 2: 1조~5조
+                tier_mult = 10 ** current_tier
+                cost = (current_lv + 1) * 10_000_000_000 * tier_mult 
+                prob = max(0.15, 0.8 - (current_lv * 0.15) - (current_tier * 0.1))
+
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown(f"**{part_name}** (현재 Lv.{current_lv} / 최대 Lv.5) <br> <span style='color:#888;font-size:0.8rem;'>비용: {format_korean_money(cost)} | 성공률: {prob*100:.0f}%</span>", unsafe_allow_html=True)
+                with col2:
+                    if st.button("🔨 강화", key=f"tune_{part_key}", use_container_width=True):
+                        if st.session_state.global_cash < cost:
+                            st.error("잔액 부족!")
+                        else:
+                            st.session_state.global_cash -= cost
+                            
+                            if random.random() < prob:
+                                garage[part_key] += 1
+                                log_tx(uid, "튜닝", f"{part_name} 튜닝 성공 (+{current_lv+1})", -cost)
+                                st.success(f"✨ {part_name} 튜닝 성공!! 출력이 상승합니다.")
+                            else:
+                                if random.random() < 0.20:
+                                    garage['needs_repair'] = True
+                                    st.error("💥 쾅!! 튜닝 중 차량이 미끄러져 벽을 들이받았습니다!")
+                                    log_tx(uid, "튜닝", f"{part_name} 대실패 (사고발생)", -cost)
+                                else:
+                                    log_tx(uid, "튜닝", f"{part_name} 튜닝 실패", -cost)
+                                    st.warning("💦 부품이 맞지 않아 튜닝에 실패했습니다. (파손은 없습니다)")
+
+                            my_data['garage'] = garage
+                            us[uid] = my_data
+                            save_db(USERS_FILE, us)
+                            sync_user_data()
+                            time.sleep(1.5); st.rerun()
+
+            tune_part("engine_lv", "🔥 하이퍼 V엔진 스왑")
+            tune_part("suspension_lv", "🧲 에어 서스펜션 조정")
+            tune_part("bumper_lv", "🛡️ 카본 에어로 다이내믹 뒷범퍼")
+
+            st.write("---")
+            if garage['engine_lv'] >= 5 and garage['suspension_lv'] >= 5 and garage['bumper_lv'] >= 5:
+                if garage['tier'] < len(CAR_TIERS) - 1:
+                    st.info("모든 파츠가 최대 레벨에 도달했습니다! 다음 등급으로 승급하세요.")
+                    
+                    # 승급 비용: 5000억 -> 1.5조 -> 3조
+                    upgrade_costs = [500_000_000_000, 1_500_000_000_000, 3_000_000_000_000]
+                    up_cost = upgrade_costs[garage['tier']]
+                    
+                    if st.button(f"🚀 차량 풀체인지 승급하기! ({format_korean_money(up_cost)})", use_container_width=True):
+                        if st.session_state.global_cash >= up_cost:
+                            st.session_state.global_cash -= up_cost
+                            garage['tier'] += 1
+                            garage['engine_lv'] = 0
+                            garage['suspension_lv'] = 0
+                            garage['bumper_lv'] = 0
+                            my_data['garage'] = garage
+                            us[uid] = my_data
+                            save_db(USERS_FILE, us)
+                            sync_user_data()
+                            log_tx(uid, "차량승급", f"{CAR_TIERS[garage['tier']]['name']} 승급", -up_cost)
+                            market['news'] = f"🏎️ [차고지 핫이슈] {uid}님이 드디어 {CAR_TIERS[garage['tier']]['name']} 오너가 되셨습니다!!"
+                            save_market(market)
+                            st.balloons()
+                            st.success(f"🎉 승급 완료! {CAR_TIERS[garage['tier']]['name']}의 키를 손에 넣었습니다!")
+                            time.sleep(2.5); st.rerun()
+                        else:
+                            st.error("승급 비용이 부족합니다!")
+                else:
+                    st.success("🌟 튜닝의 끝판왕! 현재 우주 최고의 차량을 소유하고 있습니다!")
+
+# =====================================================================
 # 🛠️ 창조주 통제소
 # =====================================================================
 elif menu == "🛠️ 창조주 통제소":
     st.title("🛠️ 창조주 통제소")
     st.markdown("<div style='color:#FF4B4B;font-size:0.85rem;margin-bottom:10px;'>⚠️ 창조주 전용 패널입니다. 이곳의 모든 조작은 우주(서버) 전체에 즉시 반영됩니다.</div>", unsafe_allow_html=True)
 
-    t1, t2, t3, t4, t5, t6, t7 = st.tabs([
-        "👤 유저 개조", "🏢 부동산 통제", "💬 게시판 관리", "🌍 글로벌 정책", "📈 시장 조작", "📊 전체 현황", "👁️ 전지적 모니터링"
+    t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs([
+        "👤 유저 개조", "🏢 부동산 통제", "💬 게시판 관리", "🌍 글로벌 정책", "📈 시장 조작", "📊 전체 현황", "👁️ 전지적 모니터링", "🏎️ 차고지 조작"
     ])
 
     with t1:
@@ -2986,3 +3144,57 @@ elif menu == "🛠️ 창조주 통제소":
                     <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
                 </div>
                 """, unsafe_allow_html=True)
+    with t8:
+        st.markdown("### 🏎️ 유저 차량 강제 개조 및 통제")
+        st.caption("특정 유저의 차량을 압수하거나, 강제로 사고를 내서 수리비를 물게 할 수 있습니다.")
+
+        u_db_car = load_db(USERS_FILE, {})
+        uid_list_car = [u for u in u_db_car.keys() if u != "admin"]
+
+        if uid_list_car:
+            car_target = st.selectbox("조작할 대상 유저", uid_list_car, key="car_target_u")
+            target_garage = u_db_car[car_target].get('garage', {"owned": False})
+
+            if not target_garage.get('owned', False):
+                st.info(f"{car_target} 유저는 아직 차량을 소유하고 있지 않습니다.")
+                if st.button("🚀 우주 끝판왕 하이퍼카 꽂아주기", use_container_width=True):
+                    u_db_car[car_target]['garage'] = {
+                        "owned": True, "tier": 3, "engine_lv": 5, "suspension_lv": 5, "bumper_lv": 5, "needs_repair": False
+                    }
+                    save_db(USERS_FILE, u_db_car)
+                    st.success(f"✅ {car_target}님에게 풀튜닝 우주선을 하사했습니다!")
+                    time.sleep(1); st.rerun()
+            else:
+                c_car1, c_car2 = st.columns(2)
+                with c_car1:
+                    st.markdown(f"**현재 등급:** Tier {target_garage['tier']}")
+                    st.markdown(f"**튜닝 레벨:** 엔진({target_garage['engine_lv']}) / 서스({target_garage['suspension_lv']}) / 범퍼({target_garage['bumper_lv']})")
+                    st.markdown(f"**사고(파손) 상태:** {'🚨 파손됨 (수리필요)' if target_garage.get('needs_repair') else '✅ 정상'}")
+
+                with c_car2:
+                    # 유저 티어에 맞는 수리비 계산하여 버튼에 표시
+                    admin_repair_cost = 8_700_000_000 * (10 ** target_garage['tier'])
+                    
+                    if st.button(f"💥 강제 후방 추돌 사고 발생 (수리비 {format_korean_money(admin_repair_cost)} 청구)", use_container_width=True):
+                        u_db_car[car_target]['garage']['needs_repair'] = True
+                        save_db(USERS_FILE, u_db_car)
+                        market['news'] = f"🚨 [교통사고] {car_target}님의 차량이 누군가의 테러로 대파되었습니다!"
+                        save_market(market)
+                        st.success(f"✅ {car_target}님의 차량 뒷범퍼를 박살냈습니다!")
+                        time.sleep(1.5); st.rerun()
+
+                    if st.button("🔧 파손 상태 무상 수리 (창조주의 은혜)", use_container_width=True):
+                        u_db_car[car_target]['garage']['needs_repair'] = False
+                        save_db(USERS_FILE, u_db_car)
+                        st.success(f"✅ {car_target}님의 차량을 무상으로 고쳐주었습니다!")
+                        time.sleep(1); st.rerun()
+
+                    if st.button("🗑️ 차량 강제 폐차 (고철로 만들기)", use_container_width=True, type="secondary"):
+                        u_db_car[car_target]['garage'] = {"owned": False, "tier": 0, "engine_lv": 0, "suspension_lv": 0, "bumper_lv": 0, "needs_repair": False}
+                        save_db(USERS_FILE, u_db_car)
+                        st.success(f"✅ {car_target}님의 차량을 강제 폐차시켰습니다. 다시 뚜벅이로 돌아갑니다.")
+                        time.sleep(1.5); st.rerun()
+        else:
+            st.info("관리할 유저가 없습니다.")
+
+
