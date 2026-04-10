@@ -2456,8 +2456,7 @@ elif menu == "📅 일일 퀘스트":
 # =====================================================================
 elif menu == "🗡️ 전설의 명검 강화":
     st.title("🗡️ 전설의 명검 강화소")
-    st.markdown("<div style='color:#888;margin-bottom:16px;'>당신의 운과 욕망을 시험하세요. <b>+5강 이상부터 실패 시 무기가 파괴</b>됩니다.</div>", unsafe_allow_html=True)
-
+    st.markdown("<div style='color:#888;margin-bottom:16px;'>당신의 운과 욕망을 시험하세요. <b>+5~+9강은 실패 시 50% 확률로 파괴, +10강부터는 확정 파괴</b>됩니다.</div>", unsafe_allow_html=True)
     u_lv = st.session_state.get('weapon_level', 0)
     w_info = FORGE_DATA[u_lv]
     
@@ -2483,9 +2482,11 @@ elif menu == "🗡️ 전설의 명검 강화":
             st.markdown(f"#### 🛠️ 강화 정보 (+{u_lv+1} 도전)")
             st.write(f"- **강화 비용:** {format_korean_money(cost)}")
             st.write(f"- **성공 확률:** {rate}%")
-            if u_lv >= 4:
-                st.markdown("<b style='color:#FF4B4B;'>⚠️ 경고: 실패 시 무기가 영구 파괴됩니다!</b>", unsafe_allow_html=True)
-            else:
+            if u_lv >= 9: # 10강 도전부터
+                st.markdown("<b style='color:#FF4B4B;'>⚠️ 경고: 실패 시 무기가 무조건 파괴됩니다!</b>", unsafe_allow_html=True)
+            elif u_lv >= 4: # 5~9강 도전
+                st.markdown("<b style='color:#FF8800;'>⚠️ 경고: 실패 시 50% 확률로 무기가 파괴됩니다!</b>", unsafe_allow_html=True)
+            else: # 1~4강 도전
                 st.markdown("<span style='color:#00FF88;'>안전 강화 구간입니다. 실패해도 레벨이 유지됩니다.</span>", unsafe_allow_html=True)
                 
         with c2:
@@ -2534,7 +2535,14 @@ elif menu == "🗡️ 전설의 명검 강화":
                             st.success(f"✨ 강화 성공!! [{next_info['name']}]을(를) 획득했습니다!")
                             time.sleep(1); st.rerun()
                         else:
-                            if u_lv >= 4:
+                            # 🎲 파괴 여부 판정
+                            is_destroyed = False
+                            if u_lv >= 9:       # 10강 이상 도전 시 100% 파괴
+                                is_destroyed = True 
+                            elif u_lv >= 4:     # 5~9강 도전 시 50% 파괴
+                                is_destroyed = random.random() < 0.5 
+                            
+                            if is_destroyed:
                                 st.session_state.weapon_level = 0
                                 log_tx(uid, "강화", f"+{u_lv+1} 강화 파괴됨", -cost)
                                 sync_user_data()
@@ -2545,10 +2553,17 @@ elif menu == "🗡️ 전설의 명검 강화":
                                 st.snow()
                                 time.sleep(1.5); st.rerun()
                             else:
-                                log_tx(uid, "강화", f"+{u_lv+1} 강화 실패", -cost)
-                                sync_user_data()
-                                st.warning("💦 앗... 강화에 실패했습니다. (무기는 무사합니다)")
-                                time.sleep(1); st.rerun()
+                                if u_lv >= 4:
+                                    # 5~9강 도전 중 50% 확률로 파괴를 모면한 경우
+                                    log_tx(uid, "강화", f"+{u_lv+1} 강화 실패 (파괴 모면)", -cost)
+                                    sync_user_data()
+                                    st.warning("💦 휴... 강화에 실패했지만, 기적적으로 무기가 파괴되지 않았습니다!")
+                                else:
+                                    # 안전 구간 실패
+                                    log_tx(uid, "강화", f"+{u_lv+1} 강화 실패", -cost)
+                                    sync_user_data()
+                                    st.warning("💦 앗... 강화에 실패했습니다. (무기는 무사합니다)")
+                                time.sleep(1.5); st.rerun()
                                 
             if u_lv > 0:
                 if st.button(f"💰 무기 판매 (익절): {format_korean_money(w_info['sell'])}", use_container_width=True, type="secondary"):
