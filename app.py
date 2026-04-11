@@ -1048,7 +1048,6 @@ elif menu == "📈 주식 트레이딩":
             st.warning("⚠️ 오늘 풀매수/풀매도 횟수를 모두 사용했습니다. 내일 자정에 초기화됩니다.")
 
     if st.session_state.current_page == "📈 주식 트레이딩":
-        time.sleep(5)
         st.rerun()
         
 
@@ -1245,7 +1244,7 @@ elif menu == "🏢 부동산 거래소":
 
     pass_s = int(now - st.session_state.rent_time)
     pass_s = max(0, min(pass_s, 86400))
-    # 여기서부터 새로 추가하는 코드야!
+    
     if pass_s >= 86400:
         st.session_state.rent_time = now - 86400
         sync_user_data()
@@ -2195,7 +2194,7 @@ elif menu == "🃏 블랙잭 카지노":
                 st.session_state.bj_player = player
                 st.session_state.bj_dealer = dealer
                 st.session_state.bj_deck   = deck
-                st.session_state.bj_result = None
+                
                 
                 if bj_value(player) == 21:
                     dl, dk = bj_dealer_play(dealer, deck)
@@ -2700,8 +2699,10 @@ elif menu == "🗡️ 전설의 명검 강화":
                         
                         if is_cursed:
                             success = False
-                            us[uid]['cursed_forge'] = False
-                            save_db(USERS_FILE, us)
+                            users_fresh = load_db(USERS_FILE, {})
+                            users_fresh[uid]['cursed_forge'] = False
+                            users_fresh[uid]['cash'] = st.session_state.global_cash  # ← cash도 같이 저장
+                            save_db(USERS_FILE, users_fresh)
                             st.toast("💀 누군가의 불길한 기운이 개입했습니다...", icon="💀")
                             time.sleep(1)
 
