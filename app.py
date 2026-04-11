@@ -1492,7 +1492,7 @@ elif menu == "🏢 부동산 거래소":
                 market['news'] = f"🏢 [{uid}] {sel_info['name']} {format_korean_money(sell_price)}에 매물 등록!"
                 save_market(market)
                 st.success(f"✅ {sel_info['name']} 판매 등록 완료! 구매자 대기 중...")
-                 st.rerun()
+                st.rerun()
 
         st.write("---")
         st.markdown("### 🗂️ 내 등록 매물 관리")
