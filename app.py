@@ -10,7 +10,7 @@ import tempfile
 import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
-ADMIN_PW = os.environ.get("ADMIN_PW", "****")
+ADMIN_PW = "5891"
 
 # ==============================
 # 🕒 서버 시간 강제 세팅 (KST)
