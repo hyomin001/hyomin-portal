@@ -2863,20 +2863,18 @@ elif menu == "🗡️ 전설의 명검 강화":
                                         st.warning("💦 앗... 강화에 실패했습니다. (무기는 무사합니다)")
                                     time.sleep(1.5); st.rerun()
 
-            if u_lv > 0:
-        st.write("---")
-        if st.button(f"💰 무기 판매 (익절): {format_korean_money(w_info['sell'])}", use_container_width=True, type="secondary"):
-            sell_amt = w_info['sell']
-            st.session_state.global_cash += sell_amt
-            st.session_state.weapon_level = 0
-            log_tx(st.session_state.logged_in_user, "무기판매", f"{w_info['name']} 판매", sell_amt)
-            sync_user_data()
-            st.success(f"✅ 무기를 팔아 {format_korean_money(sell_amt)}을 얻었습니다. 다시 목검부터 시작합니다!")
-            
-            if u_lv >= 13:
-                claim_hidden_title("sell_high_weapon", "👑 [유일무이] 낭만 합격")
-                
-            st.rerun()
+        if u_lv > 0:
+            st.write("---")
+            if st.button(f"💰 무기 판매 (익절): {format_korean_money(w_info['sell'])}", use_container_width=True, type="secondary"):
+                sell_amt = w_info['sell']
+                st.session_state.global_cash += sell_amt
+                st.session_state.weapon_level = 0
+                log_tx(st.session_state.logged_in_user, "무기판매", f"{w_info['name']} 판매", sell_amt)
+                sync_user_data()
+                st.success(f"✅ 무기를 팔아 {format_korean_money(sell_amt)}을 얻었습니다. 다시 목검부터 시작합니다!")
+                if u_lv >= 13:
+                    claim_hidden_title("sell_high_weapon", "👑 [유일무이] 낭만 합격")
+                    st.rerun()
                                 
             if u_lv > 0:
                 if st.button(f"💰 무기 판매 (익절): {format_korean_money(w_info['sell'])}", use_container_width=True, type="secondary"):
