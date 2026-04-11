@@ -279,6 +279,39 @@ def get_market():
     return d
 
 def save_market(data): save_db(MARKET_FILE, data)
+def claim_hidden_title(title_id, title_name):
+    uid = st.session_state.logged_in_user
+    market = get_market()
+    
+    # 히든 칭호 발급 기록 DB 초기화
+    if "hidden_titles" not in market:
+        market["hidden_titles"] = {}
+        
+    # 아직 아무도 이 칭호를 먹지 않았다면?
+    if title_id not in market["hidden_titles"]:
+        market["hidden_titles"][title_id] = uid
+        
+        # 1. 유저 인벤토리에 추가하고 즉시 장착
+        us = load_db(USERS_FILE, {})
+        if uid in us:
+            if title_name not in us[uid].get('inventory', []):
+                us[uid].setdefault('inventory', []).append(title_name)
+            us[uid]['equipped_title'] = title_name
+            save_db(USERS_FILE, us)
+        
+        # 2. 현재 세션 즉시 업데이트
+        st.session_state.equipped_title = title_name
+        if title_name not in st.session_state.inventory:
+            st.session_state.inventory.append(title_name)
+            
+        # 3. 글로벌 뉴스 전파 (모두가 보게 만듦)
+        market['news'] = f"👑 [서버 최초 달성] {uid}님이 전설적인 칭호 '{title_name}'을(를) 거머쥐었습니다!!"
+        save_market(market)
+        
+        st.toast(f"🎉 서버 최초! [{title_name}] 칭호를 획득했습니다!", icon="👑")
+        st.balloons()
+        return True
+    return False
 
 def set_cooldown(key: str):
     st.session_state[f"_cd_{key}"] = time.time()
@@ -1202,6 +1235,8 @@ elif menu == "🪙 코인 거래소":
                         log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} 매수", -int(buy_won))
                         sync_user_data()
                         st.success("✅ 매수 완료!")
+                        if sel_c == "HYO" and buy_won >= 1_000_000_000_000_000:
+                            claim_hidden_title("pepe_all_in", "👑 [유일무이] 상남자특_김효민_믿음")
                         time.sleep(1)
                         st.rerun()
                     
@@ -1335,6 +1370,9 @@ elif menu == "🏢 부동산 거래소":
                             save_estate_market(em2)
                             log_tx(uid, "부동산매입", f"{info['name']} 신규 매입", -info['base_price'])
                             sync_user_data()
+                            owned_types = sum(1 for e, c in st.session_state.real_estate.items() if c > 0)
+                            if owned_types == len(estate_config):
+                                claim_hidden_title("real_estate_monopoly", "👑 [유일무이] 진짜 부루마불 우승자")
                             st.success(f"✅ {info['name']} 매입 완료!")
                             st.rerun()
                         else:
@@ -1411,6 +1449,9 @@ elif menu == "🏢 부동산 거래소":
                                 sync_user_data()
                                 market['news'] = f"🏢 [{uid}] {info['name']} 유저 매물 구매 완료!"
                                 save_market(market)
+                                owned_types = sum(1 for e, c in st.session_state.real_estate.items() if c > 0)
+                                if owned_types == len(estate_config):
+                                    claim_hidden_title("real_estate_monopoly", "👑 [유일무이] 진짜 부루마불 우승자")
                                 st.success(f"✅ {info['name']} 구매 완료! {format_korean_money(target['price'])}")
                                 st.rerun()
                             else:
@@ -1581,6 +1622,8 @@ elif menu == "🏦 은행 (대출/송금)":
                     log_tx(target, "송금수신", f"{st.session_state.logged_in_user}에게서 수신", amt)
                     sync_user_data()
                     st.success(f"✅ {target}님께 {format_korean_money(amt)} 송금 완료!")
+                    if amt >= 10_000_000_000:
+                        claim_hidden_title("first_donate_10b", "👑 [유일무이] 자선사업가")
             
 
     with tab_loan:
@@ -1608,6 +1651,8 @@ elif menu == "🏦 은행 (대출/송금)":
                     log_tx(st.session_state.logged_in_user, "대출", f"대출 실행 (수수료 {format_korean_money(fee)} 공제)", actual_receive)
                     sync_user_data()
                     st.success(f"✅ {format_korean_money(l_amt)} 대출 완료! (수수료 공제 후 {format_korean_money(actual_receive)} 입금)")
+                    if st.session_state.loan >= 100_000_000_000_000:
+                        claim_hidden_title("first_loan_100b", "👑 [유일무이] 갚아도 갚아도 끝이 없는 인생")
                     st.rerun()
                 elif l_amt > avail_loan:
                     st.error("대출 한도를 초과했습니다!")
@@ -1636,6 +1681,8 @@ elif menu == "🏦 은행 (대출/송금)":
                     st.success(f"✅ {format_korean_money(actual)} 상환 완료. 잔여 대출: {format_korean_money(st.session_state.loan)}")
                 log_tx(st.session_state.logged_in_user, "대출상환", "대출 상환", -actual)
                 sync_user_data();  
+                if st.session_state.global_cash == 0 and actual > 0:
+                    claim_hidden_title("perfect_zero_cash", "👑 [유일무이] 완벽한 무소유")
                 st.rerun()
             else:
                 st.error("잔액 부족 또는 상환 금액 오류")
@@ -2037,6 +2084,8 @@ elif menu == "🏎️ 하이퍼카 레이싱":
                 st.session_state.global_cash += prize
                 log_tx(st.session_state.logged_in_user, "레이싱", f"{selected_car['name']} 승리", prize - bet_amt)
                 st.success(f"🎉 베팅 성공! +{format_korean_money(prize)}"); st.balloons()
+                if selected_car['odds'] >= 20.0:
+                    claim_hidden_title("first_bugatti", "👑 [유일무이] 레이싱 붉은 혜성")
             else:
                 log_tx(st.session_state.logged_in_user, "레이싱", f"{selected_car['name']} 패배", -bet_amt)
                 st.error(f"😢 아쉽습니다. {winner}이(가) 우승했습니다.")
@@ -2100,6 +2149,8 @@ elif menu == "🎰 럭키 슬롯":
                 if final[0] == final[1] == final[2] == "💎":
                     prize = tier['jackpot']
                     st.session_state.global_cash += prize
+                    if sel_tier == 0: 
+                        claim_hidden_title("first_slot_jackpot", "👑 [유일무이] 기적을 부르는 유저")
                     log_tx(st.session_state.logged_in_user, "슬롯", "슬롯 잭팟!!!", prize)
                     st.success(f"💎💎💎 JACKPOT!!! +{format_korean_money(prize)}"); st.balloons()
                     market['news'] = f"🎊 [슬롯 잭팟] {st.session_state.logged_in_user}님이 {format_korean_money(prize)} 잭팟!!"
@@ -2361,6 +2412,8 @@ elif menu == "⛏️ 광산 (노가다)":
             log_tx(st.session_state.logged_in_user, "광산", f"{result['name']} 채굴", result['value'])
             sync_user_data()
             if result['name'] in ["다이아몬드", "전설의 원석"]:
+                if result['name'] == "전설의 원석":
+                    claim_hidden_title("first_legendary_ore", "👑 [유일무이] 럭키가이")
                 st.balloons()
                 st.success(f"✨ {result['icon']} **{result['name']}** 발견!! +{format_korean_money(result['value'])}")
                 market['news'] = f"⛏️ [{st.session_state.logged_in_user}] 광산에서 {result['name']} 채굴 대박!"
@@ -2818,6 +2871,10 @@ elif menu == "🗡️ 전설의 명검 강화":
                     log_tx(st.session_state.logged_in_user, "무기판매", f"{w_info['name']} 판매", sell_amt)
                     sync_user_data()
                     st.success(f"✅ 무기를 팔아 {format_korean_money(sell_amt)}을 얻었습니다. 다시 목검부터 시작합니다!")
+                    if u_lv >= 13:
+                        claim_hidden_title("sell_high_weapon", "👑 [유일무이] 낭만 합격")
+                        
+                    
                     st.rerun()
 
 # =====================================================================
@@ -2948,6 +3005,8 @@ elif menu == "🛠️ 커스텀 튜닝 차고지":
                                     garage['cars'][active_t][part_key] += 1
                                     log_tx(uid, "튜닝", f"{part_name} 성공 (+{current_lv+1})", -cost)
                                     st.success(f"✨ {part_name} 튜닝 성공!!")
+                                    if active_t == "0" and garage['cars'][active_t]['engine_lv'] == 5 and garage['cars'][active_t]['suspension_lv'] == 5 and garage['cars'][active_t]['bumper_lv'] == 5:
+                                        claim_hidden_title("first_tier0_max", "👑 [유일무이] 똥차계의 람보르기니")
                                 else:
                                     if random.random() < 0.20:
                                         garage['cars'][active_t]['needs_repair'] = True
