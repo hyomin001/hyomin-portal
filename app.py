@@ -1083,6 +1083,7 @@ elif menu == "📈 주식 트레이딩":
             st.warning("⚠️ 오늘 풀매수/풀매도 횟수를 모두 사용했습니다. 내일 자정에 초기화됩니다.")
 
     if st.session_state.current_page == "📈 주식 트레이딩":
+        time.sleep(3)
         st.rerun()
         
 
@@ -2219,7 +2220,7 @@ elif menu == "🃏 블랙잭 카지노":
     if 'bj_state' not in st.session_state:
         st.session_state.update({
             'bj_state': 'betting', 'bj_deck': bj_make_deck(),
-            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 'bj_result': 'logged' 
+            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 'bj_result': 'pending'
         })
 
     state = st.session_state.bj_state
