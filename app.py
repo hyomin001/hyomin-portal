@@ -237,6 +237,7 @@ def sync_user_data():
         'weapon_level':   st.session_state.get('weapon_level', 0), 
         'bulk_trade_date':  st.session_state.get('bulk_trade_date', ''),
         'bulk_trade_count': st.session_state.get('bulk_trade_count', 0),
+        'last_estate_reset': st.session_state.get('last_estate_reset', 0),
     })
     save_db(USERS_FILE, users)
 
@@ -391,6 +392,7 @@ if 'logged_in_user' not in st.session_state:
                         'weapon_level':   u.get('weapon_level', 0), 
                         'bulk_trade_date':  u.get('bulk_trade_date', ''),
                         'bulk_trade_count': u.get('bulk_trade_count', 0),
+                        'last_estate_reset': u.get('last_estate_reset', 0),
                     })
                     st.rerun()
                 if l_id == "admin" and l_pw == ADMIN_PW:
@@ -1441,6 +1443,13 @@ elif menu == "🏢 부동산 거래소":
                                     if seller not in em3["owner_counts"]:
                                         em3["owner_counts"][seller] = {}
                                     em3["owner_counts"][seller][eid] = max(0, em3["owner_counts"][seller].get(eid, 0) - 1)
+                                    
+                                    # 판매자 개인 보유 부동산 목록에서도 빼주기 (복사 버그 방지)
+                                    if 'real_estate' in us[seller] and eid in us[seller]['real_estate']:
+                                        us[seller]['real_estate'][eid] = max(0, us[seller]['real_estate'][eid] - 1)
+                                        if us[seller]['real_estate'][eid] <= 0:
+                                            del us[seller]['real_estate'][eid]
+                                            
                                     save_db(USERS_FILE, us)
                                     log_tx(seller, "부동산판매", f"{info['name']} 판매 완료", target["price"])
                                 em3["listings"] = [x for x in em3["listings"] if x["id"] != li["id"]]
