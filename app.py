@@ -10,6 +10,7 @@ import tempfile
 import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
+ADMIN_PW = os.environ.get("ADMIN_PW", "****")
 
 # ==============================
 # 🕒 서버 시간 강제 세팅 (KST)
@@ -234,6 +235,8 @@ def sync_user_data():
         'crypto_portfolio': st.session_state.get('crypto_portfolio', {}),
         'daily_quests':     st.session_state.get('daily_quests', {}),
         'weapon_level':   st.session_state.get('weapon_level', 0), 
+        'bulk_trade_date':  st.session_state.get('bulk_trade_date', ''),
+        'bulk_trade_count': st.session_state.get('bulk_trade_count', 0),
     })
     save_db(USERS_FILE, users)
 
@@ -276,10 +279,6 @@ def get_market():
     return d
 
 def save_market(data): save_db(MARKET_FILE, data)
-
-def can_action(key: str, cooldown_sec: float = 2.0) -> bool:
-    last = st.session_state.get(f"_cd_{key}", 0)
-    return (time.time() - last) >= cooldown_sec
 
 def set_cooldown(key: str):
     st.session_state[f"_cd_{key}"] = time.time()
@@ -357,9 +356,11 @@ if 'logged_in_user' not in st.session_state:
                         'crypto_portfolio': u.get('crypto_portfolio', {}),
                         'daily_quests':     u.get('daily_quests', {}),
                         'weapon_level':   u.get('weapon_level', 0), 
+                        'bulk_trade_date':  u.get('bulk_trade_date', ''),
+                        'bulk_trade_count': u.get('bulk_trade_count', 0),
                     })
                     st.rerun()
-                if l_id == "admin" and l_pw == "1234":
+                if l_id == "admin" and l_pw == ADMIN_PW:
                     if "admin" not in users:
                         users["admin"] = {"pw":"1234","cash":999_999_999_999,"inventory":[],
                                          "equipped_title":"👑 절대신 창조주","portfolio":{},
@@ -637,7 +638,7 @@ if cur_t - market.get('lotto_last_draw', 0) > 3600:
 if m_up: save_market(market)
 
 if st.session_state.loan > 0:
-    MAX_CYC = 360  
+    MAX_CYC = 8640   # ← 360을 8640으로 바꿨어!
     cyc = min(int((cur_t - st.session_state.loan_time) / 10), MAX_CYC)
     if cyc > 0:
         st.session_state.loan = int(st.session_state.loan * (1.02 ** cyc))
@@ -1014,14 +1015,14 @@ elif menu == "📈 주식 트레이딩":
                 if trade_rem <= 0:
                     set_cooldown(f"trade_{sid}")
                     if _safe_buy(qty_input, cp, sid):
-                        sync_user_data(); st.success(f"✅ {qty_input}주 매수 완료!"); time.sleep(1); st.rerun()
+                        sync_user_data(); st.success(f"✅ {qty_input}주 매수 완료!"); st.rerun()
 
         with c3:
             if st.button(f"🔴 {qty_input}주 매도", use_container_width=True, disabled=trade_rem > 0):
                 if trade_rem <= 0:
                     set_cooldown(f"trade_{sid}")
                     if _safe_sell(qty_input, cp, sid):
-                        sync_user_data(); st.success(f"✅ {qty_input}주 매도!"); time.sleep(1); st.rerun()
+                        sync_user_data(); st.success(f"✅ {qty_input}주 매도!"); st.rerun()
 
         with c4:
             bulk_ok2 = (bulk_rem <= 0) and (bulk_left > 0)
@@ -1212,6 +1213,7 @@ elif menu == "🪙 코인 거래소":
                 if st.button(f"🔴 매도하기", use_container_width=True):
                     cp = st.session_state.get('crypto_portfolio', {})
                     actual_qty = cp.get(sel_c, {}).get('qty', 0)
+                    sell_qty = min(sell_qty, actual_qty)
                     if actual_qty < sell_qty - 1e-10:
                         st.error(f"⚠️ 보유량 부족! 현재 {actual_qty:.6f}개만 보유 중입니다.")
                     else:
@@ -1238,6 +1240,10 @@ elif menu == "🏢 부동산 거래소":
 
     pass_s = int(now - st.session_state.rent_time)
     pass_s = min(pass_s, 86400)  # ← 최대 24시간치만 누적 (밸런스 보호)
+    # 여기서부터 새로 추가하는 코드야!
+    if pass_s >= 86400:
+        st.session_state.rent_time = now - 86400
+        sync_user_data()
     total_income_rate = sum(
         estate_config[eid]['income'] * cnt
         for eid, cnt in st.session_state.real_estate.items() if eid in estate_config
@@ -1390,7 +1396,7 @@ elif menu == "🏢 부동산 거래소":
                                     us[seller]['cash'] += target["price"]
                                     if seller not in em3["owner_counts"]:
                                         em3["owner_counts"][seller] = {}
-                                    em3["owner_counts"][seller][eid] = max(0, em3["owner_counts"][seller].get(eid, 1) - 1)
+                                    em3["owner_counts"][seller][eid] = max(0, em3["owner_counts"][seller].get(eid, 0) - 1)
                                     save_db(USERS_FILE, us)
                                     log_tx(seller, "부동산판매", f"{info['name']} 판매 완료", target["price"])
                                 em3["listings"] = [x for x in em3["listings"] if x["id"] != li["id"]]
@@ -1615,7 +1621,8 @@ elif menu == "🏦 은행 (대출/송금)":
                 else:
                     st.success(f"✅ {format_korean_money(actual)} 상환 완료. 잔여 대출: {format_korean_money(st.session_state.loan)}")
                 log_tx(st.session_state.logged_in_user, "대출상환", "대출 상환", -actual)
-                sync_user_data(); time.sleep(1); st.rerun()
+                sync_user_data();  
+                st.rerun()
             else:
                 st.error("잔액 부족 또는 상환 금액 오류")
 
@@ -1664,7 +1671,7 @@ elif menu == "⚔️ 글로벌 로또":
                 log_tx(st.session_state.logged_in_user, "로또", f"로또 {b_cnt}장 구매", -cost)
                 sync_user_data()
                 st.success(f"✅ {b_cnt}장 구매 완료!")
-                time.sleep(1); st.rerun()
+                st.rerun()
         else:
             st.error("잔액 부족!")
 
@@ -2108,7 +2115,7 @@ elif menu == "🃏 블랙잭 카지노":
     SUITS = ['♠','♥','♦','♣']
 
     def bj_make_deck():
-        deck = [(r, s) for r in CARD_VALS for s in SUITS] * 6
+        deck = [(rank, suit) for rank in CARD_VALS for suit in SUITS] * 6
         random.shuffle(deck); return deck
 
     def bj_value(hand):
@@ -2270,11 +2277,13 @@ elif menu == "🃏 블랙잭 카지노":
             """, unsafe_allow_html=True)
 
             if st.session_state.bj_result != 'logged':
-                st.session_state.bj_result = 'logged'  # ← 맨 먼저 플래그 세팅 (리렌더링 전에)
+                st.session_state.bj_result = 'logged'  
+                sync_user_data()                       
+                
                 if prize > 0:
                     st.session_state.global_cash += prize
                     log_tx(st.session_state.logged_in_user, "블랙잭", result, net)
-                    sync_user_data()
+                    sync_user_data()                     
 
             if st.button("🔄 다시 하기!", use_container_width=True):
                 for k in ['bj_state','bj_player','bj_dealer','bj_bet','bj_result']:
@@ -2634,7 +2643,7 @@ elif menu == "🗡️ 전설의 명검 강화":
                     st.session_state.inventory.append("파괴방지권")
                     sync_user_data()
                     st.success("✅ 파괴 방지권 구매 완료!")
-                    time.sleep(1); st.rerun()
+                    st.rerun()
                 else:
                     st.error("잔액이 부족합니다.")
                 
@@ -2696,7 +2705,7 @@ elif menu == "🗡️ 전설의 명검 강화":
                                 save_market(market)
                                 
                             st.success(f"✨ 강화 성공!! [{next_info['name']}]을(를) 획득했습니다!")
-                            time.sleep(1); st.rerun()
+                            st.rerun()
                         else:
                             # [추가] 방지권을 사용했다면 무조건 무기 보호
                             if use_ticket:
@@ -2741,7 +2750,7 @@ elif menu == "🗡️ 전설의 명검 강화":
                     log_tx(st.session_state.logged_in_user, "무기판매", f"{w_info['name']} 판매", sell_amt)
                     sync_user_data()
                     st.success(f"✅ 무기를 팔아 {format_korean_money(sell_amt)}을 얻었습니다. 다시 목검부터 시작합니다!")
-                    time.sleep(1); st.rerun()
+                    st.rerun()
 
 # =====================================================================
 # 🛠️ 커스텀 튜닝 차고지 (대리점 및 멀티 차고지 시스템)
@@ -3007,12 +3016,12 @@ elif menu == "🛠️ 창조주 통제소":
                 u_db[sel_u]['cash'] = final_cash
                 u_db[sel_u]['loan'] = final_loan
                 u_db[sel_u]['equipped_title'] = new_title
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u} 유저 조작 완료!"); time.sleep(1); st.rerun()
+                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u} 유저 조작 완료!"); st.rerun()
             
             if c_btn2.button("🕊️ 신용 대사면 (빚 전액 탕감)", use_container_width=True):
                 u_db[sel_u]['loan'] = 0
                 if u_db[sel_u]['equipped_title'] == "💸 신용불량자": u_db[sel_u]['equipped_title'] = "🌱 신규시민"
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u} 유저의 빚을 모두 탕감했습니다!"); time.sleep(1); st.rerun()
+                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u} 유저의 빚을 모두 탕감했습니다!"); st.rerun()
 
             if c_btn3.button("🗑️ 해당 유저 계정 삭제", use_container_width=True, type="secondary"):
                 del u_db[sel_u]; save_db(USERS_FILE, u_db); st.rerun()
@@ -3023,15 +3032,15 @@ elif menu == "🛠️ 창조주 통제소":
             
             if c_w1.button("👑 신의 망치 (+15강 투척)", use_container_width=True):
                 u_db[sel_u]['weapon_level'] = 15
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}에게 엑스칼리버를 하사했습니다!"); time.sleep(1); st.rerun()
+                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}에게 엑스칼리버를 하사했습니다!"); st.rerun()
                 
             if c_w2.button("💀 파괴의 저주 (다음 강화 무조건 파괴)", use_container_width=True):
                 u_db[sel_u]['cursed_forge'] = True
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}의 무기에 저주를 내렸습니다!"); time.sleep(1); st.rerun()
+                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}의 무기에 저주를 내렸습니다!"); st.rerun()
                 
             if c_w3.button("🔨 무기 강제 압수 (0강으로)", use_container_width=True):
                 u_db[sel_u]['weapon_level'] = 0
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}의 무기를 분쇄했습니다!"); time.sleep(1); st.rerun()
+                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}의 무기를 분쇄했습니다!"); st.rerun()
 
         else:
             st.info("관리할 유저가 없습니다.")
@@ -3082,7 +3091,7 @@ elif menu == "🛠️ 창조주 통제소":
                     market['news'] = f"🏗️ [운영사 공지] {estate_config[sup_eid]['name']} 신규 분양 물량이 {sup_mod}개 추가되었습니다!"
                     save_market(market)
                     st.success("물량 추가 완료!")
-                    time.sleep(1); st.rerun()
+                    st.rerun()
             with col_b:
                 if st.button("➖ 줄이기", use_container_width=True):
                     new_limit = max(initial_released, current_limit - sup_mod)
@@ -3090,7 +3099,7 @@ elif menu == "🛠️ 창조주 통제소":
                     em_admin["initial_stock"] = initial_stock_data
                     save_estate_market(em_admin)
                     st.success("물량 축소 완료!")
-                    time.sleep(1); st.rerun()
+                    st.rerun()
 
         st.write("---")
 
@@ -3176,7 +3185,7 @@ elif menu == "🛠️ 창조주 통제소":
         c1, c2 = st.columns([4, 1])
         c1.write(f"총 {len(all_c)}개의 게시물이 있습니다.")
         if c2.button("💣 게시판 전체 초기화", use_container_width=True):
-            save_db(COMMENTS_FILE, []); st.success("초기화 완료!"); time.sleep(1); st.rerun()
+            save_db(COMMENTS_FILE, []); st.success("초기화 완료!"); st.rerun()
             
         st.write("---")
         if not all_c:
@@ -3369,7 +3378,7 @@ elif menu == "🛠️ 창조주 통제소":
                     }
                     save_db(USERS_FILE, u_db_car)
                     st.success(f"✅ {car_target}님에게 풀튜닝 우주선을 하사했습니다!")
-                    time.sleep(1); st.rerun()
+                    st.rerun()
             else:
                 owned_tiers = list(garage_cars.keys())
                 sel_view_t  = st.selectbox(
@@ -3400,7 +3409,7 @@ elif menu == "🛠️ 창조주 통제소":
                         u_db_car[car_target]['garage']['cars'][sel_view_t]['needs_repair'] = False
                         save_db(USERS_FILE, u_db_car)
                         st.success(f"✅ {car_target}님의 차량을 무상으로 고쳐주었습니다!")
-                        time.sleep(1); st.rerun()
+                        st.rerun()
 
                     if st.button("🗑️ 선택 차량 강제 폐차 (고철로 만들기)", use_container_width=True, type="secondary"):
                         del u_db_car[car_target]['garage']['cars'][sel_view_t]
