@@ -1220,13 +1220,11 @@ elif menu == "🪙 코인 거래소":
                     if actual_qty <= 1e-10:
                         st.error(f"⚠️ 보유량이 없습니다!")
                     else:
-                        sell_qty = min(sell_qty, actual_qty)  
-                    
-                    else:
                         sell_qty = min(sell_qty, actual_qty)
                         cp[sel_c]['qty'] -= sell_qty
                         if cp[sel_c]['qty'] < 1e-10:
                             del cp[sel_c]
+                    
                         st.session_state.crypto_portfolio = cp
                         st.session_state.global_cash += int(sell_won)
                         log_tx(st.session_state.logged_in_user, "코인매도", f"{cd['name']} 매도", int(sell_won))
@@ -1273,7 +1271,7 @@ elif menu == "🏢 부동산 거래소":
             st.warning(f"⏱️ 수금 쿨다운 {cd_rent:.1f}초")
         elif st.button("💰 임대 수익 수금하기", use_container_width=True):
             set_cooldown("rent_collect")
-            if pending > 0
+            if pending > 0:
                 st.session_state.global_cash += int(pending)
                 st.session_state.rent_time = now
                 sync_user_data()
