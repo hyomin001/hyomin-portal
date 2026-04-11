@@ -1244,7 +1244,7 @@ elif menu == "🏢 부동산 거래소":
     now = time.time()
 
     pass_s = int(now - st.session_state.rent_time)
-    pass_s = min(pass_s, 86400)  # ← 최대 24시간치만 누적 (밸런스 보호)
+    pass_s = max(0, min(pass_s, 86400))
     # 여기서부터 새로 추가하는 코드야!
     if pass_s >= 86400:
         st.session_state.rent_time = now - 86400
@@ -2160,7 +2160,7 @@ elif menu == "🃏 블랙잭 카지노":
     if 'bj_state' not in st.session_state:
         st.session_state.update({
             'bj_state': 'betting', 'bj_deck': bj_make_deck(),
-            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 'bj_result': None
+            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 'bj_result': 'logged' 
         })
 
     state = st.session_state.bj_state
@@ -2681,27 +2681,26 @@ elif menu == "🗡️ 전설의 명검 강화":
                 st.warning(f"⏱️ 망치질 쿨다운... {cd_forge:.1f}초")
             else:
                 if st.button(btn_label, use_container_width=True):
-                        if st.session_state.global_cash < cost:
-                            st.error("잔액이 부족합니다!")
-                        # ↓ 돈 차감 전에 방지권 먼저 확인!
-                        elif use_ticket and "파괴방지권" not in st.session_state.inventory:
-                            st.error("⚠️ 파괴 방지권이 없습니다! (중복 클릭 감지)")
-                        else:
-                            set_cooldown("forge_action")
-                            st.session_state.global_cash -= cost
-                            
-                            if use_ticket:
-                                st.session_state.inventory.remove("파괴방지권")
+                    if st.session_state.global_cash < cost:
+                        st.error("잔액이 부족합니다!")
+                    elif use_ticket and "파괴방지권" not in st.session_state.inventory:
+                        st.error("⚠️ 파괴 방지권이 없습니다! (중복 클릭 감지)")
+                    else:
+                        set_cooldown("forge_action")
+                        st.session_state.global_cash -= cost
                         
-                        us = load_db(USERS_FILE, {})
+                        if use_ticket:
+                            st.session_state.inventory.remove("파괴방지권")
+                        
+                        us = load_db(USERS_FILE, {})          # ✅ 이제 버튼 안으로 이동!
                         uid = st.session_state.logged_in_user
                         is_cursed = us.get(uid, {}).get('cursed_forge', False)
                         
-                        success = random.random() < next_info['rate']
+                        success = random.random() < next_info['rate']  # ✅ 이것도 버튼 안으로!
                         
                         if is_cursed:
                             success = False
-                            us[uid]['cursed_forge'] = False 
+                            us[uid]['cursed_forge'] = False
                             save_db(USERS_FILE, us)
                             st.toast("💀 누군가의 불길한 기운이 개입했습니다...", icon="💀")
                             time.sleep(1)
@@ -2719,19 +2718,17 @@ elif menu == "🗡️ 전설의 명검 강화":
                             st.success(f"✨ 강화 성공!! [{next_info['name']}]을(를) 획득했습니다!")
                             st.rerun()
                         else:
-                            # [추가] 방지권을 사용했다면 무조건 무기 보호
                             if use_ticket:
                                 log_tx(uid, "강화", f"+{u_lv+1} 강화 실패 (방지권 사용)", -cost)
                                 sync_user_data()
                                 st.info("🛡️ 파괴 방지권이 빛을 발하며 무기를 보호했습니다! (수치 유지)")
                                 st.rerun()
                             else:
-                                # 기존 로직 (방지권 미사용 시)
                                 is_destroyed = False
                                 if u_lv >= 9:
-                                    is_destroyed = True 
+                                    is_destroyed = True
                                 elif u_lv >= 4:
-                                    is_destroyed = random.random() < 0.5 
+                                    is_destroyed = random.random() < 0.5
                                 
                                 if is_destroyed:
                                     st.session_state.weapon_level = 0
