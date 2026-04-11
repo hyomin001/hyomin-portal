@@ -1270,7 +1270,7 @@ elif menu == "🏢 부동산 거래소":
                 log_tx(uid, "부동산수금", "임대 수익 수금", int(pending))
                 sync_user_data()
                 st.success(f"✅ {format_korean_money(pending)} 수금 완료!")
-                time.sleep(0.8); st.rerun()
+                st.rerun()
 
     st.write("---")
 
@@ -1330,7 +1330,7 @@ elif menu == "🏢 부동산 거래소":
                             log_tx(uid, "부동산매입", f"{info['name']} 신규 매입", -info['base_price'])
                             sync_user_data()
                             st.success(f"✅ {info['name']} 매입 완료!")
-                            time.sleep(0.8); st.rerun()
+                            st.rerun()
                         else:
                             st.error("잔액 부족!")
 
@@ -1406,7 +1406,7 @@ elif menu == "🏢 부동산 거래소":
                                 market['news'] = f"🏢 [{uid}] {info['name']} 유저 매물 구매 완료!"
                                 save_market(market)
                                 st.success(f"✅ {info['name']} 구매 완료! {format_korean_money(target['price'])}")
-                                time.sleep(0.8); st.rerun()
+                                st.rerun()
                             else:
                                 st.error("잔액 부족!")
 
@@ -1492,7 +1492,7 @@ elif menu == "🏢 부동산 거래소":
                 market['news'] = f"🏢 [{uid}] {sel_info['name']} {format_korean_money(sell_price)}에 매물 등록!"
                 save_market(market)
                 st.success(f"✅ {sel_info['name']} 판매 등록 완료! 구매자 대기 중...")
-                time.sleep(0.8); st.rerun()
+                 st.rerun()
 
         st.write("---")
         st.markdown("### 🗂️ 내 등록 매물 관리")
@@ -1525,7 +1525,7 @@ elif menu == "🏢 부동산 거래소":
                         em_fresh["listings"] = [x for x in em_fresh["listings"] if x["id"] != li["id"]]
                         save_estate_market(em_fresh)
                         st.success("매물 등록 취소 완료!")
-                        time.sleep(0.5); st.rerun()
+                         st.rerun()
 
 # =====================================================================
 # 🏦 은행 (대출/송금)
@@ -1594,7 +1594,7 @@ elif menu == "🏦 은행 (대출/송금)":
                     log_tx(st.session_state.logged_in_user, "대출", f"대출 실행 (수수료 {format_korean_money(fee)} 공제)", actual_receive)
                     sync_user_data()
                     st.success(f"✅ {format_korean_money(l_amt)} 대출 완료! (수수료 공제 후 {format_korean_money(actual_receive)} 입금)")
-                    time.sleep(1.5); st.rerun()
+                    st.rerun()
                 elif l_amt > avail_loan:
                     st.error("대출 한도를 초과했습니다!")
         else:
@@ -1685,7 +1685,7 @@ elif menu == "⚔️ 글로벌 로또":
             st.markdown(f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);'><span style='color:#ddd;'>{uid_l}{me_mark}</span><span style='color:#FF00FF;font-weight:900;'>{cnt}장 ({pct:.1f}%)</span></div>", unsafe_allow_html=True)
 
     if st.session_state.current_page == "⚔️ 글로벌 로또":
-        time.sleep(5); st.rerun()
+        st.rerun()
 
 # =====================================================================
 # ⚽ 구단주 시뮬레이터
@@ -1790,7 +1790,7 @@ elif menu == "⚽ 구단주 시뮬레이터":
             log_tx(st.session_state.logged_in_user, "축구베팅", f"구단주 경기 보상", reward)
             sync_user_data()
             st.info(f"💰 경기 보상: +{format_korean_money(reward)}")
-            time.sleep(3); st.rerun()
+            st.rerun()
 
 # =====================================================================
 # 💻 정처기 CBT
@@ -1913,7 +1913,7 @@ elif menu == "💻 정처기 CBT":
             else:
                 st.error(f"❌ 오답! 정답: {q['a']}")
             del st.session_state.cbt_q, st.session_state.cbt_opts
-            sync_user_data(); time.sleep(2.5); st.rerun()
+            sync_user_data(); st.rerun()
 
     if st.button("🔄 다른 문제", use_container_width=True):
         for k in ['cbt_q', 'cbt_opts']:
@@ -2033,7 +2033,7 @@ elif menu == "🏎️ 하이퍼카 레이싱":
                     save_db(USERS_FILE, u_db)
                     st.error("🚨 쾅!! 무리한 주행으로 인해 내 차량이 대파되었습니다! 차고지에서 수리해야 합니다.")
 
-            sync_user_data(); time.sleep(3); st.rerun()
+            sync_user_data(); st.rerun()
 
 # =====================================================================
 # 🎰 럭키 슬롯
@@ -2712,7 +2712,7 @@ elif menu == "🗡️ 전설의 명검 강화":
                                 log_tx(uid, "강화", f"+{u_lv+1} 강화 실패 (방지권 사용)", -cost)
                                 sync_user_data()
                                 st.info("🛡️ 파괴 방지권이 빛을 발하며 무기를 보호했습니다! (수치 유지)")
-                                time.sleep(1.5); st.rerun()
+                                st.rerun()
                             else:
                                 # 기존 로직 (방지권 미사용 시)
                                 is_destroyed = False
@@ -2730,7 +2730,7 @@ elif menu == "🗡️ 전설의 명검 강화":
                                         save_market(market)
                                     st.error("💥 쿠장창! 무기가 처참하게 파괴되었습니다...")
                                     st.snow()
-                                    time.sleep(1.5); st.rerun()
+                                    st.rerun()
                                 else:
                                     if u_lv >= 4:
                                         log_tx(uid, "강화", f"+{u_lv+1} 강화 실패 (파괴 모면)", -cost)
