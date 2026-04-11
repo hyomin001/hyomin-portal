@@ -2516,15 +2516,24 @@ elif menu == "🏅 랭킹 & 게시판":
             w_name = FORGE_DATA[w_lv]['name'] if w_lv in FORGE_DATA else "없음"
             if w_lv > 0: w += FORGE_DATA[w_lv]['sell']
             
-            # 4. 차량 정보 추출 (출전 중인 메인 차량 및 튜닝 레벨)
+            # 4. 차량 정보 추출 (✨ 구버전 & 신버전 DB 완벽 호환)
             garage = udata.get('garage', {})
-            active_t = garage.get('active_tier', None)
-            if active_t is not None and str(active_t) in car_tier_map:
-                car_info = garage.get('cars', {}).get(str(active_t), {})
-                tot_lv = car_info.get('engine_lv', 0) + car_info.get('suspension_lv', 0) + car_info.get('bumper_lv', 0)
-                car_str = f"{car_tier_map[str(active_t)]} (+{tot_lv}강)"
-            else:
-                car_str = "뚜벅이 (차량 없음)"
+            car_str = "뚜벅이 (차량 없음)"
+            
+            # [신버전] 멀티 차고지 시스템 데이터
+            if 'active_tier' in garage and garage['active_tier'] is not None:
+                active_t = str(garage['active_tier'])
+                car_info = garage.get('cars', {}).get(active_t, {})
+                if active_t in car_tier_map:
+                    tot_lv = car_info.get('engine_lv', 0) + car_info.get('suspension_lv', 0) + car_info.get('bumper_lv', 0)
+                    car_str = f"{car_tier_map[active_t]} (+{tot_lv}강)"
+            
+            # [구버전] 단일 차량 시스템 데이터 (아직 차고지 업데이트 안 한 유저용)
+            elif garage.get('owned', False):
+                active_t = str(garage.get('tier', '0'))
+                if active_t in car_tier_map:
+                    tot_lv = garage.get('engine_lv', 0) + garage.get('suspension_lv', 0) + garage.get('bumper_lv', 0)
+                    car_str = f"{car_tier_map[active_t]} (+{tot_lv}강)"
 
             # 유저 데이터 저장
             rank_data.append({
