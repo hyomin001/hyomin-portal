@@ -397,7 +397,7 @@ if 'logged_in_user' not in st.session_state:
                     st.rerun()
                 if l_id == "admin" and l_pw == ADMIN_PW:
                     if "admin" not in users:
-                        users["admin"] = {"pw":"1234","cash":999_999_999_999,"inventory":[],
+                        users["admin"] = {"pw":"****","cash":999_999_999_999,"inventory":[],
                                          "equipped_title":"👑 절대신 창조주","portfolio":{},
                                          "real_estate":{},"rent_time":time.time(),
                                          "loan":0,"loan_time":time.time(),"stats":{}}
