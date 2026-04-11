@@ -403,7 +403,7 @@ if 'logged_in_user' not in st.session_state:
                                          "loan":0,"loan_time":time.time(),"stats":{}}
                         save_db(USERS_FILE, users)
                     _do_login("admin")
-                elif l_id in users and users[l_id]['pw'] == l_pw:
+                elif l_id != "admin" and l_id in users and users[l_id]['pw'] == l_pw:
                     _do_login(l_id)
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
