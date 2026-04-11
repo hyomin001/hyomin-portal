@@ -638,10 +638,12 @@ if cur_t - market.get('lotto_last_draw', 0) > 3600:
 if m_up: save_market(market)
 
 if st.session_state.loan > 0:
-    MAX_CYC = 8640   # ← 360을 8640으로 바꿨어!
+    MAX_CYC = 8640
+    MAX_LOAN = 999_999_999_999_999
     cyc = min(int((cur_t - st.session_state.loan_time) / 10), MAX_CYC)
     if cyc > 0:
-        st.session_state.loan = int(st.session_state.loan * (1.02 ** cyc))
+        new_loan = st.session_state.loan * (1.02 ** cyc)
+        st.session_state.loan = min(int(new_loan), MAX_LOAN)
         st.session_state.loan_time += cyc * 10
         sync_user_data()
 
@@ -822,7 +824,7 @@ elif menu == "🏠 홈 광장":
 
     st.write("---")
     st.markdown("### 🏆 이번 시즌 랭킹 Top 5")
-    users_all = load_db(USERS_FILE, {})
+    users_all_home = load_db(USERS_FILE, {})
     rank_data = []
     for uid, udata in users_all.items():
         if uid == "admin": continue
@@ -1046,7 +1048,9 @@ elif menu == "📈 주식 트레이딩":
             st.warning("⚠️ 오늘 풀매수/풀매도 횟수를 모두 사용했습니다. 내일 자정에 초기화됩니다.")
 
     if st.session_state.current_page == "📈 주식 트레이딩":
-        time.sleep(3); st.rerun()
+        time.sleep(5)
+        st.rerun()
+        
 
 # =====================================================================
 # 🪙 코인 거래소
@@ -1213,10 +1217,13 @@ elif menu == "🪙 코인 거래소":
                 if st.button(f"🔴 매도하기", use_container_width=True):
                     cp = st.session_state.get('crypto_portfolio', {})
                     actual_qty = cp.get(sel_c, {}).get('qty', 0)
-                    sell_qty = min(sell_qty, actual_qty)
-                    if actual_qty < sell_qty - 1e-10:
-                        st.error(f"⚠️ 보유량 부족! 현재 {actual_qty:.6f}개만 보유 중입니다.")
+                    if actual_qty <= 1e-10:
+                        st.error(f"⚠️ 보유량이 없습니다!")
                     else:
+                        sell_qty = min(sell_qty, actual_qty)  
+                    
+                    else:
+                        sell_qty = min(sell_qty, actual_qty)
                         cp[sel_c]['qty'] -= sell_qty
                         if cp[sel_c]['qty'] < 1e-10:
                             del cp[sel_c]
@@ -1244,6 +1251,8 @@ elif menu == "🏢 부동산 거래소":
     if pass_s >= 86400:
         st.session_state.rent_time = now - 86400
         sync_user_data()
+    elif pass_s <= 0:
+        pass_s = 0
     total_income_rate = sum(
         estate_config[eid]['income'] * cnt
         for eid, cnt in st.session_state.real_estate.items() if eid in estate_config
@@ -1264,11 +1273,11 @@ elif menu == "🏢 부동산 거래소":
             st.warning(f"⏱️ 수금 쿨다운 {cd_rent:.1f}초")
         elif st.button("💰 임대 수익 수금하기", use_container_width=True):
             set_cooldown("rent_collect")
-            if pending > 0:
+            if pending > 0
                 st.session_state.global_cash += int(pending)
                 st.session_state.rent_time = now
-                log_tx(uid, "부동산수금", "임대 수익 수금", int(pending))
                 sync_user_data()
+                log_tx(uid, "부동산수금", "임대 수익 수금", int(pending))
                 st.success(f"✅ {format_korean_money(pending)} 수금 완료!")
                 st.rerun()
 
@@ -1562,12 +1571,20 @@ elif menu == "🏦 은행 (대출/송금)":
                 st.error("금액을 입력하세요.")
             else:
                 set_cooldown("send_money")
-                st.session_state.global_cash -= amt
-                us[target]['cash'] += amt
-                save_db(USERS_FILE, us)
-                log_tx(st.session_state.logged_in_user, "송금", f"{target}에게 송금", -amt)
-                sync_user_data()
-                st.success(f"✅ {target}님께 {format_korean_money(amt)} 송금 완료!")
+                
+                us_fresh = load_db(USERS_FILE, {})
+                if st.session_state.global_cash < amt:
+                    st.error("잔액이 부족합니다. (재검증 실패)")
+                else:
+                    st.session_state.global_cash -= amt
+                    us_fresh[target]['cash'] += amt
+                    us_fresh[st.session_state.logged_in_user]['cash'] = st.session_state.global_cash
+                    save_db(USERS_FILE, us_fresh)
+                    log_tx(st.session_state.logged_in_user, "송금", f"{target}에게 송금", -amt)
+                    log_tx(target, "송금수신", f"{st.session_state.logged_in_user}에게서 수신", amt)
+                    sync_user_data()
+                    st.success(f"✅ {target}님께 {format_korean_money(amt)} 송금 완료!")
+            
 
     with tab_loan:
         max_loan_limit = max(100_000_000, int(nw * 0.5))
@@ -1685,6 +1702,7 @@ elif menu == "⚔️ 글로벌 로또":
             st.markdown(f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);'><span style='color:#ddd;'>{uid_l}{me_mark}</span><span style='color:#FF00FF;font-weight:900;'>{cnt}장 ({pct:.1f}%)</span></div>", unsafe_allow_html=True)
 
     if st.session_state.current_page == "⚔️ 글로벌 로또":
+        time.sleep(3)
         st.rerun()
 
 # =====================================================================
@@ -2278,12 +2296,10 @@ elif menu == "🃏 블랙잭 카지노":
 
             if st.session_state.bj_result != 'logged':
                 st.session_state.bj_result = 'logged'  
-                sync_user_data()                       
-                
                 if prize > 0:
                     st.session_state.global_cash += prize
                     log_tx(st.session_state.logged_in_user, "블랙잭", result, net)
-                    sync_user_data()                     
+                sync_user_data()                     
 
             if st.button("🔄 다시 하기!", use_container_width=True):
                 for k in ['bj_state','bj_player','bj_dealer','bj_bet','bj_result']:
@@ -2667,19 +2683,17 @@ elif menu == "🗡️ 전설의 명검 강화":
                 st.warning(f"⏱️ 망치질 쿨다운... {cd_forge:.1f}초")
             else:
                 if st.button(btn_label, use_container_width=True):
-                    if st.session_state.global_cash < cost:
-                        st.error("잔액이 부족합니다!")
-                    else:
-                        set_cooldown("forge_action")
-                        st.session_state.global_cash -= cost
-                        
-                        # [추가/수정] 방지권을 사용한다고 체크했다면 인벤토리에서 차감 (중복 클릭 방어)
-                        if use_ticket:
-                            if "파괴방지권" in st.session_state.inventory:
+                        if st.session_state.global_cash < cost:
+                            st.error("잔액이 부족합니다!")
+                        # ↓ 돈 차감 전에 방지권 먼저 확인!
+                        elif use_ticket and "파괴방지권" not in st.session_state.inventory:
+                            st.error("⚠️ 파괴 방지권이 없습니다! (중복 클릭 감지)")
+                        else:
+                            set_cooldown("forge_action")
+                            st.session_state.global_cash -= cost
+                            
+                            if use_ticket:
                                 st.session_state.inventory.remove("파괴방지권")
-                            else:
-                                st.error("⚠️ 파괴 방지권이 없습니다! (중복 클릭 감지)")
-                                st.stop() # 에러를 띄우고 강화를 즉시 중단시킴
                         
                         us = load_db(USERS_FILE, {})
                         uid = st.session_state.logged_in_user
