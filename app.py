@@ -1525,7 +1525,7 @@ elif menu == "🏢 부동산 거래소":
                         em_fresh["listings"] = [x for x in em_fresh["listings"] if x["id"] != li["id"]]
                         save_estate_market(em_fresh)
                         st.success("매물 등록 취소 완료!")
-                         st.rerun()
+                        st.rerun()
 
 # =====================================================================
 # 🏦 은행 (대출/송금)
