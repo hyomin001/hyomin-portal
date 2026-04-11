@@ -2490,28 +2490,77 @@ elif menu == "🏅 랭킹 & 게시판":
     with tab_rank:
         users_all = load_db(USERS_FILE, {})
         rank_data = []
+        
+        # 🚗 차량 티어 매핑용 딕셔너리
+        car_tier_map = {"0": "🚙 컴팩트 박스카", "1": "🚗 스포츠 세단", "2": "🏎️ V12 하이퍼카", "3": "🚀 은하철도"}
+        
         for uid_r, udata in users_all.items():
             if uid_r == "admin": continue
             w = udata.get('cash', 0) - udata.get('loan', 0)
+            
+            # 1. 주식 자산 합산
             for sid, p in udata.get('portfolio', {}).items():
                 if sid in market['stock_data']: w += p.get('qty', 0) * market['stock_data'][sid]['price']
+            
+            # 2. 부동산 계산 및 보유 목록 텍스트 생성
+            re_list = []
             for eid, cnt in udata.get('real_estate', {}).items():
-                if eid in estate_config: w += estate_config[eid]['base_price'] * cnt * 0.8
+                if eid in estate_config: 
+                    w += estate_config[eid]['base_price'] * cnt * 0.8
+                    if cnt > 0:
+                        re_list.append(f"{estate_config[eid]['icon']} {estate_config[eid]['name']} {cnt}채")
+            re_str = ", ".join(re_list) if re_list else "보유 부동산 없음"
+            
+            # 3. 전설의 명검 계산 및 이름 추출
             w_lv = udata.get('weapon_level', 0)
+            w_name = FORGE_DATA[w_lv]['name'] if w_lv in FORGE_DATA else "없음"
             if w_lv > 0: w += FORGE_DATA[w_lv]['sell']
-            rank_data.append({"uid": uid_r, "title": udata.get('equipped_title','🌱 신규시민'), "nw": w})
+            
+            # 4. 차량 정보 추출 (출전 중인 메인 차량 및 튜닝 레벨)
+            garage = udata.get('garage', {})
+            active_t = garage.get('active_tier', None)
+            if active_t is not None and str(active_t) in car_tier_map:
+                car_info = garage.get('cars', {}).get(str(active_t), {})
+                tot_lv = car_info.get('engine_lv', 0) + car_info.get('suspension_lv', 0) + car_info.get('bumper_lv', 0)
+                car_str = f"{car_tier_map[str(active_t)]} (+{tot_lv}강)"
+            else:
+                car_str = "뚜벅이 (차량 없음)"
+
+            # 유저 데이터 저장
+            rank_data.append({
+                "uid": uid_r, 
+                "title": udata.get('equipped_title','🌱 신규시민'), 
+                "nw": w,
+                "weapon": w_name,
+                "car": car_str,
+                "estate": re_str
+            })
+            
+        # 순자산(nw) 기준으로 정렬
         rank_data.sort(key=lambda x: x['nw'], reverse=True)
 
         medals = ["🥇","🥈","🥉"] + [f"{i}위" for i in range(4, 101)]
+        
+        # 랭킹 UI 출력 (카드 안에 상세 정보 추가)
         for i, r in enumerate(rank_data[:20]):
             me       = "🫵" if r['uid'] == st.session_state.logged_in_user else ""
             nw_color = "#FFD600" if i==0 else "#C0C0C0" if i==1 else "#CD7F32" if i==2 else "#00E5FF"
+            
             st.markdown(f"""
-<div class='card' style='display:flex;justify-content:space-between;align-items:center;padding:12px 18px;margin:4px 0;'>
-  <span style='font-size:1.1rem;min-width:36px;'>{medals[i]}</span>
-  <span style='font-weight:900;color:#E8E8F0;flex:1;margin:0 10px;'>{r['uid']} {me}</span>
-  <span style='color:#888;font-size:0.82rem;flex:1;'>{r['title']}</span>
-  <span style='font-weight:900;color:{nw_color};'>{format_korean_money(r['nw'])}</span>
+<div class='card' style='display:flex; flex-direction:column; padding:16px 20px; margin:8px 0;'>
+  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;'>
+    <div style='display:flex; align-items:center;'>
+      <span style='font-size:1.3rem; min-width:40px;'>{medals[i]}</span>
+      <span style='font-weight:900; color:#E8E8F0; font-size:1.1rem; margin-right:10px;'>{r['uid']} {me}</span>
+      <span style='color:#888; font-size:0.85rem;'>{r['title']}</span>
+    </div>
+    <span style='font-weight:900; color:{nw_color}; font-size:1.1rem;'>{format_korean_money(r['nw'])}</span>
+  </div>
+  <div style='background:rgba(255,255,255,0.03); border-radius:8px; padding:10px 14px; font-size:0.88rem; color:#ddd; line-height:1.7;'>
+    <div><b>🗡️ 명검:</b> <span style='color:#00FF88;'>{r['weapon']}</span></div>
+    <div><b>🏎️ 차량:</b> <span style='color:#00E5FF;'>{r['car']}</span></div>
+    <div><b>🏢 부동산:</b> <span style='color:#FFD600;'>{r['estate']}</span></div>
+  </div>
 </div>""", unsafe_allow_html=True)
 
     with tab_board:
