@@ -824,9 +824,9 @@ elif menu == "🏠 홈 광장":
 
     st.write("---")
     st.markdown("### 🏆 이번 시즌 랭킹 Top 5")
-    users_all_home = load_db(USERS_FILE, {})
+    users_all = load_db(USERS_FILE, {})  # ✅ 이름을 users_all 로 똑같이 맞췄어!
     rank_data = []
-    for uid, udata in users_all.items():
+    for uid, udata in users_all.items(): # ✅ 이제 컴퓨터가 헷갈리지 않아!
         if uid == "admin": continue
         w = udata.get('cash', 0) - udata.get('loan', 0)
         for sid, p in udata.get('portfolio', {}).items():
