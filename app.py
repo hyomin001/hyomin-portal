@@ -795,7 +795,6 @@ elif menu == "🏠 홈 광장":
             estate_config[eid]['income'] * cnt * _capped_pass
             for eid, cnt in st.session_state.real_estate.items() if eid in estate_config
         )
-        )
         st.metric("🏢 수금 대기", format_korean_money(total_rent_pending))
 
     st.write("---")
@@ -1219,14 +1218,14 @@ elif menu == "🪙 코인 거래소":
                         cp[sel_c]['qty'] -= sell_qty
                         if cp[sel_c]['qty'] < 1e-10:
                             del cp[sel_c]
-                            st.session_state.crypto_portfolio = cp
-                            st.session_state.global_cash += int(sell_won)
-                            log_tx(st.session_state.logged_in_user, "코인매도", f"{cd['name']} 매도", int(sell_won))
-                            sync_user_data()
-                            st.success("✅ 매도 완료!")
-                            time.sleep(1)
-                            st.rerun()
-                            time.sleep(5); st.rerun()
+                        st.session_state.crypto_portfolio = cp
+                        st.session_state.global_cash += int(sell_won)
+                        log_tx(st.session_state.logged_in_user, "코인매도", f"{cd['name']} 매도", int(sell_won))
+                        sync_user_data()
+                        st.success("✅ 매도 완료!")
+                        time.sleep(1)
+                        st.rerun()
+                       
 
 # =====================================================================
 # 🏢 부동산 거래소
@@ -2320,14 +2319,13 @@ elif menu == "⛏️ 광산 (노가다)":
     st.write("")
 
     def do_mine(k):
-    items_adj   = []
-    weights_adj = []
-    for item in MINE_ITEMS:
-        items_adj.append(item)
-        # 희귀도가 낮을수록(prob이 작을수록) tier_bonus 효과를 더 크게 받음
-        rarity_mult = 1.0 + (tier_bonus / item['prob']) * 0.5
-        weights_adj.append(item['prob'] * rarity_mult)
-    return random.choices(items_adj, weights=weights_adj, k=k)
+        items_adj   = []
+        weights_adj = []
+        for item in MINE_ITEMS:
+            items_adj.append(item)
+            rarity_mult = 1.0 + (tier_bonus / item['prob']) * 0.5
+            weights_adj.append(item['prob'] * rarity_mult)
+        return random.choices(items_adj, weights=weights_adj, k=k)
 
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
@@ -3322,99 +3320,94 @@ elif menu == "🛠️ 창조주 통제소":
                 </div>
                 """, unsafe_allow_html=True)
     with t8:
-    st.markdown("### 🏎️ 유저 차량 강제 개조 및 통제")
-    st.caption("특정 유저의 차량을 압수하거나, 강제로 사고를 내서 수리비를 물게 할 수 있습니다.")
+        st.markdown("### 🏎️ 유저 차량 강제 개조 및 통제")
+        st.caption("특정 유저의 차량을 압수하거나, 강제로 사고를 내서 수리비를 물게 할 수 있습니다.")
 
-    u_db_car = load_db(USERS_FILE, {})
-    uid_list_car = [u for u in u_db_car.keys() if u != "admin"]
+        u_db_car = load_db(USERS_FILE, {})
+        uid_list_car = [u for u in u_db_car.keys() if u != "admin"]
 
-    CAR_TIERS_ADMIN = [
-        {"tier": "0", "name": "2021년형 컴팩트 박스카"},
-        {"tier": "1", "name": "터보차저 스포츠 세단"},
-        {"tier": "2", "name": "V12 럭셔리 하이퍼카"},
-        {"tier": "3", "name": "🌌 우주 뚫은 은하철도"}
-    ]
+        CAR_TIERS_ADMIN = [
+            {"tier": "0", "name": "2021년형 컴팩트 박스카"},
+            {"tier": "1", "name": "터보차저 스포츠 세단"},
+            {"tier": "2", "name": "V12 럭셔리 하이퍼카"},
+            {"tier": "3", "name": "🌌 우주 뚫은 은하철도"}
+        ]
 
-    if uid_list_car:
-        car_target = st.selectbox("조작할 대상 유저", uid_list_car, key="car_target_u")
-        raw_garage = u_db_car[car_target].get('garage', {})
+        if uid_list_car:
+            car_target = st.selectbox("조작할 대상 유저", uid_list_car, key="car_target_u")
+            raw_garage = u_db_car[car_target].get('garage', {})
 
-        # ── 신규 멀티 차고지 구조 감지 ──
-        is_new_structure = 'cars' in raw_garage and isinstance(raw_garage['cars'], dict)
+            is_new_structure = 'cars' in raw_garage and isinstance(raw_garage['cars'], dict)
 
-        if is_new_structure:
-            garage_cars = raw_garage.get('cars', {})
-            active_t    = raw_garage.get('active_tier', None)
-        else:
-            # 구버전 → 신버전으로 읽기 전용 변환
-            if raw_garage.get('owned', False):
-                t = str(raw_garage.get('tier', 0))
-                garage_cars = {
-                    t: {
-                        "engine_lv":     raw_garage.get('engine_lv', 0),
-                        "suspension_lv": raw_garage.get('suspension_lv', 0),
-                        "bumper_lv":     raw_garage.get('bumper_lv', 0),
-                        "needs_repair":  raw_garage.get('needs_repair', False),
-                    }
-                }
-                active_t = t
+            if is_new_structure:
+                garage_cars = raw_garage.get('cars', {})
+                active_t    = raw_garage.get('active_tier', None)
             else:
-                garage_cars = {}
-                active_t    = None
+                if raw_garage.get('owned', False):
+                    t = str(raw_garage.get('tier', 0))
+                    garage_cars = {
+                        t: {
+                            "engine_lv":     raw_garage.get('engine_lv', 0),
+                            "suspension_lv": raw_garage.get('suspension_lv', 0),
+                            "bumper_lv":     raw_garage.get('bumper_lv', 0),
+                            "needs_repair":  raw_garage.get('needs_repair', False),
+                        }
+                    }
+                    active_t = t
+                else:
+                    garage_cars = {}
+                    active_t    = None
 
-        if not garage_cars:
-            st.info(f"{car_target} 유저는 아직 차량을 소유하고 있지 않습니다.")
-            if st.button("🚀 우주 끝판왕 하이퍼카 꽂아주기", use_container_width=True):
-                u_db_car[car_target]['garage'] = {
-                    'cars': {
-                        '3': {"engine_lv": 5, "suspension_lv": 5, "bumper_lv": 5, "needs_repair": False}
-                    },
-                    'active_tier': '3'
-                }
-                save_db(USERS_FILE, u_db_car)
-                st.success(f"✅ {car_target}님에게 풀튜닝 우주선을 하사했습니다!")
-                time.sleep(1); st.rerun()
-        else:
-            # 보유 차량 목록 표시
-            owned_tiers = list(garage_cars.keys())
-            sel_view_t  = st.selectbox(
-                "조작할 차량 선택",
-                owned_tiers,
-                format_func=lambda t: f"Tier {t} — {next((c['name'] for c in CAR_TIERS_ADMIN if c['tier']==t), '알 수 없음')}"
-            )
-            parts        = garage_cars[sel_view_t]
-            repair_cost  = 8_700_000_000 * (10 ** int(sel_view_t))
-
-            c_car1, c_car2 = st.columns(2)
-            with c_car1:
-                st.markdown(f"**현재 등급:** Tier {sel_view_t} — {next((c['name'] for c in CAR_TIERS_ADMIN if c['tier']==sel_view_t), '?')}")
-                st.markdown(f"**튜닝 레벨:** 엔진({parts.get('engine_lv',0)}) / 서스({parts.get('suspension_lv',0)}) / 범퍼({parts.get('bumper_lv',0)})")
-                st.markdown(f"**사고(파손) 상태:** {'🚨 파손됨 (수리필요)' if parts.get('needs_repair') else '✅ 정상'}")
-                st.markdown(f"**메인 차량 여부:** {'⭐ 메인' if active_t == sel_view_t else '서브'}")
-
-            with c_car2:
-                if st.button(f"💥 강제 후방 추돌 사고 발생 (수리비 {format_korean_money(repair_cost)} 청구)", use_container_width=True):
-                    u_db_car[car_target]['garage']['cars'][sel_view_t]['needs_repair'] = True
+            if not garage_cars:
+                st.info(f"{car_target} 유저는 아직 차량을 소유하고 있지 않습니다.")
+                if st.button("🚀 우주 끝판왕 하이퍼카 꽂아주기", use_container_width=True):
+                    u_db_car[car_target]['garage'] = {
+                        'cars': {
+                            '3': {"engine_lv": 5, "suspension_lv": 5, "bumper_lv": 5, "needs_repair": False}
+                        },
+                        'active_tier': '3'
+                    }
                     save_db(USERS_FILE, u_db_car)
-                    market['news'] = f"🚨 [교통사고] {car_target}님의 차량이 누군가의 테러로 대파되었습니다!"
-                    save_market(market)
-                    st.success(f"✅ {car_target}님의 차량 뒷범퍼를 박살냈습니다!")
-                    time.sleep(1.5); st.rerun()
-
-                if st.button("🔧 파손 상태 무상 수리 (창조주의 은혜)", use_container_width=True):
-                    u_db_car[car_target]['garage']['cars'][sel_view_t]['needs_repair'] = False
-                    save_db(USERS_FILE, u_db_car)
-                    st.success(f"✅ {car_target}님의 차량을 무상으로 고쳐주었습니다!")
+                    st.success(f"✅ {car_target}님에게 풀튜닝 우주선을 하사했습니다!")
                     time.sleep(1); st.rerun()
+            else:
+                owned_tiers = list(garage_cars.keys())
+                sel_view_t  = st.selectbox(
+                    "조작할 차량 선택",
+                    owned_tiers,
+                    format_func=lambda t: f"Tier {t} — {next((c['name'] for c in CAR_TIERS_ADMIN if c['tier']==t), '알 수 없음')}"
+                )
+                parts       = garage_cars[sel_view_t]
+                repair_cost = 8_700_000_000 * (10 ** int(sel_view_t))
 
-                if st.button("🗑️ 선택 차량 강제 폐차 (고철로 만들기)", use_container_width=True, type="secondary"):
-                    del u_db_car[car_target]['garage']['cars'][sel_view_t]
-                    remaining = list(u_db_car[car_target]['garage']['cars'].keys())
-                    u_db_car[car_target]['garage']['active_tier'] = remaining[0] if remaining else None
-                    save_db(USERS_FILE, u_db_car)
-                    st.success(f"✅ Tier {sel_view_t} 차량을 강제 폐차시켰습니다.")
-                    time.sleep(1.5); st.rerun()
-    else:
-        st.info("관리할 유저가 없습니다.")
+                c_car1, c_car2 = st.columns(2)
+                with c_car1:
+                    st.markdown(f"**현재 등급:** Tier {sel_view_t} — {next((c['name'] for c in CAR_TIERS_ADMIN if c['tier']==sel_view_t), '?')}")
+                    st.markdown(f"**튜닝 레벨:** 엔진({parts.get('engine_lv',0)}) / 서스({parts.get('suspension_lv',0)}) / 범퍼({parts.get('bumper_lv',0)})")
+                    st.markdown(f"**사고(파손) 상태:** {'🚨 파손됨 (수리필요)' if parts.get('needs_repair') else '✅ 정상'}")
+                    st.markdown(f"**메인 차량 여부:** {'⭐ 메인' if active_t == sel_view_t else '서브'}")
 
+                with c_car2:
+                    if st.button(f"💥 강제 후방 추돌 사고 발생 (수리비 {format_korean_money(repair_cost)} 청구)", use_container_width=True):
+                        u_db_car[car_target]['garage']['cars'][sel_view_t]['needs_repair'] = True
+                        save_db(USERS_FILE, u_db_car)
+                        market['news'] = f"🚨 [교통사고] {car_target}님의 차량이 누군가의 테러로 대파되었습니다!"
+                        save_market(market)
+                        st.success(f"✅ {car_target}님의 차량 뒷범퍼를 박살냈습니다!")
+                        time.sleep(1.5); st.rerun()
 
+                    if st.button("🔧 파손 상태 무상 수리 (창조주의 은혜)", use_container_width=True):
+                        u_db_car[car_target]['garage']['cars'][sel_view_t]['needs_repair'] = False
+                        save_db(USERS_FILE, u_db_car)
+                        st.success(f"✅ {car_target}님의 차량을 무상으로 고쳐주었습니다!")
+                        time.sleep(1); st.rerun()
+
+                    if st.button("🗑️ 선택 차량 강제 폐차 (고철로 만들기)", use_container_width=True, type="secondary"):
+                        del u_db_car[car_target]['garage']['cars'][sel_view_t]
+                        remaining = list(u_db_car[car_target]['garage']['cars'].keys())
+                        u_db_car[car_target]['garage']['active_tier'] = remaining[0] if remaining else None
+                        save_db(USERS_FILE, u_db_car)
+                        st.success(f"✅ Tier {sel_view_t} 차량을 강제 폐차시켰습니다.")
+                        time.sleep(1.5); st.rerun()
+        else:
+            st.info("관리할 유저가 없습니다.")
