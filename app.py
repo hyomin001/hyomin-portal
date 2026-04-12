@@ -3921,8 +3921,8 @@ elif menu == "🛠️ 창조주 통제소":
             if ban_target in market_ban.get('board_banned', []):
                 market_ban['board_banned'].remove(ban_target)
                 save_market(market_ban)
-            st.success(f"✅ {ban_target} 이용 정지 해제!")
-            st.rerun()
+                st.success(f"✅ {ban_target} 이용 정지 해제!")
+                st.rerun()
 
         st.write("---")
         st.markdown("### 📢 긴급 서버 점검 공지")
@@ -3970,6 +3970,50 @@ elif menu == "🛠️ 창조주 통제소":
                 st.success(f"✅ {format_korean_money(seized)} 몰수 완료!"); st.rerun()
         else:
             st.info("현재 존재하는 클랜이 없습니다.")
+
+        # ---------------------------------------------------------
+        # 🏹 유저 클랜 강제 조정 (추가된 부분)
+        # ---------------------------------------------------------
+        st.write("---")
+        st.markdown("### 🏹 유저 클랜 강제 조정")
+        st.caption("특정 유저를 다른 클랜으로 강제 이동시키거나 무소속으로 만듭니다.")
+
+        all_users_list = [u for u in u_db.keys() if u != "admin"]
+        all_clans_data = load_clan_db()
+
+        if all_users_list:
+            c_move1, c_move2 = st.columns(2)
+            with c_move1:
+                target_u = st.selectbox("조정할 유저 선택", all_users_list, key="admin_move_user")
+                current_c = get_user_clan(target_u)
+                st.markdown(f"현재 상태: <b style='color:#00E5FF;'>{current_c if current_c else '무소속'}</b>", unsafe_allow_html=True)
+
+            with c_move2:
+                dest_c = st.selectbox("이동시킬 대상 클랜", ["🚫 무소속으로 방출"] + list(all_clans_data.keys()), key="admin_move_dest")
+
+            if st.button("⚡ 클랜 소속 강제 변경 실행", use_container_width=True):
+                # 1. 기존 클랜에서 제거 로직
+                if current_c:
+                    all_clans_data[current_c]['members'] = [m for m in all_clans_data[current_c]['members'] if m != target_u]
+                    if all_clans_data[current_c]['leader'] == target_u:
+                        if all_clans_data[current_c]['members']:
+                            all_clans_data[current_c]['leader'] = all_clans_data[current_c]['members'][0]
+                        else:
+                            del all_clans_data[current_c]
+
+                # 2. 새 클랜으로 전입 혹은 방출
+                if dest_c == "🚫 무소속으로 방출":
+                    msg = f"🍃 [창조주의 명령] {target_u}님이 클랜에서 방출되어 무소속이 되었습니다."
+                else:
+                    if target_u not in all_clans_data[dest_c]['members']:
+                        all_clans_data[dest_c]['members'].append(target_u)
+                    msg = f"🏹 [창조주의 명령] {target_u}님이 [{dest_c}] 클랜으로 강제 전입되었습니다."
+
+                save_clan_db(all_clans_data)
+                market['news'] = msg
+                save_market(market)
+                st.success("✅ 유저 소속 변경 완료!")
+                st.rerun()
 
     
 
