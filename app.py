@@ -28,6 +28,7 @@ COMMENTS_FILE = "comments_db.json"
 MARKET_FILE   = "market_db.json"
 TXLOG_FILE    = "txlog_db.json"
 REALESTATE_MARKET_FILE = "realestate_market_db.json"  
+CLAN_FILE = "clan_db.json"
 
 stock_config = [
     {"id": "NDX",    "name": "나스닥100 ETF",       "vol": 0.04, "icon": "🇺🇸"},
@@ -74,6 +75,22 @@ CRYPTO_CONFIG = [
     {"id": "PEPE",  "name": "페페코인",  "vol": 0.35, "icon": "🐸", "base_price": 10},
     {"id": "HYO",   "name": "효민코인",  "vol": 0.28, "icon": "🌌", "base_price": 1_000_000},
 ]
+# ── 🎴 가챠 설정 ──
+GACHA_POOL = [
+    {"grade": "💎 전설", "name": "👑 [시즌한정] 우주의 도박꾼",  "weight": 1,  "type": "title"},
+    {"grade": "💎 전설", "name": "👑 [시즌한정] 운영자를 노린다",     "weight": 1,  "type": "title"},
+    {"grade": "💎 전설", "name": "👑 [시즌한정] 갓생러",          "weight": 2,  "type": "title"},
+    {"grade": "🔵 희귀", "name": "🎖️ 행운의 사나이",             "weight": 8,  "type": "title"},
+    {"grade": "🔵 희귀", "name": "🎖️ 억세게 운 좋은 놈",         "weight": 8,  "type": "title"},
+    {"grade": "🔵 희귀", "name": "🎖️ 가챠 중독자",              "weight": 10, "type": "title"},
+    {"grade": "🟢 일반", "name": "🍀 행운의 클로버",             "weight": 30, "type": "title"},
+    {"grade": "🟢 일반", "name": "🌟 떠오르는 별",              "weight": 30, "type": "title"},
+    {"grade": "🟢 일반", "name": "💫 시민 모험가",              "weight": 30, "type": "title"},
+    {"grade": "🟤 꽝",   "name": "파괴방지권",                  "weight": 25, "type": "item"},
+    {"grade": "🟤 꽝",   "name": "파괴방지권",                  "weight": 25, "type": "item"},
+]
+
+GACHA_TICKET_PRICE = 50_000_000
 
 DAILY_QUESTS_CONFIG = [
     {"id": "attendance", "icon": "📅", "name": "출석 체크",       "desc": "오늘 로그인 완료",                   "reward": 10_000_000},
@@ -280,6 +297,30 @@ def get_market():
     return d
 
 def save_market(data): save_db(MARKET_FILE, data)
+# ════════════════════════════════════
+# 🏰 클랜 유틸
+# ════════════════════════════════════
+def load_clan_db():
+    return load_db(CLAN_FILE, {})
+
+def save_clan_db(data):
+    save_db(CLAN_FILE, data)
+
+def get_user_clan(uid):
+    clans = load_clan_db()
+    for cname, cdata in clans.items():
+        if uid in cdata.get('members', []):
+            return cname
+    return None
+
+def get_clan_total_nw(cname, market_data):
+    clans = load_clan_db()
+    if cname not in clans:
+        return 0
+    total = clans[cname].get('bank', 0)
+    for uid in clans[cname].get('members', []):
+        total += get_net_worth(uid, market_data)
+    return total
 def claim_hidden_title(title_id, title_name):
     uid = st.session_state.logged_in_user
     market = get_market()
@@ -670,6 +711,81 @@ if cur_t - market.get('lotto_last_draw', 0) > 3600:
         market['lotto_last_draw'] = cur_t
         m_up = True
 
+# ── 시즌 자동 종료 체크 ──
+if 'season_num' not in market:
+    market['season_num']      = 1
+    market['season_start']    = cur_t
+    market['season_end']      = cur_t + 30 * 86400
+    market['season_records']  = {}
+    m_up = True
+
+if cur_t > market.get('season_end', cur_t + 9999) and not market.get('season_ending', False):
+    market['season_ending'] = True
+    us_all = load_db(USERS_FILE, {})
+    rd = []
+    for uid_s, udata_s in us_all.items():
+        if uid_s == 'admin': continue
+        w = udata_s.get('cash', 0) - udata_s.get('loan', 0)
+        for sid_s, p_s in udata_s.get('portfolio', {}).items():
+            if sid_s in market['stock_data']:
+                w += p_s.get('qty', 0) * market['stock_data'][sid_s]['price']
+        for eid_s, cnt_s in udata_s.get('real_estate', {}).items():
+            if eid_s in estate_config:
+                w += estate_config[eid_s]['base_price'] * cnt_s * 0.8
+        rd.append((uid_s, w))
+    rd.sort(key=lambda x: x[1], reverse=True)
+
+    season_titles = [
+        f"🥇 [시즌{market['season_num']}] 전설의 우승자",
+        f"🥈 [시즌{market['season_num']}] 준우승의 영광",
+        f"🥉 [시즌{market['season_num']}] 시즌 3위",
+    ]
+    record = {}
+    for i, (uid_s, w_s) in enumerate(rd[:3]):
+        title = season_titles[i]
+        record[f"rank{i+1}"] = uid_s
+        if uid_s in us_all:
+            if title not in us_all[uid_s].get('inventory', []):
+                us_all[uid_s].setdefault('inventory', []).append(title)
+            us_all[uid_s]['equipped_title'] = title
+
+    for uid_s in us_all:
+        if uid_s == 'admin': continue
+        us_all[uid_s]['cash']             = 100_000_000
+        us_all[uid_s]['portfolio']        = {}
+        us_all[uid_s]['crypto_portfolio'] = {}
+        us_all[uid_s]['real_estate']      = {}
+        us_all[uid_s]['loan']             = 0
+        us_all[uid_s]['loan_time']        = cur_t
+        us_all[uid_s]['rent_time']        = cur_t
+        us_all[uid_s]['weapon_level']     = 0
+        us_all[uid_s]['daily_quests']     = {}
+        us_all[uid_s]['bulk_trade_count'] = 0
+
+    save_db(USERS_FILE, us_all)
+
+    clan_db_reset = load_clan_db()
+    for cn in clan_db_reset:
+        clan_db_reset[cn]['bank'] = 0
+    save_clan_db(clan_db_reset)
+
+    save_estate_market({
+        "listings": [], "owner_counts": {},
+        "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}
+    })
+
+    sn = market['season_num']
+    market['season_records'][str(sn)] = record
+    market['season_num']     = sn + 1
+    market['season_start']   = cur_t
+    market['season_end']     = cur_t + 30 * 86400
+    market['season_ending']  = False
+    market['lotto_pool']     = 5_000_000_000
+    market['lotto_tickets']  = {}
+    market['force_estate_reset'] = cur_t
+    market['news'] = f"🏆 [시즌{sn} 종료] {rd[0][0] if rd else '?'}님이 시즌 우승! 새 시즌 시작!"
+    m_up = True
+
 if m_up: save_market(market)
 
 if st.session_state.loan > 0:
@@ -713,6 +829,8 @@ menu_ops = [
     "📅 일일 퀘스트",       
     "🗡️ 전설의 명검 강화",   
     "👑 칭호 상점",
+    "🏰 길드/클랜",
+    "🎴 가챠 뽑기",
     "📜 내 거래 기록",
     "🏅 랭킹 & 게시판",
 ]
@@ -1258,10 +1376,11 @@ elif menu == "🪙 코인 거래소":
                         st.error(f"⚠️ 보유량이 없습니다!")
                     else:
                         sell_qty = min(sell_qty, actual_qty)
+                        sell_won = sell_qty * cur_p
                         cp[sel_c]['qty'] -= sell_qty
                         if cp[sel_c]['qty'] < 1e-10:
                             del cp[sel_c]
-                    
+
                         st.session_state.crypto_portfolio = cp
                         st.session_state.global_cash += int(sell_won)
                         log_tx(st.session_state.logged_in_user, "코인매도", f"{cd['name']} 매도", int(sell_won))
@@ -1281,13 +1400,13 @@ elif menu == "🏢 부동산 거래소":
     now = time.time()
 
     pass_s = int(now - st.session_state.rent_time)
-    pass_s = max(0, min(pass_s, 86400))
-    
+
     if pass_s >= 86400:
         st.session_state.rent_time = now - 86400
+        pass_s = 86400
         sync_user_data()
-    elif pass_s <= 0:
-        pass_s = 0
+
+    pass_s = max(0, min(pass_s, 86400))
     total_income_rate = sum(
         estate_config[eid]['income'] * cnt
         for eid, cnt in st.session_state.real_estate.items() if eid in estate_config
@@ -3087,14 +3206,329 @@ elif menu == "🛠️ 커스텀 튜닝 차고지":
             st.write("---")
 
 # =====================================================================
+# 🏰 길드/클랜
+# =====================================================================
+elif menu == "🏰 길드/클랜":
+    st.title("🏰 길드/클랜 시스템")
+    uid = st.session_state.logged_in_user
+    clans = load_clan_db()
+    my_clan = get_user_clan(uid)
+
+    tab_my, tab_list, tab_rank = st.tabs(["🏠 내 클랜", "🔍 클랜 목록", "🏆 클랜 랭킹"])
+
+    with tab_my:
+        if my_clan is None:
+            st.info("소속된 클랜이 없습니다.")
+            st.write("---")
+            st.markdown("### ⚔️ 새 클랜 창설")
+            st.caption("클랜 창설 비용: 10억원")
+            new_clan_name = st.text_input("클랜 이름 (최대 10자)", max_chars=10)
+            new_clan_desc = st.text_input("클랜 소개글 (최대 30자)", max_chars=30)
+            new_clan_icon = st.selectbox("클랜 아이콘", ["🏰","⚔️","🐉","🔥","💀","🌙","🌊","⚡","🦁","🐺"])
+            if st.button("🏰 클랜 창설하기 (10억)", use_container_width=True):
+                if not new_clan_name.strip():
+                    st.error("클랜 이름을 입력하세요.")
+                elif new_clan_name in clans:
+                    st.error("이미 존재하는 클랜 이름입니다.")
+                elif st.session_state.global_cash < 1_000_000_000:
+                    st.error("잔액 부족! (10억 필요)")
+                else:
+                    st.session_state.global_cash -= 1_000_000_000
+                    clans[new_clan_name] = {
+                        "leader":        uid,
+                        "members":       [uid],
+                        "bank":          0,
+                        "desc":          new_clan_desc,
+                        "icon":          new_clan_icon,
+                        "created":       time.time(),
+                        "join_requests": [],
+                    }
+                    save_clan_db(clans)
+                    log_tx(uid, "클랜", f"{new_clan_name} 클랜 창설", -1_000_000_000)
+                    sync_user_data()
+                    market['news'] = f"🏰 [{uid}]님이 [{new_clan_name}] 클랜을 창설했습니다!"
+                    save_market(market)
+                    st.success(f"✅ [{new_clan_name}] 클랜 창설 완료!")
+                    st.rerun()
+
+            st.write("---")
+            st.markdown("### 🚪 클랜 가입 신청")
+            if clans:
+                join_target = st.selectbox(
+                    "가입할 클랜 선택",
+                    list(clans.keys()),
+                    format_func=lambda n: f"{clans[n]['icon']} {n} ({len(clans[n]['members'])}명)"
+                )
+                if st.button("📨 가입 신청하기", use_container_width=True):
+                    if uid in clans[join_target].get('join_requests', []):
+                        st.warning("이미 신청한 클랜입니다.")
+                    else:
+                        clans[join_target].setdefault('join_requests', []).append(uid)
+                        save_clan_db(clans)
+                        st.success(f"✅ [{join_target}] 클랜에 가입 신청 완료! 클랜장의 승인을 기다리세요.")
+            else:
+                st.info("아직 클랜이 없습니다. 첫 클랜을 창설하세요!")
+
+        else:
+            cdata = clans[my_clan]
+            is_leader = (cdata['leader'] == uid)
+
+            st.markdown(f"""
+            <div style='background:linear-gradient(135deg,rgba(255,180,0,0.08),rgba(255,100,0,0.06));
+                 border:2px solid rgba(255,180,0,0.4);border-radius:16px;padding:24px;text-align:center;'>
+              <div style='font-size:3rem;'>{cdata['icon']}</div>
+              <div style='font-size:1.8rem;font-weight:900;color:#FFD600;margin-top:8px;'>{my_clan}</div>
+              <div style='color:#888;font-size:0.88rem;margin-top:6px;'>{cdata.get('desc','')}</div>
+              <div style='margin-top:10px;color:#aaa;'>클랜장: <b style='color:#00E5FF;'>{cdata['leader']}</b> &nbsp;|&nbsp; 멤버: {len(cdata['members'])}명</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.write("")
+            c1, c2 = st.columns(2)
+            c1.metric("🏦 클랜 은행", format_korean_money(cdata.get('bank', 0)))
+            c2.metric("💪 클랜 총 순자산", format_korean_money(get_clan_total_nw(my_clan, market)))
+
+            st.write("---")
+            st.markdown("### 🏦 클랜 은행")
+            col_dep, col_wit = st.columns(2)
+            with col_dep:
+                dep_amt = st.number_input("입금액", min_value=0, step=10_000_000, format="%d", key="clan_dep")
+                if st.button("💰 클랜 은행 입금", use_container_width=True):
+                    if st.session_state.global_cash >= dep_amt > 0:
+                        st.session_state.global_cash -= dep_amt
+                        clans[my_clan]['bank'] = clans[my_clan].get('bank', 0) + dep_amt
+                        save_clan_db(clans)
+                        log_tx(uid, "클랜", f"{my_clan} 클랜 은행 입금", -dep_amt)
+                        sync_user_data()
+                        st.success(f"✅ {format_korean_money(dep_amt)} 입금 완료!")
+                        st.rerun()
+                    else:
+                        st.error("잔액 부족!")
+            with col_wit:
+                wit_amt = st.number_input("출금액", min_value=0, step=10_000_000, format="%d", key="clan_wit")
+                if st.button("🏧 클랜 은행 출금", use_container_width=True, disabled=not is_leader):
+                    bank = clans[my_clan].get('bank', 0)
+                    if not is_leader:
+                        st.error("클랜장만 출금 가능합니다.")
+                    elif wit_amt > bank:
+                        st.error("클랜 은행 잔액 부족!")
+                    elif wit_amt > 0:
+                        clans[my_clan]['bank'] = bank - wit_amt
+                        st.session_state.global_cash += wit_amt
+                        save_clan_db(clans)
+                        log_tx(uid, "클랜", f"{my_clan} 클랜 은행 출금", wit_amt)
+                        sync_user_data()
+                        st.success(f"✅ {format_korean_money(wit_amt)} 출금 완료!")
+                        st.rerun()
+            if not is_leader:
+                st.caption("⚠️ 출금은 클랜장만 가능합니다.")
+
+            st.write("---")
+            st.markdown("### 👥 멤버 목록")
+            for m in cdata['members']:
+                crown   = "👑 " if m == cdata['leader'] else ""
+                me_mark = " ← 나" if m == uid else ""
+                m_nw    = get_net_worth(m, market)
+                st.markdown(f"""
+                <div style='display:flex;justify-content:space-between;padding:8px 12px;
+                     background:rgba(255,255,255,0.03);border-radius:8px;margin:4px 0;'>
+                  <span>{crown}<b style='color:#00E5FF;'>{m}</b>{me_mark}</span>
+                  <span style='color:#FFD600;'>{format_korean_money(m_nw)}</span>
+                </div>
+                """, unsafe_allow_html=True)
+
+            if is_leader:
+                st.write("---")
+                st.markdown("### 📨 가입 신청 관리")
+                requests = cdata.get('join_requests', [])
+                if not requests:
+                    st.info("신청자가 없습니다.")
+                else:
+                    for req_uid in requests:
+                        r1, r2, r3 = st.columns([3, 1, 1])
+                        r1.write(f"👤 {req_uid}")
+                        if r2.button("✅ 승인", key=f"approve_{req_uid}"):
+                            clans[my_clan]['members'].append(req_uid)
+                            clans[my_clan]['join_requests'].remove(req_uid)
+                            save_clan_db(clans)
+                            market['news'] = f"🏰 [{req_uid}]님이 [{my_clan}] 클랜에 합류했습니다!"
+                            save_market(market)
+                            st.rerun()
+                        if r3.button("❌ 거절", key=f"reject_{req_uid}"):
+                            clans[my_clan]['join_requests'].remove(req_uid)
+                            save_clan_db(clans)
+                            st.rerun()
+
+                st.write("---")
+                kick_candidates = [m for m in cdata['members'] if m != uid]
+                if kick_candidates:
+                    kick_target = st.selectbox("강퇴할 멤버", kick_candidates)
+                    if st.button(f"🦵 {kick_target} 강퇴", use_container_width=True):
+                        clans[my_clan]['members'].remove(kick_target)
+                        save_clan_db(clans)
+                        st.success(f"✅ {kick_target} 강퇴 완료!")
+                        st.rerun()
+
+            st.write("---")
+            if st.button("🚪 클랜 탈퇴 / 해산", use_container_width=True, type="secondary"):
+                if is_leader and len(cdata['members']) > 1:
+                    st.error("클랜장은 멤버가 있으면 탈퇴 불가. 먼저 멤버를 전부 강퇴하세요.")
+                elif is_leader:
+                    del clans[my_clan]
+                    save_clan_db(clans)
+                    st.success("클랜 해산 완료!")
+                    st.rerun()
+                else:
+                    clans[my_clan]['members'].remove(uid)
+                    save_clan_db(clans)
+                    st.success("클랜 탈퇴 완료!")
+                    st.rerun()
+
+    with tab_list:
+        st.markdown("### 🔍 전체 클랜 목록")
+        if not clans:
+            st.info("아직 클랜이 없습니다.")
+        else:
+            for cname, cdata in clans.items():
+                total_nw = get_clan_total_nw(cname, market)
+                st.markdown(f"""
+                <div class='card' style='padding:16px 20px;'>
+                  <div style='display:flex;justify-content:space-between;align-items:center;'>
+                    <div>
+                      <span style='font-size:1.5rem;'>{cdata['icon']}</span>
+                      <b style='color:#FFD600;font-size:1.1rem;margin-left:8px;'>{cname}</b>
+                      <span style='color:#888;font-size:0.82rem;margin-left:10px;'>{cdata.get('desc','')}</span>
+                    </div>
+                    <div style='text-align:right;'>
+                      <div style='color:#00E5FF;font-weight:900;'>{format_korean_money(total_nw)}</div>
+                      <div style='color:#666;font-size:0.78rem;'>멤버 {len(cdata['members'])}명 | 클랜장: {cdata['leader']}</div>
+                    </div>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    with tab_rank:
+        st.markdown("### 🏆 클랜 순자산 랭킹")
+        if not clans:
+            st.info("아직 클랜이 없습니다.")
+        else:
+            ranked = sorted(
+                [(cn, get_clan_total_nw(cn, market), clans[cn]) for cn in clans],
+                key=lambda x: x[1], reverse=True
+            )
+            medals = ["🥇","🥈","🥉"] + [f"{i}위" for i in range(4, 20)]
+            for i, (cname, total, cdata) in enumerate(ranked):
+                nw_col  = "#FFD600" if i==0 else "#C0C0C0" if i==1 else "#CD7F32" if i==2 else "#00E5FF"
+                my_mark = " ← 내 클랜" if cname == my_clan else ""
+                st.markdown(f"""
+                <div class='card' style='display:flex;justify-content:space-between;align-items:center;padding:14px 20px;'>
+                  <div>
+                    <span style='font-size:1.2rem;margin-right:10px;'>{medals[i]}</span>
+                    <span style='font-size:1.2rem;'>{cdata['icon']}</span>
+                    <b style='color:#fff;margin-left:8px;'>{cname}</b>
+                    <span style='color:#888;font-size:0.8rem;margin-left:6px;'>({len(cdata['members'])}명){my_mark}</span>
+                  </div>
+                  <span style='color:{nw_col};font-weight:900;font-size:1.1rem;'>{format_korean_money(total)}</span>
+                </div>
+                """, unsafe_allow_html=True)
+
+# =====================================================================
+# 🎴 가챠 뽑기
+# =====================================================================
+elif menu == "🎴 가챠 뽑기":
+    st.title("🎴 가챠 뽑기")
+    st.markdown(f"""
+    <div style='background:linear-gradient(135deg,rgba(180,0,255,0.1),rgba(0,0,180,0.1));
+         border:2px solid rgba(180,0,255,0.4);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;'>
+      <div style='font-size:2rem;'>🎴</div>
+      <div style='font-size:1.3rem;font-weight:900;color:#FF00FF;margin-top:8px;'>시즌 {market.get('season_num',1)} 한정 가챠</div>
+      <div style='color:#888;font-size:0.85rem;margin-top:6px;'>1회당 {format_korean_money(GACHA_TICKET_PRICE)} | 전설 칭호 획득 시 서버 전체 공지!</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### 📋 아이템 확률표")
+    grade_summary = {}
+    for item in GACHA_POOL:
+        g = item['grade']
+        grade_summary[g] = grade_summary.get(g, 0) + item['weight']
+    total_weight = sum(grade_summary.values())
+
+    rows_html = "<table class='stock-table'><thead><tr><th>등급</th><th style='text-align:right;'>확률</th></tr></thead><tbody>"
+    for grade, w in grade_summary.items():
+        pct = w / total_weight * 100
+        rows_html += f"<tr><td>{grade}</td><td style='text-align:right;color:#FFD600;font-weight:900;'>{pct:.1f}%</td></tr>"
+    rows_html += "</tbody></table>"
+    st.markdown(rows_html, unsafe_allow_html=True)
+
+    st.write("---")
+
+    pull_count = st.selectbox(
+        "뽑기 횟수",
+        [1, 5, 10],
+        format_func=lambda x: f"{x}회 ({format_korean_money(GACHA_TICKET_PRICE * x)})"
+    )
+    total_cost = GACHA_TICKET_PRICE * pull_count
+    st.caption(f"총 비용: {format_korean_money(total_cost)}")
+
+    cd_gacha = cooldown_remaining("gacha_pull", 3.0)
+    if cd_gacha > 0:
+        st.warning(f"⏱️ 쿨다운 {cd_gacha:.1f}초")
+    elif st.button(f"🎴 {pull_count}회 뽑기!", use_container_width=True):
+        if st.session_state.global_cash < total_cost:
+            st.error("잔액 부족!")
+        else:
+            set_cooldown("gacha_pull")
+            st.session_state.global_cash -= total_cost
+
+            weights = [item['weight'] for item in GACHA_POOL]
+            results = random.choices(range(len(GACHA_POOL)), weights=weights, k=pull_count)
+
+            got_legendary = False
+            result_html   = ""
+            for idx in results:
+                item = GACHA_POOL[idx]
+                grade_col = (
+                    "#FFD600" if "전설" in item['grade'] else
+                    "#00E5FF" if "희귀" in item['grade'] else
+                    "#00FF88" if "일반" in item['grade'] else "#888"
+                )
+                if item['name'] not in st.session_state.inventory:
+                    st.session_state.inventory.append(item['name'])
+
+                result_html += f"""
+                <div style='background:rgba(255,255,255,0.04);border:1px solid {grade_col}44;
+                     border-radius:10px;padding:12px 16px;margin:6px 0;
+                     display:flex;justify-content:space-between;align-items:center;'>
+                  <span style='color:{grade_col};font-weight:900;'>{item['grade']}</span>
+                  <span style='color:#fff;font-weight:900;'>{item['name']}</span>
+                </div>
+                """
+                if "전설" in item['grade']:
+                    got_legendary = True
+                    market['news'] = f"🎴 [가챠 대박] {st.session_state.logged_in_user}님이 전설 [{item['name']}] 획득!!"
+                    save_market(market)
+
+            st.markdown(f"<div style='margin:16px 0;'>{result_html}</div>", unsafe_allow_html=True)
+            log_tx(st.session_state.logged_in_user, "가챠", f"가챠 {pull_count}회 뽑기", -total_cost)
+            sync_user_data()
+
+            if got_legendary:
+                st.balloons()
+                st.success("🎉 전설 등급 획득! 칭호 상점에서 장착하세요!")
+            else:
+                st.success("✅ 뽑기 완료! 칭호 상점에서 장착할 수 있습니다.")
+
+# =====================================================================
 # 🛠️ 창조주 통제소
 # =====================================================================
 elif menu == "🛠️ 창조주 통제소":
     st.title("🛠️ 창조주 통제소")
     st.markdown("<div style='color:#FF4B4B;font-size:0.85rem;margin-bottom:10px;'>⚠️ 창조주 전용 패널입니다. 이곳의 모든 조작은 우주(서버) 전체에 즉시 반영됩니다.</div>", unsafe_allow_html=True)
 
-    t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs([
-        "👤 유저 개조", "🏢 부동산 통제", "💬 게시판 관리", "🌍 글로벌 정책", "📈 시장 조작", "📊 전체 현황", "👁️ 전지적 모니터링", "🏎️ 차고지 조작"
+    t1, t2, t3, t4, t5, t6, t7, t8, t9 = st.tabs([
+        "👤 유저 개조", "🏢 부동산 통제", "💬 게시판 관리", "🌍 글로벌 정책",
+        "📈 시장 조작", "📊 전체 현황", "👁️ 전지적 모니터링", "🏎️ 차고지 조작",
+        "🏆 시즌 관리"
     ])
 
     with t1:
@@ -3555,3 +3989,51 @@ elif menu == "🛠️ 창조주 통제소":
                         time.sleep(1.5); st.rerun()
         else:
             st.info("관리할 유저가 없습니다.")
+    with t9:
+        st.markdown("### 🏆 시즌 관리")
+        cur_season    = market.get('season_num', 1)
+        season_end_ts = market.get('season_end', 0)
+        season_end_dt = datetime.fromtimestamp(season_end_ts, KST).strftime("%Y-%m-%d %H:%M")
+        remain_sec    = max(0, int(season_end_ts - time.time()))
+        remain_day    = remain_sec // 86400
+        remain_hr     = (remain_sec % 86400) // 3600
+
+        st.markdown(f"""
+        <div style='background:rgba(0,229,255,0.08);border:1px solid #00E5FF;
+             border-radius:12px;padding:20px;margin-bottom:16px;'>
+          <div style='color:#888;font-size:0.82rem;'>현재 시즌</div>
+          <div style='font-size:2rem;font-weight:900;color:#FFD600;'>시즌 {cur_season}</div>
+          <div style='color:#aaa;margin-top:8px;'>종료 예정: <b style='color:#FF00FF;'>{season_end_dt}</b></div>
+          <div style='color:#aaa;'>잔여: <b style='color:#00FF88;'>{remain_day}일 {remain_hr}시간</b></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("### 📅 시즌 종료일 수동 조정")
+        new_days = st.number_input("지금부터 몇 일 후에 시즌 종료?", min_value=1, max_value=90, value=30)
+        if st.button("📅 시즌 종료일 변경", use_container_width=True):
+            market['season_end'] = time.time() + new_days * 86400
+            save_market(market)
+            st.success(f"✅ {new_days}일 후로 시즌 종료일 설정 완료!")
+            st.rerun()
+
+        st.write("---")
+        st.markdown("### ⚡ 시즌 즉시 강제 종료")
+        st.caption("⚠️ 지금 즉시 시즌 종료 + 랭킹 보상 지급 + 전체 리셋 실행")
+        if st.button("💣 시즌 즉시 종료 & 리셋 실행", use_container_width=True, type="secondary"):
+            market['season_end'] = time.time() - 1
+            save_market(market)
+            st.success("✅ 다음 렌더링에서 시즌이 종료됩니다. 잠시 후 새로고침하세요!")
+
+        st.write("---")
+        st.markdown("### 📜 역대 시즌 기록")
+        records = market.get('season_records', {})
+        if not records:
+            st.info("아직 완료된 시즌이 없습니다.")
+        else:
+            for sn, rec in sorted(records.items(), key=lambda x: int(x[0]), reverse=True):
+                st.markdown(f"""
+                **시즌 {sn}**
+                - 🥇 1위: {rec.get('rank1','?')}
+                - 🥈 2위: {rec.get('rank2','?')}
+                - 🥉 3위: {rec.get('rank3','?')}
+                """)
