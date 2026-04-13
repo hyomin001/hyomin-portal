@@ -3576,14 +3576,8 @@ elif menu == "🎴 가챠 뽑기":
                 if item['name'] not in st.session_state.inventory:
                     st.session_state.inventory.append(item['name'])
 
-                result_html += f"""
-                <div style='background:rgba(255,255,255,0.04);border:1px solid {grade_col}44;
-                     border-radius:10px;padding:12px 16px;margin:6px 0;
-                     display:flex;justify-content:space-between;align-items:center;'>
-                  <span style='color:{grade_col};font-weight:900;'>{item['grade']}</span>
-                  <span style='color:#fff;font-weight:900;'>{item['name']}</span>
-                </div>
-                """
+                # ▼ 들여쓰기 문제를 없애기 위해 한 줄로 깔끔하게 합쳤습니다.
+                result_html += f"<div style='background:rgba(255,255,255,0.04);border:1px solid {grade_col}44;border-radius:10px;padding:12px 16px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;'><span style='color:{grade_col};font-weight:900;'>{item['grade']}</span><span style='color:#fff;font-weight:900;'>{item['name']}</span></div>"
                 if "전설" in item['grade']:
                     got_legendary = True
                     market['news'] = f"🎴 [가챠 대박] {st.session_state.logged_in_user}님이 전설 [{item['name']}] 획득!!"
