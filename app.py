@@ -109,8 +109,8 @@ GACHA_POOL = [
     {"grade": "🟢 일반", "name": "🍞 평범한 빵",                       "weight": 25, "type": "title"},
     {"grade": "🟢 일반", "name": "🐌 느릿느릿 투자자",                  "weight": 25, "type": "title"},
     # ── 🟤 꽝 ──
-    {"grade": "🟤 꽝",   "name": "파괴방지권",                         "weight": 30, "type": "item"},
-    {"grade": "🟤 꽝",   "name": "파괴방지권",                         "weight": 30, "type": "item"},
+    {"grade": "🟤 꽝",   "name": "파괴방지권",                          "weight": 30, "type": "item"},
+    {"grade": "🟤 꽝",   "name": "빈 깡통",                             "weight": 30, "type": "item"},
 ]
 
 GACHA_TICKET_PRICE = 50_000_000
@@ -391,10 +391,12 @@ if 'logged_in_user' in st.session_state:
     us_check = load_db(USERS_FILE, {})
     my_uid = st.session_state.logged_in_user
     if my_uid in us_check:
-        db_cash = us_check[my_uid].get('cash', 0)
-        # 만약 DB에 있는 내 돈이 세션(화면)에 있는 돈보다 많다면? (누가 돈을 보냈거나 당첨됨)
-        if db_cash > st.session_state.global_cash:
-            st.session_state.global_cash = db_cash
+        db_user = us_check[my_uid]
+        # 🚨 부동산 복사 버그 및 세금 회피 방지: 무조건 DB 데이터 기준으로 세션 강제 동기화
+        st.session_state.global_cash = db_user.get('cash', 0)
+        st.session_state.real_estate = db_user.get('real_estate', {})
+        st.session_state.loan = db_user.get('loan', 0)
+        st.session_state.inventory = db_user.get('inventory', [])
 
 # ==============================
 # 🔐 로그인
@@ -698,15 +700,19 @@ if 'logged_in_user' in st.session_state:
         st.session_state.last_estate_reset = market.get('force_estate_reset', 0)
         sync_user_data()
 
-if cur_t - market.get('last_tick', 0) > 10:
-    for s in stock_config:
-        curr = market['stock_data'][s['id']]
-        ch = (random.random() - 0.5) * 2 * s['vol']
-        if market.get('event_active') and market.get('event_target') == s['id']:
-            ch *= market.get('event_multiplier', 1.5)
-        curr['price'] = round(max(1_000, curr['price'] * (1 + ch)))
-        curr['history'].append(curr['price'])
-        if len(curr['history']) > 60: curr['history'].pop(0)
+stock_passed = cur_t - market.get('last_tick', cur_t)
+s_ticks = int(stock_passed / 10)
+if s_ticks > 0:
+    s_ticks = min(s_ticks, 60)  # 🚨 오프라인 시간 보정 (최대 60틱까지만 시뮬레이션)
+    for _ in range(s_ticks):
+        for s in stock_config:
+            curr = market['stock_data'][s['id']]
+            ch = (random.random() - 0.5) * 2 * s['vol']
+            if market.get('event_active') and market.get('event_target') == s['id']:
+                ch *= market.get('event_multiplier', 1.5)
+            curr['price'] = round(max(1_000, curr['price'] * (1 + ch)))
+            curr['history'].append(curr['price'])
+            if len(curr['history']) > 60: curr['history'].pop(0)
     market['last_tick'] = cur_t
     m_up = True
 
@@ -718,13 +724,17 @@ if 'crypto_data' not in market:
     }
     m_up = True
 
-if cur_t - market.get('crypto_tick', 0) > 5:
-    for c in CRYPTO_CONFIG:
-        curr = market['crypto_data'][c['id']]
-        ch = (random.random() - 0.5) * 2 * c['vol']
-        curr['price'] = max(0.01, round(curr['price'] * (1 + ch), 6))
-        curr['history'].append(curr['price'])
-        if len(curr['history']) > 60: curr['history'].pop(0)
+crypto_passed = cur_t - market.get('crypto_tick', cur_t)
+c_ticks = int(crypto_passed / 5)
+if c_ticks > 0:
+    c_ticks = min(c_ticks, 60)  # 🚨 코인 시장 오프라인 시간 보정
+    for _ in range(c_ticks):
+        for c in CRYPTO_CONFIG:
+            curr = market['crypto_data'][c['id']]
+            ch = (random.random() - 0.5) * 2 * c['vol']
+            curr['price'] = max(0.01, round(curr['price'] * (1 + ch), 6))
+            curr['history'].append(curr['price'])
+            if len(curr['history']) > 60: curr['history'].pop(0)
     market['crypto_tick'] = cur_t
     m_up = True
 
@@ -842,15 +852,15 @@ if cur_t > market.get('season_end', cur_t + 9999) and not market.get('season_end
 if m_up: save_market(market)
 
 if st.session_state.loan > 0:
-    MAX_CYC = 8640
+    MAX_CYC = 30  # 🚨 이자 폭탄 방지: 장기 오프라인이어도 최대 30번(5분 분량)까지만 이자 적용
     MAX_LOAN = 999_999_999_999_999
     cyc = min(int((cur_t - st.session_state.loan_time) / 10), MAX_CYC)
     if cyc > 0:
         new_loan = st.session_state.loan * (1.02 ** cyc)
         st.session_state.loan = min(int(new_loan), MAX_LOAN)
-        st.session_state.loan_time += cyc * 10
+        st.session_state.loan_time = cur_t  # 🚨 시간 오차 누적을 막기 위해 현재 시간으로 완전 초기화
         sync_user_data()
-
+        
 nw = get_net_worth(st.session_state.logged_in_user, market)
 if st.session_state.loan > 0 and nw < 0:
     st.session_state.equipped_title = "💸 신용불량자"
