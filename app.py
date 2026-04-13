@@ -843,6 +843,7 @@ menu_ops = [
     "🏦 은행 (대출/송금)",
     "⚔️ 글로벌 로또",
     "⚽ 구단주 시뮬레이터",
+    "⚽ 조기축구 승부차기",
     "💻 정처기 CBT",
     "🏎️ 하이퍼카 레이싱",
     "🛠️ 커스텀 튜닝 차고지",
@@ -2010,6 +2011,181 @@ elif menu == "⚽ 구단주 시뮬레이터":
             st.rerun()
 
 # =====================================================================
+# ⚽ 조기축구 승부차기 (심리전)
+# =====================================================================
+elif menu == "⚽ 조기축구 승부차기":
+    st.title("⚽ 조기축구 승부차기")
+    st.markdown("<div style='color:#888;margin-bottom:16px;'>키커와 골키퍼의 피 말리는 심리전! 5판 3선승제로 승부합니다.</div>", unsafe_allow_html=True)
+
+    # --- 초기 상태 세팅 ---
+    if 'ps_state' not in st.session_state:
+        st.session_state.update({
+            'ps_state': 'betting',     # betting, playing, done
+            'ps_bet': 0,
+            'ps_round': 1,             # 1 ~ 5 라운드
+            'ps_turn': 'kicker',       # 유저 기준 'kicker'(공격) or 'keeper'(수비)
+            'ps_my_score': 0,
+            'ps_ai_score': 0,
+            'ps_logs': []              # 경기 중계 로그
+        })
+
+    state = st.session_state.ps_state
+
+    # ── 베팅 화면 ──
+    if state == 'betting':
+        st.markdown(f"""
+        <div style='text-align:center;padding:30px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,100,50,0.15));
+             border:2px solid rgba(0,255,136,0.3);border-radius:18px;margin-bottom:24px;'>
+          <div style='font-size:4rem;'>🥅</div>
+          <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#00FF88;margin-top:8px;font-weight:900;'>PENALTY SHOOTOUT</div>
+          <div style='color:#888;margin-top:10px;font-size:0.88rem;'>승리 시 베팅금의 2배 획득! (무승부 시 원금 반환)</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        bet = st.number_input("베팅 금액 (원)", min_value=1_000_000, step=1_000_000, value=1_000_000, format="%d", key="ps_bet_input")
+        st.caption(f"💵 베팅 예정: {format_korean_money(bet)} | 잔액: {format_korean_money(st.session_state.global_cash)}")
+        
+        if st.button("⚽ 승부차기 시작!", use_container_width=True):
+            if st.session_state.global_cash < bet:
+                st.error("잔액이 부족합니다!")
+            else:
+                # 베팅금 차감 및 상태 변경
+                st.session_state.global_cash -= bet
+                st.session_state.ps_bet = bet
+                st.session_state.ps_state = 'playing'
+                st.session_state.ps_round = 1
+                st.session_state.ps_turn = 'kicker'
+                st.session_state.ps_my_score = 0
+                st.session_state.ps_ai_score = 0
+                st.session_state.ps_logs = []
+                sync_user_data()
+                st.rerun()
+
+    # ── 플레이 및 결과 화면 ──
+    elif state in ['playing', 'done']:
+        my_score = st.session_state.ps_my_score
+        ai_score = st.session_state.ps_ai_score
+        current_round = st.session_state.ps_round
+        turn = st.session_state.ps_turn
+        logs = st.session_state.ps_logs
+
+        # 스코어 보드
+        st.markdown(f"""
+        <div class='scoreboard'>
+          <div style='color:#555;font-size:0.9rem;letter-spacing:2px;margin-bottom:12px;'>🏆 조기축구 결승전 승부차기</div>
+          <div style='display:flex;justify-content:space-around;align-items:center;'>
+            <div><div class='team-label'>{st.session_state.logged_in_user} (나)</div></div>
+            <div>
+              <div class='score-number' style='color:#FFD600;'>{my_score} : {ai_score}</div>
+              <div class='match-time'>Round {min(current_round, 5)} / 5</div>
+            </div>
+            <div><div class='team-label'>동네 라이벌 (AI)</div></div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.write("")
+
+        if state == 'playing':
+            # 플레이어 입력 UI
+            if turn == 'kicker':
+                st.markdown("<h3 style='text-align:center; color:#FF4B4B;'>🔥 당신은 키커입니다! 슛 방향을 선택하세요!</h3>", unsafe_allow_html=True)
+                btn_labels = ["◀️ 좌측으로 슛", "⏺️ 중앙 꽂기", "▶️ 우측으로 슛"]
+            else:
+                st.markdown("<h3 style='text-align:center; color:#4B9EFF;'>🧤 당신은 골키퍼입니다! 다이빙 방향을 예측하세요!</h3>", unsafe_allow_html=True)
+                btn_labels = ["◀️ 좌측 다이빙", "⏺️ 중앙 대기", "▶️ 우측 다이빙"]
+
+            dirs = ["Left", "Center", "Right"]
+            c1, c2, c3 = st.columns(3)
+            
+            # 사용자 선택 처리 함수
+            def process_turn(my_choice):
+                ai_choice = random.choice(dirs)
+                
+                if turn == 'kicker':
+                    # 내가 키커일 때: 내 슛 방향 != AI 다이빙 방향 이면 골!
+                    if my_choice != ai_choice:
+                        st.session_state.ps_my_score += 1
+                        logs.insert(0, f"✅ [Round {current_round}] <b>나(공격)</b>: {my_choice} 슛! / AI(수비): {ai_choice} 다이빙 ➔ <span style='color:#00FF88;'>GOAL!! ⚽</span>")
+                    else:
+                        logs.insert(0, f"❌ [Round {current_round}] <b>나(공격)</b>: {my_choice} 슛! / AI(수비): {ai_choice} 다이빙 ➔ <span style='color:#FF4B4B;'>막혔습니다!! 🧤</span>")
+                    # 다음은 수비 턴
+                    st.session_state.ps_turn = 'keeper'
+                    
+                else:
+                    # 내가 수비일 때: 내 다이빙 방향 == AI 슛 방향 이면 선방!
+                    if my_choice == ai_choice:
+                        logs.insert(0, f"✅ [Round {current_round}] AI(공격): {ai_choice} 슛! / <b>나(수비)</b>: {my_choice} 다이빙 ➔ <span style='color:#00FF88;'>슈퍼 세이브!! 🧤</span>")
+                    else:
+                        st.session_state.ps_ai_score += 1
+                        logs.insert(0, f"❌ [Round {current_round}] AI(공격): {ai_choice} 슛! / <b>나(수비)</b>: {my_choice} 다이빙 ➔ <span style='color:#FF4B4B;'>실점했습니다... ⚽</span>")
+                    
+                    # 수비 턴이 끝나면 라운드 증가 및 공격 턴으로
+                    st.session_state.ps_turn = 'kicker'
+                    st.session_state.ps_round += 1
+
+                # 5라운드 턴까지 다 돌았거나 남은 기회로 역전 불가능할 때 게임 종료 처리 가능
+                # (여기서는 심플하게 무조건 5라운드 끝까지 차는 것으로 구현)
+                if st.session_state.ps_round > 5:
+                    st.session_state.ps_state = 'done'
+
+            # 버튼 UI
+            if c1.button(btn_labels[0], use_container_width=True):
+                process_turn("Left"); st.rerun()
+            if c2.button(btn_labels[1], use_container_width=True):
+                process_turn("Center"); st.rerun()
+            if c3.button(btn_labels[2], use_container_width=True):
+                process_turn("Right"); st.rerun()
+
+        else: # state == 'done'
+            bet = st.session_state.ps_bet
+            if my_score > ai_score:
+                result_txt, result_col, prize = "🎉 승리! 상금을 획득합니다!", "#00FF88", bet * 2
+            elif my_score == ai_score:
+                result_txt, result_col, prize = "🤝 치열한 접전 끝 무승부! 원금 반환", "#888888", bet
+            else:
+                result_txt, result_col, prize = "😢 패배... 베팅금을 잃었습니다.", "#FF4B4B", 0
+
+            net = prize - bet
+            net_str = f"+{format_korean_money(net)}" if net > 0 else f"-{format_korean_money(abs(net))}" if net < 0 else "베팅금 반환"
+            
+            st.markdown(f"""
+            <div style='text-align:center;background:rgba(0,0,0,0.4);border:2px solid {result_col};
+                 border-radius:18px;padding:28px;margin:20px 0;box-shadow:0 0 30px {result_col}44;'>
+              <div style='font-size:1.8rem;font-weight:900;color:{result_col};'>{result_txt}</div>
+              <div style='font-size:1.3rem;font-weight:900;margin-top:10px;'>{net_str}</div>
+              <div style='color:#666;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 정산은 최초 한 번만
+            if 'ps_paid' not in st.session_state:
+                st.session_state.ps_paid = True
+                if prize > 0:
+                    st.session_state.global_cash += prize
+                    if bet >= 10_000_000_000:
+                        claim_hidden_title("penalty_master", "👑 [유일무이] 거미손")
+                    
+                # 거래 기록 로그 남기기
+                if net > 0:
+                    log_tx(st.session_state.logged_in_user, "승부차기", "승부차기 승리", net)
+                elif net < 0:
+                    log_tx(st.session_state.logged_in_user, "승부차기", "승부차기 패배", net)
+                    
+                sync_user_data()
+
+            if st.button("🔄 다시 하기", use_container_width=True):
+                for k in ['ps_state','ps_bet','ps_round','ps_turn','ps_my_score','ps_ai_score','ps_logs','ps_paid']:
+                    if k in st.session_state: del st.session_state[k]
+                st.rerun()
+
+        # 중계 로그 출력
+        if logs:
+            st.write("---")
+            st.markdown("#### 📡 실시간 중계 기록")
+            for log in logs:
+                st.markdown(f"<div class='commentary-item'>{log}</div>", unsafe_allow_html=True)
+
+# =====================================================================
 # 💻 정처기 CBT
 # =====================================================================
 elif menu == "💻 정처기 CBT":
@@ -2729,6 +2905,7 @@ elif menu == "📜 내 거래 기록":
                 "부동산판매":"🏷️","부동산수금":"💰","송금":"📤","대출":"💳","대출상환":"🏦",
                 "로또":"🎫","축구베팅":"⚽","레이싱":"🏎️","슬롯":"🎰",
                 "광산":"⛏️","CBT":"💻","칭호구매":"👑","VIP슬롯":"💎",
+                "승부차기":"🥅", # 
             }
             cat_ico = cat_icons.get(log['category'], "📋")
             st.markdown(f"""
