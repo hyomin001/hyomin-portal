@@ -81,7 +81,7 @@ GACHA_POOL = [
     {"grade": "💎 전설", "name": "👑 [시즌한정] 우주의 도박꾼",        "weight": 1,  "type": "title"},
     {"grade": "💎 전설", "name": "👑 [시즌한정] 운영자를 노린다",        "weight": 1,  "type": "title"},
     {"grade": "💎 전설", "name": "👑 [시즌한정] 갓생러",                "weight": 2,  "type": "title"},
-    {"grade": "💎 전설", "name": "👑 [시즌한정] 전",    "weight": 1,  "type": "title"},
+    {"grade": "💎 전설", "name": "👑 [시즌한정] 전설",    "weight": 1,  "type": "title"},
     {"grade": "💎 전설", "name": "👑 [시즌한정] 돈복사 의혹자",         "weight": 1,  "type": "title"},
     {"grade": "💎 전설", "name": "👑 [시즌한정] 서버 경제 붕괴자",       "weight": 1,  "type": "title"},
     # ── 🔴 영웅 ──
