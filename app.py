@@ -410,10 +410,10 @@ if 'logged_in_user' not in st.session_state:
   font-weight:900; text-align:center;
   background:linear-gradient(135deg,#00E5FF 0%,#FF00FF 50%,#FFD600 100%);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  padding:20px 0; letter-spacing:4px; animation:glow 3s ease-in-out infinite alternate;
+  padding:20px 0 5px 0; letter-spacing:4px; animation:glow 3s ease-in-out infinite alternate;
 }
 @keyframes glow { from{filter:drop-shadow(0 0 10px #00E5FF)} to{filter:drop-shadow(0 0 30px #FF00FF)} }
-.login-sub { text-align:center; color:#888 !important; font-size:1rem; margin-bottom:30px; letter-spacing:3px; }
+.login-sub { text-align:center; color:#888 !important; font-size:1rem; margin-bottom:20px; letter-spacing:3px; }
 .stTextInput>div>div>input {
   background:rgba(0,229,255,0.05) !important; border:1px solid rgba(0,229,255,0.3) !important;
   border-radius:8px !important; color:#000 !important; font-size:1rem !important; padding:12px !important;
@@ -426,7 +426,37 @@ if 'logged_in_user' not in st.session_state:
 </style>""", unsafe_allow_html=True)
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
-    st.markdown("<div class='login-sub'>∙ 가상 자산 시뮬레이터 v18.2 ∙</div>", unsafe_allow_html=True)
+    st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
+
+    # ---------------------------------------------------------
+    # ✨ 신규: 로그인 화면 게임 소개(스플래시) 패널
+    # ---------------------------------------------------------
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(255, 0, 200, 0.05)); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 15px; padding: 25px; margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);'>
+        <h3 style='color: #FFD600 !important; margin-top: 0; margin-bottom: 20px; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚀 무엇을 하는 게임인가요?</h3>
+        <div style='display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;'>
+            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
+                <div style='font-size: 2.2rem; margin-bottom: 5px;'>📈</div>
+                <b style='color:#00E5FF; font-size: 1.1rem;'>투자 & 자산 증식</b><br>
+                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>주식, 코인, 부동산<br>안전하고 확실한 부의 축적</span>
+            </div>
+            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
+                <div style='font-size: 2.2rem; margin-bottom: 5px;'>🎰</div>
+                <b style='color:#FF4B4B; font-size: 1.1rem;'>도박 & 미니게임</b><br>
+                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>슬롯, 카지노, 하이퍼카 레이싱<br>하이리스크 하이리턴 일확천금</span>
+            </div>
+            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
+                <div style='font-size: 2.2rem; margin-bottom: 5px;'>⚔️</div>
+                <b style='color:#00FF88; font-size: 1.1rem;'>경쟁 & RPG 요소</b><br>
+                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>전설의 명검 강화, 클랜전<br>서버 1위 달성 및 칭호 획득</span>
+            </div>
+        </div>
+        <p style='color: #ddd; font-size: 0.95rem; margin: 0; line-height: 1.6;'>
+            가입 즉시 초기 정착금 <b style='color:#00E5FF; font-size:1.1rem;'>1억 원</b>이 지급됩니다.<br>지금 바로 시민으로 등록하고 우주 최고의 억만장자가 되어보세요!
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    # ---------------------------------------------------------
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
@@ -830,7 +860,7 @@ if st.session_state.loan > 0 and nw < 0:
 # 🧭 메뉴
 # ==============================
 if "current_page" not in st.session_state:
-    st.session_state.current_page = "🏠 홈 광장"
+    st.session_state.current_page = "🏠 홈 광장 (튜토리얼)"
 
 is_admin = st.session_state.logged_in_user == "admin"
 is_vip   = nw >= 100_000_000_000 or is_admin
@@ -968,7 +998,7 @@ if menu == "💎 VIP 라운지":
 # =====================================================================
 # 🏠 홈 광장
 # =====================================================================
-elif menu == "🏠 홈 광장":
+elif menu == "🏠 홈 광장 (튜토리얼)":
     st.title("🌌 HYOMIN UNIVERSE")
     
     # 1. 게임 캐릭터 프로필 느낌의 UI
