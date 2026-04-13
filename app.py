@@ -532,11 +532,6 @@ html, body, * { font-family: 'Noto Sans KR', -apple-system, sans-serif !importan
 # ==============================
 IS_PC = "🖥️" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
 
-# ==============================
-# 🎨 CSS
-# ==============================
-IS_PC = "🖥️" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
-
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
@@ -949,8 +944,8 @@ if IS_PC:
         # 유저 프로필
         st.markdown(f"""
 <div style='padding:14px 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(0,229,255,0.2);
-     border:1px solid #e8e8e8; margin-bottom:14px;'>
-  <div style='font-size:0.82rem; color:#999; margin-bottom:2px;'>접속 중</div>
+     border-radius:10px; margin-bottom:14px;'>
+  <div style='font-size:0.8rem; color:#00E5FF; margin-top:3px;'>{st.session_state.equipped_title}</div>
   <div style='font-size:1rem; font-weight:700; color:#E2E8F0;'>
     {st.session_state.logged_in_user}
     {"  🔴" if my_unread > 0 else ""}
@@ -1002,7 +997,7 @@ else:
         st.markdown(f"""
 <div style='font-size:0.82rem; color:#999;'>
   👤 <b style='color:#E2E8F0;'>{st.session_state.logged_in_user}</b>{unread_txt}
-  &nbsp;|&nbsp; <span style='color:#1a73e8;'>{st.session_state.equipped_title}</span>
+  &nbsp;|&nbsp; <span style='color:#00E5FF;'>{st.session_state.equipped_title}</span>
 </div>
 <div style='font-size:0.9rem; font-weight:700; color:#E2E8F0; margin-top:2px;'>
   💵 {format_korean_money(st.session_state.global_cash)}
@@ -1058,7 +1053,7 @@ if menu == "💎 VIP 라운지":
   <div style='color:#888;font-size:0.8rem;letter-spacing:2px;margin-bottom:12px;'>🕵️ INSIDER INTELLIGENCE</div>
   <div style='font-size:1.4rem;font-weight:900;color:#FFD600;'>{nxt_ico} {nxt_nm}</div>
   <div style='font-size:1.1rem;font-weight:900;color:{clr};margin-top:10px;'>{status}</div>
-  <div style='color:#666;font-size:0.78rem;margin-top:14px;'>※ 정보 유출 시 창조주의 징벌이 따릅니다</div>
+  <div style='color:#888;font-size:0.78rem;margin-top:14px;'>※ 정보 유출 시 창조주의 징벌이 따릅니다</div>
 </div>""", unsafe_allow_html=True)
 
     st.write("")
@@ -1331,7 +1326,7 @@ elif menu == "📈 주식 트레이딩":
         if trade_rem > 0:
             st.markdown(f"<span class='cooldown-badge'>일반 거래 쿨다운 {trade_rem:.1f}초</span>", unsafe_allow_html=True)
 
-        st.markdown(f"<div style='color:#666;font-size:0.78rem;margin-bottom:8px;'>풀매수/풀매도 오늘 남은 횟수: <b style='color:#FFD600;'>{bulk_left}회</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='color:#888;font-size:0.78rem;margin-bottom:8px;'>풀매수/풀매도 오늘 남은 횟수: <b style='color:#FFD600;'>{bulk_left}회</b></div>", unsafe_allow_html=True)
 
         def _safe_buy(qty, price, sid_):
             total = qty * price
@@ -1630,7 +1625,7 @@ elif menu == "🏢 부동산 거래소":
      border:1px solid rgba(0,255,136,0.3);border-radius:14px;padding:18px;text-align:center;margin-bottom:16px;'>
   <div style='color:#888;font-size:0.82rem;letter-spacing:2px;margin-bottom:6px;'>누적 임대 수익</div>
   <div style='font-family:Orbitron,monospace;font-size:1.8rem;font-weight:900;color:#00FF88;'>{format_korean_money(pending)}</div>
-  <div style='color:#666;font-size:0.78rem;margin-top:6px;'>초당 {format_korean_money(total_income_rate)} 수입 중</div>
+  <div style='color:#888;font-size:0.78rem;margin-top:6px;'>초당 {format_korean_money(total_income_rate)} 수입 중</div>
 </div>""", unsafe_allow_html=True)
 
         cd_rent = cooldown_remaining("rent_collect", 3.0)
@@ -1674,7 +1669,7 @@ elif menu == "🏢 부동산 거래소":
       <div style='color:#888;font-size:0.8rem;'>{info['desc']}</div>
       <div style='margin-top:4px;'>
         <span style='color:#FFD600;font-weight:900;'>{format_korean_money(info['base_price'])}</span>
-        <span style='color:#555;margin:0 8px;'>|</span>
+        <span style='color:#777;margin:0 8px;'>|</span>
         <span class='estate-income'>+{format_korean_money(info['income'])}/초</span>
         <span style='color:#888;margin-left:10px;font-size:0.78rem;'>잔여 {il['remaining']}개</span>
       </div>
@@ -1817,7 +1812,7 @@ elif menu == "🏢 부동산 거래소":
         <div style='color:#888;font-size:0.8rem;'>{info['desc']}</div>
         <div style='margin-top:4px;'>
           <span style='color:#94A3B8;font-size:0.82rem;'>보유 {cnt}채 (판매 등록 {my_listed}채)</span>
-          <span style='color:#555;margin:0 8px;'>|</span>
+          <span style='color:#777;margin:0 8px;'>|</span>
           <span class='estate-income'>+{format_korean_money(info['income'] * cnt)}/초</span>
         </div>
       </div>
@@ -2171,11 +2166,11 @@ elif menu == "⚽ 구단주 시뮬레이터":
 
                 scoreboard.markdown(f"""
 <div class='scoreboard'>
-  <div style='color:#555;font-size:0.78rem;letter-spacing:2px;margin-bottom:16px;'>{stadium}</div>
+  <div style='color:#777;font-size:0.78rem;letter-spacing:2px;margin-bottom:16px;'>{stadium}</div>
   <div style='display:flex;justify-content:space-around;align-items:center;'>
-    <div><div class='team-label'>{my_team}</div><div style='color:#666;font-size:0.78rem;'>{my_form}</div></div>
+    <div><div class='team-label'>{my_team}</div><div style='color:#888;font-size:0.78rem;'>{my_form}</div></div>
     <div><div class='score-number'>{h_score} : {a_score}</div><div class='match-time'>⏱ {real_min}' / 90'</div></div>
-    <div><div class='team-label'>{opp_team}</div><div style='color:#666;font-size:0.78rem;'>{opp_form}</div></div>
+    <div><div class='team-label'>{opp_team}</div><div style='color:#888;font-size:0.78rem;'>{opp_form}</div></div>
   </div>
 </div>""", unsafe_allow_html=True)
                 comm_box.markdown("".join(f"<div class='commentary-item'>{c}</div>" for c in commentaries[:6]), unsafe_allow_html=True)
@@ -2261,7 +2256,7 @@ elif menu == "⚽ 조기축구 승부차기":
         # 스코어 보드
         st.markdown(f"""
         <div class='scoreboard'>
-          <div style='color:#555;font-size:0.9rem;letter-spacing:2px;margin-bottom:12px;'>🏆 조기축구 결승전 승부차기</div>
+          <div style='color:#777;font-size:0.9rem;letter-spacing:2px;margin-bottom:12px;'>🏆 조기축구 결승전 승부차기</div>
           <div style='display:flex;justify-content:space-around;align-items:center;'>
             <div><div class='team-label'>{st.session_state.logged_in_user} (나)</div></div>
             <div>
@@ -2342,7 +2337,7 @@ elif menu == "⚽ 조기축구 승부차기":
                  border-radius:18px;padding:28px;margin:20px 0;box-shadow:0 0 30px {result_col}44;'>
               <div style='font-size:1.8rem;font-weight:900;color:{result_col};'>{result_txt}</div>
               <div style='font-size:1.3rem;font-weight:900;margin-top:10px;'>{net_str}</div>
-              <div style='color:#666;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
+              <div style='color:#888;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -2638,7 +2633,7 @@ elif menu == "🎰 럭키 슬롯":
     st.markdown(f"""
 <div class='card' style='text-align:center;'>
   <div style='color:#888;font-size:0.82rem;'>비용: <b style='color:#FFD600;'>{format_korean_money(tier['cost'])}</b> &nbsp;|&nbsp; 잭팟: <b style='color:#FF00FF;'>{format_korean_money(tier['jackpot'])}</b></div>
-  <div style='color:#666;font-size:0.78rem;margin-top:4px;'>💎=3개 잭팟, 같은 기호 3개=고배당, 2개=소배당</div>
+  <div style='color:#888;font-size:0.78rem;margin-top:4px;'>💎=3개 잭팟, 같은 기호 3개=고배당, 2개=소배당</div>
 </div>""", unsafe_allow_html=True)
 
     slot_display = st.empty()
@@ -2717,7 +2712,7 @@ elif menu == "🃏 블랙잭 카지노":
             if i == 1 and hide_second:
                 parts.append("<span style='font-size:2.2rem;background:#222;border:2px solid #555;padding:6px 10px;border-radius:8px;margin:3px;display:inline-block;'>🂠</span>")
             else:
-                col = "color:#FF4B4B;" if s in ['♥','♦'] else "color:#E2E8F0;"
+                col = "color:#FF4B4B;" if s in ['♥','♦'] else "color:#1a1a1a;"
                 parts.append(f"<span style='font-size:1.5rem;font-weight:900;background:#fff;{col}padding:6px 12px;border-radius:8px;margin:3px;display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,0.4);'>{r}{s}</span>")
         return " ".join(parts)
 
@@ -2858,7 +2853,7 @@ elif menu == "🃏 블랙잭 카지노":
                  border-radius:18px;padding:28px;margin:20px 0;box-shadow:0 0 30px {res_col}44;'>
               <div style='font-size:1.8rem;font-weight:900;color:{res_col};'>{result}</div>
               <div style='font-size:1.3rem;font-weight:900;color:{net_col};margin-top:10px;'>{net_str}</div>
-              <div style='color:#666;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
+              <div style='color:#888;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -3099,7 +3094,7 @@ elif menu == "📜 내 거래 기록":
             cat_ico = cat_icons.get(log['category'], "📋")
             st.markdown(f"""
 <div class='tx-row'>
-  <span style='color:#555;min-width:110px;'>{log['time']}</span>
+  <span style='color:#777;min-width:110px;'>{log['time']}</span>
   <span style='color:#888;min-width:60px;'>{cat_ico} {log['category']}</span>
   <span style='color:#94A3B8;flex:1;margin:0 12px;'>{log['desc']}</span>
   <span style='color:{color};font-weight:900;'>{arrow} {sign}{format_korean_money(abs(amt))}</span>
@@ -3226,7 +3221,7 @@ elif menu == "🏅 랭킹 & 게시판":
 <div class='card' style='margin:6px 0;padding:12px 16px;'>
   <div style='display:flex;justify-content:space-between;margin-bottom:6px;'>
     <span><b style='color:#00E5FF;'>{c['name']}</b> <span style='color:#FFD600;font-size:0.82rem;'>{c.get('title','')}</span></span>
-    <span style='color:#555;font-size:0.78rem;'>{c.get('time','')}</span>
+    <span style='color:#777;font-size:0.78rem;'>{c.get('time','')}</span>
   </div>
   <div style='color:#94A3B8;font-size:0.92rem;'>{c['comment']}</div>
 </div>""", unsafe_allow_html=True)
@@ -3279,7 +3274,7 @@ elif menu == "✉️ 개인 쪽지함":
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #00E5FF;'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
                     <span style='font-size:0.9rem;'>{read_badge}보낸 사람: <b style='color:#00E5FF;'>{m['sender']}</b></span>
-                    <span style='color:#555;font-size:0.75rem;'>{m['time']}</span>
+                    <span style='color:#777;font-size:0.75rem;'>{m['time']}</span>
                   </div>
                   <div style='color:#CBD5E1;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
                     {m['content']}
@@ -3305,7 +3300,7 @@ elif menu == "✉️ 개인 쪽지함":
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #FFD600; background:rgba(255,215,0,0.02);'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
                     <span style='font-size:0.9rem;color:#94A3B8;'>받는 사람: <b style='color:#FFD600;'>{m['receiver']}</b></span>
-                    <span style='color:#555;font-size:0.75rem;'>{m['time']}</span>
+                    <span style='color:#777;font-size:0.75rem;'>{m['time']}</span>
                   </div>
                   <div style='color:#94A3B8;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
                     {m['content']}
@@ -3971,7 +3966,7 @@ elif menu == "🏰 길드/클랜":
                     </div>
                     <div style='text-align:right;'>
                       <div style='color:#00E5FF;font-weight:900;'>{format_korean_money(total_nw)}</div>
-                      <div style='color:#666;font-size:0.78rem;'>멤버 {len(cdata['members'])}명 | 클랜장: {cdata['leader']}</div>
+                      <div style='color:#888;font-size:0.78rem;'>멤버 {len(cdata['members'])}명 | 클랜장: {cdata['leader']}</div>
                     </div>
                   </div>
                 </div>
@@ -4634,7 +4629,7 @@ elif menu == "🛠️ 창조주 통제소":
                 sign  = "+" if amt > 0 else ""
                 st.markdown(f"""
                 <div style='font-size:0.85rem; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);'>
-                    <span style='color:#555;'>[{log['time']}]</span> 
+                    <span style='color:#777;'>[{log['time']}]</span> 
                     <b style='color:#00E5FF;'>{log['uid']}</b>님이 
                     <span style='color:#94A3B8;'>{log['desc']}</span> 
                     <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
@@ -4806,7 +4801,7 @@ elif menu == "🛠️ 창조주 통제소":
                         st.markdown(f"""
                         <div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>
                           <b style='color:#00E5FF;'>{m['sender']}</b> → {m['content']} <br>
-                          <span style='color:#555;'>{m['time']}</span>
+                          <span style='color:#777;'>{m['time']}</span>
                         </div>""", unsafe_allow_html=True)
                 
                 with col_out:
@@ -4815,7 +4810,7 @@ elif menu == "🛠️ 창조주 통제소":
                         st.markdown(f"""
                         <div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>
                           → <b style='color:#FFD600;'>{m['receiver']}</b>: {m['content']} <br>
-                          <span style='color:#555;'>{m['time']}</span>
+                          <span style='color:#777;'>{m['time']}</span>
                         </div>""", unsafe_allow_html=True)
 
             # 2. 전체 로그 (시간순)
@@ -4837,7 +4832,7 @@ elif menu == "🛠️ 창조주 통제소":
                 for log in global_logs[:100]:
                     st.markdown(f"""
                     <div style='font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding:5px 0;'>
-                      <span style='color:#555;'>[{log['time']}]</span> 
+                      <span style='color:#777;'>[{log['time']}]</span> 
                       <b style='color:#00E5FF;'>{log['from']}</b> ➔ <b style='color:#FFD600;'>{log['to']}</b> : {log['content']}
                     </div>""", unsafe_allow_html=True)
 
