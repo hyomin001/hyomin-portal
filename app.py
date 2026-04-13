@@ -857,16 +857,22 @@ menu_ops = [
     "🎴 가챠 뽑기",
     "📜 내 거래 기록",
     "🏅 랭킹 & 게시판",
+    "✉️ 개인 쪽지함",
 ]
 if is_vip:   menu_ops.insert(2, "💎 VIP 라운지")
 if is_admin: menu_ops.append("🛠️ 창조주 통제소")
+
+# 👇 여기서부터 복사해서 덮어쓰기 👇
+msg_db_check = load_db("messages_db.json", {})
+my_unread = sum(1 for m in msg_db_check.get(st.session_state.logged_in_user, {}).get("inbox", []) if not m.get("read", False))
+badge_html = f"<span style='background:#FF4B4B;color:#fff;border-radius:10px;padding:2px 6px;font-size:0.7rem;margin-left:8px;font-weight:900;'>새 쪽지 {my_unread}</span>" if my_unread > 0 else ""
 
 if IS_PC:
     with st.sidebar:
         st.markdown(f"""
 <div style='padding:16px;background:rgba(0,229,255,0.05);border-radius:12px;
      border:1px solid rgba(0,229,255,0.2);margin-bottom:16px;'>
-  <div style='font-size:1.3rem;font-weight:900;color:#00E5FF;'>👤 {st.session_state.logged_in_user}</div>
+  <div style='font-size:1.3rem;font-weight:900;color:#00E5FF;'>👤 {st.session_state.logged_in_user}{badge_html}</div>
   <div style='font-size:0.85rem;color:#FFD600;margin-top:4px;'>{st.session_state.equipped_title}</div>
 </div>""", unsafe_allow_html=True)
         st.metric("💵 현금",   format_korean_money(st.session_state.global_cash))
@@ -887,7 +893,7 @@ if IS_PC:
 else:
     col_a, col_b = st.columns([3, 1])
     with col_a:
-        st.markdown(f"<div style='font-size:0.82rem;color:#888;'>👤 <b style='color:#00E5FF;'>{st.session_state.logged_in_user}</b> | {st.session_state.equipped_title}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:0.82rem;color:#888;'>👤 <b style='color:#00E5FF;'>{st.session_state.logged_in_user}</b>{badge_html} | {st.session_state.equipped_title}</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size:0.9rem;color:#FFD600;font-weight:900;'>💵 {format_korean_money(st.session_state.global_cash)}</div>", unsafe_allow_html=True)
     with col_b:
         if st.button("로그아웃"):
@@ -899,6 +905,7 @@ else:
     if selected_menu != st.session_state.current_page:
         st.session_state.current_page = selected_menu
         st.rerun()
+
 
 menu = st.session_state.current_page
 
@@ -3043,6 +3050,129 @@ elif menu == "🏅 랭킹 & 게시판":
 </div>""", unsafe_allow_html=True)
 
 # =====================================================================
+# ✉️ 개인 쪽지함 (1:1 DM)
+# =====================================================================
+elif menu == "✉️ 개인 쪽지함":
+    st.title("✉️ 1:1 비밀 쪽지함")
+    st.markdown("<div style='color:#888;margin-bottom:16px;'>다른 시민들과 은밀하게 작전을 모의하거나 흥정하세요. 시스템은 여러분의 대화를 엿듣지 않습니다. (아마도요)</div>", unsafe_allow_html=True)
+
+    uid = st.session_state.logged_in_user
+    msg_db = load_db("messages_db.json", {})
+    
+    # 내 DB 구조 초기화
+    if uid not in msg_db:
+        msg_db[uid] = {"inbox": [], "outbox": []}
+
+    tab_in, tab_out, tab_send = st.tabs(["📥 받은 편지함", "📤 보낸 편지함", "✍️ 쪽지 쓰기"])
+
+    # ── [1] 받은 편지함 ──
+    with tab_in:
+        inbox = msg_db[uid].get("inbox", [])
+        
+        # '읽음' 처리 로직 (탭에 들어오면 미확인 쪽지를 모두 읽음으로 처리)
+        unread_exist = False
+        for m in inbox:
+            if not m.get("read", False):
+                m["read"] = True
+                unread_exist = True
+        if unread_exist:
+            save_db("messages_db.json", msg_db)
+            
+        if not inbox:
+            st.info("받은 쪽지가 없습니다.")
+        else:
+            if st.button("🗑️ 받은 쪽지 모두 비우기", use_container_width=True, type="secondary"):
+                msg_db[uid]["inbox"] = []
+                save_db("messages_db.json", msg_db)
+                st.success("받은 쪽지함이 비워졌습니다.")
+                st.rerun()
+                
+            st.write("---")
+            # 최신순으로 정렬해서 보여줌
+            for m in reversed(inbox[-50:]):  # 최근 50개만 표시
+                read_badge = "" if m.get("read_before", False) else "<span style='color:#FF4B4B;font-size:0.75rem;font-weight:900;'>[NEW]</span> "
+                m["read_before"] = True # 화면에 그릴 때 예전 상태 방지용 (DB저장 안함)
+                
+                st.markdown(f"""
+                <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #00E5FF;'>
+                  <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
+                    <span style='font-size:0.9rem;'>{read_badge}보낸 사람: <b style='color:#00E5FF;'>{m['sender']}</b></span>
+                    <span style='color:#555;font-size:0.75rem;'>{m['time']}</span>
+                  </div>
+                  <div style='color:#E8E8F0;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
+                    {m['content']}
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # ── [2] 보낸 편지함 ──
+    with tab_out:
+        outbox = msg_db[uid].get("outbox", [])
+        if not outbox:
+            st.info("보낸 쪽지가 없습니다.")
+        else:
+            if st.button("🗑️ 보낸 쪽지 모두 비우기", key="clear_outbox", use_container_width=True, type="secondary"):
+                msg_db[uid]["outbox"] = []
+                save_db("messages_db.json", msg_db)
+                st.success("보낸 쪽지함이 비워졌습니다.")
+                st.rerun()
+                
+            st.write("---")
+            for m in reversed(outbox[-50:]):
+                st.markdown(f"""
+                <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #FFD600; background:rgba(255,215,0,0.02);'>
+                  <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
+                    <span style='font-size:0.9rem;color:#aaa;'>받는 사람: <b style='color:#FFD600;'>{m['receiver']}</b></span>
+                    <span style='color:#555;font-size:0.75rem;'>{m['time']}</span>
+                  </div>
+                  <div style='color:#ddd;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
+                    {m['content']}
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # ── [3] 쪽지 쓰기 ──
+    with tab_send:
+        users_db = load_db(USERS_FILE, {})
+        # 관리자와 본인을 제외한 수신 가능 유저 목록
+        user_list = [u for u in users_db.keys() if u != "admin" and u != uid]
+        
+        if not user_list:
+            st.warning("현재 우주에 쪽지를 보낼 다른 시민이 존재하지 않습니다.")
+        else:
+            target_user = st.selectbox("수신자 선택", user_list)
+            msg_content = st.text_area("쪽지 내용", placeholder="여기에 은밀한 메시지를 작성하세요. (최대 500자)", max_chars=500, height=150)
+            
+            cd_msg = cooldown_remaining("send_dm", 3.0)
+            if cd_msg > 0:
+                st.warning(f"⏱️ 도배 방지: {cd_msg:.1f}초 후 전송 가능")
+            elif st.button("📨 쪽지 전송", use_container_width=True):
+                if not msg_content.strip():
+                    st.error("내용을 입력해주세요.")
+                else:
+                    set_cooldown("send_dm")
+                    now_str = datetime.now(KST).strftime("%m/%d %H:%M:%S")
+                    
+                    # 새로운 쪽지 객체
+                    new_msg_in = {"sender": uid, "content": msg_content.strip(), "time": now_str, "read": False}
+                    new_msg_out = {"receiver": target_user, "content": msg_content.strip(), "time": now_str}
+                    
+                    # 수신자 DB에 추가
+                    if target_user not in msg_db:
+                        msg_db[target_user] = {"inbox": [], "outbox": []}
+                    msg_db[target_user]["inbox"].append(new_msg_in)
+                    
+                    # 내 발신 DB에 추가
+                    msg_db[uid]["outbox"].append(new_msg_out)
+                    
+                    # 저장
+                    save_db("messages_db.json", msg_db)
+                    
+                    st.success(f"✅ {target_user}님에게 쪽지를 성공적으로 전송했습니다!")
+                    time.sleep(1)
+                    st.rerun()
+
+# =====================================================================
 # 📅 일일 퀘스트
 # =====================================================================
 elif menu == "📅 일일 퀘스트":
@@ -3777,10 +3907,10 @@ elif menu == "🛠️ 창조주 통제소":
     st.title("🛠️ 창조주 통제소")
     st.markdown("<div style='color:#FF4B4B;font-size:0.85rem;margin-bottom:10px;'>⚠️ 창조주 전용 패널입니다. 이곳의 모든 조작은 우주(서버) 전체에 즉시 반영됩니다.</div>", unsafe_allow_html=True)
 
-    t1, t2, t3, t4, t5, t6, t7, t8, t9 = st.tabs([
+    t1, t2, t3, t4, t5, t6, t7, t8, t9, t10 = st.tabs([
         "👤 유저 개조", "🏢 부동산 통제", "💬 게시판 관리", "🌍 글로벌 정책",
         "📈 시장 조작", "📊 전체 현황", "👁️ 전지적 모니터링", "🏎️ 차고지 조작",
-        "🏆 시즌 관리"
+        "🏆 시즌 관리", "📩 쪽지 감시"
     ])
 
     with t1:
@@ -4468,3 +4598,71 @@ elif menu == "🛠️ 창조주 통제소":
                 - 🥈 2위: {rec.get('rank2','?')}
                 - 🥉 3위: {rec.get('rank3','?')}
                 """)
+
+
+# ── [t10] 쪽지 감시 (창조주 전용) ──
+    with t10:
+        st.markdown("### 👁️ 전지적 쪽지 모니터링")
+        st.caption("우주 내에서 오가는 모든 비밀 쪽지를 감시합니다. 삭제 및 초기화 권한이 있습니다.")
+
+        all_msg_db = load_db("messages_db.json", {})
+        
+        if not all_msg_db:
+            st.info("현재 우주에 생성된 쪽지 데이터가 없습니다.")
+        else:
+            admin_sub_tabs = st.tabs(["🔍 유저별 조회", "📜 전체 로그", "💣 데이터 관리"])
+
+            # 1. 유저별 조회
+            with admin_sub_tabs[0]:
+                target_u = st.selectbox("조회할 유저 선택", list(all_msg_db.keys()), key="admin_msg_u")
+                u_msgs = all_msg_db.get(target_u, {})
+                
+                col_in, col_out = st.columns(2)
+                with col_in:
+                    st.markdown(f"**📥 {target_u}의 받은 쪽지**")
+                    for m in reversed(u_msgs.get("inbox", [])):
+                        st.markdown(f"""
+                        <div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>
+                          <b style='color:#00E5FF;'>{m['sender']}</b> → {m['content']} <br>
+                          <span style='color:#555;'>{m['time']}</span>
+                        </div>""", unsafe_allow_html=True)
+                
+                with col_out:
+                    st.markdown(f"**📤 {target_u}의 보낸 쪽지**")
+                    for m in reversed(u_msgs.get("outbox", [])):
+                        st.markdown(f"""
+                        <div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>
+                          → <b style='color:#FFD600;'>{m['receiver']}</b>: {m['content']} <br>
+                          <span style='color:#555;'>{m['time']}</span>
+                        </div>""", unsafe_allow_html=True)
+
+            # 2. 전체 로그 (시간순)
+            with admin_sub_tabs[1]:
+                st.markdown("**🌐 우주 전체 쪽지 타임라인**")
+                global_logs = []
+                for sender_id, data in all_msg_db.items():
+                    for m in data.get("outbox", []):
+                        global_logs.append({
+                            "time": m['time'],
+                            "from": sender_id,
+                            "to": m['receiver'],
+                            "content": m['content']
+                        })
+                
+                # 시간 역순 정렬
+                global_logs.sort(key=lambda x: x['time'], reverse=True)
+                
+                for log in global_logs[:100]:
+                    st.markdown(f"""
+                    <div style='font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding:5px 0;'>
+                      <span style='color:#555;'>[{log['time']}]</span> 
+                      <b style='color:#00E5FF;'>{log['from']}</b> ➔ <b style='color:#FFD600;'>{log['to']}</b> : {log['content']}
+                    </div>""", unsafe_allow_html=True)
+
+            # 3. 데이터 관리
+            with admin_sub_tabs[2]:
+                st.warning("⚠️ 주의: 쪽지 데이터를 삭제하면 복구할 수 없습니다.")
+                if st.button("💣 우주 전체 쪽지 DB 초기화", use_container_width=True, type="secondary"):
+                    save_db("messages_db.json", {})
+                    st.success("전체 쪽지 데이터가 소멸되었습니다.")
+                    st.rerun()
