@@ -404,70 +404,103 @@ if 'logged_in_user' in st.session_state:
 if 'logged_in_user' not in st.session_state:
     st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
-.stApp { background: radial-gradient(ellipse at 20% 50%, #0d0221 0%, #050510 60%, #000 100%) !important; }
-* { font-family:'Noto Sans KR',sans-serif !important; color:#FFF !important; }
-.login-title {
-  font-family:'Orbitron',monospace !important; font-size:clamp(2rem,6vw,4rem) !important;
-  font-weight:900; text-align:center;
-  background:linear-gradient(135deg,#00E5FF 0%,#FF00FF 50%,#FFD600 100%);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  padding:20px 0 5px 0; letter-spacing:4px; animation:glow 3s ease-in-out infinite alternate;
+html, body, * { font-family: 'Noto Sans KR', -apple-system, sans-serif !important; }
+.stApp { background: #f7f8fa !important; }
+.stTextInput > div > div > input {
+    background: #fff !important; border: 1px solid #d9d9d9 !important;
+    border-radius: 6px !important; color: #1a1a1a !important; font-size: 0.95rem !important;
 }
-@keyframes glow { from{filter:drop-shadow(0 0 10px #00E5FF)} to{filter:drop-shadow(0 0 30px #FF00FF)} }
-.login-sub { text-align:center; color:#888 !important; font-size:1rem; margin-bottom:20px; letter-spacing:3px; }
-.stTextInput>div>div>input {
-  background:rgba(0,229,255,0.05) !important; border:1px solid rgba(0,229,255,0.3) !important;
-  border-radius:8px !important; color:#000 !important; font-size:1rem !important; padding:12px !important;
+.stButton > button {
+    border-radius: 6px !important; font-weight: 500 !important;
+    border: 1px solid #d9d9d9 !important; background: #fff !important; color: #1a1a1a !important;
+    height: 42px !important;
 }
-.stButton>button {
-  background:linear-gradient(135deg,#00E5FF,#0066FF) !important; border:none !important;
-  border-radius:8px !important; color:#000 !important; font-weight:900 !important;
-  font-size:1rem !important; padding:14px !important; width:100%;
-}
-</style>""", unsafe_allow_html=True)
+.stButton > button:hover { background: #1a73e8 !important; color: #fff !important; border-color: #1a73e8 !important; }
+.stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #e8e8e8 !important; background: transparent !important; }
+.stTabs [aria-selected="true"] { color: #1a73e8 !important; border-bottom: 2px solid #1a73e8 !important; }
+</style>
+""", unsafe_allow_html=True)
 
-    st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
-    st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
-
-    # ---------------------------------------------------------
-    # ✨ 신규: 로그인 화면 게임 소개(스플래시) 패널
-    # ---------------------------------------------------------
+    # ── 상단 헤더 ──
     st.markdown("""
-    <div style='background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(255, 0, 200, 0.05)); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 15px; padding: 25px; margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);'>
-        <h3 style='color: #FFD600 !important; margin-top: 0; margin-bottom: 20px; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚀 무엇을 하는 게임인가요?</h3>
-        <div style='display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;'>
-            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
-                <div style='font-size: 2.2rem; margin-bottom: 5px;'>📈</div>
-                <b style='color:#00E5FF; font-size: 1.1rem;'>투자 & 자산 증식</b><br>
-                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>주식, 코인, 부동산<br>안전하고 확실한 부의 축적</span>
-            </div>
-            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
-                <div style='font-size: 2.2rem; margin-bottom: 5px;'>🎰</div>
-                <b style='color:#FF4B4B; font-size: 1.1rem;'>도박 & 미니게임</b><br>
-                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>슬롯, 카지노, 하이퍼카 레이싱<br>하이리스크 하이리턴 일확천금</span>
-            </div>
-            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
-                <div style='font-size: 2.2rem; margin-bottom: 5px;'>⚔️</div>
-                <b style='color:#00FF88; font-size: 1.1rem;'>경쟁 & RPG 요소</b><br>
-                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>전설의 명검 강화, 클랜전<br>서버 1위 달성 및 칭호 획득</span>
-            </div>
-        </div>
-        <p style='color: #ddd; font-size: 0.95rem; margin: 0; line-height: 1.6;'>
-            가입 즉시 초기 정착금 <b style='color:#00E5FF; font-size:1.1rem;'>1억 원</b>이 지급됩니다.<br>지금 바로 시민으로 등록하고 우주 최고의 억만장자가 되어보세요!
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    # ---------------------------------------------------------
+<div style='background:#fff; border-bottom:1px solid #e8e8e8; padding:14px 24px; display:flex; justify-content:space-between; align-items:center;'>
+  <div style='font-size:1.1rem; font-weight:700; color:#1a1a1a;'>HYOMIN <span style='color:#1a73e8;'>Universe</span></div>
+  <div style='font-size:0.8rem; color:#999;'>자본주의 생존 시뮬레이션 플랫폼</div>
+</div>
+""", unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns([1, 1.5, 1])
+    # ── 히어로 섹션 ──
+    st.markdown("""
+<div style='text-align:center; padding:48px 24px 36px; background:#fff; border-bottom:1px solid #e8e8e8;'>
+  <div style='display:inline-block; font-size:0.75rem; background:#e8f0fe; color:#1a73e8;
+       border-radius:4px; padding:3px 10px; margin-bottom:14px; font-weight:500;'>
+    자본주의 생존 시뮬레이션 플랫폼
+  </div>
+  <h1 style='font-size:1.9rem; font-weight:700; color:#1a1a1a; line-height:1.35; margin-bottom:12px;'>
+    주식·코인·부동산으로<br>억만장자가 되어보세요
+  </h1>
+  <p style='font-size:0.95rem; color:#666; line-height:1.7; max-width:460px; margin:0 auto 24px;'>
+    실시간 투자 시뮬레이션부터 레이싱·슬롯·길드전까지.<br>
+    경쟁하고, 성장하고, 서버 1위를 노리세요.
+  </p>
+  <div style='display:flex; gap:20px; justify-content:center; flex-wrap:wrap; font-size:0.82rem; color:#666;'>
+    <span>✅ 가입 즉시 1억원 지급</span>
+    <span>✅ 실시간 주식·코인 시장</span>
+    <span>✅ 클랜 & 시즌 랭킹</span>
+    <span>✅ 매일 퀘스트 보상</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── 카테고리 카드 ──
+    st.markdown("""
+<div style='padding:28px 24px 16px; background:#f7f8fa;'>
+  <div style='font-size:0.72rem; color:#999; margin-bottom:4px; letter-spacing:0.05em;'>카테고리</div>
+  <div style='font-size:1rem; font-weight:700; color:#1a1a1a; margin-bottom:16px;'>무엇을 하고 싶으세요?</div>
+  <div style='display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:28px;'>
+    <div style='background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; border-top:3px solid #1a73e8;'>
+      <div style='font-size:1.3rem; margin-bottom:8px;'>📈</div>
+      <div style='font-size:0.88rem; font-weight:700; color:#1a1a1a; margin-bottom:4px;'>경제 시뮬레이션</div>
+      <div style='font-size:0.75rem; color:#888; line-height:1.5;'>주식·코인·부동산·대출·명검강화</div>
+    </div>
+    <div style='background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; border-top:3px solid #2e7d32;'>
+      <div style='font-size:1.3rem; margin-bottom:8px;'>⚽</div>
+      <div style='font-size:0.88rem; font-weight:700; color:#1a1a1a; margin-bottom:4px;'>스포츠</div>
+      <div style='font-size:0.75rem; color:#888; line-height:1.5;'>구단주 시뮬레이션·레이싱·승부차기</div>
+    </div>
+    <div style='background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; border-top:3px solid #e67700;'>
+      <div style='font-size:1.3rem; margin-bottom:8px;'>🎮</div>
+      <div style='font-size:0.88rem; font-weight:700; color:#1a1a1a; margin-bottom:4px;'>미니게임</div>
+      <div style='font-size:0.75rem; color:#888; line-height:1.5;'>슬롯·블랙잭·광산·가챠</div>
+    </div>
+    <div style='background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; border-top:3px solid #6741d9;'>
+      <div style='font-size:1.3rem; margin-bottom:8px;'>👥</div>
+      <div style='font-size:0.88rem; font-weight:700; color:#1a1a1a; margin-bottom:4px;'>커뮤니티</div>
+      <div style='font-size:0.75rem; color:#888; line-height:1.5;'>클랜·랭킹·게시판·쪽지</div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── 로그인/회원가입 폼 ──
+    _, c2, _ = st.columns([1, 1.4, 1])
     with c2:
+        st.markdown("""
+<div style='background:#fff; border:1px solid #e8e8e8; border-radius:12px; padding:24px 24px 8px; margin-bottom:8px;'>
+  <div style='text-align:center; margin-bottom:20px;'>
+    <div style='font-size:1.05rem; font-weight:700; color:#1a1a1a;'>HYOMIN <span style='color:#1a73e8;'>Universe</span> 입장</div>
+    <div style='font-size:0.8rem; color:#999; margin-top:4px;'>계정이 없으시면 회원가입 탭을 눌러주세요</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
         device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"], horizontal=True)
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
+
         with tabs[0]:
-            l_id = st.text_input("아이디", placeholder="아이디를 입력하세요")
-            l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
-            if st.button("🚀 유니버스 입장", use_container_width=True):
+            l_id = st.text_input("아이디", placeholder="아이디를 입력하세요", key="login_id")
+            l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="login_pw")
+            if st.button("입장하기", use_container_width=True):
                 users = load_db(USERS_FILE, {})
                 def _do_login(uid):
                     u = users[uid]
@@ -485,7 +518,7 @@ if 'logged_in_user' not in st.session_state:
                         'stats':          u.get('stats', {'wins':0,'losses':0,'races_won':0,'lotto_spent':0}),
                         'crypto_portfolio': u.get('crypto_portfolio', {}),
                         'daily_quests':     u.get('daily_quests', {}),
-                        'weapon_level':   u.get('weapon_level', 0), 
+                        'weapon_level':   u.get('weapon_level', 0),
                         'bulk_trade_date':  u.get('bulk_trade_date', ''),
                         'bulk_trade_count': u.get('bulk_trade_count', 0),
                         'last_estate_reset': u.get('last_estate_reset', 0),
@@ -503,10 +536,11 @@ if 'logged_in_user' not in st.session_state:
                     _do_login(l_id)
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
+
         with tabs[1]:
-            n_id = st.text_input("새 아이디", placeholder="사용할 아이디")
-            n_pw = st.text_input("새 비밀번호", type="password", placeholder="비밀번호 설정")
-            if st.button("✨ 시민 등록하기", use_container_width=True):
+            n_id = st.text_input("새 아이디", placeholder="사용할 아이디", key="reg_id")
+            n_pw = st.text_input("새 비밀번호", type="password", placeholder="비밀번호 설정", key="reg_pw")
+            if st.button("회원가입", use_container_width=True):
                 users = load_db(USERS_FILE, {})
                 if n_id in users or n_id == "admin":
                     st.error("⚠️ 이미 존재하는 아이디입니다.")
@@ -518,7 +552,7 @@ if 'logged_in_user' not in st.session_state:
                                    "real_estate":{},"rent_time":time.time(),
                                    "loan":0,"loan_time":time.time(),"stats":{}}
                     save_db(USERS_FILE, users)
-                    st.success("🎉 가입 성공! 초기 자금 1억원이 지급되었습니다!")
+                    st.success("🎉 가입 완료! 초기 자금 1억원이 지급되었습니다.")
     st.stop()
 
 # ==============================
@@ -527,161 +561,258 @@ if 'logged_in_user' not in st.session_state:
 IS_PC = "🖥️" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
 
 CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+* { box-sizing: border-box; }
+
+html, body, p, span, label, div, td, th {
+  font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
+  color: #1a1a1a !important;
+}
+
 .stApp {
-  background:#060610 !important;
-  background-image:
-    radial-gradient(ellipse at 0% 0%,rgba(0,229,255,0.06) 0%,transparent 50%),
-    radial-gradient(ellipse at 100% 100%,rgba(255,0,200,0.06) 0%,transparent 50%) !important;
+  background: #f7f8fa !important;
 }
-html,body,p,span,label,div { font-family:'Noto Sans KR',sans-serif !important; color:#E8E8F0 !important; }
-h1,h2,h3 { font-family:'Orbitron',monospace !important; letter-spacing:2px; }
+
 [data-testid='stSidebar'] {
-  background:linear-gradient(180deg,#080818 0%,#0a0a20 100%) !important;
-  border-right:1px solid rgba(0,229,255,0.2) !important;
+  background: #ffffff !important;
+  border-right: 1px solid #e8e8e8 !important;
 }
-.stTextInput>div>div>input,
-.stNumberInput>div>div>input {
-  background:#FFF !important; border:2px solid #00E5FF !important;
-  border-radius:8px !important; color:#000 !important; font-weight:900 !important;
+
+h1 { font-size: 1.6rem !important; font-weight: 700 !important; color: #1a1a1a !important; }
+h2 { font-size: 1.2rem !important; font-weight: 700 !important; color: #1a1a1a !important; }
+h3 { font-size: 1rem !important;   font-weight: 700 !important; color: #1a1a1a !important; }
+
+.stTextInput > div > div > input,
+.stNumberInput > div > div > input {
+  background: #ffffff !important;
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 6px !important;
+  color: #1a1a1a !important;
+  font-size: 0.95rem !important;
 }
-div[data-baseweb="select"]>div {
-  background:rgba(255,255,255,0.04) !important;
-  border:1px solid rgba(0,229,255,0.25) !important; border-radius:8px !important;
+.stTextInput > div > div > input:focus,
+.stNumberInput > div > div > input:focus {
+  border-color: #1a73e8 !important;
+  box-shadow: 0 0 0 2px rgba(26,115,232,0.15) !important;
 }
-div[role="listbox"] { background:#111128 !important; border:1px solid #00E5FF !important; border-radius:10px !important; }
-div[role="listbox"] li,div[role="listbox"] span { color:#fff !important; }
-div[role="listbox"] li:hover { background:rgba(0,229,255,0.15) !important; }
-.stButton>button {
-  font-family:'Noto Sans KR',sans-serif !important; font-weight:900 !important;
-  border-radius:10px !important; border:1px solid rgba(0,229,255,0.4) !important;
-  background:rgba(0,229,255,0.07) !important; color:#00E5FF !important;
-  transition:all 0.25s ease !important;
+
+div[data-baseweb="select"] > div {
+  background: #ffffff !important;
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 6px !important;
 }
-.stButton>button:hover {
-  background:rgba(0,229,255,0.18) !important; border-color:#00E5FF !important;
-  box-shadow:0 0 18px rgba(0,229,255,0.35) !important; transform:translateY(-1px) !important;
+div[role="listbox"] { background: #ffffff !important; border: 1px solid #d9d9d9 !important; border-radius: 8px !important; }
+div[role="listbox"] li, div[role="listbox"] span { color: #1a1a1a !important; }
+div[role="listbox"] li:hover { background: #f0f4ff !important; }
+
+.stButton > button {
+  font-family: 'Noto Sans KR', sans-serif !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  border: 1px solid #d9d9d9 !important;
+  background: #ffffff !important;
+  color: #1a1a1a !important;
+  transition: all 0.15s ease !important;
+  font-size: 0.9rem !important;
+  height: 42px !important;
 }
-.stButton>button:disabled {
-  opacity:0.4 !important; cursor:not-allowed !important; transform:none !important;
+.stButton > button:hover {
+  background: #f0f4ff !important;
+  border-color: #1a73e8 !important;
+  color: #1a73e8 !important;
 }
-.stTabs [data-baseweb="tab-list"] { background:transparent !important; border-bottom:1px solid rgba(0,229,255,0.15) !important; }
-.stTabs [data-baseweb="tab"] { color:#777 !important; font-weight:700 !important; font-size:0.95rem !important; padding:10px 20px !important; }
-.stTabs [aria-selected="true"] { color:#00E5FF !important; border-bottom:2px solid #00E5FF !important; background:transparent !important; }
+.stButton > button:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+  background: transparent !important;
+  border-bottom: 1px solid #e8e8e8 !important;
+}
+.stTabs [data-baseweb="tab"] {
+  color: #666 !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+}
+.stTabs [aria-selected="true"] {
+  color: #1a73e8 !important;
+  border-bottom: 2px solid #1a73e8 !important;
+  background: transparent !important;
+}
+
 [data-testid="stMetric"] {
-  background:rgba(255,255,255,0.03) !important; border:1px solid rgba(0,229,255,0.15) !important;
-  border-radius:12px !important; padding:14px 18px !important;
+  background: #ffffff !important;
+  border: 1px solid #e8e8e8 !important;
+  border-radius: 10px !important;
+  padding: 14px 18px !important;
 }
-[data-testid="stMetricLabel"] { color:#888 !important; font-size:0.8rem !important; }
-[data-testid="stMetricValue"] { color:#FFD600 !important; font-family:'Orbitron',monospace !important; font-size:1.3rem !important; }
-.stAlert { border-radius:10px !important; border:none !important; }
-.stProgress>div>div { background:linear-gradient(90deg,#00E5FF,#FF00FF) !important; border-radius:4px !important; }
-.stock-table { width:100%; border-collapse:collapse; }
-.stock-table th {
-  background:rgba(0,229,255,0.08); color:#00E5FF !important;
-  font-family:'Orbitron',monospace !important; font-size:0.75rem !important;
-  padding:10px 14px; text-align:left; border-bottom:1px solid rgba(0,229,255,0.2); letter-spacing:1px;
-}
-.stock-table td { padding:11px 14px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.95rem; vertical-align:middle; }
-.stock-table tr:hover td { background:rgba(0,229,255,0.04); }
-.p-up { color:#FF4B4B !important; font-weight:900; }
-.p-down { color:#4B9EFF !important; font-weight:900; }
-.p-flat { color:#888 !important; }
+[data-testid="stMetricLabel"] { color: #666 !important; font-size: 0.8rem !important; }
+[data-testid="stMetricValue"] { color: #1a1a1a !important; font-size: 1.2rem !important; font-weight: 700 !important; }
+
+.stAlert { border-radius: 8px !important; }
+.stProgress > div > div { background: #1a73e8 !important; border-radius: 4px !important; }
+
 .card {
-  background:rgba(255,255,255,0.03); border:1px solid rgba(0,229,255,0.15);
-  border-radius:14px; padding:20px; margin:8px 0; transition:all 0.3s;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 18px;
+  margin: 6px 0;
+  transition: box-shadow 0.15s;
 }
-.card:hover { border-color:rgba(0,229,255,0.4); box-shadow:0 4px 20px rgba(0,229,255,0.1); }
+.card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
 .news-banner {
-  background:linear-gradient(135deg,rgba(255,180,0,0.1),rgba(255,100,0,0.08));
-  border:1px solid rgba(255,180,0,0.3); border-radius:10px; padding:12px 18px;
-  font-weight:700; color:#FFD600 !important; margin:12px 0; font-size:0.95rem;
+  background: #fffbea;
+  border: 1px solid #ffe066;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 500;
+  color: #7a5c00 !important;
+  margin: 10px 0;
+  font-size: 0.9rem;
 }
+
+.stock-table { width: 100%; border-collapse: collapse; }
+.stock-table th {
+  background: #f7f8fa;
+  color: #666 !important;
+  font-size: 0.78rem !important;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e8e8e8;
+}
+.stock-table td { padding: 11px 14px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+.stock-table tr:hover td { background: #f7f8fa; }
+.p-up   { color: #e03131 !important; font-weight: 700; }
+.p-down { color: #1971c2 !important; font-weight: 700; }
+.p-flat { color: #999 !important; }
+
 .scoreboard {
-  background:linear-gradient(135deg,#0d1b2a,#1a1a3e);
-  border:2px solid rgba(0,229,255,0.4); border-radius:16px; padding:28px; text-align:center;
-  box-shadow:0 0 40px rgba(0,229,255,0.15),inset 0 0 40px rgba(0,0,50,0.5);
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
 }
-.score-number { font-family:'Orbitron',monospace !important; font-size:3.5rem !important; font-weight:900; color:#00FF88 !important; text-shadow:0 0 20px rgba(0,255,136,0.5); line-height:1; }
-.team-label { font-size:1.2rem; font-weight:900; color:#FFD600 !important; margin-bottom:8px; }
-.match-time { font-family:'Orbitron',monospace !important; color:#00E5FF !important; font-size:1rem; margin-top:14px; }
+.score-number { font-size: 3rem !important; font-weight: 700; color: #1a1a1a !important; line-height: 1; }
+.team-label   { font-size: 1.1rem; font-weight: 700; color: #1a1a1a !important; margin-bottom: 6px; }
+.match-time   { color: #666 !important; font-size: 0.9rem; margin-top: 12px; }
+
 .commentary-item {
-  background:rgba(255,255,255,0.04); border-left:3px solid #00E5FF;
-  padding:10px 15px; margin:6px 0; border-radius:0 8px 8px 0; font-size:0.9rem; color:#ddd !important;
+  background: #f7f8fa;
+  border-left: 3px solid #1a73e8;
+  padding: 8px 14px;
+  margin: 5px 0;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.88rem;
+  color: #333 !important;
 }
+
 .estate-card {
-  background:linear-gradient(135deg,rgba(255,215,0,0.05),rgba(255,100,0,0.05));
-  border:1px solid rgba(255,215,0,0.2); border-radius:14px; padding:18px 22px; margin:10px 0;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 8px 0;
 }
-.estate-income { color:#00FF88 !important; font-weight:900; font-size:0.9rem; }
+.estate-income { color: #2e7d32 !important; font-weight: 700; font-size: 0.88rem; }
+
 .market-listing {
-  background:linear-gradient(135deg,rgba(0,229,255,0.04),rgba(0,100,200,0.06));
-  border:1px solid rgba(0,229,255,0.25); border-radius:12px; padding:16px 20px; margin:8px 0;
+  background: #f0f4ff;
+  border: 1px solid #c5d3f5;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 7px 0;
 }
 .market-initial {
-  background:linear-gradient(135deg,rgba(0,255,136,0.04),rgba(0,150,80,0.06));
-  border:1px solid rgba(0,255,136,0.25); border-radius:12px; padding:16px 20px; margin:8px 0;
+  background: #f0faf4;
+  border: 1px solid #b2dfcb;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 7px 0;
 }
 .my-listing {
-  background:linear-gradient(135deg,rgba(255,180,0,0.06),rgba(200,100,0,0.06));
-  border:1px solid rgba(255,180,0,0.35); border-radius:12px; padding:16px 20px; margin:8px 0;
+  background: #fffbea;
+  border: 1px solid #ffe066;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 7px 0;
 }
-.profit { color:#FF4B4B !important; font-weight:900; }
-.loss   { color:#4B9EFF !important; font-weight:900; }
-.vip-banner {
-  background:linear-gradient(135deg,#1a0a00,#2d1000);
-  border:2px solid rgba(255,215,0,0.5); border-radius:16px; padding:22px; text-align:center;
-  box-shadow:0 0 30px rgba(255,180,0,0.2);
-}
-.lotto-pool {
-  background:linear-gradient(135deg,#1a003a,#2d0060);
-  border:2px solid rgba(180,0,255,0.5); border-radius:16px; padding:24px; text-align:center;
-  box-shadow:0 0 40px rgba(180,0,255,0.2);
-}
-.lotto-amount { font-family:'Orbitron',monospace !important; font-size:2.2rem !important; color:#FF00FF !important; text-shadow:0 0 20px rgba(255,0,255,0.5); font-weight:900; }
-.slot-display {
-  font-size:3.5rem; text-align:center; padding:20px;
-  background:rgba(0,0,0,0.5); border:2px solid rgba(255,215,0,0.3); border-radius:14px;
-  letter-spacing:20px; min-height:100px; display:flex; align-items:center; justify-content:center;
-}
-.question-box {
-  background:linear-gradient(135deg,rgba(0,229,255,0.04),rgba(0,0,100,0.1));
-  border:1px solid rgba(0,229,255,0.3); border-radius:14px; padding:28px;
-  line-height:1.8; font-size:1.05rem; color:#f0f0ff !important;
-}
-.mine-card {
-  background:linear-gradient(135deg,rgba(139,69,19,0.15),rgba(50,25,0,0.2));
-  border:1px solid rgba(180,100,20,0.4); border-radius:14px; padding:20px; text-align:center;
-}
-.tx-row {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:9px 14px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.88rem;
-}
-.cooldown-badge {
-  background:rgba(255,80,80,0.15); border:1px solid rgba(255,80,80,0.4);
-  border-radius:6px; padding:4px 10px; font-size:0.78rem; color:#FF6060 !important;
-  display:inline-block; margin-left:8px;
-}
-"""
 
-if IS_PC:
-    CSS += """
-p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
-h1 { font-size:2.2rem !important; color:#00E5FF !important; margin-bottom:4px; }
-h2 { font-size:1.5rem !important; color:#00FF88 !important; }
-h3 { font-size:1.2rem !important; color:#FFD600 !important; }
-.stButton>button { height:52px !important; font-size:1rem !important; }
-"""
-else:
-    CSS += """
-p,span,label,td,th { font-size:0.88rem !important; }
-h1 { font-size:1.5rem !important; color:#00E5FF !important; }
-h2 { font-size:1.15rem !important; color:#00FF88 !important; }
-h3 { font-size:1rem !important; color:#FFD600 !important; }
-.stButton>button { height:46px !important; font-size:0.88rem !important; }
-.stock-table th,.stock-table td { padding:8px 8px; font-size:0.82rem !important; }
-.score-number { font-size:2.5rem !important; }
-.lotto-amount { font-size:1.6rem !important; }
+.profit { color: #e03131 !important; font-weight: 700; }
+.loss   { color: #1971c2 !important; font-weight: 700; }
+
+.lotto-pool {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.lotto-amount { font-size: 2rem !important; color: #6741d9 !important; font-weight: 700; }
+
+.vip-banner {
+  background: #fffbea;
+  border: 1px solid #ffe066;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.slot-display {
+  font-size: 3rem;
+  text-align: center;
+  padding: 20px;
+  background: #f7f8fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  letter-spacing: 16px;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.question-box {
+  background: #f7f8fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 24px;
+  line-height: 1.8;
+  font-size: 1rem;
+  color: #1a1a1a !important;
+}
+
+.mine-card {
+  background: #fff8f0;
+  border: 1px solid #ffd8a8;
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+}
+
+.tx-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.88rem;
+}
+
+.cooldown-badge {
+  background: #fff0f0;
+  border: 1px solid #ffcdd2;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  color: #c62828 !important;
+  display: inline-block;
+  margin-left: 6px;
+}
 """
 
 st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
@@ -875,73 +1006,142 @@ if "current_page" not in st.session_state:
 is_admin = st.session_state.logged_in_user == "admin"
 is_vip   = nw >= 100_000_000_000 or is_admin
 
-menu_ops = [
-    "🏠 홈 광장 (튜토리얼)",
-    "📈 주식 트레이딩",
-    "🪙 코인 거래소",       
-    "🏢 부동산 거래소",
-    "🏦 은행 (대출/송금)",
-    "⚔️ 글로벌 로또",
-    "⚽ 구단주 시뮬레이터",
-    "⚽ 조기축구 승부차기",
-    "💻 정처기 CBT",
-    "🏎️ 하이퍼카 레이싱",
-    "🛠️ 커스텀 튜닝 차고지",
-    "🎰 럭키 슬롯",
-    "🃏 블랙잭 카지노",     
-    "⛏️ 광산 (노가다)",
-    "📅 일일 퀘스트",       
-    "🗡️ 전설의 명검 강화",   
-    "👑 칭호 상점",
-    "🏰 길드/클랜",
-    "🎴 가챠 뽑기",
-    "📜 내 거래 기록",
-    "🏅 랭킹 & 게시판",
-    "✉️ 개인 쪽지함",
-]
-if is_vip:   menu_ops.insert(2, "💎 VIP 라운지")
-if is_admin: menu_ops.append("🛠️ 창조주 통제소")
 
-# 👇 여기서부터 복사해서 덮어쓰기 👇
+CATEGORY_MENUS = {
+    "📈 경제": [
+        "🏠 홈 광장 (튜토리얼)",
+        "📈 주식 트레이딩",
+        "🪙 코인 거래소",
+        "🏢 부동산 거래소",
+        "🏦 은행 (대출/송금)",
+        "⚔️ 글로벌 로또",
+        "🗡️ 전설의 명검 강화",
+        "📅 일일 퀘스트",
+        "👑 칭호 상점",
+        "🎴 가챠 뽑기",
+        "📜 내 거래 기록",
+    ],
+    "⚽ 스포츠": [
+        "⚽ 구단주 시뮬레이터",
+        "⚽ 조기축구 승부차기",
+        "🏎️ 하이퍼카 레이싱",
+        "🛠️ 커스텀 튜닝 차고지",
+    ],
+    "🎮 미니게임": [
+        "🎰 럭키 슬롯",
+        "🃏 블랙잭 카지노",
+        "⛏️ 광산 (노가다)",
+        "💻 정처기 CBT",
+    ],
+    "👥 커뮤니티": [
+        "🏰 길드/클랜",
+        "🏅 랭킹 & 게시판",
+        "✉️ 개인 쪽지함",
+    ],
+}
+
+if is_vip:
+    CATEGORY_MENUS["📈 경제"].insert(1, "💎 VIP 라운지")
+if is_admin:
+    CATEGORY_MENUS["⚙️ 관리"] = ["🛠️ 창조주 통제소"]
+
+# 현재 페이지가 어느 카테고리인지 찾기
+def get_current_category():
+    for cat, pages in CATEGORY_MENUS.items():
+        if st.session_state.current_page in pages:
+            return cat
+    return list(CATEGORY_MENUS.keys())[0]
+
+if "current_category" not in st.session_state:
+    st.session_state.current_category = get_current_category()
+
+# 쪽지 뱃지
 msg_db_check = load_db("messages_db.json", {})
 my_unread = sum(1 for m in msg_db_check.get(st.session_state.logged_in_user, {}).get("inbox", []) if not m.get("read", False))
-badge_html = f"<span style='background:#FF4B4B;color:#fff;border-radius:10px;padding:2px 6px;font-size:0.7rem;margin-left:8px;font-weight:900;'>새 쪽지 {my_unread}</span>" if my_unread > 0 else ""
 
 if IS_PC:
     with st.sidebar:
+        # 유저 프로필
         st.markdown(f"""
-<div style='padding:16px;background:rgba(0,229,255,0.05);border-radius:12px;
-     border:1px solid rgba(0,229,255,0.2);margin-bottom:16px;'>
-  <div style='font-size:1.3rem;font-weight:900;color:#00E5FF;'>👤 {st.session_state.logged_in_user}{badge_html}</div>
-  <div style='font-size:0.85rem;color:#FFD600;margin-top:4px;'>{st.session_state.equipped_title}</div>
+<div style='padding:14px 16px; background:#f7f8fa; border-radius:10px;
+     border:1px solid #e8e8e8; margin-bottom:14px;'>
+  <div style='font-size:0.82rem; color:#999; margin-bottom:2px;'>접속 중</div>
+  <div style='font-size:1rem; font-weight:700; color:#1a1a1a;'>
+    {st.session_state.logged_in_user}
+    {"  🔴" if my_unread > 0 else ""}
+  </div>
+  <div style='font-size:0.8rem; color:#1a73e8; margin-top:3px;'>{st.session_state.equipped_title}</div>
 </div>""", unsafe_allow_html=True)
-        st.metric("💵 현금",   format_korean_money(st.session_state.global_cash))
-        st.metric("📊 순자산", format_korean_money(nw))
+
+        # 자산 요약
+        col_a, col_b = st.columns(2)
+        col_a.metric("💵 현금", format_korean_money(st.session_state.global_cash))
+        col_b.metric("📊 순자산", format_korean_money(nw))
         if st.session_state.loan > 0:
-            st.metric("💳 대출잔액", format_korean_money(st.session_state.loan))
+            st.metric("💳 대출", format_korean_money(st.session_state.loan))
+
         st.write("---")
 
-        cur_idx = menu_ops.index(st.session_state.current_page) if st.session_state.current_page in menu_ops else 0
-        selected_menu = st.radio("메뉴", menu_ops, index=cur_idx, label_visibility="collapsed")
+        # 카테고리 탭
+        st.markdown("<div style='font-size:0.75rem; color:#999; margin-bottom:8px;'>카테고리</div>", unsafe_allow_html=True)
+        for cat in CATEGORY_MENUS:
+            is_active_cat = (st.session_state.current_category == cat)
+            bg = "#e8f0fe" if is_active_cat else "transparent"
+            col = "#1a73e8" if is_active_cat else "#333"
+            if st.button(cat, key=f"cat_{cat}", use_container_width=True):
+                st.session_state.current_category = cat
+                st.session_state.current_page = CATEGORY_MENUS[cat][0]
+                st.rerun()
 
+        st.write("---")
+
+        # 현재 카테고리 내 메뉴
+        cur_cat_pages = CATEGORY_MENUS.get(st.session_state.current_category, [])
+        st.markdown(f"<div style='font-size:0.75rem; color:#999; margin-bottom:8px;'>{st.session_state.current_category} 메뉴</div>", unsafe_allow_html=True)
+
+        cur_idx = cur_cat_pages.index(st.session_state.current_page) if st.session_state.current_page in cur_cat_pages else 0
+        selected_menu = st.radio("메뉴", cur_cat_pages, index=cur_idx, label_visibility="collapsed")
         if selected_menu != st.session_state.current_page:
             st.session_state.current_page = selected_menu
             st.rerun()
+
         st.write("---")
-        if st.button("🔓 로그아웃", use_container_width=True):
+        if st.button("로그아웃", use_container_width=True):
             sync_user_data(); st.session_state.clear(); st.rerun()
+
 else:
+    # 모바일 — 상단 바
     col_a, col_b = st.columns([3, 1])
     with col_a:
-        st.markdown(f"<div style='font-size:0.82rem;color:#888;'>👤 <b style='color:#00E5FF;'>{st.session_state.logged_in_user}</b>{badge_html} | {st.session_state.equipped_title}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size:0.9rem;color:#FFD600;font-weight:900;'>💵 {format_korean_money(st.session_state.global_cash)}</div>", unsafe_allow_html=True)
+        unread_txt = f" 🔴{my_unread}" if my_unread > 0 else ""
+        st.markdown(f"""
+<div style='font-size:0.82rem; color:#999;'>
+  👤 <b style='color:#1a1a1a;'>{st.session_state.logged_in_user}</b>{unread_txt}
+  &nbsp;|&nbsp; <span style='color:#1a73e8;'>{st.session_state.equipped_title}</span>
+</div>
+<div style='font-size:0.9rem; font-weight:700; color:#1a1a1a; margin-top:2px;'>
+  💵 {format_korean_money(st.session_state.global_cash)}
+</div>""", unsafe_allow_html=True)
     with col_b:
         if st.button("로그아웃"):
             sync_user_data(); st.session_state.clear(); st.rerun()
 
-    cur_idx = menu_ops.index(st.session_state.current_page) if st.session_state.current_page in menu_ops else 0
-    selected_menu = st.selectbox("메뉴 선택", menu_ops, index=cur_idx, label_visibility="collapsed")
+    # 카테고리 선택
+    all_pages_flat = []
+    for pages in CATEGORY_MENUS.values():
+        all_pages_flat.extend(pages)
 
+    cat_sel = st.selectbox("카테고리", list(CATEGORY_MENUS.keys()), label_visibility="collapsed",
+                            index=list(CATEGORY_MENUS.keys()).index(st.session_state.current_category)
+                            if st.session_state.current_category in CATEGORY_MENUS else 0)
+    if cat_sel != st.session_state.current_category:
+        st.session_state.current_category = cat_sel
+        st.session_state.current_page = CATEGORY_MENUS[cat_sel][0]
+        st.rerun()
+
+    cur_cat_pages = CATEGORY_MENUS.get(st.session_state.current_category, [])
+    cur_idx = cur_cat_pages.index(st.session_state.current_page) if st.session_state.current_page in cur_cat_pages else 0
+    selected_menu = st.selectbox("메뉴 선택", cur_cat_pages, index=cur_idx, label_visibility="collapsed")
     if selected_menu != st.session_state.current_page:
         st.session_state.current_page = selected_menu
         st.rerun()
@@ -1021,10 +1221,10 @@ elif menu == "🏠 홈 광장 (튜토리얼)":
             <div style='color:#888; font-size:0.9rem; margin-top:5px;'>환영합니다! 우주에서의 새로운 하루가 시작되었습니다.</div>
         </div>
         <div style='text-align: right; border-left: 1px solid rgba(0,229,255,0.3); padding-left: 20px;'>
-            <div style='color:#aaa; font-size:0.9rem;'>보유 현금</div>
+            <div style='color:#666666; font-size:0.9rem;'>보유 현금</div>
             <div style='font-size:1.8rem; font-weight:900; color:#FFD600;'>{format_korean_money(st.session_state.global_cash)}</div>
-            <div style='color:#aaa; font-size:0.9rem; margin-top:10px;'>총 순자산</div>
-            <div style='font-size:1.3rem; font-weight:900; color:#fff;'>{format_korean_money(nw)}</div>
+            <div style='color:#666666; font-size:0.9rem; margin-top:10px;'>총 순자산</div>
+            <div style='font-size:1.3rem; font-weight:900; color:#1a1a1a;'>{format_korean_money(nw)}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1036,8 +1236,8 @@ elif menu == "🏠 홈 광장 (튜토리얼)":
         st.markdown("""
         <div style='background: linear-gradient(135deg, rgba(255, 214, 0, 0.1), rgba(255, 100, 0, 0.1)); border: 2px dashed #FFD600; border-radius: 15px; padding: 20px; margin-bottom: 25px;'>
             <h3 style='color:#FFD600; margin-top:0;'>📜 초보자 가이드: 생존의 법칙</h3>
-            <p style='color:#ddd; font-size:0.95rem;'>무엇을 해야 할지 모르겠다면, 아래 순서대로 게임을 즐겨보세요!</p>
-            <ul style='color:#fff; line-height:1.8;'>
+            <p style='color:#666666; font-size:0.95rem;'>무엇을 해야 할지 모르겠다면, 아래 순서대로 게임을 즐겨보세요!</p>
+            <ul style='color:#1a1a1a; line-height:1.8;'>
                 <li><b>1단계:</b> <span style='color:#00FF88;'>[일일 퀘스트]</span> 메뉴에 가서 출석 보상을 받으세요.</li>
                 <li><b>2단계:</b> 시드머니가 부족하다면 <span style='color:#00E5FF;'>[⛏️ 광산]</span>에서 노가다를 하거나 <span style='color:#FF4B4B;'>[은행]</span>에서 대출을 받으세요.</li>
                 <li><b>3단계:</b> 모은 돈으로 <span style='color:#FF00FF;'>[주식]</span>이나 <span style='color:#FF00FF;'>[코인]</span>을 사서 자산을 불리세요.</li>
@@ -1099,7 +1299,7 @@ elif menu == "🏠 홈 광장 (튜토리얼)":
 <div class='card' style='text-align:center;padding:14px;'>
   <div style='font-size:1.4rem;'>{s['icon']}</div>
   <div style='font-size:0.78rem;color:#888;margin:4px 0;'>{d['name'][:6]}</div>
-  <div style='font-size:1rem;font-weight:900;color:#fff;'>₩{d['price']:,}</div>
+  <div style='font-size:1rem;font-weight:900;color:#1a1a1a;'>₩{d['price']:,}</div>
   <div style='font-size:0.85rem;color:{clr};font-weight:900;'>{arrow} {abs(diff):.2f}%</div>
 </div>""", unsafe_allow_html=True)
 
@@ -1124,7 +1324,7 @@ elif menu == "🏠 홈 광장 (튜토리얼)":
         st.markdown(f"""
 <div class='card' style='display:flex;justify-content:space-between;align-items:center;padding:12px 20px;'>
   <span style='font-size:1.3rem;'>{medals[i]}</span>
-  <span style='font-weight:900;color:#E8E8F0;'>{r['uid']}{me}</span>
+  <span style='font-weight:900;color:#333333;'>{r['uid']}{me}</span>
   <span style='color:#888;font-size:0.85rem;'>{r['title']}</span>
   <span style='color:#FFD600;font-weight:900;'>{format_korean_money(r['nw'])}</span>
 </div>""", unsafe_allow_html=True)
@@ -1154,7 +1354,7 @@ elif menu == "📈 주식 트레이딩":
             pct  = diff / d['history'][-2] * 100 if len(d['history']) > 1 else 0
             cls  = "p-up" if diff > 0 else "p-down" if diff < 0 else "p-flat"
             arr  = "▲"   if diff > 0 else "▼"        if diff < 0 else "━"
-            rows += f"<tr><td>{s['icon']} {d['name']}</td><td style='text-align:right;font-weight:900;color:#fff;'>₩{d['price']:,}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td><td style='text-align:right;color:#888;'>₩{d['history'][-2]:,}</td></tr>"
+            rows += f"<tr><td>{s['icon']} {d['name']}</td><td style='text-align:right;font-weight:900;color:#1a1a1a;'>₩{d['price']:,}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td><td style='text-align:right;color:#888;'>₩{d['history'][-2]:,}</td></tr>"
         st.markdown(f"<table class='stock-table'><thead><tr><th>종목</th><th style='text-align:right;'>현재가</th><th style='text-align:right;'>변동률</th><th style='text-align:right;'>전일가</th></tr></thead><tbody>{rows}</tbody></table>", unsafe_allow_html=True)
 
     with tab_port:
@@ -1207,7 +1407,7 @@ elif menu == "📈 주식 트레이딩":
         pct  = diff / d['history'][-2] * 100 if len(d['history']) > 1 else 0
         clr  = "#FF4B4B" if diff >= 0 else "#4B9EFF"
         arr  = "▲" if diff >= 0 else "▼"
-        st.markdown(f"<div style='text-align:center;margin:10px 0;'><span style='font-size:1.8rem;font-weight:900;color:#fff;font-family:Orbitron;'>₩{cp:,}</span> <span style='color:{clr};font-weight:900;'>{arr} {abs(pct):.2f}%</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:center;margin:10px 0;'><span style='font-size:1.8rem;font-weight:900;color:#1a1a1a;font-family:Orbitron;'>₩{cp:,}</span> <span style='color:{clr};font-weight:900;'>{arr} {abs(pct):.2f}%</span></div>", unsafe_allow_html=True)
 
        
         # ====== 수익률 현황판 시작 ======
@@ -1222,10 +1422,10 @@ elif menu == "📈 주식 트레이딩":
             roi_arr = "▲" if my_roi > 0 else "▼" if my_roi < 0 else ""
             st.markdown(f"""
             <div style='background:linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border:1px solid rgba(255,255,255,0.1); padding:14px; border-radius:10px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;'>
-                <div style='flex:1;'><span style='color:#aaa;font-size:0.85rem;'>보유 수량</span><br><b style='color:#fff;font-size:1.1rem;'>{my_qty}주</b></div>
-                <div style='flex:1;'><span style='color:#aaa;font-size:0.85rem;'>평균 단가</span><br><b style='color:#fff;font-size:1.1rem;'>{format_korean_money(my_avg)}</b></div>
-                <div style='flex:1;'><span style='color:#aaa;font-size:0.85rem;'>현재 평가액</span><br><b style='color:#FFD600;font-size:1.1rem;'>{format_korean_money(my_eval)}</b></div>
-                <div style='flex:1; text-align:right;'><span style='color:#aaa;font-size:0.85rem;'>수익률</span><br><b style='color:{roi_col};font-size:1.2rem;'>{roi_arr} {my_roi:+.2f}%</b></div>
+                <div style='flex:1;'><span style='color:#666666;font-size:0.85rem;'>보유 수량</span><br><b style='color:#1a1a1a;font-size:1.1rem;'>{my_qty}주</b></div>
+                <div style='flex:1;'><span style='color:#666666;font-size:0.85rem;'>평균 단가</span><br><b style='color:#1a1a1a;font-size:1.1rem;'>{format_korean_money(my_avg)}</b></div>
+                <div style='flex:1;'><span style='color:#666666;font-size:0.85rem;'>현재 평가액</span><br><b style='color:#FFD600;font-size:1.1rem;'>{format_korean_money(my_eval)}</b></div>
+                <div style='flex:1; text-align:right;'><span style='color:#666666;font-size:0.85rem;'>수익률</span><br><b style='color:{roi_col};font-size:1.2rem;'>{roi_arr} {my_roi:+.2f}%</b></div>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -1366,7 +1566,7 @@ elif menu == "🪙 코인 거래소":
             pct  = diff / d['history'][-2] * 100 if len(d['history']) > 1 and d['history'][-2] > 0 else 0
             cls  = "p-up" if diff > 0 else "p-down" if diff < 0 else "p-flat"
             arr  = "▲" if diff > 0 else "▼" if diff < 0 else "━"
-            rows_html += f"<tr><td>{c['icon']} {d['name']}</td><td style='text-align:right;font-weight:900;color:#fff;'>{fmt_crypto_price(d['price'])}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td></tr>"
+            rows_html += f"<tr><td>{c['icon']} {d['name']}</td><td style='text-align:right;font-weight:900;color:#1a1a1a;'>{fmt_crypto_price(d['price'])}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td></tr>"
         rows_html += "</tbody></table>"
         st.markdown(rows_html, unsafe_allow_html=True)
         
@@ -1436,10 +1636,10 @@ elif menu == "🪙 코인 거래소":
             roi_arr = "▲" if my_roi > 0 else "▼" if my_roi < 0 else ""
             st.markdown(f"""
             <div style='background:linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border:1px solid rgba(255,255,255,0.1); padding:14px; border-radius:10px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;'>
-                <div style='flex:1;'><span style='color:#aaa;font-size:0.85rem;'>보유량</span><br><b style='color:#fff;font-size:1.1rem;'>{fmt_crypto_qty(my_qty, sel_c)}</b></div>
-                <div style='flex:1;'><span style='color:#aaa;font-size:0.85rem;'>평균 단가</span><br><b style='color:#fff;font-size:1.1rem;'>{fmt_crypto_price(my_avg)}</b></div>
-                <div style='flex:1;'><span style='color:#aaa;font-size:0.85rem;'>현재 평가액</span><br><b style='color:#FFD600;font-size:1.1rem;'>{format_korean_money(int(my_eval))}</b></div>
-                <div style='flex:1; text-align:right;'><span style='color:#aaa;font-size:0.85rem;'>수익률</span><br><b style='color:{roi_col};font-size:1.2rem;'>{roi_arr} {my_roi:+.2f}%</b></div>
+                <div style='flex:1;'><span style='color:#666666;font-size:0.85rem;'>보유량</span><br><b style='color:#1a1a1a;font-size:1.1rem;'>{fmt_crypto_qty(my_qty, sel_c)}</b></div>
+                <div style='flex:1;'><span style='color:#666666;font-size:0.85rem;'>평균 단가</span><br><b style='color:#1a1a1a;font-size:1.1rem;'>{fmt_crypto_price(my_avg)}</b></div>
+                <div style='flex:1;'><span style='color:#666666;font-size:0.85rem;'>현재 평가액</span><br><b style='color:#FFD600;font-size:1.1rem;'>{format_korean_money(int(my_eval))}</b></div>
+                <div style='flex:1; text-align:right;'><span style='color:#666666;font-size:0.85rem;'>수익률</span><br><b style='color:{roi_col};font-size:1.2rem;'>{roi_arr} {my_roi:+.2f}%</b></div>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -1585,7 +1785,7 @@ elif menu == "🏢 부동산 거래소":
   <div style='display:flex;align-items:center;gap:10px;'>
     <span style='font-size:1.8rem;'>{info['icon']}</span>
     <div>
-      <div style='font-weight:900;font-size:1rem;color:#fff;'>{info['name']}</div>
+      <div style='font-weight:900;font-size:1rem;color:#1a1a1a;'>{info['name']}</div>
       <div style='color:#888;font-size:0.8rem;'>{info['desc']}</div>
       <div style='margin-top:4px;'>
         <span style='color:#FFD600;font-weight:900;'>{format_korean_money(info['base_price'])}</span>
@@ -1653,7 +1853,7 @@ elif menu == "🏢 부동산 거래소":
 <div class='market-listing'>
   <div style='display:flex;justify-content:space-between;align-items:center;'>
     <div>
-      <span style='color:#aaa;font-size:0.8rem;'>판매자: </span>
+      <span style='color:#666666;font-size:0.8rem;'>판매자: </span>
       <b style='color:#00E5FF;'>{li['seller']}</b>
       <span style='color:{prem_col};font-size:0.78rem;margin-left:10px;'>{prem_str} (기준가 대비)</span>
     </div>
@@ -1728,10 +1928,10 @@ elif menu == "🏢 부동산 거래소":
     <div style='display:flex;align-items:center;gap:12px;'>
       <span style='font-size:2rem;'>{info['icon']}</span>
       <div>
-        <div style='font-weight:900;font-size:1.05rem;color:#fff;'>{info['name']}</div>
+        <div style='font-weight:900;font-size:1.05rem;color:#1a1a1a;'>{info['name']}</div>
         <div style='color:#888;font-size:0.8rem;'>{info['desc']}</div>
         <div style='margin-top:4px;'>
-          <span style='color:#aaa;font-size:0.82rem;'>보유 {cnt}채 (판매 등록 {my_listed}채)</span>
+          <span style='color:#666666;font-size:0.82rem;'>보유 {cnt}채 (판매 등록 {my_listed}채)</span>
           <span style='color:#555;margin:0 8px;'>|</span>
           <span class='estate-income'>+{format_korean_money(info['income'] * cnt)}/초</span>
         </div>
@@ -1812,7 +2012,7 @@ elif menu == "🏢 부동산 거래소":
   <div style='display:flex;justify-content:space-between;'>
     <div>
       <span style='font-size:1.2rem;'>{info.get('icon','🏠')}</span>
-      <b style='color:#fff;margin-left:8px;'>{info.get('name','?')}</b>
+      <b style='color:#1a1a1a;margin-left:8px;'>{info.get('name','?')}</b>
       <span style='color:#888;font-size:0.78rem;margin-left:8px;'>등록: {listed_dt}</span>
     </div>
     <div style='text-align:right;'>
@@ -2003,7 +2203,7 @@ elif menu == "⚔️ 글로벌 로또":
         for uid_l, cnt in sorted_t[:10]:
             pct     = cnt / total_tickets * 100
             me_mark = " 👈" if uid_l == st.session_state.logged_in_user else ""
-            st.markdown(f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);'><span style='color:#ddd;'>{uid_l}{me_mark}</span><span style='color:#FF00FF;font-weight:900;'>{cnt}장 ({pct:.1f}%)</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);'><span style='color:#666666;'>{uid_l}{me_mark}</span><span style='color:#FF00FF;font-weight:900;'>{cnt}장 ({pct:.1f}%)</span></div>", unsafe_allow_html=True)
 
     if st.session_state.current_page == "⚔️ 글로벌 로또":
         time.sleep(3)
@@ -2926,7 +3126,7 @@ elif menu == "👑 칭호 상점":
                 st.markdown(f"""
 <div style='border:1px solid {border_col};border-radius:10px;padding:10px;
      margin:4px 0;text-align:center;background:rgba(255,255,255,0.03);'>
-  <div style='font-size:0.85rem;color:#ddd;word-break:break-all;'>{title}</div>
+  <div style='font-size:0.85rem;color:#666666;word-break:break-all;'>{title}</div>
 </div>""", unsafe_allow_html=True)
                 if not is_equipped:
                     if st.button(label, key=f"inv_eq_{i}", use_container_width=True):
@@ -3016,7 +3216,7 @@ elif menu == "📜 내 거래 기록":
 <div class='tx-row'>
   <span style='color:#555;min-width:110px;'>{log['time']}</span>
   <span style='color:#888;min-width:60px;'>{cat_ico} {log['category']}</span>
-  <span style='color:#ddd;flex:1;margin:0 12px;'>{log['desc']}</span>
+  <span style='color:#666666;flex:1;margin:0 12px;'>{log['desc']}</span>
   <span style='color:{color};font-weight:900;'>{arrow} {sign}{format_korean_money(abs(amt))}</span>
 </div>""", unsafe_allow_html=True)
 
@@ -3101,12 +3301,12 @@ elif menu == "🏅 랭킹 & 게시판":
   <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;'>
     <div style='display:flex; align-items:center;'>
       <span style='font-size:1.3rem; min-width:40px;'>{medals[i]}</span>
-      <span style='font-weight:900; color:#E8E8F0; font-size:1.1rem; margin-right:10px;'>{r['uid']} {me}</span>
+      <span style='font-weight:900; color:#333333; font-size:1.1rem; margin-right:10px;'>{r['uid']} {me}</span>
       <span style='color:#888; font-size:0.85rem;'>{r['title']}</span>
     </div>
     <span style='font-weight:900; color:{nw_color}; font-size:1.1rem;'>{format_korean_money(r['nw'])}</span>
   </div>
-  <div style='background:rgba(255,255,255,0.03); border-radius:8px; padding:10px 14px; font-size:0.88rem; color:#ddd; line-height:1.7;'>
+  <div style='background:rgba(255,255,255,0.03); border-radius:8px; padding:10px 14px; font-size:0.88rem; color:#666666; line-height:1.7;'>
     <div><b>🗡️ 명검:</b> <span style='color:#00FF88;'>{r['weapon']}</span></div>
     <div><b>🏎️ 차량:</b> <span style='color:#00E5FF;'>{r['car']}</span></div>
     <div><b>🏢 부동산:</b> <span style='color:#FFD600;'>{r['estate']}</span></div>
@@ -3143,7 +3343,7 @@ elif menu == "🏅 랭킹 & 게시판":
     <span><b style='color:#00E5FF;'>{c['name']}</b> <span style='color:#FFD600;font-size:0.82rem;'>{c.get('title','')}</span></span>
     <span style='color:#555;font-size:0.78rem;'>{c.get('time','')}</span>
   </div>
-  <div style='color:#ddd;font-size:0.92rem;'>{c['comment']}</div>
+  <div style='color:#666666;font-size:0.92rem;'>{c['comment']}</div>
 </div>""", unsafe_allow_html=True)
 
 # =====================================================================
@@ -3196,7 +3396,7 @@ elif menu == "✉️ 개인 쪽지함":
                     <span style='font-size:0.9rem;'>{read_badge}보낸 사람: <b style='color:#00E5FF;'>{m['sender']}</b></span>
                     <span style='color:#555;font-size:0.75rem;'>{m['time']}</span>
                   </div>
-                  <div style='color:#E8E8F0;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
+                  <div style='color:#333333;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
                     {m['content']}
                   </div>
                 </div>
@@ -3219,10 +3419,10 @@ elif menu == "✉️ 개인 쪽지함":
                 st.markdown(f"""
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #FFD600; background:rgba(255,215,0,0.02);'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
-                    <span style='font-size:0.9rem;color:#aaa;'>받는 사람: <b style='color:#FFD600;'>{m['receiver']}</b></span>
+                    <span style='font-size:0.9rem;color:#666666;'>받는 사람: <b style='color:#FFD600;'>{m['receiver']}</b></span>
                     <span style='color:#555;font-size:0.75rem;'>{m['time']}</span>
                   </div>
-                  <div style='color:#ddd;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
+                  <div style='color:#666666;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
                     {m['content']}
                   </div>
                 </div>
@@ -3310,7 +3510,7 @@ elif menu == "📅 일일 퀘스트":
         <div style='background:rgba(255,255,255,0.05); border-left:4px solid {status_col}; padding:15px; border-radius:8px; margin-bottom:10px;'>
             <div style='display:flex; justify-content:space-between; align-items:center;'>
                 <div>
-                    <span style='font-size:1.5rem;'>{q['icon']}</span> <b style='font-size:1.1rem; color:#fff;'>{q['name']}</b>
+                    <span style='font-size:1.5rem;'>{q['icon']}</span> <b style='font-size:1.1rem; color:#1a1a1a;'>{q['name']}</b>
                     <div style='color:#888; font-size:0.85rem; margin-top:4px;'>{q['desc']}</div>
                 </div>
                 <div style='text-align:right;'>
@@ -3343,7 +3543,7 @@ elif menu == "🗡️ 전설의 명검 강화":
     <div style='text-align:center; padding:30px; background:linear-gradient(180deg, rgba(0,0,0,0.8), rgba(20,20,40,0.9)); border:2px solid {w_info['color']}; border-radius:15px; box-shadow:0 0 20px {w_info['color']}44;'>
         <div style='font-size:4rem; margin-bottom:10px;'>{w_info['name'].split(' ')[0]}</div>
         <div style='font-size:1.8rem; font-weight:900; color:{w_info['color']}; text-shadow:0 0 10px {w_info['color']}88;'>{w_info['name']}</div>
-        <div style='color:#aaa; margin-top:15px; font-size:0.9rem;'>무기 가치 (판매가): <b style='color:#FFD600;'>{format_korean_money(w_info['sell'])}</b></div>
+        <div style='color:#666666; margin-top:15px; font-size:0.9rem;'>무기 가치 (판매가): <b style='color:#FFD600;'>{format_korean_money(w_info['sell'])}</b></div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -3563,7 +3763,7 @@ elif menu == "🛠️ 커스텀 튜닝 차고지":
             <div style='text-align:center; padding:30px; background:linear-gradient(135deg, rgba(20,20,20,0.8), rgba(40,40,60,0.9)); border:2px solid {cur_tier_info['color']}; border-radius:15px; box-shadow:0 0 20px {cur_tier_info['color']}44;'>
                 <div style='font-size:5rem; margin-bottom:10px;'>{cur_tier_info['emoji']}</div>
                 <div style='font-size:1.8rem; font-weight:900; color:{cur_tier_info['color']};'>{cur_tier_info['name']}</div>
-                <div style='color:#aaa; margin-top:15px; font-size:1rem;'>현재 총합 튜닝 레벨: <b style='color:#FFD600;'>Lv.{total_lv}</b> / 15</div>
+                <div style='color:#666666; margin-top:15px; font-size:1rem;'>현재 총합 튜닝 레벨: <b style='color:#FFD600;'>Lv.{total_lv}</b> / 15</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -3764,7 +3964,7 @@ elif menu == "🏰 길드/클랜":
               <div style='font-size:3rem;'>{cdata['icon']}</div>
               <div style='font-size:1.8rem;font-weight:900;color:#FFD600;margin-top:8px;'>{my_clan}</div>
               <div style='color:#888;font-size:0.88rem;margin-top:6px;'>{cdata.get('desc','')}</div>
-              <div style='margin-top:10px;color:#aaa;'>클랜장: <b style='color:#00E5FF;'>{cdata['leader']}</b> &nbsp;|&nbsp; 멤버: {len(cdata['members'])}명</div>
+              <div style='margin-top:10px;color:#666666;'>클랜장: <b style='color:#00E5FF;'>{cdata['leader']}</b> &nbsp;|&nbsp; 멤버: {len(cdata['members'])}명</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -3910,7 +4110,7 @@ elif menu == "🏰 길드/클랜":
                   <div>
                     <span style='font-size:1.2rem;margin-right:10px;'>{medals[i]}</span>
                     <span style='font-size:1.2rem;'>{cdata['icon']}</span>
-                    <b style='color:#fff;margin-left:8px;'>{cname}</b>
+                    <b style='color:#1a1a1a;margin-left:8px;'>{cname}</b>
                     <span style='color:#888;font-size:0.8rem;margin-left:6px;'>({len(cdata['members'])}명){my_mark}</span>
                   </div>
                   <span style='color:{nw_col};font-weight:900;font-size:1.1rem;'>{format_korean_money(total)}</span>
@@ -3981,7 +4181,7 @@ elif menu == "🎴 가챠 뽑기":
                     st.session_state.inventory.append(item['name'])
 
                 # ▼ 들여쓰기 문제를 없애기 위해 한 줄로 깔끔하게 합쳤습니다.
-                result_html += f"<div style='background:rgba(255,255,255,0.04);border:1px solid {grade_col}44;border-radius:10px;padding:12px 16px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;'><span style='color:{grade_col};font-weight:900;'>{item['grade']}</span><span style='color:#fff;font-weight:900;'>{item['name']}</span></div>"
+                result_html += f"<div style='background:rgba(255,255,255,0.04);border:1px solid {grade_col}44;border-radius:10px;padding:12px 16px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;'><span style='color:{grade_col};font-weight:900;'>{item['grade']}</span><span style='color:#1a1a1a;font-weight:900;'>{item['name']}</span></div>"
                 if "전설" in item['grade']:
                     got_legendary = True
                     market['news'] = f"🎴 [가챠 대박] {st.session_state.logged_in_user}님이 전설 [{item['name']}] 획득!!"
@@ -4551,7 +4751,7 @@ elif menu == "🛠️ 창조주 통제소":
                 <div style='font-size:0.85rem; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);'>
                     <span style='color:#555;'>[{log['time']}]</span> 
                     <b style='color:#00E5FF;'>{log['uid']}</b>님이 
-                    <span style='color:#aaa;'>{log['desc']}</span> 
+                    <span style='color:#666666;'>{log['desc']}</span> 
                     <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
                 </div>
                 """, unsafe_allow_html=True)
@@ -4661,8 +4861,8 @@ elif menu == "🛠️ 창조주 통제소":
              border-radius:12px;padding:20px;margin-bottom:16px;'>
           <div style='color:#888;font-size:0.82rem;'>현재 시즌</div>
           <div style='font-size:2rem;font-weight:900;color:#FFD600;'>시즌 {cur_season}</div>
-          <div style='color:#aaa;margin-top:8px;'>종료 예정: <b style='color:#FF00FF;'>{season_end_dt}</b></div>
-          <div style='color:#aaa;'>잔여: <b style='color:#00FF88;'>{remain_day}일 {remain_hr}시간</b></div>
+          <div style='color:#666666;margin-top:8px;'>종료 예정: <b style='color:#FF00FF;'>{season_end_dt}</b></div>
+          <div style='color:#666666;'>잔여: <b style='color:#00FF88;'>{remain_day}일 {remain_hr}시간</b></div>
         </div>
         """, unsafe_allow_html=True)
 
