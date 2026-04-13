@@ -836,7 +836,7 @@ is_admin = st.session_state.logged_in_user == "admin"
 is_vip   = nw >= 100_000_000_000 or is_admin
 
 menu_ops = [
-    "🏠 홈 광장",
+    "🏠 홈 광장 (튜토리얼)",
     "📈 주식 트레이딩",
     "🪙 코인 거래소",       
     "🏢 부동산 거래소",
@@ -970,19 +970,76 @@ if menu == "💎 VIP 라운지":
 # =====================================================================
 elif menu == "🏠 홈 광장":
     st.title("🌌 HYOMIN UNIVERSE")
-    st.markdown(f"<div style='color:#888;margin-bottom:24px;'>어서오세요, <b style='color:#00E5FF;'>{st.session_state.logged_in_user}</b>님! {st.session_state.equipped_title}</div>", unsafe_allow_html=True)
+    
+    # 1. 게임 캐릭터 프로필 느낌의 UI
+    st.markdown(f"""
+    <div style='background: linear-gradient(135deg, #111128, #0a0a20); border: 2px solid #00E5FF; border-radius: 15px; padding: 20px; display: flex; align-items: center; gap: 20px; margin-bottom: 25px; box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);'>
+        <div style='font-size: 4rem; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 50%;'>🧑‍🚀</div>
+        <div style='flex: 1;'>
+            <div style='color:#00FF88; font-weight:900; font-size:1.1rem; margin-bottom:5px;'>{st.session_state.equipped_title}</div>
+            <div style='font-size: 2rem; font-family: "Orbitron", monospace; font-weight: 900; color: #fff; line-height: 1.2;'>{st.session_state.logged_in_user}</div>
+            <div style='color:#888; font-size:0.9rem; margin-top:5px;'>환영합니다! 우주에서의 새로운 하루가 시작되었습니다.</div>
+        </div>
+        <div style='text-align: right; border-left: 1px solid rgba(0,229,255,0.3); padding-left: 20px;'>
+            <div style='color:#aaa; font-size:0.9rem;'>보유 현금</div>
+            <div style='font-size:1.8rem; font-weight:900; color:#FFD600;'>{format_korean_money(st.session_state.global_cash)}</div>
+            <div style='color:#aaa; font-size:0.9rem; margin-top:10px;'>총 순자산</div>
+            <div style='font-size:1.3rem; font-weight:900; color:#fff;'>{format_korean_money(nw)}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1: st.metric("💵 현금",    format_korean_money(st.session_state.global_cash))
-    with c2: st.metric("📊 순자산",  format_korean_money(nw))
-    with c3: st.metric("💳 대출",    format_korean_money(st.session_state.loan))
+    # 2. 🐣 신규 유저 전용 튜토리얼 퀘스트 보드
+    is_newbie = st.session_state.equipped_title == "🌱 신규시민" and nw <= 200_000_000
+    
+    if is_newbie:
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, rgba(255, 214, 0, 0.1), rgba(255, 100, 0, 0.1)); border: 2px dashed #FFD600; border-radius: 15px; padding: 20px; margin-bottom: 25px;'>
+            <h3 style='color:#FFD600; margin-top:0;'>📜 초보자 가이드: 생존의 법칙</h3>
+            <p style='color:#ddd; font-size:0.95rem;'>무엇을 해야 할지 모르겠다면, 아래 순서대로 게임을 즐겨보세요!</p>
+            <ul style='color:#fff; line-height:1.8;'>
+                <li><b>1단계:</b> <span style='color:#00FF88;'>[일일 퀘스트]</span> 메뉴에 가서 출석 보상을 받으세요.</li>
+                <li><b>2단계:</b> 시드머니가 부족하다면 <span style='color:#00E5FF;'>[⛏️ 광산]</span>에서 노가다를 하거나 <span style='color:#FF4B4B;'>[은행]</span>에서 대출을 받으세요.</li>
+                <li><b>3단계:</b> 모은 돈으로 <span style='color:#FF00FF;'>[주식]</span>이나 <span style='color:#FF00FF;'>[코인]</span>을 사서 자산을 불리세요.</li>
+                <li><b>4단계:</b> 돈을 많이 벌면 <span style='color:#FFD600;'>[부동산]</span>을 사서 가만히 있어도 돈이 들어오게 만드세요!</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("<b style='color:#888;'>🚀 추천 퀘스트 바로가기</b>", unsafe_allow_html=True)
+        t_col1, t_col2, t_col3 = st.columns(3)
+        if t_col1.button("📅 일일 퀘스트 가기", use_container_width=True):
+            st.session_state.current_page = "📅 일일 퀘스트"
+            st.rerun()
+        if t_col2.button("⛏️ 광산으로 돈 벌러 가기", use_container_width=True):
+            st.session_state.current_page = "⛏️ 광산 (노가다)"
+            st.rerun()
+        if t_col3.button("👑 칭호 상점 구경하기", use_container_width=True):
+            st.session_state.current_page = "👑 칭호 상점"
+            st.rerun()
+        st.write("---")
+
+    # 3. 기존 대시보드 (대출 및 부동산 수금 요약)
+    c3, c4 = st.columns(2)
+    with c3:
+        st.markdown(f"""
+        <div class='card' style='text-align:center;'>
+            <div style='color:#888; font-size:0.9rem;'>💳 갚아야 할 대출금</div>
+            <div style='color:#FF4B4B; font-size:1.5rem; font-weight:900;'>{format_korean_money(st.session_state.loan)}</div>
+        </div>
+        """, unsafe_allow_html=True)
     with c4:
         _capped_pass = min(int(cur_t - st.session_state.rent_time), 86400)
         total_rent_pending = sum(
             estate_config[eid]['income'] * cnt * _capped_pass
             for eid, cnt in st.session_state.real_estate.items() if eid in estate_config
         )
-        st.metric("🏢 수금 대기", format_korean_money(total_rent_pending))
+        st.markdown(f"""
+        <div class='card' style='text-align:center;'>
+            <div style='color:#888; font-size:0.9rem;'>🏢 수금 대기 중인 임대료</div>
+            <div style='color:#00FF88; font-size:1.5rem; font-weight:900;'>{format_korean_money(total_rent_pending)}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.write("---")
     st.markdown("### 📈 실시간 시장 현황")
@@ -1008,9 +1065,9 @@ elif menu == "🏠 홈 광장":
 
     st.write("---")
     st.markdown("### 🏆 이번 시즌 랭킹 Top 5")
-    users_all = load_db(USERS_FILE, {})  # ✅ 이름을 users_all 로 똑같이 맞췄어!
+    users_all = load_db(USERS_FILE, {})  
     rank_data = []
-    for uid, udata in users_all.items(): # ✅ 이제 컴퓨터가 헷갈리지 않아!
+    for uid, udata in users_all.items(): 
         if uid == "admin": continue
         w = udata.get('cash', 0) - udata.get('loan', 0)
         for sid, p in udata.get('portfolio', {}).items():
