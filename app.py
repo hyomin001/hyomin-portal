@@ -453,43 +453,44 @@ html, body, * { font-family: 'Noto Sans KR', -apple-system, sans-serif !importan
 """, unsafe_allow_html=True)
 
     # ── 카테고리 카드 ──
+    # ── 상단 헤더 ──
     st.markdown("""
-<div style='padding:28px 24px 16px; background:#f7f8fa;'>
-  <div style='font-size:0.72rem; color:#999; margin-bottom:4px; letter-spacing:0.05em;'>카테고리</div>
-  <div style='font-size:1rem; font-weight:700; color:#1a1a1a; margin-bottom:16px;'>무엇을 하고 싶으세요?</div>
-  <div style='display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:28px;'>
-    <div style='background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; border-top:3px solid #1a73e8;'>
-      <div style='font-size:1.3rem; margin-bottom:8px;'>📈</div>
-      <div style='font-size:0.88rem; font-weight:700; color:#1a1a1a; margin-bottom:4px;'>경제 시뮬레이션</div>
-      <div style='font-size:0.75rem; color:#888; line-height:1.5;'>주식·코인·부동산·대출·명검강화</div>
-    </div>
-    <div style='background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; border-top:3px solid #2e7d32;'>
-      <div style='font-size:1.3rem; margin-bottom:8px;'>⚽</div>
-      <div style='font-size:0.88rem; font-weight:700; color:#1a1a1a; margin-bottom:4px;'>스포츠</div>
-      <div style='font-size:0.75rem; color:#888; line-height:1.5;'>구단주 시뮬레이션·레이싱·승부차기</div>
-    </div>
-    <div style='background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; border-top:3px solid #e67700;'>
-      <div style='font-size:1.3rem; margin-bottom:8px;'>🎮</div>
-      <div style='font-size:0.88rem; font-weight:700; color:#1a1a1a; margin-bottom:4px;'>미니게임</div>
-      <div style='font-size:0.75rem; color:#888; line-height:1.5;'>슬롯·블랙잭·광산·가챠</div>
-    </div>
-    <div style='background:#fff; border:1px solid #e8e8e8; border-radius:10px; padding:16px; border-top:3px solid #6741d9;'>
-      <div style='font-size:1.3rem; margin-bottom:8px;'>👥</div>
-      <div style='font-size:0.88rem; font-weight:700; color:#1a1a1a; margin-bottom:4px;'>커뮤니티</div>
-      <div style='font-size:0.75rem; color:#888; line-height:1.5;'>클랜·랭킹·게시판·쪽지</div>
-    </div>
+<div style='background:rgba(10, 12, 20, 0.7); backdrop-filter:blur(10px); border-bottom:1px solid rgba(0,229,255,0.2); padding:14px 24px; display:flex; justify-content:space-between; align-items:center;'>
+  <div style='font-size:1.2rem; font-weight:900; font-family:"Orbitron", sans-serif; color:#FFF;'>HYOMIN <span style='color:#00E5FF; text-shadow:0 0 10px #00E5FF;'>UNIVERSE</span></div>
+  <div style='font-size:0.8rem; color:#888; letter-spacing:1px;'>자본주의 생존 시뮬레이션 v18.2</div>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── 히어로 섹션 ──
+    st.markdown("""
+<div style='text-align:center; padding:50px 24px 40px; background:radial-gradient(circle at 50% -20%, rgba(0,229,255,0.1), transparent 60%); border-bottom:1px solid rgba(255,255,255,0.05);'>
+  <div style='display:inline-block; font-size:0.8rem; background:rgba(0,229,255,0.1); border:1px solid rgba(0,229,255,0.3); color:#00E5FF;
+       border-radius:20px; padding:4px 14px; margin-bottom:16px; font-weight:700; box-shadow:0 0 15px rgba(0,229,255,0.2);'>
+    🚀 NEXT GENERATION PLATFORM
+  </div>
+  <h1 style='font-size:2.2rem; font-weight:900; color:#FFF; line-height:1.4; margin-bottom:16px; text-shadow:0 2px 10px rgba(0,0,0,0.5);'>
+    주식·코인·부동산으로<br><span style='color:#FFD600;'>우주 최고의 억만장자</span>가 되세요
+  </h1>
+  <p style='font-size:1rem; color:#aaa; line-height:1.6; max-width:500px; margin:0 auto 28px;'>
+    실시간 투자 시뮬레이션부터 하이퍼카 레이싱, 클랜전까지.<br>
+    생존하고, 경쟁하고, 서버 1위의 칭호를 거머쥐세요.
+  </p>
+  <div style='display:flex; gap:15px; justify-content:center; flex-wrap:wrap; font-size:0.85rem; color:#00FF88; font-weight:700;'>
+    <span style='background:rgba(0,255,136,0.1); padding:6px 12px; border-radius:6px;'>💸 가입 즉시 1억원</span>
+    <span style='background:rgba(0,255,136,0.1); padding:6px 12px; border-radius:6px;'>📈 실시간 마켓</span>
+    <span style='background:rgba(0,255,136,0.1); padding:6px 12px; border-radius:6px;'>⚔️ 무한 경쟁</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-    # ── 로그인/회원가입 폼 ──
-    _, c2, _ = st.columns([1, 1.4, 1])
+    # ── 로그인 폼 감싸는 디자인 ──
+    _, c2, _ = st.columns([1, 1.2, 1])
     with c2:
         st.markdown("""
-<div style='background:#fff; border:1px solid #e8e8e8; border-radius:12px; padding:24px 24px 8px; margin-bottom:8px;'>
+<div style='background:rgba(20, 24, 35, 0.6); backdrop-filter:blur(10px); border:1px solid rgba(0,229,255,0.2); border-radius:15px; padding:24px 24px 8px; margin-top:20px; margin-bottom:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5);'>
   <div style='text-align:center; margin-bottom:20px;'>
-    <div style='font-size:1.05rem; font-weight:700; color:#1a1a1a;'>HYOMIN <span style='color:#1a73e8;'>Universe</span> 입장</div>
-    <div style='font-size:0.8rem; color:#999; margin-top:4px;'>계정이 없으시면 회원가입 탭을 눌러주세요</div>
+    <div style='font-size:1.1rem; font-weight:900; color:#FFF; font-family:"Orbitron";'>HYOMIN <span style='color:#00E5FF;'>UNIVERSE</span> 입장</div>
+    <div style='font-size:0.85rem; color:#888; margin-top:6px;'>새로운 시민은 [회원가입] 탭을 눌러주세요</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -560,259 +561,172 @@ html, body, * { font-family: 'Noto Sans KR', -apple-system, sans-serif !importan
 # ==============================
 IS_PC = "🖥️" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
 
+# ==============================
+# 🎨 CSS
+# ==============================
+IS_PC = "🖥️" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
+
 CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
 * { box-sizing: border-box; }
 
 html, body, p, span, label, div, td, th {
   font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
-  color: #1a1a1a !important;
+  color: #E2E8F0 !important;
 }
 
+/* 프리미엄 다크 스페이스 배경 */
 .stApp {
-  background: #f7f8fa !important;
+  background-color: #080A12 !important;
+  background-image: 
+    radial-gradient(circle at 15% 30%, rgba(0, 229, 255, 0.05), transparent 30%),
+    radial-gradient(circle at 85% 70%, rgba(255, 0, 200, 0.05), transparent 30%) !important;
+  background-attachment: fixed;
 }
 
 [data-testid='stSidebar'] {
-  background: #ffffff !important;
-  border-right: 1px solid #e8e8e8 !important;
+  background: rgba(10, 12, 20, 0.95) !important;
+  border-right: 1px solid rgba(0, 229, 255, 0.15) !important;
 }
 
-h1 { font-size: 1.6rem !important; font-weight: 700 !important; color: #1a1a1a !important; }
-h2 { font-size: 1.2rem !important; font-weight: 700 !important; color: #1a1a1a !important; }
-h3 { font-size: 1rem !important;   font-weight: 700 !important; color: #1a1a1a !important; }
+h1 { font-family:'Orbitron', sans-serif !important; font-size: 1.8rem !important; font-weight: 900 !important; color: #FFF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
+h2 { font-size: 1.3rem !important; font-weight: 800 !important; color: #00FF88 !important; }
+h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !important; }
 
+/* 입력창 네온 스타일 */
 .stTextInput > div > div > input,
 .stNumberInput > div > div > input {
-  background: #ffffff !important;
-  border: 1px solid #d9d9d9 !important;
-  border-radius: 6px !important;
-  color: #1a1a1a !important;
-  font-size: 0.95rem !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(0, 229, 255, 0.3) !important;
+  border-radius: 8px !important;
+  color: #FFF !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
 }
 .stTextInput > div > div > input:focus,
 .stNumberInput > div > div > input:focus {
-  border-color: #1a73e8 !important;
-  box-shadow: 0 0 0 2px rgba(26,115,232,0.15) !important;
+  border-color: #00E5FF !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
 }
 
+/* 드롭다운 (Selectbox) */
 div[data-baseweb="select"] > div {
-  background: #ffffff !important;
-  border: 1px solid #d9d9d9 !important;
-  border-radius: 6px !important;
+  background: rgba(20, 24, 35, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
 }
-div[role="listbox"] { background: #ffffff !important; border: 1px solid #d9d9d9 !important; border-radius: 8px !important; }
-div[role="listbox"] li, div[role="listbox"] span { color: #1a1a1a !important; }
-div[role="listbox"] li:hover { background: #f0f4ff !important; }
+div[role="listbox"] { background: #121622 !important; border: 1px solid #00E5FF !important; border-radius: 10px !important; }
+div[role="listbox"] li, div[role="listbox"] span { color: #FFF !important; }
+div[role="listbox"] li:hover { background: rgba(0, 229, 255, 0.15) !important; }
 
+/* 사이버펑크 버튼 스타일 */
 .stButton > button {
   font-family: 'Noto Sans KR', sans-serif !important;
-  font-weight: 500 !important;
-  border-radius: 6px !important;
-  border: 1px solid #d9d9d9 !important;
-  background: #ffffff !important;
-  color: #1a1a1a !important;
-  transition: all 0.15s ease !important;
-  font-size: 0.9rem !important;
-  height: 42px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(0, 229, 255, 0.4) !important;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(0, 102, 255, 0.1)) !important;
+  color: #00E5FF !important;
+  transition: all 0.2s ease !important;
+  font-size: 0.95rem !important;
+  height: 46px !important;
 }
 .stButton > button:hover {
-  background: #f0f4ff !important;
-  border-color: #1a73e8 !important;
-  color: #1a73e8 !important;
+  background: linear-gradient(135deg, #00E5FF, #0066FF) !important;
+  border-color: #00E5FF !important;
+  color: #000 !important;
+  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4) !important;
+  transform: translateY(-2px);
 }
-.stButton > button:disabled {
-  opacity: 0.4 !important;
-  cursor: not-allowed !important;
-}
+.stButton > button:disabled { opacity: 0.3 !important; cursor: not-allowed !important; transform: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.1) !important; color: #888 !important; }
 
-.stTabs [data-baseweb="tab-list"] {
-  background: transparent !important;
-  border-bottom: 1px solid #e8e8e8 !important;
-}
-.stTabs [data-baseweb="tab"] {
-  color: #666 !important;
-  font-weight: 500 !important;
-  font-size: 0.9rem !important;
-}
-.stTabs [aria-selected="true"] {
-  color: #1a73e8 !important;
-  border-bottom: 2px solid #1a73e8 !important;
-  background: transparent !important;
-}
+/* 탭 스타일 */
+.stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
+.stTabs [data-baseweb="tab"] { color: #666 !important; font-weight: 700 !important; font-size: 0.95rem !important; }
+.stTabs [aria-selected="true"] { color: #00E5FF !important; border-bottom: 2px solid #00E5FF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
 
+/* 매트릭 (자산 요약 등) */
 [data-testid="stMetric"] {
-  background: #ffffff !important;
-  border: 1px solid #e8e8e8 !important;
-  border-radius: 10px !important;
-  padding: 14px 18px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
 }
-[data-testid="stMetricLabel"] { color: #666 !important; font-size: 0.8rem !important; }
-[data-testid="stMetricValue"] { color: #1a1a1a !important; font-size: 1.2rem !important; font-weight: 700 !important; }
+[data-testid="stMetricLabel"] { color: #888 !important; font-size: 0.85rem !important; font-weight: 700; }
+[data-testid="stMetricValue"] { color: #FFF !important; font-family: 'Orbitron', sans-serif !important; font-size: 1.4rem !important; font-weight: 900 !important; }
 
-.stAlert { border-radius: 8px !important; }
-.stProgress > div > div { background: #1a73e8 !important; border-radius: 4px !important; }
-
+/* 공통 카드 (글래스모피즘) */
 .card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
-  padding: 18px;
-  margin: 6px 0;
-  transition: box-shadow 0.15s;
-}
-.card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-
-.news-banner {
-  background: #fffbea;
-  border: 1px solid #ffe066;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-weight: 500;
-  color: #7a5c00 !important;
-  margin: 10px 0;
-  font-size: 0.9rem;
-}
-
-.stock-table { width: 100%; border-collapse: collapse; }
-.stock-table th {
-  background: #f7f8fa;
-  color: #666 !important;
-  font-size: 0.78rem !important;
-  padding: 10px 14px;
-  text-align: left;
-  border-bottom: 1px solid #e8e8e8;
-}
-.stock-table td { padding: 11px 14px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-.stock-table tr:hover td { background: #f7f8fa; }
-.p-up   { color: #e03131 !important; font-weight: 700; }
-.p-down { color: #1971c2 !important; font-weight: 700; }
-.p-flat { color: #999 !important; }
-
-.scoreboard {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-}
-.score-number { font-size: 3rem !important; font-weight: 700; color: #1a1a1a !important; line-height: 1; }
-.team-label   { font-size: 1.1rem; font-weight: 700; color: #1a1a1a !important; margin-bottom: 6px; }
-.match-time   { color: #666 !important; font-size: 0.9rem; margin-top: 12px; }
-
-.commentary-item {
-  background: #f7f8fa;
-  border-left: 3px solid #1a73e8;
-  padding: 8px 14px;
-  margin: 5px 0;
-  border-radius: 0 6px 6px 0;
-  font-size: 0.88rem;
-  color: #333 !important;
-}
-
-.estate-card {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
-  padding: 16px 20px;
+  background: rgba(20, 24, 35, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px;
+  padding: 20px;
   margin: 8px 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
-.estate-income { color: #2e7d32 !important; font-weight: 700; font-size: 0.88rem; }
+.card:hover { border-color: rgba(0, 229, 255, 0.3) !important; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.1); }
 
-.market-listing {
-  background: #f0f4ff;
-  border: 1px solid #c5d3f5;
-  border-radius: 10px;
-  padding: 14px 18px;
-  margin: 7px 0;
-}
-.market-initial {
-  background: #f0faf4;
-  border: 1px solid #b2dfcb;
-  border-radius: 10px;
-  padding: 14px 18px;
-  margin: 7px 0;
-}
-.my-listing {
-  background: #fffbea;
-  border: 1px solid #ffe066;
-  border-radius: 10px;
-  padding: 14px 18px;
-  margin: 7px 0;
-}
+/* 알림 및 프로그레스바 */
+.stAlert { border-radius: 10px !important; border: none !important; background: rgba(255,255,255,0.05) !important; }
+.stProgress > div > div { background: linear-gradient(90deg, #00E5FF, #FF00FF) !important; border-radius: 6px !important; }
 
-.profit { color: #e03131 !important; font-weight: 700; }
-.loss   { color: #1971c2 !important; font-weight: 700; }
+/* 테이블 (주식, 코인) */
+.stock-table { width: 100%; border-collapse: collapse; }
+.stock-table th { background: rgba(0, 229, 255, 0.1); color: #00E5FF !important; font-family: 'Orbitron', sans-serif !important; font-size: 0.8rem !important; padding: 12px; text-align: left; border-bottom: 1px solid rgba(0, 229, 255, 0.2); letter-spacing: 1px; }
+.stock-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; }
+.stock-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+.p-up   { color: #FF4B4B !important; font-weight: 900; }
+.p-down { color: #4B9EFF !important; font-weight: 900; }
+.p-flat { color: #888 !important; }
 
-.lotto-pool {
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-}
-.lotto-amount { font-size: 2rem !important; color: #6741d9 !important; font-weight: 700; }
+/* 스코어보드 (축구) */
+.scoreboard { background: linear-gradient(135deg, #0A0F1C, #1A1C2E); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
+.score-number { font-size: 3.5rem !important; font-weight: 900; color: #00FF88 !important; text-shadow: 0 0 15px rgba(0,255,136,0.4); line-height: 1; }
+.team-label   { font-size: 1.2rem; font-weight: 900; color: #FFF !important; margin-bottom: 6px; }
+.match-time   { font-family: 'Orbitron'; color: #00E5FF !important; font-size: 1rem; margin-top: 14px; }
+.commentary-item { background: rgba(255,255,255,0.03); border-left: 3px solid #00E5FF; padding: 10px 14px; margin: 6px 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; color: #CCC !important; }
 
-.vip-banner {
-  background: #fffbea;
-  border: 1px solid #ffe066;
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-}
+/* 마켓 요소들 */
+.news-banner { background: linear-gradient(135deg, rgba(255,214,0,0.1), rgba(255,100,0,0.05)); border: 1px solid rgba(255,214,0,0.3); border-radius: 10px; padding: 12px 18px; font-weight: 700; color: #FFD600 !important; margin: 12px 0; font-size: 0.95rem; }
+.estate-card { background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 18px 22px; margin: 10px 0; }
+.estate-income { color: #00FF88 !important; font-weight: 900; font-size: 0.9rem; }
+.market-listing { background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
+.market-initial { background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
+.my-listing { background: rgba(255, 214, 0, 0.05); border: 1px solid rgba(255, 214, 0, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
 
-.slot-display {
-  font-size: 3rem;
-  text-align: center;
-  padding: 20px;
-  background: #f7f8fa;
-  border: 1px solid #e8e8e8;
-  border-radius: 12px;
-  letter-spacing: 16px;
-  min-height: 90px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* 미니게임 요소들 */
+.lotto-pool { background: linear-gradient(135deg, #11052C, #2A0845); border: 1px solid rgba(255, 0, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.6); }
+.lotto-amount { font-size: 2.5rem !important; color: #FF00FF !important; text-shadow: 0 0 15px rgba(255,0,255,0.5); font-weight: 900; }
+.vip-banner { background: linear-gradient(135deg, #2A1A00, #4A2500); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 0 20px rgba(255,214,0,0.1); }
+.slot-display { font-size: 3.5rem; text-align: center; padding: 20px; background: rgba(0,0,0,0.6); border: 1px inset rgba(255,214,0,0.2); border-radius: 14px; letter-spacing: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+.question-box { background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 28px; line-height: 1.8; font-size: 1.1rem; color: #FFF !important; }
+.mine-card { background: linear-gradient(135deg, rgba(139,69,19,0.15), rgba(0,0,0,0.3)); border: 1px solid rgba(205,127,50,0.3); border-radius: 14px; padding: 20px; text-align: center; }
 
-.question-box {
-  background: #f7f8fa;
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
-  padding: 24px;
-  line-height: 1.8;
-  font-size: 1rem;
-  color: #1a1a1a !important;
-}
+/* 거래 기록 */
+.tx-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+.cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
+"""
 
-.mine-card {
-  background: #fff8f0;
-  border: 1px solid #ffd8a8;
-  border-radius: 10px;
-  padding: 18px;
-  text-align: center;
-}
-
-.tx-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.88rem;
-}
-
-.cooldown-badge {
-  background: #fff0f0;
-  border: 1px solid #ffcdd2;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 0.75rem;
-  color: #c62828 !important;
-  display: inline-block;
-  margin-left: 6px;
-}
+if IS_PC:
+    CSS += """
+p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
+.stButton>button { height:52px !important; font-size:1rem !important; }
+"""
+else:
+    CSS += """
+p,span,label,td,th { font-size:0.88rem !important; }
+h1 { font-size:1.5rem !important; }
+h2 { font-size:1.15rem !important; }
+h3 { font-size:1rem !important; }
+.stButton>button { height:46px !important; font-size:0.88rem !important; }
+.stock-table th,.stock-table td { padding:8px 8px; font-size:0.82rem !important; }
+.score-number { font-size:2.5rem !important; }
+.lotto-amount { font-size:1.6rem !important; }
 """
 
 st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
