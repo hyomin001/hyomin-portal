@@ -455,9 +455,25 @@ div[data-baseweb="select"] > div {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 8px !important;
 }
-div[role="listbox"] { background: #121622 !important; border: 1px solid #00E5FF !important; border-radius: 10px !important; }
-div[role="listbox"] li, div[role="listbox"] span { color: #FFF !important; }
-div[role="listbox"] li:hover { background: rgba(0, 229, 255, 0.15) !important; }
+
+/* 팝업으로 뜨는 리스트박스 백그라운드 강제 다크모드 */
+[data-baseweb="popover"], [data-baseweb="menu"], div[role="listbox"] { 
+  background-color: #121622 !important; 
+  border: 1px solid #00E5FF !important; 
+  border-radius: 10px !important; 
+}
+[data-baseweb="menu"] ul {
+  background-color: #121622 !important; 
+}
+/* 드롭다운 내부 텍스트 및 호버 효과 */
+div[role="listbox"] li, div[role="listbox"] span, 
+[data-baseweb="menu"] li, [data-baseweb="menu"] span { 
+  color: #FFFFFF !important; 
+  background-color: transparent !important;
+}
+div[role="listbox"] li:hover, [data-baseweb="menu"] li:hover { 
+  background-color: rgba(0, 229, 255, 0.15) !important; 
+}
 
 /* 사이버펑크 버튼 스타일 */
 .stButton > button {
@@ -1117,9 +1133,11 @@ elif menu == "🏠 홈 광장 (튜토리얼)":
         
         col_q1, col_q2 = st.columns(2)
         if col_q1.button("⛏️ 광산으로 돈 벌러 가기", use_container_width=True):
+            st.session_state.current_category = "🎮 미니게임" # 카테고리 변경 추가!
             st.session_state.current_page = "⛏️ 광산 (노가다)"
             st.rerun()
         if col_q2.button("📅 일일 퀘스트 보상받기", use_container_width=True):
+            st.session_state.current_category = "🌟 성장 & 혜택" # 카테고리 변경 추가!
             st.session_state.current_page = "📅 일일 퀘스트"
             st.rerun()
             
@@ -1135,12 +1153,15 @@ elif menu == "🏠 홈 광장 (튜토리얼)":
         
         col_q1, col_q2, col_q3 = st.columns(3)
         if col_q1.button("📈 주식 시장 보기", use_container_width=True):
+            st.session_state.current_category = "📈 경제"
             st.session_state.current_page = "📈 주식 트레이딩"
             st.rerun()
         if col_q2.button("🪙 코인 떡상 노리기", use_container_width=True):
+            st.session_state.current_category = "📈 경제"
             st.session_state.current_page = "🪙 코인 거래소"
             st.rerun()
         if col_q3.button("🏢 첫 부동산 사기", use_container_width=True):
+            st.session_state.current_category = "📈 경제"
             st.session_state.current_page = "🏢 부동산 거래소"
             st.rerun()
             
@@ -1156,9 +1177,11 @@ elif menu == "🏠 홈 광장 (튜토리얼)":
         
         col_q1, col_q2 = st.columns(2)
         if col_q1.button("🗡️ 명검 강화하러 가기", use_container_width=True):
+            st.session_state.current_category = "🎮 미니게임" # 카테고리 변경 추가!
             st.session_state.current_page = "🗡️ 전설의 명검 강화"
             st.rerun()
         if col_q2.button("🏎️ 하이퍼카 차고지 가기", use_container_width=True):
+            st.session_state.current_category = "⚽ 스포츠" # 카테고리 변경 추가!
             st.session_state.current_page = "🛠️ 커스텀 튜닝 차고지"
             st.rerun()
 
