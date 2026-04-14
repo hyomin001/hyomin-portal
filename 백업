@@ -4755,9 +4755,19 @@ elif menu == "🛠️ 창조주 통제소":
         st.markdown("### 🚨 긴급 데이터 백업 (다운로드)")
         
         # 파일이 존재하면 다운로드 버튼 생성
-        if os.path.exists(USERS_FILE):
+       if os.path.exists(USERS_FILE):
             with open(USERS_FILE, "rb") as f:
-                st.download_button("📥 유저 데이터 (users_db) 백업", f, file_name=f"backup_{USERS_FILE}", mime="application/json")\
+                st.download_button("📥 유저 데이터...", f, ...)
+
+        # 👇 윗줄의 if문과 수직으로 똑같이 맞춰야 합니다!
+        bak_file = USERS_FILE + ".bak"
+        if os.path.exists(bak_file):
+            with open(bak_file, "rb") as f:
+                st.download_button("🆘 긴급 구조!...", f, ...)if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, "rb") as f:
+                st.download_button("📥 유저 데이터...", f, ...)
+
+        # 👇 윗줄의 if문과 수직으로 똑같이 맞춰야 합니다!
         bak_file = USERS_FILE + ".bak"
         if os.path.exists(bak_file):
             with open(bak_file, "rb") as f:
