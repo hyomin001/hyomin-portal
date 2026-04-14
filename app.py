@@ -4757,7 +4757,13 @@ elif menu == "🛠️ 창조주 통제소":
         # 파일이 존재하면 다운로드 버튼 생성
         if os.path.exists(USERS_FILE):
             with open(USERS_FILE, "rb") as f:
-                st.download_button("📥 유저 데이터 (users_db) 백업", f, file_name=f"backup_{USERS_FILE}", mime="application/json")
+                st.download_button("📥 유저 데이터 (users_db) 백업", f, file_name=f"backup_{USERS_FILE}", mime="application/json")\
+        bak_file = USERS_FILE + ".bak"
+        if os.path.exists(bak_file):
+            with open(bak_file, "rb") as f:
+                st.download_button("🆘 긴급 구조! .bak 파일 다운로드", f, file_name="users_db.json.bak", mime="application/json")
+        else:
+            st.error("서버에 .bak 백업 파일이 남아있지 않습니다 ㅠㅠ")
                 
         if os.path.exists(MARKET_FILE):
             with open(MARKET_FILE, "rb") as f:
