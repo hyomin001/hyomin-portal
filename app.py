@@ -670,7 +670,7 @@ if 'logged_in_user' not in st.session_state:
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
-        device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"], horizontal=True)
+        device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일-->현재 수정중이라 pc이용 부탁드려요 (스마트폰)"], horizontal=True)
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
         with tabs[0]:
             l_id = st.text_input("아이디", placeholder="아이디를 입력하세요")
