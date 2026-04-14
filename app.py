@@ -579,7 +579,7 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
 @media (max-width: 768px) {
     /* 💡 1. 화면 전체 축소 효과 (85% 비율로 축소) */
     .block-container { 
-        zoom: 0.85; 
+        zoom: 0.7; 
         padding-top: 2rem !important; 
         padding-left: 0.5rem !important; 
         padding-right: 0.5rem !important; 
