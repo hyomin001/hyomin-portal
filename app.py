@@ -463,40 +463,13 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
 }
 
-/* [1] 드롭다운 입력창 (항목을 선택했을 때 보이는 상자) */
-div[data-baseweb="select"] > div {
-    background-color: #FFFFFF !important; /* 배경을 흰색으로 고정 */
-}
-
-/* [2] 입력창 내부에 써지는 모든 글자 (선택된 순간의 글자 포함) */
-div[data-baseweb="select"] * {
-    color: #000000 !important; /* 글자색 검정 */
-    font-weight: 600 !important;
-}
-
-/* [3] 클릭 시 아래로 열리는 목록 상자 (팝업) */
-[data-baseweb="popover"] {
-    background-color: #FFFFFF !important;
-}
-
-/* [4] 목록 상자 내부의 모든 항목과 텍스트 */
-[data-baseweb="popover"] *, 
-[role="listbox"] *, 
-[data-baseweb="menu"] * {
-    color: #000000 !important;
-    background-color: #FFFFFF !important;
-}
-
-/* [5] 항목 위에 마우스를 올렸을 때 (Hover) 배경색 살짝 변경 */
-[role="option"]:hover, 
-[data-baseweb="menu"] li:hover {
-    background-color: #EEEEEE !important; /* 마우스 올리면 연한 회색 */
-}
-
-/* [6] 플레이스홀더 (아무것도 선택 안 했을 때 나오는 안내 문구) 글자색 */
-div[data-baseweb="select"] div[aria-hidden="true"] {
-    color: #666666 !important;
-}
+/* 드롭다운 및 팝업 스타일 */
+div[data-baseweb="select"] > div { background-color: #FFFFFF !important; }
+div[data-baseweb="select"] * { color: #000000 !important; font-weight: 600 !important; }
+[data-baseweb="popover"] { background-color: #FFFFFF !important; }
+[data-baseweb="popover"] *, [role="listbox"] *, [data-baseweb="menu"] * { color: #000000 !important; background-color: #FFFFFF !important; }
+[role="option"]:hover, [data-baseweb="menu"] li:hover { background-color: #EEEEEE !important; }
+div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; }
 
 /* 사이버펑크 버튼 스타일 */
 .stButton > button {
@@ -562,22 +535,18 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
 .p-down { color: #4B9EFF !important; font-weight: 900; }
 .p-flat { color: #888 !important; }
 
-/* 스코어보드 (축구) */
+/* 스코어보드 및 기타 요소들 */
 .scoreboard { background: linear-gradient(135deg, #0A0F1C, #1A1C2E); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
 .score-number { font-size: 3.5rem !important; font-weight: 900; color: #00FF88 !important; text-shadow: 0 0 15px rgba(0,255,136,0.4); line-height: 1; }
 .team-label   { font-size: 1.2rem; font-weight: 900; color: #FFF !important; margin-bottom: 6px; }
 .match-time   { font-family: 'Orbitron'; color: #00E5FF !important; font-size: 1rem; margin-top: 14px; }
 .commentary-item { background: rgba(255,255,255,0.03); border-left: 3px solid #00E5FF; padding: 10px 14px; margin: 6px 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; color: #CCC !important; }
-
-/* 마켓 요소들 */
 .news-banner { background: linear-gradient(135deg, rgba(255,214,0,0.1), rgba(255,100,0,0.05)); border: 1px solid rgba(255,214,0,0.3); border-radius: 10px; padding: 12px 18px; font-weight: 700; color: #FFD600 !important; margin: 12px 0; font-size: 0.95rem; }
 .estate-card { background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 18px 22px; margin: 10px 0; }
 .estate-income { color: #00FF88 !important; font-weight: 900; font-size: 0.9rem; }
 .market-listing { background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
 .market-initial { background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
 .my-listing { background: rgba(255, 214, 0, 0.05); border: 1px solid rgba(255, 214, 0, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
-
-/* 미니게임 요소들 */
 .lotto-pool { background: linear-gradient(135deg, #11052C, #2A0845); border: 1px solid rgba(255, 0, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.6); }
 .lotto-amount { font-size: 2.5rem !important; color: #FF00FF !important; text-shadow: 0 0 15px rgba(255,0,255,0.5); font-weight: 900; }
 .vip-banner { background: linear-gradient(135deg, #2A1A00, #4A2500); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 0 20px rgba(255,214,0,0.1); }
@@ -589,40 +558,66 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
 .tx-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
 .cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
 
+/* ===================================================
+   🚨 사이드바 열기/닫기 텍스트 버튼으로 변경 (초록/빨강 네온)
+   =================================================== */
+/* 기존 화살표/X 아이콘 숨기기 */
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapseButton"] svg {
+    display: none !important;
+}
+
+/* 1. 메뉴 열기 버튼 (접혀있을 때) */
 [data-testid="collapsedControl"] {
-    background-color: rgba(0, 255, 136, 0.1) !important; /* 초록색 배경 */
-    border: 2px solid #00FF88 !important; /* 초록색 테두리 */
-    border-radius: 50% !important;
-    width: 46px !important;
-    height: 46px !important;
+    background-color: rgba(0, 255, 136, 0.1) !important;
+    border: 2px solid #00FF88 !important;
+    border-radius: 20px !important;
+    width: 70px !important;
+    height: 40px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     margin-top: 15px !important;
     margin-left: 15px !important;
-    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5), inset 0 0 10px rgba(0, 255, 136, 0.3) !important; /* 초록색 빛 번짐 */
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5), inset 0 0 10px rgba(0, 255, 136, 0.3) !important;
     transition: all 0.3s ease !important;
     z-index: 999999 !important;
 }
 
+/* '열기' 텍스트 강제 삽입 */
+[data-testid="collapsedControl"]::after {
+    content: "열기" !important;
+    color: #FFFFFF !important;
+    font-weight: 900 !important;
+    font-size: 0.95rem !important;
+}
+
 [data-testid="collapsedControl"]:hover {
     background-color: rgba(0, 255, 136, 0.3) !important;
-    box-shadow: 0 0 25px rgba(0, 255, 136, 0.8) !important; /* 마우스 올렸을 때 더 강한 초록빛 */
-    transform: scale(1.1) !important;
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.8) !important;
+    transform: scale(1.05) !important;
 }
 
-[data-testid="collapsedControl"] svg {
-    fill: #FFFFFF !important;
-    width: 24px !important;
-    height: 24px !important;
-}
-
+/* 2. 메뉴 닫기 버튼 (열려있을 때) */
 [data-testid="stSidebarCollapseButton"] {
     background-color: rgba(255, 75, 75, 0.1) !important;
     border: 1px solid #FF4B4B !important;
-    border-radius: 50% !important;
+    border-radius: 20px !important;
+    width: 60px !important;
+    height: 35px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     box-shadow: 0 0 10px rgba(255, 75, 75, 0.4) !important;
     transition: all 0.2s ease !important;
+}
+
+/* '닫기' 텍스트 강제 삽입 */
+[data-testid="stSidebarCollapseButton"]::after {
+    content: "닫기" !important;
+    color: #FFFFFF !important;
+    font-weight: 900 !important;
+    font-size: 0.9rem !important;
 }
 
 [data-testid="stSidebarCollapseButton"]:hover {
@@ -632,7 +627,6 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
 
 /* 📱 모바일 화면용 설정 (화면이 768px 이하일 때 자동 적용) */
 @media (max-width: 768px) {
-    /* 1. 화면 전체 축소 효과 */
     .block-container { 
         zoom: 0.92; 
         padding-top: 2rem !important; 
@@ -640,42 +634,29 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
         padding-right: 0.5rem !important; 
         padding-bottom: 2rem !important; 
     }
-
     div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
     div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; }
-    
     p,span,label,td,th { font-size:0.85rem !important; }
     h1 { font-size:1.4rem !important; }
     h2 { font-size:1.1rem !important; }
     h3 { font-size:0.95rem !important; }
-    
     .stButton>button { height:40px !important; font-size:0.85rem !important; }
     .score-number { font-size:2.2rem !important; }
     .lotto-amount { font-size:1.4rem !important; }
     .card { padding: 10px !important; margin: 4px 0 !important; }
     .estate-card, .market-listing, .market-initial { padding: 10px !important; margin: 6px 0 !important; }
     [data-testid="stMetric"] { padding: 8px 12px !important; }
-
-    /* 🚨 2. 여기서부터 글자 잘림 방지 핵심 코드 🚨 */
-    
-    /* 앱 전체 가로 스크롤(삐져나감) 원천 차단 */
     html, body, .stApp {
         overflow-x: hidden !important;
         max-width: 100vw !important;
     }
-
-    /* 모든 텍스트 강제 줄바꿈 (영어, 숫자, 긴 단어 등) */
     * {
-        word-break: keep-all !important; /* 한글은 단어 단위로 */
-        overflow-wrap: break-word !important; /* 너무 길면 쪼개서 다음 줄로 */
+        word-break: keep-all !important;
+        overflow-wrap: break-word !important;
     }
-
-    /* 나란히 배치된(Flex) 요소들이 화면을 넘어가면 밑으로 떨어지게 만듦 */
     div[style*="display: flex"], div[style*="display:flex"] {
         flex-wrap: wrap !important;
     }
-
-    /* 표(Table)가 너무 넓을 경우 표 안에서만 스크롤 되도록 처리 */
     .stock-table {
         display: block !important;
         overflow-x: auto !important;
@@ -691,12 +672,6 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
 @media (min-width: 769px) {
     p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
     .stButton>button { height:52px !important; font-size:1rem !important; }
-}
-span[class*="material-symbols"],
-span[class*="material-icons"],
-[data-testid="collapsedControl"] span,
-[data-testid="stSidebarCollapseButton"] span {
-    font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
 }
 """
 
