@@ -705,7 +705,7 @@ if 'logged_in_user' not in st.session_state:
         <h2 style='color: #FFD600 !important; margin-top: 0; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚨 [긴급] 서버 초기화 및 시즌 2 오픈 🚨</h2>
         <p style='color: #FFF; font-size: 1rem; line-height: 1.6; margin-bottom: 15px; font-weight: 500;'>
             예상치 못한 트래픽 폭주로 인해 부득이하게 서버 DB가 초기화되었습니다.<br>
-            시즌 1을 함께해주신 80명의 시민 여러분께 진심으로 고개 숙여 사과드립니다. 😭<br>
+            시즌 1을 함께해주신 80명의 시민 여러분께 진심으로 고개 숙여 사과드립니다.*****70분은 복구했습니다!!*** 😭<br>
             <b style='color:#00E5FF; font-size: 1.1rem;'>더욱 안정적인 환경에서 [시즌 2]가 새롭게 시작됩니다!</b>
         </p>
         <div style='background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; display: inline-block; border: 1px solid rgba(255, 214, 0, 0.3);'>
