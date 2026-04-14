@@ -176,44 +176,49 @@ def format_korean_money(num):
     return f"-{res}" if is_neg else res
 
 # ════════════════════════════════════
-# 🗄️ DB 유틸 (동시성 에러 완벽 방어)
+# 🗄️ 몽고DB(MongoDB) 클라우드 연결 유틸
 # ════════════════════════════════════
-def _atomic_save(filepath: str, data):
-    unique_id = str(uuid.uuid4())[:8]
-    tmp = f"{filepath}.{unique_id}.tmp"
-    bak = f"{filepath}.bak"
-    
-    lock = _get_lock(filepath)
-    try:
-        with lock:
-            with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=4, ensure_ascii=False)
-            if os.path.exists(filepath):
-                shutil.copy2(filepath, bak)
-            os.replace(tmp, filepath)
-    except Exception as e:
-        if os.path.exists(tmp):
-            try: os.remove(tmp)
-            except: pass
-        raise e
-        
+from pymongo import MongoClient
+
+@st.cache_resource
+def get_mongo_client():
+    uri = st.secrets.get("MONGO_URI", None)
+    if uri:
+        return MongoClient(uri)
+    return None
+
 def load_db(file, default):
-    lock = _get_lock(file)
-    with lock:
-        for target in [file, file + ".bak"]:
-            if os.path.exists(target):
-                try:
-                    with open(target, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                    if data is not None: return data
-                except Exception:
-                    continue
+    """MongoDB에서 데이터 불러오기"""
+    client = get_mongo_client()
+    if client:
+        try:
+            db = client["hyomin_universe"]
+            col_name = file.replace(".json", "").replace("_db", "")
+            doc = db[col_name].find_one({"_id": "main"})
+            if doc:
+                doc.pop("_id", None)
+                return doc
+        except Exception:
+            pass
     return default
 
 def save_db(file, data):
-    if data is None: return
-    if isinstance(data, dict) and len(data) == 0 and file == USERS_FILE: return
-    _atomic_save(file, data)
+    """MongoDB에 데이터 저장하기"""
+    if data is None:
+        return
+    client = get_mongo_client()
+    if client:
+        try:
+            db = client["hyomin_universe"]
+            col_name = file.replace(".json", "").replace("_db", "")
+            db[col_name].replace_one(
+                {"_id": "main"},
+                {"_id": "main", **data},
+                upsert=True
+            )
+        except Exception:
+            pass
+
 
 def log_tx(uid: str, category: str, desc: str, amount: int):
     logs = load_db(TXLOG_FILE, {})
