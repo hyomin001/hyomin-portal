@@ -387,12 +387,194 @@ def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
 
 st.set_page_config(page_title="HYOMIN UNIVERSE v18.2", page_icon="🌌", layout="wide")
 
+# ==============================
+# 🎨 전역 CSS 적용 (위치 최상단으로 이동!)
+# ==============================
+IS_PC = "🖥️" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
+
+CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+* { box-sizing: border-box; }
+
+/* 기본 텍스트 색상 강제 흰색 */
+html, body, p, span, div, td, th {
+  font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
+  color: #FFFFFF !important; 
+}
+
+/* 🚨 로그인 화면 텍스트(접속환경, 아이디, 비밀번호 등) 강제 흰색 처리 */
+label,
+label p,
+label div,
+.stRadio label,
+[data-testid="stWidgetLabel"] p,
+[data-testid="stWidgetLabel"] div {
+    color: #FFFFFF !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+}
+
+/* 프리미엄 다크 스페이스 배경 */
+.stApp {
+  background-color: #080A12 !important;
+  background-image: 
+    radial-gradient(circle at 15% 30%, rgba(0, 229, 255, 0.05), transparent 30%),
+    radial-gradient(circle at 85% 70%, rgba(255, 0, 200, 0.05), transparent 30%) !important;
+  background-attachment: fixed;
+}
+
+[data-testid='stSidebar'] {
+  background: rgba(10, 12, 20, 0.95) !important;
+  border-right: 1px solid rgba(0, 229, 255, 0.15) !important;
+}
+
+h1 { font-family:'Orbitron', sans-serif !important; font-size: 1.8rem !important; font-weight: 900 !important; color: #FFF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
+h2 { font-size: 1.3rem !important; font-weight: 800 !important; color: #00FF88 !important; }
+h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !important; }
+
+/* 입력창 네온 스타일 */
+.stTextInput > div > div > input,
+.stNumberInput > div > div > input {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(0, 229, 255, 0.3) !important;
+  border-radius: 8px !important;
+  color: #FFF !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+}
+.stTextInput > div > div > input:focus,
+.stNumberInput > div > div > input:focus {
+  border-color: #00E5FF !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
+}
+
+/* 드롭다운 (Selectbox) */
+div[data-baseweb="select"] > div {
+  background: rgba(20, 24, 35, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+}
+div[role="listbox"] { background: #121622 !important; border: 1px solid #00E5FF !important; border-radius: 10px !important; }
+div[role="listbox"] li, div[role="listbox"] span { color: #FFF !important; }
+div[role="listbox"] li:hover { background: rgba(0, 229, 255, 0.15) !important; }
+
+/* 사이버펑크 버튼 스타일 */
+.stButton > button {
+  font-family: 'Noto Sans KR', sans-serif !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(0, 229, 255, 0.4) !important;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(0, 102, 255, 0.1)) !important;
+  color: #00E5FF !important;
+  transition: all 0.2s ease !important;
+  font-size: 0.95rem !important;
+  height: 46px !important;
+}
+.stButton > button:hover {
+  background: linear-gradient(135deg, #00E5FF, #0066FF) !important;
+  border-color: #00E5FF !important;
+  color: #000 !important;
+  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4) !important;
+  transform: translateY(-2px);
+}
+.stButton > button:disabled { opacity: 0.3 !important; cursor: not-allowed !important; transform: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.1) !important; color: #888 !important; }
+
+/* 탭 스타일 */
+.stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
+.stTabs [data-baseweb="tab"] { color: #A0AEC0 !important; font-weight: 700 !important; font-size: 0.95rem !important; }
+.stTabs [aria-selected="true"] { color: #00E5FF !important; border-bottom: 2px solid #00E5FF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
+
+/* 매트릭 (자산 요약 등) */
+[data-testid="stMetric"] {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+[data-testid="stMetricLabel"] { color: #888 !important; font-size: 0.85rem !important; font-weight: 700; }
+[data-testid="stMetricValue"] { color: #FFF !important; font-family: 'Orbitron', sans-serif !important; font-size: 1.4rem !important; font-weight: 900 !important; }
+
+/* 공통 카드 (글래스모피즘) */
+.card {
+  background: rgba(20, 24, 35, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px;
+  padding: 20px;
+  margin: 8px 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.card:hover { border-color: rgba(0, 229, 255, 0.3) !important; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.1); }
+
+/* 알림 및 프로그레스바 */
+.stAlert { border-radius: 10px !important; border: none !important; background: rgba(255,255,255,0.05) !important; }
+.stProgress > div > div { background: linear-gradient(90deg, #00E5FF, #FF00FF) !important; border-radius: 6px !important; }
+
+/* 테이블 (주식, 코인) */
+.stock-table { width: 100%; border-collapse: collapse; }
+.stock-table th { background: rgba(0, 229, 255, 0.1); color: #00E5FF !important; font-family: 'Orbitron', sans-serif !important; font-size: 0.8rem !important; padding: 12px; text-align: left; border-bottom: 1px solid rgba(0, 229, 255, 0.2); letter-spacing: 1px; }
+.stock-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; }
+.stock-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+.p-up   { color: #FF4B4B !important; font-weight: 900; }
+.p-down { color: #4B9EFF !important; font-weight: 900; }
+.p-flat { color: #888 !important; }
+
+/* 스코어보드 (축구) */
+.scoreboard { background: linear-gradient(135deg, #0A0F1C, #1A1C2E); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
+.score-number { font-size: 3.5rem !important; font-weight: 900; color: #00FF88 !important; text-shadow: 0 0 15px rgba(0,255,136,0.4); line-height: 1; }
+.team-label   { font-size: 1.2rem; font-weight: 900; color: #FFF !important; margin-bottom: 6px; }
+.match-time   { font-family: 'Orbitron'; color: #00E5FF !important; font-size: 1rem; margin-top: 14px; }
+.commentary-item { background: rgba(255,255,255,0.03); border-left: 3px solid #00E5FF; padding: 10px 14px; margin: 6px 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; color: #CCC !important; }
+
+/* 마켓 요소들 */
+.news-banner { background: linear-gradient(135deg, rgba(255,214,0,0.1), rgba(255,100,0,0.05)); border: 1px solid rgba(255,214,0,0.3); border-radius: 10px; padding: 12px 18px; font-weight: 700; color: #FFD600 !important; margin: 12px 0; font-size: 0.95rem; }
+.estate-card { background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 18px 22px; margin: 10px 0; }
+.estate-income { color: #00FF88 !important; font-weight: 900; font-size: 0.9rem; }
+.market-listing { background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
+.market-initial { background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
+.my-listing { background: rgba(255, 214, 0, 0.05); border: 1px solid rgba(255, 214, 0, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
+
+/* 미니게임 요소들 */
+.lotto-pool { background: linear-gradient(135deg, #11052C, #2A0845); border: 1px solid rgba(255, 0, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.6); }
+.lotto-amount { font-size: 2.5rem !important; color: #FF00FF !important; text-shadow: 0 0 15px rgba(255,0,255,0.5); font-weight: 900; }
+.vip-banner { background: linear-gradient(135deg, #2A1A00, #4A2500); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 0 20px rgba(255,214,0,0.1); }
+.slot-display { font-size: 3.5rem; text-align: center; padding: 20px; background: rgba(0,0,0,0.6); border: 1px inset rgba(255,214,0,0.2); border-radius: 14px; letter-spacing: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+.question-box { background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 28px; line-height: 1.8; font-size: 1.1rem; color: #FFF !important; }
+.mine-card { background: linear-gradient(135deg, rgba(139,69,19,0.15), rgba(0,0,0,0.3)); border: 1px solid rgba(205,127,50,0.3); border-radius: 14px; padding: 20px; text-align: center; }
+
+/* 거래 기록 */
+.tx-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+.cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
+"""
+
+if IS_PC:
+    CSS += """
+p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
+.stButton>button { height:52px !important; font-size:1rem !important; }
+"""
+else:
+    CSS += """
+p,span,label,td,th { font-size:0.88rem !important; }
+h1 { font-size:1.5rem !important; }
+h2 { font-size:1.15rem !important; }
+h3 { font-size:1rem !important; }
+.stButton>button { height:46px !important; font-size:0.88rem !important; }
+.stock-table th,.stock-table td { padding:8px 8px; font-size:0.82rem !important; }
+.score-number { font-size:2.5rem !important; }
+.lotto-amount { font-size:1.6rem !important; }
+"""
+
+st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
+
 if 'logged_in_user' in st.session_state:
     us_check = load_db(USERS_FILE, {})
     my_uid = st.session_state.logged_in_user
     if my_uid in us_check:
         db_user = us_check[my_uid]
-        # 🚨 부동산 복사 버그 및 세금 회피 방지: 무조건 DB 데이터 기준으로 세션 강제 동기화
         st.session_state.global_cash = db_user.get('cash', 0)
         st.session_state.real_estate = db_user.get('real_estate', {})
         st.session_state.loan = db_user.get('loan', 0)
@@ -402,26 +584,6 @@ if 'logged_in_user' in st.session_state:
 # 🔐 로그인
 # ==============================
 if 'logged_in_user' not in st.session_state:
-    st.markdown("""
-<style>
-html, body, * { font-family: 'Noto Sans KR', -apple-system, sans-serif !important; }
-.stApp { background: #080A12 !important; }
-.stTextInput > div > div > input {
-    background: rgba(0,0,0,0.5) !important; border: 1px solid rgba(0,229,255,0.3) !important;
-    border-radius: 8px !important; color: #FFF !important; font-size: 0.95rem !important;
-}
-.stButton > button {
-    border-radius: 8px !important; font-weight: 700 !important;
-    border: 1px solid rgba(0,229,255,0.4) !important;
-    background: linear-gradient(135deg, rgba(0,229,255,0.05), rgba(0,102,255,0.1)) !important;
-    color: #00E5FF !important; height: 46px !important;
-}
-.stButton > button:hover { background: linear-gradient(135deg, #00E5FF, #0066FF) !important; color: #000 !important; }
-.stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid rgba(255,255,255,0.1) !important; background: transparent !important; }
-.stTabs [aria-selected="true"] { color: #00E5FF !important; border-bottom: 2px solid #00E5FF !important; }
-</style>
-""", unsafe_allow_html=True)
-
     # ── 상단 헤더 ──
     st.markdown("""
 <div style='background:rgba(10, 12, 20, 0.7); backdrop-filter:blur(10px); border-bottom:1px solid rgba(0,229,255,0.2); padding:14px 24px; display:flex; justify-content:space-between; align-items:center;'>
@@ -463,12 +625,10 @@ html, body, * { font-family: 'Noto Sans KR', -apple-system, sans-serif !importan
   </div>
 </div>
 """, unsafe_allow_html=True)
-
         
         device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"], horizontal=True)
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
         
-
         with tabs[0]:
             l_id = st.text_input("아이디", placeholder="아이디를 입력하세요", key="login_id")
             l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="login_pw")
