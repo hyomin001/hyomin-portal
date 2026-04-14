@@ -705,6 +705,28 @@ if 'logged_in_user' not in st.session_state:
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
+   
+    with st.expander("🚨 서버 관리자 전용 메뉴 (데이터 이사)"):
+        if st.button("💾 백업 데이터 ➔ 몽고DB로 복구하기", use_container_width=True):
+            client = get_mongo_client()
+            if client:
+                try:
+                    db = client["hyomin_universe"]
+                    files = [USERS_FILE, MARKET_FILE, REALESTATE_MARKET_FILE, TXLOG_FILE, COMMENTS_FILE]
+                    import os, json
+                    for fname in files:
+                        if os.path.exists(fname):
+                            with open(fname, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                            col_name = fname.replace(".json", "").replace("_db", "")
+                            db[col_name].replace_one({"_id": "main"}, {"_id": "main", **data}, upsert=True)
+                    st.success("🎉 기적의 복구 성공! 모든 데이터가 몽고DB로 무사히 이사했습니다!")
+                    st.info("이제 화면을 새로고침(F5)하고 원래 계정으로 로그인해 보세요!")
+                except Exception as e:
+                    st.error(f"❌ 연결 에러 (주소나 IP 설정을 다시 확인해주세요): {e}")
+            else:
+                st.error("❌ 스트림릿 Secrets에 주소가 등록되지 않았습니다.")
+    
 
     # 👇 여기서부터 복사해서 바로 아래에 붙여넣으세요! 👇
     st.markdown("""
