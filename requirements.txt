@@ -3,3 +3,4 @@ pandas
 plotly
 matplotlib
 filelock
+pymongo[srv]==4.6.1
