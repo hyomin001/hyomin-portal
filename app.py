@@ -585,6 +585,12 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
     .stock-table th,.stock-table td { padding:8px 8px; font-size:0.82rem !important; }
     .score-number { font-size:2.5rem !important; }
     .lotto-amount { font-size:1.6rem !important; }
+    
+    /* 💡 여기서부터 추가: 모바일 화면 여백 다이어트 */
+    .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 2rem !important; }
+    .card { padding: 12px !important; margin: 4px 0 !important; }
+    .estate-card, .market-listing, .market-initial { padding: 12px !important; }
+    [data-testid="stMetric"] { padding: 10px 14px !important; }
 }
 
 /* 💻 PC 화면용 설정 (화면이 769px 이상일 때 자동 적용) */
@@ -670,7 +676,7 @@ if 'logged_in_user' not in st.session_state:
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
-        device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일-->현재 수정중이라 pc이용 부탁드려요 (스마트폰)"], horizontal=True)
+        device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"], horizontal=True)
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
         with tabs[0]:
             l_id = st.text_input("아이디", placeholder="아이디를 입력하세요")
@@ -974,7 +980,10 @@ msg_db_check = load_db("messages_db.json", {})
 my_unread = sum(1 for m in msg_db_check.get(st.session_state.logged_in_user, {}).get("inbox", []) if not m.get("read", False))
 
 # --- [수정 후] 사용자의 기기 선택에 따라 UI 분기 ---
-if st.session_state.get('is_pc', True):
+# session_state에 저장된 device_mode 문자열에 'PC'가 포함되어 있는지 확인합니다.
+is_pc_mode = "PC" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
+
+if is_pc_mode:
     # 💻 PC 모드 선택 시: 왼쪽 사이드바에 메뉴 배치
     with st.sidebar:
         # 유저 프로필
