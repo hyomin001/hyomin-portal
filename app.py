@@ -390,8 +390,6 @@ st.set_page_config(page_title="HYOMIN UNIVERSE v18.2", page_icon="🌌", layout=
 # ==============================
 # 🎨 전역 CSS 적용 (위치 최상단으로 이동!)
 # ==============================
-IS_PC = "🖥️" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
-
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
@@ -549,23 +547,24 @@ div[role="listbox"] li:hover { background: rgba(0, 229, 255, 0.15) !important; }
 /* 거래 기록 */
 .tx-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
 .cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
-"""
 
-if IS_PC:
-    CSS += """
-p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
-.stButton>button { height:52px !important; font-size:1rem !important; }
-"""
-else:
-    CSS += """
-p,span,label,td,th { font-size:0.88rem !important; }
-h1 { font-size:1.5rem !important; }
-h2 { font-size:1.15rem !important; }
-h3 { font-size:1rem !important; }
-.stButton>button { height:46px !important; font-size:0.88rem !important; }
-.stock-table th,.stock-table td { padding:8px 8px; font-size:0.82rem !important; }
-.score-number { font-size:2.5rem !important; }
-.lotto-amount { font-size:1.6rem !important; }
+/* 📱 모바일 화면용 설정 (화면이 768px 이하일 때 자동 적용) */
+@media (max-width: 768px) {
+    p,span,label,td,th { font-size:0.88rem !important; }
+    h1 { font-size:1.5rem !important; }
+    h2 { font-size:1.15rem !important; }
+    h3 { font-size:1rem !important; }
+    .stButton>button { height:46px !important; font-size:0.88rem !important; }
+    .stock-table th,.stock-table td { padding:8px 8px; font-size:0.82rem !important; }
+    .score-number { font-size:2.5rem !important; }
+    .lotto-amount { font-size:1.6rem !important; }
+}
+
+/* 💻 PC 화면용 설정 (화면이 769px 이상일 때 자동 적용) */
+@media (min-width: 769px) {
+    p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
+    .stButton>button { height:52px !important; font-size:1rem !important; }
+}
 """
 
 st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
@@ -626,7 +625,6 @@ if 'logged_in_user' not in st.session_state:
 </div>
 """, unsafe_allow_html=True)
         
-        device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"], horizontal=True)
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
         
         with tabs[0]:
@@ -646,7 +644,6 @@ if 'logged_in_user' not in st.session_state:
                         'rent_time':      u.get('rent_time', time.time()),
                         'loan':           u.get('loan', 0),
                         'loan_time':      u.get('loan_time', time.time()),
-                        'device_mode':    device_mode,
                         'stats':          u.get('stats', {'wins':0,'losses':0,'races_won':0,'lotto_spent':0}),
                         'crypto_portfolio': u.get('crypto_portfolio', {}),
                         'daily_quests':     u.get('daily_quests', {}),
@@ -687,188 +684,7 @@ if 'logged_in_user' not in st.session_state:
                     st.success("🎉 가입 완료! 초기 자금 1억원이 지급되었습니다.")
     st.stop()
 
-# ==============================
-# 🎨 CSS
-# ==============================
-IS_PC = "🖥️" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
 
-CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
-
-* { box-sizing: border-box; }
-
-html, body, p, span, label, div, td, th {
-  font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
-  color: #FFFFFF !important; 
-}
-
-/* 🚨 수정됨: 중첩(Nesting)을 풀고 밖으로 뺐습니다 */
-.stRadio label { 
-  color: #FFFFFF !important; 
-  font-weight: 700 !important; 
-}
-
-/* 🚨 추가됨: 아이디, 비밀번호 등 입력창 라벨 텍스트 강제 흰색 처리 */
-label[data-testid="stWidgetLabel"] p,
-label[data-testid="stWidgetLabel"] div {
-    color: #FFFFFF !important;
-    font-size: 1rem !important;
-    font-weight: 700 !important;
-}
-/* 프리미엄 다크 스페이스 배경 */
-.stApp {
-  background-color: #080A12 !important;
-  background-image: 
-    radial-gradient(circle at 15% 30%, rgba(0, 229, 255, 0.05), transparent 30%),
-    radial-gradient(circle at 85% 70%, rgba(255, 0, 200, 0.05), transparent 30%) !important;
-  background-attachment: fixed;
-}
-
-[data-testid='stSidebar'] {
-  background: rgba(10, 12, 20, 0.95) !important;
-  border-right: 1px solid rgba(0, 229, 255, 0.15) !important;
-}
-
-h1 { font-family:'Orbitron', sans-serif !important; font-size: 1.8rem !important; font-weight: 900 !important; color: #FFF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
-h2 { font-size: 1.3rem !important; font-weight: 800 !important; color: #00FF88 !important; }
-h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !important; }
-
-/* 입력창 네온 스타일 */
-.stTextInput > div > div > input,
-.stNumberInput > div > div > input {
-  background: rgba(0, 0, 0, 0.5) !important;
-  border: 1px solid rgba(0, 229, 255, 0.3) !important;
-  border-radius: 8px !important;
-  color: #FFF !important;
-  font-size: 1rem !important;
-  font-weight: 700 !important;
-}
-.stTextInput > div > div > input:focus,
-.stNumberInput > div > div > input:focus {
-  border-color: #00E5FF !important;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
-}
-
-/* 드롭다운 (Selectbox) */
-div[data-baseweb="select"] > div {
-  background: rgba(20, 24, 35, 0.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-}
-div[role="listbox"] { background: #121622 !important; border: 1px solid #00E5FF !important; border-radius: 10px !important; }
-div[role="listbox"] li, div[role="listbox"] span { color: #FFF !important; }
-div[role="listbox"] li:hover { background: rgba(0, 229, 255, 0.15) !important; }
-
-/* 사이버펑크 버튼 스타일 */
-.stButton > button {
-  font-family: 'Noto Sans KR', sans-serif !important;
-  font-weight: 700 !important;
-  border-radius: 8px !important;
-  border: 1px solid rgba(0, 229, 255, 0.4) !important;
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(0, 102, 255, 0.1)) !important;
-  color: #00E5FF !important;
-  transition: all 0.2s ease !important;
-  font-size: 0.95rem !important;
-  height: 46px !important;
-}
-.stButton > button:hover {
-  background: linear-gradient(135deg, #00E5FF, #0066FF) !important;
-  border-color: #00E5FF !important;
-  color: #000 !important;
-  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4) !important;
-  transform: translateY(-2px);
-}
-.stButton > button:disabled { opacity: 0.3 !important; cursor: not-allowed !important; transform: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.1) !important; color: #888 !important; }
-
-/* 탭 스타일 */
-.stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
-.stTabs [data-baseweb="tab"] { color: #A0AEC0 !important; font-weight: 700 !important; font-size: 0.95rem !important; } /* #666에서 더 밝은 회색으로 변경 */
-.stTabs [aria-selected="true"] { color: #00E5FF !important; border-bottom: 2px solid #00E5FF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
-
-/* 매트릭 (자산 요약 등) */
-[data-testid="stMetric"] {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 12px !important;
-  padding: 16px 20px !important;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-}
-[data-testid="stMetricLabel"] { color: #888 !important; font-size: 0.85rem !important; font-weight: 700; }
-[data-testid="stMetricValue"] { color: #FFF !important; font-family: 'Orbitron', sans-serif !important; font-size: 1.4rem !important; font-weight: 900 !important; }
-
-/* 공통 카드 (글래스모피즘) */
-.card {
-  background: rgba(20, 24, 35, 0.6) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 14px;
-  padding: 20px;
-  margin: 8px 0;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-.card:hover { border-color: rgba(0, 229, 255, 0.3) !important; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.1); }
-
-/* 알림 및 프로그레스바 */
-.stAlert { border-radius: 10px !important; border: none !important; background: rgba(255,255,255,0.05) !important; }
-.stProgress > div > div { background: linear-gradient(90deg, #00E5FF, #FF00FF) !important; border-radius: 6px !important; }
-
-/* 테이블 (주식, 코인) */
-.stock-table { width: 100%; border-collapse: collapse; }
-.stock-table th { background: rgba(0, 229, 255, 0.1); color: #00E5FF !important; font-family: 'Orbitron', sans-serif !important; font-size: 0.8rem !important; padding: 12px; text-align: left; border-bottom: 1px solid rgba(0, 229, 255, 0.2); letter-spacing: 1px; }
-.stock-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; }
-.stock-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
-.p-up   { color: #FF4B4B !important; font-weight: 900; }
-.p-down { color: #4B9EFF !important; font-weight: 900; }
-.p-flat { color: #888 !important; }
-
-/* 스코어보드 (축구) */
-.scoreboard { background: linear-gradient(135deg, #0A0F1C, #1A1C2E); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
-.score-number { font-size: 3.5rem !important; font-weight: 900; color: #00FF88 !important; text-shadow: 0 0 15px rgba(0,255,136,0.4); line-height: 1; }
-.team-label   { font-size: 1.2rem; font-weight: 900; color: #FFF !important; margin-bottom: 6px; }
-.match-time   { font-family: 'Orbitron'; color: #00E5FF !important; font-size: 1rem; margin-top: 14px; }
-.commentary-item { background: rgba(255,255,255,0.03); border-left: 3px solid #00E5FF; padding: 10px 14px; margin: 6px 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; color: #CCC !important; }
-
-/* 마켓 요소들 */
-.news-banner { background: linear-gradient(135deg, rgba(255,214,0,0.1), rgba(255,100,0,0.05)); border: 1px solid rgba(255,214,0,0.3); border-radius: 10px; padding: 12px 18px; font-weight: 700; color: #FFD600 !important; margin: 12px 0; font-size: 0.95rem; }
-.estate-card { background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 18px 22px; margin: 10px 0; }
-.estate-income { color: #00FF88 !important; font-weight: 900; font-size: 0.9rem; }
-.market-listing { background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
-.market-initial { background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
-.my-listing { background: rgba(255, 214, 0, 0.05); border: 1px solid rgba(255, 214, 0, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
-
-/* 미니게임 요소들 */
-.lotto-pool { background: linear-gradient(135deg, #11052C, #2A0845); border: 1px solid rgba(255, 0, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.6); }
-.lotto-amount { font-size: 2.5rem !important; color: #FF00FF !important; text-shadow: 0 0 15px rgba(255,0,255,0.5); font-weight: 900; }
-.vip-banner { background: linear-gradient(135deg, #2A1A00, #4A2500); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 0 20px rgba(255,214,0,0.1); }
-.slot-display { font-size: 3.5rem; text-align: center; padding: 20px; background: rgba(0,0,0,0.6); border: 1px inset rgba(255,214,0,0.2); border-radius: 14px; letter-spacing: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
-.question-box { background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 28px; line-height: 1.8; font-size: 1.1rem; color: #FFF !important; }
-.mine-card { background: linear-gradient(135deg, rgba(139,69,19,0.15), rgba(0,0,0,0.3)); border: 1px solid rgba(205,127,50,0.3); border-radius: 14px; padding: 20px; text-align: center; }
-
-/* 거래 기록 */
-.tx-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
-.cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
-"""
-
-if IS_PC:
-    CSS += """
-p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
-.stButton>button { height:52px !important; font-size:1rem !important; }
-"""
-else:
-    CSS += """
-p,span,label,td,th { font-size:0.88rem !important; }
-h1 { font-size:1.5rem !important; }
-h2 { font-size:1.15rem !important; }
-h3 { font-size:1rem !important; }
-.stButton>button { height:46px !important; font-size:0.88rem !important; }
-.stock-table th,.stock-table td { padding:8px 8px; font-size:0.82rem !important; }
-.score-number { font-size:2.5rem !important; }
-.lotto-amount { font-size:1.6rem !important; }
-"""
-
-st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
 
 # ==============================
 # 🌐 서버 마켓 동기화
@@ -1284,35 +1100,67 @@ elif menu == "🏠 홈 광장 (튜토리얼)":
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. 🐣 신규 유저 전용 튜토리얼 퀘스트 보드
-    is_newbie = st.session_state.equipped_title == "🌱 신규시민" and nw <= 200_000_000
+    # 2. 🗺️ 성장 단계별 맞춤형 퀘스트 보드
+    st.markdown("### 🗺️ 현재 성장 목표")
     
-    if is_newbie:
+    if nw < 500_000_000:
+        # [초보자 코스] 5억 미만
         st.markdown("""
-        <div style='background: linear-gradient(135deg, rgba(255, 214, 0, 0.1), rgba(255, 100, 0, 0.1)); border: 2px dashed #FFD600; border-radius: 15px; padding: 20px; margin-bottom: 25px;'>
-            <h3 style='color:#FFD600; margin-top:0;'>📜 초보자 가이드: 생존의 법칙</h3>
-            <p style='color:#94A3B8; font-size:0.95rem;'>무엇을 해야 할지 모르겠다면, 아래 순서대로 게임을 즐겨보세요!</p>
-            <ul style='color:#E2E8F0; line-height:1.8;'>
-                <li><b>1단계:</b> <span style='color:#00FF88;'>[일일 퀘스트]</span> 메뉴에 가서 출석 보상을 받으세요.</li>
-                <li><b>2단계:</b> 시드머니가 부족하다면 <span style='color:#00E5FF;'>[⛏️ 광산]</span>에서 노가다를 하거나 <span style='color:#FF4B4B;'>[은행]</span>에서 대출을 받으세요.</li>
-                <li><b>3단계:</b> 모은 돈으로 <span style='color:#FF00FF;'>[주식]</span>이나 <span style='color:#FF00FF;'>[코인]</span>을 사서 자산을 불리세요.</li>
-                <li><b>4단계:</b> 돈을 많이 벌면 <span style='color:#FFD600;'>[부동산]</span>을 사서 가만히 있어도 돈이 들어오게 만드세요!</li>
-            </ul>
+        <div style='background: linear-gradient(135deg, rgba(0, 229, 255, 0.1), rgba(0, 102, 255, 0.1)); border: 1px solid #00E5FF; border-radius: 12px; padding: 20px; margin-bottom: 20px;'>
+            <h4 style='color:#00E5FF; margin-top:0;'>🌱 튜토리얼 1단계: 흙수저 탈출 작전</h4>
+            <p style='color:#A0AEC0; font-size:0.9rem;'>초기 시드머니를 모아야 합니다. 광산에서 노가다를 하거나 일일 퀘스트를 완료하세요!</p>
+            <div style='margin-top: 10px; font-weight: 700; color: #FFF;'>다음 목표: 순자산 5억 달성</div>
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown("<b style='color:#888;'>🚀 추천 퀘스트 바로가기</b>", unsafe_allow_html=True)
-        t_col1, t_col2, t_col3 = st.columns(3)
-        if t_col1.button("📅 일일 퀘스트 가기", use_container_width=True):
-            st.session_state.current_page = "📅 일일 퀘스트"
-            st.rerun()
-        if t_col2.button("⛏️ 광산으로 돈 벌러 가기", use_container_width=True):
+        col_q1, col_q2 = st.columns(2)
+        if col_q1.button("⛏️ 광산으로 돈 벌러 가기", use_container_width=True):
             st.session_state.current_page = "⛏️ 광산 (노가다)"
             st.rerun()
-        if t_col3.button("👑 칭호 상점 구경하기", use_container_width=True):
-            st.session_state.current_page = "👑 칭호 상점"
+        if col_q2.button("📅 일일 퀘스트 보상받기", use_container_width=True):
+            st.session_state.current_page = "📅 일일 퀘스트"
             st.rerun()
-        st.write("---")
+            
+    elif nw < 10_000_000_000:
+        # [중급자 코스] 5억 ~ 100억 미만
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, rgba(255, 214, 0, 0.1), rgba(255, 100, 0, 0.1)); border: 1px solid #FFD600; border-radius: 12px; padding: 20px; margin-bottom: 20px;'>
+            <h4 style='color:#FFD600; margin-top:0;'>🏢 튜토리얼 2단계: 자본가의 길</h4>
+            <p style='color:#A0AEC0; font-size:0.9rem;'>이제 돈이 돈을 벌게 해야 합니다. 주식과 코인에 투자하고 첫 부동산을 매입하세요!</p>
+            <div style='margin-top: 10px; font-weight: 700; color: #FFF;'>다음 목표: 순자산 100억 달성 (건물주)</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col_q1, col_q2, col_q3 = st.columns(3)
+        if col_q1.button("📈 주식 시장 보기", use_container_width=True):
+            st.session_state.current_page = "📈 주식 트레이딩"
+            st.rerun()
+        if col_q2.button("🪙 코인 떡상 노리기", use_container_width=True):
+            st.session_state.current_page = "🪙 코인 거래소"
+            st.rerun()
+        if col_q3.button("🏢 첫 부동산 사기", use_container_width=True):
+            st.session_state.current_page = "🏢 부동산 거래소"
+            st.rerun()
+            
+    else:
+        # [고급자 코스] 100억 이상
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(100, 0, 255, 0.1)); border: 1px solid #FF00FF; border-radius: 12px; padding: 20px; margin-bottom: 20px;'>
+            <h4 style='color:#FF00FF; margin-top:0;'>👑 튜토리얼 완료: 우주 억만장자</h4>
+            <p style='color:#A0AEC0; font-size:0.9rem;'>당신은 이미 훌륭한 자본가입니다. 이제 서버 랭킹 1위를 향해 명검을 벼리고 하이퍼카를 수집하세요!</p>
+            <div style='margin-top: 10px; font-weight: 700; color: #FFF;'>최종 목표: 서버 랭킹 1위 및 모든 칭호 수집</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col_q1, col_q2 = st.columns(2)
+        if col_q1.button("🗡️ 명검 강화하러 가기", use_container_width=True):
+            st.session_state.current_page = "🗡️ 전설의 명검 강화"
+            st.rerun()
+        if col_q2.button("🏎️ 하이퍼카 차고지 가기", use_container_width=True):
+            st.session_state.current_page = "🛠️ 커스텀 튜닝 차고지"
+            st.rerun()
+
+    st.write("---")
 
     # 3. 기존 대시보드 (대출 및 부동산 수금 요약)
     c3, c4 = st.columns(2)
