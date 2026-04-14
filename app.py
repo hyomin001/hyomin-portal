@@ -577,34 +577,59 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
 
 /* 📱 모바일 화면용 설정 (화면이 768px 이하일 때 자동 적용) */
 @media (max-width: 768px) {
-    /* 💡 1. 화면 전체 축소 효과 (85% 비율로 축소) */
+    /* 1. 화면 전체 축소 효과 */
     .block-container { 
-        zoom: 0.7; 
+        zoom: 0.85; 
         padding-top: 2rem !important; 
         padding-left: 0.5rem !important; 
         padding-right: 0.5rem !important; 
         padding-bottom: 2rem !important; 
     }
 
-    /* 💡 2. 스트림릿 기본 세로/가로 여백(Gap) 강제 축소 */
     div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
     div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; }
     
-    /* 3. 폰트 및 요소 크기 추가 축소 */
     p,span,label,td,th { font-size:0.85rem !important; }
     h1 { font-size:1.4rem !important; }
     h2 { font-size:1.1rem !important; }
     h3 { font-size:0.95rem !important; }
     
     .stButton>button { height:40px !important; font-size:0.85rem !important; }
-    .stock-table th,.stock-table td { padding:6px 6px; font-size:0.78rem !important; }
     .score-number { font-size:2.2rem !important; }
     .lotto-amount { font-size:1.4rem !important; }
-
-    /* 4. 카드 및 컨테이너 내부 여백 쥐어짜기 */
     .card { padding: 10px !important; margin: 4px 0 !important; }
     .estate-card, .market-listing, .market-initial { padding: 10px !important; margin: 6px 0 !important; }
     [data-testid="stMetric"] { padding: 8px 12px !important; }
+
+    /* 🚨 2. 여기서부터 글자 잘림 방지 핵심 코드 🚨 */
+    
+    /* 앱 전체 가로 스크롤(삐져나감) 원천 차단 */
+    html, body, .stApp {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
+
+    /* 모든 텍스트 강제 줄바꿈 (영어, 숫자, 긴 단어 등) */
+    * {
+        word-break: keep-all !important; /* 한글은 단어 단위로 */
+        overflow-wrap: break-word !important; /* 너무 길면 쪼개서 다음 줄로 */
+    }
+
+    /* 나란히 배치된(Flex) 요소들이 화면을 넘어가면 밑으로 떨어지게 만듦 */
+    div[style*="display: flex"], div[style*="display:flex"] {
+        flex-wrap: wrap !important;
+    }
+
+    /* 표(Table)가 너무 넓을 경우 표 안에서만 스크롤 되도록 처리 */
+    .stock-table {
+        display: block !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+    }
+    .stock-table th, .stock-table td { 
+        padding: 6px 8px !important; 
+        font-size: 0.78rem !important; 
+    }
 }
 
 /* 💻 PC 화면용 설정 (화면이 769px 이상일 때 자동 적용) */
