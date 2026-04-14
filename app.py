@@ -396,7 +396,12 @@ def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
     last = st.session_state.get(f"_cd_{key}", 0)
     return max(0.0, cooldown_sec - (time.time() - last))
 
-st.set_page_config(page_title="HYOMIN UNIVERSE v18.2", page_icon="🌌", layout="wide")
+st.set_page_config(
+    page_title="HYOMIN UNIVERSE v18.2", 
+    page_icon="🌌", 
+    layout="wide",
+    initial_sidebar_state="collapsed"  # 처음 접속 시 사이드바 접어두기
+)
 
 # ==============================
 # 🎨 전역 CSS 적용 (위치 최상단으로 이동!)
