@@ -449,36 +449,30 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
 }
 
-/* [1] 드롭다운 입력창 본체 스타일 */
-div[data-baseweb="select"] > div {
-    background: rgba(20, 24, 35, 0.8) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 8px !important;
+/* [1] 드롭다운 목록 상자(팝업) 안의 모든 글자를 검정색으로 강제 */
+[data-baseweb="popover"] *, 
+[role="listbox"] *, 
+[data-baseweb="menu"] * {
+    color: #000000 !important;
+    font-weight: 600 !important; /* 글자를 좀 더 또렷하게 */
 }
 
-/* [2] 🚨 팝업 목록창 전체 배경 강제 다크화 (가장 중요) 🚨 */
-/* 팝업이 뜨는 모든 포털 요소를 타겟팅합니다. */
-[data-baseweb="popover"], [data-baseweb="menu"], [role="listbox"] {
-    background-color: #121622 !important;
-    border: 1px solid #00E5FF !important;
+/* [2] 드롭다운 항목(li) 자체의 배경과 글자색 설정 */
+[role="option"], [data-baseweb="menu"] li {
+    background-color: #FFFFFF !important; /* 배경은 하얗게 */
+    color: #000000 !important;
 }
 
-/* [3] 목록 내부의 글자색 강제 흰색 고정 */
-/* 목록 안의 모든 하위 요소(*), 리스트아이템(li), 텍스트(span)를 다 잡습니다. */
-[role="listbox"] *, [data-baseweb="menu"] * {
-    color: #FFFFFF !important;
-    background-color: transparent !important;
+/* [3] 마우스를 올렸을 때(Hover) 배경색만 살짝 변경 */
+[role="option"]:hover, [data-baseweb="menu"] li:hover {
+    background-color: #EEEEEE !important; /* 연한 회색 배경 */
 }
 
-/* [4] 현재 선택된 항목이나 마우스 올린 항목의 배경색 */
-[role="option"]:hover, [role="listbox"] li:hover, [data-baseweb="menu"] li:hover {
-    background-color: rgba(0, 229, 255, 0.2) !important;
+/* [4] (선택사항) 이미 선택된 항목의 글자색도 검정으로 */
+div[data-baseweb="select"] div {
+    color: #FFFFFF !important; /* 이건 입력창에 이미 '선택되어 있는' 글자색 (배경이 어두우니 흰색 유지) */
 }
 
-/* [5] 입력창 안에 써져 있는 글자색도 확인 */
-div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
-    color: #FFFFFF !important;
-}
 
 /* 사이버펑크 버튼 스타일 */
 .stButton > button {
