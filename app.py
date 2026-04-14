@@ -10,6 +10,15 @@ import tempfile
 import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
+from filelock import FileLock
+
+def _get_lock(filepath: str) -> FileLock:
+    return FileLock(filepath + ".lock", timeout=5)
+import hashlib
+
+def hash_pw(pw: str) -> str:
+    return hashlib.sha256(pw.encode('utf-8')).hexdigest()
+
 ADMIN_PW = "***"
 
 
@@ -171,30 +180,31 @@ def _atomic_save(filepath: str, data):
     tmp = f"{filepath}.{unique_id}.tmp"
     bak = f"{filepath}.bak"
     
+    lock = _get_lock(filepath)
     try:
-        with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
-            
-        if os.path.exists(filepath):
-            shutil.copy2(filepath, bak)
-            
-        os.replace(tmp, filepath)
-        
+        with lock:
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+            if os.path.exists(filepath):
+                shutil.copy2(filepath, bak)
+            os.replace(tmp, filepath)
     except Exception as e:
-        if os.path.exists(tmp): 
+        if os.path.exists(tmp):
             try: os.remove(tmp)
             except: pass
         raise e
         
 def load_db(file, default):
-    for target in [file, file + ".bak"]:
-        if os.path.exists(target):
-            try:
-                with open(target, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                if data is not None: return data
-            except Exception:
-                continue
+    lock = _get_lock(file)
+    with lock:
+        for target in [file, file + ".bak"]:
+            if os.path.exists(target):
+                try:
+                    with open(target, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    if data is not None: return data
+                except Exception:
+                    continue
     return default
 
 def save_db(file, data):
@@ -273,7 +283,6 @@ def sync_user_data():
         'rent_time':      st.session_state.rent_time,
         'loan':           st.session_state.loan,
         'loan_time':      st.session_state.loan_time,
-        'stats':          st.session_state.get('stats', {}),
         'crypto_portfolio': st.session_state.get('crypto_portfolio', {}),
         'daily_quests':     st.session_state.get('daily_quests', {}),
         'weapon_level':   st.session_state.get('weapon_level', 0), 
@@ -657,7 +666,6 @@ if 'logged_in_user' in st.session_state:
 if 'logged_in_user' not in st.session_state:
     st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
 .stApp { background: radial-gradient(ellipse at 20% 50%, #0d0221 0%, #050510 60%, #000 100%) !important; }
 * { font-family:'Noto Sans KR',sans-serif !important; color:#FFF !important; }
 .login-title {
@@ -735,7 +743,6 @@ if 'logged_in_user' not in st.session_state:
                         'loan':           u.get('loan', 0),
                         'loan_time':      u.get('loan_time', time.time()),
                         'device_mode':    device_mode,
-                        'stats':          u.get('stats', {'wins':0,'losses':0,'races_won':0,'lotto_spent':0}),
                         'crypto_portfolio': u.get('crypto_portfolio', {}),
                         'daily_quests':     u.get('daily_quests', {}),
                         'weapon_level':   u.get('weapon_level', 0), 
@@ -749,10 +756,10 @@ if 'logged_in_user' not in st.session_state:
                         users["admin"] = {"pw":"****","cash":999_999_999_999,"inventory":[],
                                          "equipped_title":"👑 절대신 창조주","portfolio":{},
                                          "real_estate":{},"rent_time":time.time(),
-                                         "loan":0,"loan_time":time.time(),"stats":{}}
+                                         "loan":0,"loan_time":time.time(),}
                         save_db(USERS_FILE, users)
                     _do_login("admin")
-                elif l_id != "admin" and l_id in users and users[l_id]['pw'] == l_pw:
+                elif l_id != "admin" and l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
                     _do_login(l_id)
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
@@ -766,10 +773,10 @@ if 'logged_in_user' not in st.session_state:
                 elif len(n_id) < 2:
                     st.error("아이디는 2자 이상이어야 합니다.")
                 else:
-                    users[n_id] = {"pw":n_pw,"cash":100_000_000,"inventory":[],
+                    users[n_id] = {"pw":hash_pw(n_pw),"cash":100_000_000,"inventory":[],
                                    "equipped_title":"🌱 신규시민","portfolio":{},
                                    "real_estate":{},"rent_time":time.time(),
-                                   "loan":0,"loan_time":time.time(),"stats":{}}
+                                   "loan":0,"loan_time":time.time(),}
                     save_db(USERS_FILE, users)
                     st.success("🎉 가입 성공! 초기 자금 1억원이 지급되었습니다!")
     st.stop()
@@ -942,11 +949,12 @@ if m_up: save_market(market)
 if st.session_state.loan > 0:
     MAX_CYC = 30  # 🚨 이자 폭탄 방지: 장기 오프라인이어도 최대 30번(5분 분량)까지만 이자 적용
     MAX_LOAN = 999_999_999_999_999
-    cyc = min(int((cur_t - st.session_state.loan_time) / 10), MAX_CYC)
+    elapsed = cur_t - st.session_state.loan_time
+    cyc = min(int(elapsed / 10), MAX_CYC)
     if cyc > 0:
         new_loan = st.session_state.loan * (1.02 ** cyc)
         st.session_state.loan = min(int(new_loan), MAX_LOAN)
-        st.session_state.loan_time = cur_t  # 🚨 시간 오차 누적을 막기 위해 현재 시간으로 완전 초기화
+        st.session_state.loan_time += cyc * 10  # 🚨 처리한 틱만큼만 전진, 나머지 시간 보존
         sync_user_data()
         
 nw = get_net_worth(st.session_state.logged_in_user, market)
@@ -1141,18 +1149,24 @@ if menu == "💎 VIP 라운지":
             st.warning(f"⏱️ 쿨다운 중... {cd_rem:.1f}초")
         elif st.button("💎 VIP 슬롯 당기기", use_container_width=True):
             if st.session_state.global_cash >= 100_000_000:
-                set_cooldown("vip_slot")
-                st.session_state.global_cash -= 100_000_000
-                if random.random() < 0.5:
-                    st.session_state.global_cash += 250_000_000
-                    st.success("🎉 승리! +2.5억 획득!")
-                    log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 승리", 150_000_000)
+                u_db_check = load_db(USERS_FILE, {})
+                db_cash = u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0)
+                if db_cash < 100_000_000:
+                    st.error("잔액 부족! (DB 검증 실패)")
                 else:
-                    st.error("❌ 아쉽습니다. 다음 기회를!")
-                    log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 패배", -100_000_000)
-                sync_user_data()
-                if st.session_state.current_page == menu: st.rerun()
-            else: st.error("잔액 부족!")
+                    set_cooldown("vip_slot")
+                    st.session_state.global_cash -= 100_000_000
+                    if random.random() < 0.5:
+                        st.session_state.global_cash += 250_000_000
+                        st.success("🎉 승리! +2.5억 획득!")
+                        log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 승리", 150_000_000)
+                    else:
+                        st.error("❌ 아쉽습니다. 다음 기회를!")
+                        log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 패배", -100_000_000)
+                    sync_user_data()
+                    if st.session_state.current_page == menu: st.rerun()
+            else:
+                st.error("잔액 부족!")
     with c2:
         st.markdown("### 📊 VIP 포트폴리오 요약")
         total_stock  = sum(st.session_state.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price'] for s in stock_config)
@@ -1447,10 +1461,12 @@ elif menu == "📈 주식 트레이딩":
             total = qty * price
             if st.session_state.global_cash < total:
                 st.error("잔액 부족!"); return False
+            u_db_check = load_db(USERS_FILE, {})
+            uid_check = st.session_state.logged_in_user
+            db_cash = u_db_check.get(uid_check, {}).get('cash', 0)
+            if db_cash < total:
+                st.error("잔액 부족! (DB 검증 실패)"); return False
             st.session_state.global_cash -= total
-            if st.session_state.global_cash < 0:
-                st.session_state.global_cash += total
-                st.error("거래 취소 (잔액 보호)"); return False
             old = st.session_state.portfolio.get(sid_, {'qty': 0, 'avg_price': 0})
             new_q = old['qty'] + qty
             new_a = ((old['qty'] * old['avg_price']) + total) / new_q
@@ -1523,9 +1539,7 @@ elif menu == "📈 주식 트레이딩":
         if bulk_left <= 0:
             st.warning("⚠️ 오늘 풀매수/풀매도 횟수를 모두 사용했습니다. 내일 자정에 초기화됩니다.")
 
-    if st.session_state.current_page == "📈 주식 트레이딩":
-        time.sleep(3)
-        st.rerun()
+    
         
 
 # =====================================================================
@@ -1597,28 +1611,18 @@ elif menu == "🪙 코인 거래소":
                 c2.metric("🪙 총 평가액", format_korean_money(int(total_eval)))
                 c3.metric("📈 총 평가손익", format_korean_money(int(total_eval - total_invested)))
                 
+    # 고쳐야 할 모습
     with tab_trade:
-        if 'selected_coin' not in st.session_state:
-            st.session_state.selected_coin = CRYPTO_CONFIG[0]['id']
-
         coin_ids = [c['id'] for c in CRYPTO_CONFIG]
-        current_index = coin_ids.index(st.session_state.selected_coin) if st.session_state.selected_coin in coin_ids else 0
-
         sel_c = st.selectbox(
             "거래할 코인 선택",
             coin_ids,
-            index=current_index, 
             format_func=lambda cid: f"{next(c['icon'] for c in CRYPTO_CONFIG if c['id']==cid)} {cdata[cid]['name']} — {fmt_crypto_price(cdata[cid]['price'])}"
         )
-        
-        if sel_c != st.session_state.selected_coin:
-            st.session_state.selected_coin = sel_c
-            st.rerun()
 
         cd    = cdata[sel_c]
         cur_p = cd['price']
-        
-        
+ 
         # ====== 수익률 현황판 시작 ======
         my_info = st.session_state.get('crypto_portfolio', {}).get(sel_c, {'qty': 0, 'avg_price': 0})
         my_qty = my_info.get('qty', 0)
@@ -1665,17 +1669,18 @@ elif menu == "🪙 코인 거래소":
                     st.error("잔액 부족!")
                 else:
                     qty_to_buy = buy_won / cur_p
-                    st.session_state.global_cash -= buy_won
-                    if st.session_state.global_cash < 0:
-                        st.session_state.global_cash += buy_won
-                        st.error("거래 취소 (잔액 보호)")
+                    u_db_check = load_db(USERS_FILE, {})
+                    db_cash = u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0)
+                    if db_cash < buy_won:
+                        st.error("잔액 부족! (DB 검증 실패)")
                     else:
-                        cp = st.session_state.get('crypto_portfolio', {})
-                        old = cp.get(sel_c, {'qty': 0, 'avg_price': 0})
+                        st.session_state.global_cash -= buy_won
+                        cp_port = st.session_state.get('crypto_portfolio', {})
+                        old = cp_port.get(sel_c, {'qty': 0, 'avg_price': 0})
                         new_q = old['qty'] + qty_to_buy
                         new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
-                        cp[sel_c] = {'qty': new_q, 'avg_price': new_a}
-                        st.session_state.crypto_portfolio = cp
+                        cp_port[sel_c] = {'qty': new_q, 'avg_price': new_a}
+                        st.session_state.crypto_portfolio = cp_port
                         log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} 매수", -int(buy_won))
                         sync_user_data()
                         st.success("✅ 매수 완료!")
@@ -2043,7 +2048,10 @@ elif menu == "🏦 은행 (대출/송금)":
     tab_send, tab_loan = st.tabs(["💸 송금", "💳 대출/상환"])
 
     with tab_send:
-        target = st.text_input("받는 분 아이디", placeholder="상대방 아이디 입력")
+        _all_users = [u for u in load_db(USERS_FILE, {}).keys() if u != st.session_state.logged_in_user and u != "admin"]
+        target = st.selectbox("받는 분 선택", _all_users) if _all_users else None
+        if not _all_users:
+            st.info("송금 가능한 다른 유저가 없습니다.")
         amt    = st.number_input("송금 금액 (원)", min_value=0, step=1_000_000, format="%d")
         st.caption(f"송금 예정: {format_korean_money(amt)}")
         cd_send = cooldown_remaining("send_money", 5.0)
@@ -2074,6 +2082,7 @@ elif menu == "🏦 은행 (대출/송금)":
                     st.success(f"✅ {target}님께 {format_korean_money(amt)} 송금 완료!")
                     if amt >= 10_000_000_000:
                         claim_hidden_title("first_donate_10b", "👑 [유일무이] 자선사업가")
+                    st.rerun()
             
 
     with tab_loan:
@@ -2176,11 +2185,12 @@ elif menu == "⚔️ 글로벌 로또":
     elif st.button("🎫 티켓 구매하기", use_container_width=True):
         if st.session_state.global_cash >= cost:
             set_cooldown("lotto_buy")
-            st.session_state.global_cash -= cost
-            if st.session_state.global_cash < 0:
-                st.session_state.global_cash += cost
-                st.error("거래 취소 (잔액 보호)")
+            u_db_check = load_db(USERS_FILE, {})
+            db_cash = u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0)
+            if db_cash < cost:
+                st.error("잔액 부족! (DB 검증 실패)")
             else:
+                st.session_state.global_cash -= cost
                 market['lotto_pool']    += cost
                 market['lotto_tickets'][st.session_state.logged_in_user] = my_t + b_cnt
                 save_market(market)
@@ -2200,9 +2210,7 @@ elif menu == "⚔️ 글로벌 로또":
             me_mark = " 👈" if uid_l == st.session_state.logged_in_user else ""
             st.markdown(f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);'><span style='color:#94A3B8;'>{uid_l}{me_mark}</span><span style='color:#FF00FF;font-weight:900;'>{cnt}장 ({pct:.1f}%)</span></div>", unsafe_allow_html=True)
 
-    if st.session_state.current_page == "⚔️ 글로벌 로또":
-        time.sleep(3)
-        st.rerun()
+    
 
 # =====================================================================
 # ⚽ 구단주 시뮬레이터
@@ -2631,8 +2639,8 @@ elif menu == "🏎️ 하이퍼카 레이싱":
 
     # 유저의 차고지 데이터 불러오기
     uid = st.session_state.logged_in_user
-    us = load_db(USERS_FILE, {})
-    my_garage = us.get(uid, {}).get('garage', {})
+    _tmp = load_db(USERS_FILE, {})
+    my_garage = _tmp.get(uid, {}).get('garage', {})
     active_t = my_garage.get('active_tier')
 
     my_custom_car = None
@@ -2762,11 +2770,12 @@ elif menu == "🎰 럭키 슬롯":
             st.error("잔액 부족!")
         else:
             set_cooldown(f"slot_{sel_tier}")
-            st.session_state.global_cash -= tier['cost']
-            if st.session_state.global_cash < 0:
-                st.session_state.global_cash += tier['cost']
-                st.error("거래 취소 (잔액 보호)")
+            u_db_check = load_db(USERS_FILE, {})
+            db_cash = u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0)
+            if db_cash < tier['cost']:
+                st.error("잔액 부족! (DB 검증 실패)")
             else:
+                st.session_state.global_cash -= tier['cost']
                 syms = list(SYMBOLS.keys()); wts = list(SYMBOLS.values())
                 for _ in range(14):
                     r = [random.choices(syms, weights=wts)[0] for _ in range(3)]
@@ -2840,7 +2849,7 @@ elif menu == "🃏 블랙잭 카지노":
     if 'bj_state' not in st.session_state:
         st.session_state.update({
             'bj_state': 'betting', 'bj_deck': bj_make_deck(),
-            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 'bj_result': 'pending'
+            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0, 
         })
 
     state = st.session_state.bj_state
@@ -2980,7 +2989,7 @@ elif menu == "🃏 블랙잭 카지노":
                 sync_user_data()              
 
             if st.button("🔄 다시 하기!", use_container_width=True):
-                for k in ['bj_state','bj_player','bj_dealer','bj_bet','bj_result','bj_paid']:
+                for k in ['bj_state','bj_player','bj_dealer','bj_bet','bj_paid']:
                     if k in st.session_state: del st.session_state[k]
                 st.rerun()
 
@@ -3153,11 +3162,12 @@ elif menu == "👑 칭호 상점":
             else:
                 if st.button(f"구매하기", key=f"buy_{i}"):
                     if st.session_state.global_cash >= price:
-                        st.session_state.global_cash -= price
-                        if st.session_state.global_cash < 0:
-                            st.session_state.global_cash += price
-                            st.error("거래 취소 (잔액 보호)")
+                        u_db_check = load_db(USERS_FILE, {})
+                        db_cash = u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0)
+                        if db_cash < price:
+                            st.error("잔액 부족! (DB 검증 실패)")
                         else:
+                            st.session_state.global_cash -= price
                             st.session_state.inventory.append(title_name)
                             st.session_state.equipped_title = title_name
                             log_tx(st.session_state.logged_in_user, "칭호구매", f"{title_name} 구매", -price)
@@ -3332,10 +3342,13 @@ elif menu == "🏅 랭킹 & 게시판":
         st.write("")
         all_c = load_db(COMMENTS_FILE, [])
         for c in reversed(all_c[-50:]):
+            is_me = (c['name'] == st.session_state.logged_in_user)
+            border = "border-left:3px solid #FFD600;" if is_me else ""
+            me_badge = " <span style='background:#FFD600;color:#000;font-size:0.7rem;padding:1px 6px;border-radius:4px;font-weight:900;'>나</span>" if is_me else ""
             st.markdown(f"""
-<div class='card' style='margin:6px 0;padding:12px 16px;'>
+<div class='card' style='margin:6px 0;padding:12px 16px;{border}'>
   <div style='display:flex;justify-content:space-between;margin-bottom:6px;'>
-    <span><b style='color:#00E5FF;'>{c['name']}</b> <span style='color:#FFD600;font-size:0.82rem;'>{c.get('title','')}</span></span>
+    <span><b style='color:#00E5FF;'>{c['name']}</b>{me_badge} <span style='color:#FFD600;font-size:0.82rem;'>{c.get('title','')}</span></span>
     <span style='color:#777;font-size:0.78rem;'>{c.get('time','')}</span>
   </div>
   <div style='color:#94A3B8;font-size:0.92rem;'>{c['comment']}</div>
@@ -3499,7 +3512,21 @@ elif menu == "📅 일일 퀘스트":
         is_achievable = check_quest(q['id'])
         
         status_col = "#00FF88" if is_claimed else "#FFD600" if is_achievable else "#444"
-        status_txt = "✅ 수령 완료" if is_claimed else "🟡 달성! 클릭하여 수령" if is_achievable else "🔒 미달성"
+        def get_progress_hint(qid):
+            if qid == "rich5":      return f"현재 순자산: {format_korean_money(nw)} / 5억"
+            elif qid == "landlord": return f"보유 부동산: {sum(v for v in st.session_state.real_estate.values())}채 / 1채"
+            elif qid == "investor":
+                sv = sum(st.session_state.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price'] for s in stock_config)
+                return f"주식 평가액: {format_korean_money(int(sv))} / 1억"
+            elif qid == "coin100m":
+                cv = sum(ci.get('qty',0) * market['crypto_data'].get(cid,{}).get('price',0) for cid, ci in st.session_state.get('crypto_portfolio',{}).items()) if 'crypto_data' in market else 0
+                return f"코인 평가액: {format_korean_money(int(cv))} / 1억"
+            elif qid == "debtfree": return f"현재 대출: {format_korean_money(st.session_state.loan)}"
+            elif qid == "billionaire": return f"현재 순자산: {format_korean_money(nw)} / 1000억"
+            return ""
+
+        hint = get_progress_hint(q['id'])
+        status_txt = "✅ 수령 완료" if is_claimed else "🟡 달성! 클릭하여 수령" if is_achievable else f"🔒 미달성 ({hint})" if hint else "🔒 미달성"
         
         st.markdown(f"""
         <div style='background:rgba(255,255,255,0.05); border-left:4px solid {status_col}; padding:15px; border-radius:8px; margin-bottom:10px;'>
@@ -3607,18 +3634,17 @@ elif menu == "🗡️ 전설의 명검 강화":
                         if use_ticket:
                             st.session_state.inventory.remove("파괴방지권")
                         
-                        us = load_db(USERS_FILE, {}) 
                         uid = st.session_state.logged_in_user
+                        us = load_db(USERS_FILE, {}) 
                         is_cursed = us.get(uid, {}).get('cursed_forge', False)
                         
                         success = random.random() < next_info['rate'] 
                         
                         if is_cursed:
                             success = False
-                            users_fresh = load_db(USERS_FILE, {})
-                            users_fresh[uid]['cursed_forge'] = False
-                            users_fresh[uid]['cash'] = st.session_state.global_cash 
-                            save_db(USERS_FILE, users_fresh)
+                            us[uid]['cursed_forge'] = False          # ← 이미 읽은 us 재활용
+                            us[uid]['cash'] = st.session_state.global_cash
+                            save_db(USERS_FILE, us)
                             st.toast("💀 누군가의 불길한 기운이 개입했습니다...", icon="💀")
                             time.sleep(1)
 
@@ -4225,6 +4251,19 @@ elif menu == "🛠️ 창조주 통제소":
 
         u_db = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "admin"]
+
+        # 기존 평문 비밀번호 → 해시 자동 마이그레이션
+        u_db_migrate = load_db(USERS_FILE, {})
+        migrated = False
+        for _uid, _udata in u_db_migrate.items():
+            if _uid == "admin": continue
+            pw_val = _udata.get('pw', '')
+            if len(pw_val) != 64:  # sha256 hexdigest는 항상 64자
+                u_db_migrate[_uid]['pw'] = hash_pw(pw_val)
+                migrated = True
+        if migrated:
+            save_db(USERS_FILE, u_db_migrate)
+            
 
         if uid_list:
             sel_u  = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
