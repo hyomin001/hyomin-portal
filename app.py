@@ -701,7 +701,7 @@ if 'logged_in_user' not in st.session_state:
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
 
-    # 👇 진정성 있는 사과와 보상이 담긴 새 배너 코드 👇
+    # 👇 여기서부터 복사해서 바로 아래에 붙여넣으세요! 👇
     st.markdown("""
     <div style='background: linear-gradient(135deg, rgba(30, 0, 10, 0.7), rgba(0, 0, 0, 0.9)); border: 2px solid #FF4B4B; border-radius: 15px; padding: 25px; margin-bottom: 25px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; box-shadow: 0 0 20px rgba(255, 75, 75, 0.3);'>
         <h2 style='color: #FF4B4B !important; margin-top: 0; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚨 [긴급] 서버 장애 사과 및 시즌 2 시작 안내 🚨</h2>
