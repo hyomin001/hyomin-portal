@@ -692,6 +692,12 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
     p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
     .stButton>button { height:52px !important; font-size:1rem !important; }
 }
+span[class*="material-symbols"],
+span[class*="material-icons"],
+[data-testid="collapsedControl"] span,
+[data-testid="stSidebarCollapseButton"] span {
+    font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
+}
 """
 
 st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
