@@ -577,20 +577,34 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
 
 /* 📱 모바일 화면용 설정 (화면이 768px 이하일 때 자동 적용) */
 @media (max-width: 768px) {
-    p,span,label,td,th { font-size:0.88rem !important; }
-    h1 { font-size:1.5rem !important; }
-    h2 { font-size:1.15rem !important; }
-    h3 { font-size:1rem !important; }
-    .stButton>button { height:46px !important; font-size:0.88rem !important; }
-    .stock-table th,.stock-table td { padding:8px 8px; font-size:0.82rem !important; }
-    .score-number { font-size:2.5rem !important; }
-    .lotto-amount { font-size:1.6rem !important; }
+    /* 💡 1. 화면 전체 축소 효과 (85% 비율로 축소) */
+    .block-container { 
+        zoom: 0.85; 
+        padding-top: 2rem !important; 
+        padding-left: 0.5rem !important; 
+        padding-right: 0.5rem !important; 
+        padding-bottom: 2rem !important; 
+    }
+
+    /* 💡 2. 스트림릿 기본 세로/가로 여백(Gap) 강제 축소 */
+    div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
+    div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; }
     
-    /* 💡 여기서부터 추가: 모바일 화면 여백 다이어트 */
-    .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 2rem !important; }
-    .card { padding: 12px !important; margin: 4px 0 !important; }
-    .estate-card, .market-listing, .market-initial { padding: 12px !important; }
-    [data-testid="stMetric"] { padding: 10px 14px !important; }
+    /* 3. 폰트 및 요소 크기 추가 축소 */
+    p,span,label,td,th { font-size:0.85rem !important; }
+    h1 { font-size:1.4rem !important; }
+    h2 { font-size:1.1rem !important; }
+    h3 { font-size:0.95rem !important; }
+    
+    .stButton>button { height:40px !important; font-size:0.85rem !important; }
+    .stock-table th,.stock-table td { padding:6px 6px; font-size:0.78rem !important; }
+    .score-number { font-size:2.2rem !important; }
+    .lotto-amount { font-size:1.4rem !important; }
+
+    /* 4. 카드 및 컨테이너 내부 여백 쥐어짜기 */
+    .card { padding: 10px !important; margin: 4px 0 !important; }
+    .estate-card, .market-listing, .market-initial { padding: 10px !important; margin: 6px 0 !important; }
+    [data-testid="stMetric"] { padding: 8px 12px !important; }
 }
 
 /* 💻 PC 화면용 설정 (화면이 769px 이상일 때 자동 적용) */
