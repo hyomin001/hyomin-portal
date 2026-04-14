@@ -539,11 +539,22 @@ CSS = """
 
 html, body, p, span, label, div, td, th {
   font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
-  color: #FFFFFF !important; /* 글씨를 완전한 흰색으로 변경하여 가독성 극대화 */
-
-  .stRadio label { color: #FFFFFF !important; font-weight: 700 !important; }
+  color: #FFFFFF !important; 
 }
 
+/* 🚨 수정됨: 중첩(Nesting)을 풀고 밖으로 뺐습니다 */
+.stRadio label { 
+  color: #FFFFFF !important; 
+  font-weight: 700 !important; 
+}
+
+/* 🚨 추가됨: 아이디, 비밀번호 등 입력창 라벨 텍스트 강제 흰색 처리 */
+label[data-testid="stWidgetLabel"] p,
+label[data-testid="stWidgetLabel"] div {
+    color: #FFFFFF !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+}
 /* 프리미엄 다크 스페이스 배경 */
 .stApp {
   background-color: #080A12 !important;
