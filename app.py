@@ -590,8 +590,8 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
 .cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
 
 [data-testid="collapsedControl"] {
-    background-color: rgba(0, 229, 255, 0.1) !important;
-    border: 2px solid #00E5FF !important;
+    background-color: rgba(0, 255, 136, 0.1) !important; /* 초록색 배경 */
+    border: 2px solid #00FF88 !important; /* 초록색 테두리 */
     border-radius: 50% !important;
     width: 46px !important;
     height: 46px !important;
@@ -600,14 +600,14 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
     justify-content: center !important;
     margin-top: 15px !important;
     margin-left: 15px !important;
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5), inset 0 0 10px rgba(0, 229, 255, 0.3) !important;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5), inset 0 0 10px rgba(0, 255, 136, 0.3) !important; /* 초록색 빛 번짐 */
     transition: all 0.3s ease !important;
     z-index: 999999 !important;
 }
 
 [data-testid="collapsedControl"]:hover {
-    background-color: rgba(0, 229, 255, 0.3) !important;
-    box-shadow: 0 0 25px rgba(0, 229, 255, 0.8) !important;
+    background-color: rgba(0, 255, 136, 0.3) !important;
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.8) !important; /* 마우스 올렸을 때 더 강한 초록빛 */
     transform: scale(1.1) !important;
 }
 
@@ -629,7 +629,6 @@ div[data-baseweb="select"] div[aria-hidden="true"] {
     background-color: rgba(255, 75, 75, 0.4) !important;
     box-shadow: 0 0 15px rgba(255, 75, 75, 0.8) !important;
 }
-
 
 /* 📱 모바일 화면용 설정 (화면이 768px 이하일 때 자동 적용) */
 @media (max-width: 768px) {
