@@ -700,6 +700,20 @@ if 'logged_in_user' not in st.session_state:
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(255, 75, 75, 0.15), rgba(255, 0, 0, 0.25)); border: 2px solid #FF4B4B; border-radius: 15px; padding: 25px; margin-bottom: 25px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; box-shadow: 0 0 20px rgba(255, 75, 75, 0.4);'>
+        <h2 style='color: #FFD600 !important; margin-top: 0; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚨 [긴급] 서버 초기화 및 시즌 2 오픈 🚨</h2>
+        <p style='color: #FFF; font-size: 1rem; line-height: 1.6; margin-bottom: 15px; font-weight: 500;'>
+            예상치 못한 트래픽 폭주로 인해 부득이하게 서버 DB가 초기화되었습니다.<br>
+            시즌 1을 함께해주신 80명의 시민 여러분께 진심으로 고개 숙여 사과드립니다. 😭<br>
+            <b style='color:#00E5FF; font-size: 1.1rem;'>더욱 안정적인 환경에서 [시즌 2]가 새롭게 시작됩니다!</b>
+        </p>
+        <div style='background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; display: inline-block; border: 1px solid rgba(255, 214, 0, 0.3);'>
+            <div style='color: #00FF88; font-weight: 900; font-size: 1.1rem; margin-bottom: 5px;'>🎁 시즌 2 특별 보상</div>
+            <div style='color: #FFF; font-size: 0.95rem;'>가입하시는 모든 분들께 초기 정착금 <span style='color:#FFD600; font-size: 1.3rem; font-weight: 900;'>5억 원</span> 즉시 지급!</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ---------------------------------------------------------
     # ✨ 신규: 로그인 화면 게임 소개(스플래시) 패널
@@ -800,13 +814,14 @@ if 'logged_in_user' not in st.session_state:
                 elif "<" in clean_id or ">" in clean_id:
                     st.error("⚠️ 아이디에 HTML 태그(<, >)는 사용할 수 없습니다.")
                 else:
-                    # n_id 대신 clean_id 로 저장하도록 수정
-                    users[clean_id] = {"pw":hash_pw(n_pw),"cash":100_000_000,"inventory":[],
+                    # 👇 100_000_000 을 500_000_000 으로 수정하세요!
+                    users[clean_id] = {"pw":hash_pw(n_pw),"cash":500_000_000,"inventory":[],
                                        "equipped_title":"🌱 신규시민","portfolio":{},
                                        "real_estate":{},"rent_time":time.time(),
                                        "loan":0,"loan_time":time.time(),}
                     save_db(USERS_FILE, users)
-                    st.success("🎉 가입 성공! 초기 자금 1억원이 지급되었습니다!")
+                    # 👇 성공 메시지도 5억원으로 수정!
+                    st.success("🎉 가입 성공! 시즌 2 정착금 5억원이 지급되었습니다!")
     st.stop()
 
 # ==============================
