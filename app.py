@@ -19,7 +19,9 @@ import hashlib
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
 
-ADMIN_PW = "***"
+ADMIN_HASH = "36e81bd8f1172a2e61db1d6dc7fa1f215de5b267598c19ee81a0e1b2f0a1c6e1" 
+
+# ... (중략) ...
 
 
 
@@ -758,7 +760,7 @@ if 'logged_in_user' not in st.session_state:
                         'last_estate_reset': u.get('last_estate_reset', 0),
                     })
                     st.rerun()
-                if l_id == "admin" and l_pw == ADMIN_PW:
+                if l_id == "admin" and hash_pw(l_pw) == ADMIN_HASH:
                     if "admin" not in users:
                         users["admin"] = {"pw":"****","cash":999_999_999_999,"inventory":[],
                                          "equipped_title":"👑 절대신 창조주","portfolio":{},
@@ -775,15 +777,22 @@ if 'logged_in_user' not in st.session_state:
             n_pw = st.text_input("새 비밀번호", type="password", placeholder="비밀번호 설정")
             if st.button("✨ 시민 등록하기", use_container_width=True):
                 users = load_db(USERS_FILE, {})
-                if n_id in users or n_id == "admin":
+                
+                # 🚨 추가된 방어 로직: 앞뒤 공백을 날려버림
+                clean_id = n_id.strip()
+                
+                if clean_id in users or clean_id == "admin":
                     st.error("⚠️ 이미 존재하는 아이디입니다.")
-                elif len(n_id) < 2:
-                    st.error("아이디는 2자 이상이어야 합니다.")
+                elif len(clean_id) < 2:
+                    st.error("⚠️ 아이디는 공백을 제외하고 2자 이상이어야 합니다.")
+                elif "<" in clean_id or ">" in clean_id:
+                    st.error("⚠️ 아이디에 HTML 태그(<, >)는 사용할 수 없습니다.")
                 else:
-                    users[n_id] = {"pw":hash_pw(n_pw),"cash":100_000_000,"inventory":[],
-                                   "equipped_title":"🌱 신규시민","portfolio":{},
-                                   "real_estate":{},"rent_time":time.time(),
-                                   "loan":0,"loan_time":time.time(),}
+                    # n_id 대신 clean_id 로 저장하도록 수정
+                    users[clean_id] = {"pw":hash_pw(n_pw),"cash":100_000_000,"inventory":[],
+                                       "equipped_title":"🌱 신규시민","portfolio":{},
+                                       "real_estate":{},"rent_time":time.time(),
+                                       "loan":0,"loan_time":time.time(),}
                     save_db(USERS_FILE, users)
                     st.success("🎉 가입 성공! 초기 자금 1억원이 지급되었습니다!")
     st.stop()
