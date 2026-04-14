@@ -612,6 +612,8 @@ if 'logged_in_user' in st.session_state:
 # ── 로그인 상태 체크 (중요) ──
 if "logged_in_user" in st.session_state:
     st.success(f"로그인됨: {st.session_state.logged_in_user}")
+    
+    # 🔥 여기서만 종료 (로그인 된 사람만 멈춤)
     st.stop()
 
 
@@ -619,6 +621,7 @@ if "logged_in_user" in st.session_state:
 _, c2, _ = st.columns([1, 1.2, 1])
 
 with c2:
+
     st.markdown("""
 <div style='background:rgba(20, 24, 35, 0.6); backdrop-filter:blur(10px);
 border:1px solid rgba(0,229,255,0.2); border-radius:15px;
@@ -645,7 +648,6 @@ box-shadow:0 10px 30px rgba(0,0,0,0.5);'>
     # =========================
     with tabs[0]:
 
-        # device_type 반드시 key로 관리 (중요)
         device_type = st.radio(
             "접속 환경 선택",
             ["💻 PC 버전", "📱 모바일 버전"],
@@ -744,7 +746,6 @@ box-shadow:0 10px 30px rgba(0,0,0,0.5);'>
                 save_db(USERS_FILE, users)
                 st.success("🎉 가입 완료! 초기 자금 1억원 지급")
 
-st.stop()
 
 
 
