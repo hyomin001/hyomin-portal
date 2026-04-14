@@ -539,7 +539,9 @@ CSS = """
 
 html, body, p, span, label, div, td, th {
   font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
-  color: #E2E8F0 !important;
+  color: #FFFFFF !important; /* 글씨를 완전한 흰색으로 변경하여 가독성 극대화 */
+
+  .stRadio label { color: #FFFFFF !important; font-weight: 700 !important; }
 }
 
 /* 프리미엄 다크 스페이스 배경 */
@@ -609,7 +611,7 @@ div[role="listbox"] li:hover { background: rgba(0, 229, 255, 0.15) !important; }
 
 /* 탭 스타일 */
 .stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
-.stTabs [data-baseweb="tab"] { color: #666 !important; font-weight: 700 !important; font-size: 0.95rem !important; }
+.stTabs [data-baseweb="tab"] { color: #A0AEC0 !important; font-weight: 700 !important; font-size: 0.95rem !important; } /* #666에서 더 밝은 회색으로 변경 */
 .stTabs [aria-selected="true"] { color: #00E5FF !important; border-bottom: 2px solid #00E5FF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
 
 /* 매트릭 (자산 요약 등) */
@@ -894,24 +896,26 @@ CATEGORY_MENUS = {
         "🪙 코인 거래소",
         "🏢 부동산 거래소",
         "🏦 은행 (대출/송금)",
-        "⚔️ 글로벌 로또",
-        "🗡️ 전설의 명검 강화",
-        "📅 일일 퀘스트",
-        "👑 칭호 상점",
-        "🎴 가챠 뽑기",
         "📜 내 거래 기록",
-    ],
-    "⚽ 스포츠": [
-        "⚽ 구단주 시뮬레이터",
-        "⚽ 조기축구 승부차기",
-        "🏎️ 하이퍼카 레이싱",
-        "🛠️ 커스텀 튜닝 차고지",
     ],
     "🎮 미니게임": [
         "🎰 럭키 슬롯",
         "🃏 블랙잭 카지노",
         "⛏️ 광산 (노가다)",
         "💻 정처기 CBT",
+        "⚔️ 글로벌 로또",       # 경제에서 이동
+        "🗡️ 전설의 명검 강화",  # 경제에서 이동
+        "🎴 가챠 뽑기",         # 경제에서 이동
+    ],
+    "🌟 성장 & 혜택": [         # 신규 카테고리 생성
+        "📅 일일 퀘스트",       # 경제에서 이동
+        "👑 칭호 상점",         # 경제에서 이동
+    ],
+    "⚽ 스포츠": [
+        "⚽ 구단주 시뮬레이터",
+        "⚽ 조기축구 승부차기",
+        "🏎️ 하이퍼카 레이싱",
+        "🛠️ 커스텀 튜닝 차고지",
     ],
     "👥 커뮤니티": [
         "🏰 길드/클랜",
