@@ -12,6 +12,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 ADMIN_PW = "***"
 
+IS_PC = True
+
 # ==============================
 # 🕒 서버 시간 강제 세팅 (KST)
 # ==============================
