@@ -559,70 +559,50 @@ div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; 
 .cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
 
 /* ===================================================
-   🚨 사이드바 열기/닫기 텍스트 버튼으로 변경 (초록/빨강 네온)
+   🚨 직관적인 심플 빨간색 버튼 (텍스트/아이콘 없음)
    =================================================== */
-/* 기존 화살표/X 아이콘 숨기기 */
+/* 기존 화살표/X 아이콘 완전히 숨기기 */
 [data-testid="collapsedControl"] svg,
 [data-testid="stSidebarCollapseButton"] svg {
     display: none !important;
 }
 
-/* 1. 메뉴 열기 버튼 (접혀있을 때) */
+/* 1. 메뉴 열기 버튼 (화면 왼쪽에 떠 있을 때) */
 [data-testid="collapsedControl"] {
-    background-color: rgba(0, 255, 136, 0.1) !important;
-    border: 2px solid #00FF88 !important;
-    border-radius: 20px !important;
-    width: 70px !important;
-    height: 40px !important;
+    background-color: #FF4B4B !important; /* 강렬한 빨간색 */
+    border: 2px solid #FF0000 !important;
+    border-radius: 8px !important; /* 약간 둥근 사각형 */
+    width: 46px !important;
+    height: 46px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     margin-top: 15px !important;
     margin-left: 15px !important;
-    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5), inset 0 0 10px rgba(0, 255, 136, 0.3) !important;
-    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 10px rgba(255, 75, 75, 0.5) !important;
+    transition: all 0.2s ease !important;
     z-index: 999999 !important;
 }
 
-/* '열기' 텍스트 강제 삽입 */
-[data-testid="collapsedControl"]::after {
-    content: "OPEN" !important;
-    color: #FFFFFF !important;
-    font-weight: 900 !important;
-    font-size: 0.95rem !important;
-}
-
-[data-testid="collapsedControl"]:hover {
-    background-color: rgba(0, 255, 136, 0.3) !important;
-    box-shadow: 0 0 25px rgba(0, 255, 136, 0.8) !important;
-    transform: scale(1.05) !important;
-}
-
-/* 2. 메뉴 닫기 버튼 (열려있을 때) */
+/* 2. 메뉴 닫기 버튼 (메뉴 상단에 있을 때) */
 [data-testid="stSidebarCollapseButton"] {
-    background-color: rgba(255, 75, 75, 0.1) !important;
-    border: 1px solid #FF4B4B !important;
-    border-radius: 20px !important;
-    width: 60px !important;
-    height: 35px !important;
+    background-color: #FF4B4B !important; /* 동일한 빨간색 */
+    border: 2px solid #FF0000 !important;
+    border-radius: 8px !important;
+    width: 46px !important;
+    height: 46px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    box-shadow: 0 0 10px rgba(255, 75, 75, 0.4) !important;
+    box-shadow: 0 4px 10px rgba(255, 75, 75, 0.5) !important;
     transition: all 0.2s ease !important;
 }
 
-/* '닫기' 텍스트 강제 삽입 */
-[data-testid="stSidebarCollapseButton"]::after {
-    content: "Close" !important;
-    color: #FFFFFF !important;
-    font-weight: 900 !important;
-    font-size: 0.9rem !important;
-}
-
+/* 버튼에 마우스 올렸을 때 액션 */
+[data-testid="collapsedControl"]:hover,
 [data-testid="stSidebarCollapseButton"]:hover {
-    background-color: rgba(255, 75, 75, 0.4) !important;
-    box-shadow: 0 0 15px rgba(255, 75, 75, 0.8) !important;
+    background-color: #FF0000 !important;
+    transform: scale(1.05) !important;
 }
 
 /* 📱 모바일 화면용 설정 (화면이 768px 이하일 때 자동 적용) */
@@ -675,7 +655,6 @@ div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; 
 }
 """
 
-st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
 
 if 'logged_in_user' in st.session_state:
     us_check = load_db(USERS_FILE, {})
