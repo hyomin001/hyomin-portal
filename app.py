@@ -4963,7 +4963,7 @@ elif menu == "🛠️ 창조주 통제소":
             market['season_end'] = time.time() - 1
             save_market(market)
             st.success("✅ 다음 렌더링에서 시즌이 종료됩니다. 잠시 후 새로고침하세요!")
-
+            st.rerun()  # 👈 이 코드를 추가하면 0.1초 만에 자동으로 리셋됩니다!
         st.write("---")
         st.markdown("### 📜 역대 시즌 기록")
         records = market.get('season_records', {})
