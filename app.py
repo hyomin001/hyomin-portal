@@ -449,30 +449,32 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
 }
 
-/* 드롭다운 (Selectbox) */
+/* 드롭다운 (Selectbox) 껍데기 */
 div[data-baseweb="select"] > div {
   background: rgba(20, 24, 35, 0.8) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 8px !important;
 }
 
-/* 팝업으로 뜨는 리스트박스 백그라운드 강제 다크모드 */
-[data-baseweb="popover"], [data-baseweb="menu"], div[role="listbox"] { 
+/* 🚨 팝업창(Popover) 배경 강제 다크모드 (초강력 버전) 🚨 */
+div[data-baseweb="popover"] > div {
   background-color: #121622 !important; 
-  border: 1px solid #00E5FF !important; 
-  border-radius: 10px !important; 
+  border: 1px solid #00E5FF !important;
 }
-[data-baseweb="menu"] ul {
-  background-color: #121622 !important; 
+ul[data-baseweb="menu"], div[role="listbox"] {
+  background-color: #121622 !important;
 }
-/* 드롭다운 내부 텍스트 및 호버 효과 */
-div[role="listbox"] li, div[role="listbox"] span, 
-[data-baseweb="menu"] li, [data-baseweb="menu"] span { 
-  color: #FFFFFF !important; 
+
+/* 🚨 드롭다운 내부 텍스트 강제 흰색 🚨 */
+ul[data-baseweb="menu"] li, div[role="listbox"] li,
+ul[data-baseweb="menu"] li span, div[role="listbox"] li span {
+  color: #FFFFFF !important;
   background-color: transparent !important;
 }
-div[role="listbox"] li:hover, [data-baseweb="menu"] li:hover { 
-  background-color: rgba(0, 229, 255, 0.15) !important; 
+
+/* 마우스 호버 효과 */
+ul[data-baseweb="menu"] li:hover, div[role="listbox"] li:hover {
+  background-color: rgba(0, 229, 255, 0.15) !important;
 }
 
 /* 사이버펑크 버튼 스타일 */
