@@ -706,6 +706,7 @@ if 'logged_in_user' not in st.session_state:
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
    
+    
     with st.expander("🚨 서버 관리자 전용 메뉴 (데이터 이사)"):
         if st.button("💾 백업 데이터 ➔ 몽고DB로 복구하기", use_container_width=True):
             client = get_mongo_client()
@@ -714,17 +715,37 @@ if 'logged_in_user' not in st.session_state:
                     db = client["hyomin_universe"]
                     files = [USERS_FILE, MARKET_FILE, REALESTATE_MARKET_FILE, TXLOG_FILE, COMMENTS_FILE]
                     import os, json
+                    
+                    # 🛡️ 몽고DB 8바이트 정수 제한(922경) 방어용 마법의 함수
+                    def sanitize_for_mongo(obj):
+                        if isinstance(obj, dict):
+                            return {k: sanitize_for_mongo(v) for k, v in obj.items()}
+                        elif isinstance(obj, list):
+                            return [sanitize_for_mongo(v) for v in obj]
+                        elif isinstance(obj, int):
+                            # 900경이 넘는 천문학적인 숫자는 900경으로 컷!
+                            if obj > 9000000000000000000: return 9000000000000000000
+                            if obj < -9000000000000000000: return -9000000000000000000
+                            return obj
+                        return obj
+
                     for fname in files:
                         if os.path.exists(fname):
                             with open(fname, 'r', encoding='utf-8') as f:
                                 data = json.load(f)
+                            
+                            # 데이터를 몽고DB에 넣기 전에 정화!
+                            clean_data = sanitize_for_mongo(data)
                             col_name = fname.replace(".json", "").replace("_db", "")
-                            db[col_name].replace_one({"_id": "main"}, {"_id": "main", **data}, upsert=True)
+                            db[col_name].replace_one({"_id": "main"}, {"_id": "main", **clean_data}, upsert=True)
+                            
                     st.success("🎉 기적의 복구 성공! 모든 데이터가 몽고DB로 무사히 이사했습니다!")
                     st.info("이제 화면을 새로고침(F5)하고 원래 계정으로 로그인해 보세요!")
                 except Exception as e:
-                    st.error(f"❌ 연결 에러 (주소나 IP 설정을 다시 확인해주세요): {e}")
+                    st.error(f"❌ 데이터 변환 에러: {e}")
             else:
+                st.error("❌ 스트림릿 Secrets에 주소가 등록되지 않았습니다.")
+   
                 st.error("❌ 스트림릿 Secrets에 주소가 등록되지 않았습니다.")
     
 
