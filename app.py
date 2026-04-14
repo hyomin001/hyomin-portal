@@ -19,9 +19,9 @@ import hashlib
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
 
-ADMIN_HASH = "36e81bd8f1172a2e61db1d6dc7fa1f215de5b267598c19ee81a0e1b2f0a1c6e1" 
+ADMIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4" 
 
-# ... (중략) ...
+
 
 
 
@@ -760,14 +760,25 @@ if 'logged_in_user' not in st.session_state:
                         'last_estate_reset': u.get('last_estate_reset', 0),
                     })
                     st.rerun()
-                if l_id == "admin" and hash_pw(l_pw) == ADMIN_HASH:
-                    if "admin" not in users:
-                        users["admin"] = {"pw":"****","cash":999_999_999_999,"inventory":[],
-                                         "equipped_title":"👑 절대신 창조주","portfolio":{},
-                                         "real_estate":{},"rent_time":time.time(),
-                                         "loan":0,"loan_time":time.time(),}
-                        save_db(USERS_FILE, users)
-                    _do_login("admin")
+
+                # 👇 여기서부터 수정된 페이크 꼼수 & 해시 로그인 로직! 👇
+                if l_id == "admin":
+                    if l_pw == ADMIN_PW: 
+                        # 코드를 보고 "***"를 그대로 입력한 빌런 참교육
+                        st.error("😎 소스코드를 훔쳐보셨군요? 안타깝지만 그건 가짜 비밀번호입니다!")
+                    
+                    # 진짜 로그인: 1234 의 해시값과 비교
+                    elif hash_pw(l_pw) == "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4":
+                        if "admin" not in users:
+                            users["admin"] = {"pw":"****","cash":999_999_999_999,"inventory":[],
+                                             "equipped_title":"👑 절대신 창조주","portfolio":{},
+                                             "real_estate":{},"rent_time":time.time(),
+                                             "loan":0,"loan_time":time.time(),}
+                            save_db(USERS_FILE, users)
+                        _do_login("admin")
+                    else:
+                        st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
+                        
                 elif l_id != "admin" and l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
                     _do_login(l_id)
                 else:
