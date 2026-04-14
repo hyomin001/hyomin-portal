@@ -449,30 +449,40 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
 }
 
-/* [1] 드롭다운 목록 상자(팝업) 안의 모든 글자를 검정색으로 강제 */
+/* [1] 드롭다운 입력창 (항목을 선택했을 때 보이는 상자) */
+div[data-baseweb="select"] > div {
+    background-color: #FFFFFF !important; /* 배경을 흰색으로 고정 */
+}
+
+/* [2] 입력창 내부에 써지는 모든 글자 (선택된 순간의 글자 포함) */
+div[data-baseweb="select"] * {
+    color: #000000 !important; /* 글자색 검정 */
+    font-weight: 600 !important;
+}
+
+/* [3] 클릭 시 아래로 열리는 목록 상자 (팝업) */
+[data-baseweb="popover"] {
+    background-color: #FFFFFF !important;
+}
+
+/* [4] 목록 상자 내부의 모든 항목과 텍스트 */
 [data-baseweb="popover"] *, 
 [role="listbox"] *, 
 [data-baseweb="menu"] * {
     color: #000000 !important;
-    font-weight: 600 !important; /* 글자를 좀 더 또렷하게 */
+    background-color: #FFFFFF !important;
 }
 
-/* [2] 드롭다운 항목(li) 자체의 배경과 글자색 설정 */
-[role="option"], [data-baseweb="menu"] li {
-    background-color: #FFFFFF !important; /* 배경은 하얗게 */
-    color: #000000 !important;
+/* [5] 항목 위에 마우스를 올렸을 때 (Hover) 배경색 살짝 변경 */
+[role="option"]:hover, 
+[data-baseweb="menu"] li:hover {
+    background-color: #EEEEEE !important; /* 마우스 올리면 연한 회색 */
 }
 
-/* [3] 마우스를 올렸을 때(Hover) 배경색만 살짝 변경 */
-[role="option"]:hover, [data-baseweb="menu"] li:hover {
-    background-color: #EEEEEE !important; /* 연한 회색 배경 */
+/* [6] 플레이스홀더 (아무것도 선택 안 했을 때 나오는 안내 문구) 글자색 */
+div[data-baseweb="select"] div[aria-hidden="true"] {
+    color: #666666 !important;
 }
-
-/* [4] (선택사항) 이미 선택된 항목의 글자색도 검정으로 */
-div[data-baseweb="select"] div {
-    color: #FFFFFF !important; /* 이건 입력창에 이미 '선택되어 있는' 글자색 (배경이 어두우니 흰색 유지) */
-}
-
 
 /* 사이버펑크 버튼 스타일 */
 .stButton > button {
