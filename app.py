@@ -609,145 +609,125 @@ if 'logged_in_user' in st.session_state:
 # ==============================
 # 🔐 로그인
 # ==============================
-# ── 로그인 상태 체크 (중요) ──
-if "logged_in_user" in st.session_state:
-    st.success(f"로그인됨: {st.session_state.logged_in_user}")
-    
-    # 🔥 여기서만 종료 (로그인 된 사람만 멈춤)
-    st.stop()
-
-
-# ── 로그인 폼 ──
-_, c2, _ = st.columns([1, 1.2, 1])
-
-with c2:
-
+if 'logged_in_user' not in st.session_state:
     st.markdown("""
-<div style='background:rgba(20, 24, 35, 0.6); backdrop-filter:blur(10px);
-border:1px solid rgba(0,229,255,0.2); border-radius:15px;
-padding:24px 24px 8px; margin-top:20px; margin-bottom:12px;
-box-shadow:0 10px 30px rgba(0,0,0,0.5);'>
-  <div style='text-align:center; margin-bottom:20px;'>
-    <div style='font-size:1.1rem; font-weight:900; color:#FFF;
-    font-family:"Orbitron";'>
-      HYOMIN <span style='color:#00E5FF;'>UNIVERSE</span> 입장
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+.stApp { background: radial-gradient(ellipse at 20% 50%, #0d0221 0%, #050510 60%, #000 100%) !important; }
+* { font-family:'Noto Sans KR',sans-serif !important; color:#FFF !important; }
+.login-title {
+  font-family:'Orbitron',monospace !important; font-size:clamp(2rem,6vw,4rem) !important;
+  font-weight:900; text-align:center;
+  background:linear-gradient(135deg,#00E5FF 0%,#FF00FF 50%,#FFD600 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  padding:20px 0 5px 0; letter-spacing:4px; animation:glow 3s ease-in-out infinite alternate;
+}
+@keyframes glow { from{filter:drop-shadow(0 0 10px #00E5FF)} to{filter:drop-shadow(0 0 30px #FF00FF)} }
+.login-sub { text-align:center; color:#888 !important; font-size:1rem; margin-bottom:20px; letter-spacing:3px; }
+.stTextInput>div>div>input {
+  background:rgba(0,229,255,0.05) !important; border:1px solid rgba(0,229,255,0.3) !important;
+  border-radius:8px !important; color:#000 !important; font-size:1rem !important; padding:12px !important;
+}
+.stButton>button {
+  background:linear-gradient(135deg,#00E5FF,#0066FF) !important; border:none !important;
+  border-radius:8px !important; color:#000 !important; font-weight:900 !important;
+  font-size:1rem !important; padding:14px !important; width:100%;
+}
+</style>""", unsafe_allow_html=True)
+
+    st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
+    st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
+
+    # ---------------------------------------------------------
+    # ✨ 신규: 로그인 화면 게임 소개(스플래시) 패널
+    # ---------------------------------------------------------
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(255, 0, 200, 0.05)); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 15px; padding: 25px; margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);'>
+        <h3 style='color: #FFD600 !important; margin-top: 0; margin-bottom: 20px; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚀 무엇을 하는 게임인가요?</h3>
+        <div style='display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;'>
+            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
+                <div style='font-size: 2.2rem; margin-bottom: 5px;'>📈</div>
+                <b style='color:#00E5FF; font-size: 1.1rem;'>투자 & 자산 증식</b><br>
+                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>주식, 코인, 부동산<br>안전하고 확실한 부의 축적</span>
+            </div>
+            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
+                <div style='font-size: 2.2rem; margin-bottom: 5px;'>🎰</div>
+                <b style='color:#FF4B4B; font-size: 1.1rem;'>도박 & 미니게임</b><br>
+                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>슬롯, 카지노, 하이퍼카 레이싱<br>하이리스크 하이리턴 일확천금</span>
+            </div>
+            <div style='flex: 1; min-width: 180px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);'>
+                <div style='font-size: 2.2rem; margin-bottom: 5px;'>⚔️</div>
+                <b style='color:#00FF88; font-size: 1.1rem;'>경쟁 & RPG 요소</b><br>
+                <span style='font-size:0.85rem; color:#aaa; line-height: 1.4; display: inline-block; margin-top: 5px;'>전설의 명검 강화, 클랜전<br>서버 1위 달성 및 칭호 획득</span>
+            </div>
+        </div>
+        <p style='color: #ddd; font-size: 0.95rem; margin: 0; line-height: 1.6;'>
+            가입 즉시 초기 정착금 <b style='color:#00E5FF; font-size:1.1rem;'>1억 원</b>이 지급됩니다.<br>지금 바로 시민으로 등록하고 우주 최고의 억만장자가 되어보세요!
+        </p>
     </div>
-    <div style='font-size:0.85rem; color:#888; margin-top:6px;'>
-      새 회원은 회원가입 탭 이용
-    </div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+    # ---------------------------------------------------------
 
-    # ── Tabs ──
-    tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
-
-
-    # =========================
-    # 🔑 로그인 탭
-    # =========================
-    with tabs[0]:
-
-        device_type = st.radio(
-            "접속 환경 선택",
-            ["💻 PC 버전", "📱 모바일 버전"],
-            horizontal=True,
-            key="device_type"
-        )
-
-        l_id = st.text_input("아이디", placeholder="아이디 입력", key="login_id")
-        l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호 입력", key="login_pw")
-
-        login_btn = st.button("입장하기", use_container_width=True)
-
-        if login_btn:
-            users = load_db(USERS_FILE, {})
-
-            def _do_login(uid):
-                u = users[uid]
-
-                st.session_state.logged_in_user = uid
-                st.session_state.is_pc = (st.session_state.device_type == "💻 PC 버전")
-
-                st.session_state.global_cash = u['cash']
-                st.session_state.inventory = u.get('inventory', [])
-                st.session_state.equipped_title = u.get('equipped_title', '🌱 신규시민')
-                st.session_state.portfolio = u.get('portfolio', {})
-                st.session_state.real_estate = u.get('real_estate', {})
-                st.session_state.rent_time = u.get('rent_time', time.time())
-                st.session_state.loan = u.get('loan', 0)
-                st.session_state.loan_time = u.get('loan_time', time.time())
-                st.session_state.stats = u.get('stats', {'wins':0,'losses':0,'races_won':0,'lotto_spent':0})
-                st.session_state.crypto_portfolio = u.get('crypto_portfolio', {})
-                st.session_state.daily_quests = u.get('daily_quests', {})
-                st.session_state.weapon_level = u.get('weapon_level', 0)
-                st.session_state.bulk_trade_date = u.get('bulk_trade_date', '')
-                st.session_state.bulk_trade_count = u.get('bulk_trade_count', 0)
-                st.session_state.last_estate_reset = u.get('last_estate_reset', 0)
-
-                st.rerun()
-
-            # admin 로그인
-            if l_id == "admin" and l_pw == ADMIN_PW:
-                users.setdefault("admin", {
-                    "pw":"****",
-                    "cash":999_999_999_999,
-                    "inventory":[],
-                    "equipped_title":"👑 절대신 창조주",
-                    "portfolio":{},
-                    "real_estate":{},
-                    "rent_time":time.time(),
-                    "loan":0,
-                    "loan_time":time.time(),
-                    "stats":{}
-                })
-                save_db(USERS_FILE, users)
-                _do_login("admin")
-
-            # 일반 로그인
-            elif l_id in users and users[l_id]['pw'] == l_pw:
-                _do_login(l_id)
-
-            else:
-                st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
-
-
-    # =========================
-    # 📝 회원가입 탭
-    # =========================
-    with tabs[1]:
-
-        n_id = st.text_input("새 아이디", placeholder="사용할 아이디", key="reg_id")
-        n_pw = st.text_input("새 비밀번호", type="password", key="reg_pw")
-
-        if st.button("회원가입", use_container_width=True):
-            users = load_db(USERS_FILE, {})
-
-            if n_id in users or n_id == "admin":
-                st.error("⚠️ 이미 존재하는 아이디입니다.")
-
-            elif len(n_id) < 2:
-                st.error("아이디는 2자 이상이어야 합니다.")
-
-            else:
-                users[n_id] = {
-                    "pw": n_pw,
-                    "cash": 100_000_000,
-                    "inventory": [],
-                    "equipped_title": "🌱 신규시민",
-                    "portfolio": {},
-                    "real_estate": {},
-                    "rent_time": time.time(),
-                    "loan": 0,
-                    "loan_time": time.time(),
-                    "stats": {}
-                }
-
-                save_db(USERS_FILE, users)
-                st.success("🎉 가입 완료! 초기 자금 1억원 지급")
-
-
-
+    c1, c2, c3 = st.columns([1, 1.5, 1])
+    with c2:
+        device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"], horizontal=True)
+        tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
+        with tabs[0]:
+            l_id = st.text_input("아이디", placeholder="아이디를 입력하세요")
+            l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
+            if st.button("🚀 유니버스 입장", use_container_width=True):
+                users = load_db(USERS_FILE, {})
+                def _do_login(uid):
+                    u = users[uid]
+                    st.session_state.update({
+                        'logged_in_user': uid,
+                        'global_cash':    u['cash'],
+                        'inventory':      u.get('inventory', []),
+                        'equipped_title': u.get('equipped_title', '🌱 신규시민'),
+                        'portfolio':      u.get('portfolio', {}),
+                        'real_estate':    u.get('real_estate', {}),
+                        'rent_time':      u.get('rent_time', time.time()),
+                        'loan':           u.get('loan', 0),
+                        'loan_time':      u.get('loan_time', time.time()),
+                        'device_mode':    device_mode,
+                        'stats':          u.get('stats', {'wins':0,'losses':0,'races_won':0,'lotto_spent':0}),
+                        'crypto_portfolio': u.get('crypto_portfolio', {}),
+                        'daily_quests':     u.get('daily_quests', {}),
+                        'weapon_level':   u.get('weapon_level', 0), 
+                        'bulk_trade_date':  u.get('bulk_trade_date', ''),
+                        'bulk_trade_count': u.get('bulk_trade_count', 0),
+                        'last_estate_reset': u.get('last_estate_reset', 0),
+                    })
+                    st.rerun()
+                if l_id == "admin" and l_pw == ADMIN_PW:
+                    if "admin" not in users:
+                        users["admin"] = {"pw":"****","cash":999_999_999_999,"inventory":[],
+                                         "equipped_title":"👑 절대신 창조주","portfolio":{},
+                                         "real_estate":{},"rent_time":time.time(),
+                                         "loan":0,"loan_time":time.time(),"stats":{}}
+                        save_db(USERS_FILE, users)
+                    _do_login("admin")
+                elif l_id != "admin" and l_id in users and users[l_id]['pw'] == l_pw:
+                    _do_login(l_id)
+                else:
+                    st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
+        with tabs[1]:
+            n_id = st.text_input("새 아이디", placeholder="사용할 아이디")
+            n_pw = st.text_input("새 비밀번호", type="password", placeholder="비밀번호 설정")
+            if st.button("✨ 시민 등록하기", use_container_width=True):
+                users = load_db(USERS_FILE, {})
+                if n_id in users or n_id == "admin":
+                    st.error("⚠️ 이미 존재하는 아이디입니다.")
+                elif len(n_id) < 2:
+                    st.error("아이디는 2자 이상이어야 합니다.")
+                else:
+                    users[n_id] = {"pw":n_pw,"cash":100_000_000,"inventory":[],
+                                   "equipped_title":"🌱 신규시민","portfolio":{},
+                                   "real_estate":{},"rent_time":time.time(),
+                                   "loan":0,"loan_time":time.time(),"stats":{}}
+                    save_db(USERS_FILE, users)
+                    st.success("🎉 가입 성공! 초기 자금 1억원이 지급되었습니다!")
+    st.stop()
 
 # ==============================
 # 🌐 서버 마켓 동기화
