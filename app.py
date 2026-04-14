@@ -586,7 +586,7 @@ div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; 
 
 /* '열기' 텍스트 강제 삽입 */
 [data-testid="collapsedControl"]::after {
-    content: "열기" !important;
+    content: "OPEN" !important;
     color: #FFFFFF !important;
     font-weight: 900 !important;
     font-size: 0.95rem !important;
@@ -614,7 +614,7 @@ div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; 
 
 /* '닫기' 텍스트 강제 삽입 */
 [data-testid="stSidebarCollapseButton"]::after {
-    content: "닫기" !important;
+    content: "Close" !important;
     color: #FFFFFF !important;
     font-weight: 900 !important;
     font-size: 0.9rem !important;
