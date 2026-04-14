@@ -559,16 +559,16 @@ div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; 
 .cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
 
 /* ===================================================
-   🚨 직관적인 심플 빨간색 빈 버튼
+   🚨 직관적인 심플 빨간색 빈 버튼 (클릭 버그 완벽 수정)
    =================================================== */
-/* 내부 텍스트, 아이콘(keyboard_double_arrow_right) 모두 완벽 차단 */
+/* 내부 요소(아이콘 등)를 삭제하지 않고 투명도만 0으로 만들어 클릭 센서 유지 */
 [data-testid="collapsedControl"] *,
 [data-testid="stSidebarCollapseButton"] * {
-    display: none !important;
-    color: transparent !important;
-    font-size: 0px !important;
+    opacity: 0 !important; 
+    font-size: 0 !important;
 }
 
+/* 열기/닫기 버튼 공통 빨간 박스 디자인 */
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapseButton"] {
     background-color: #FF4B4B !important; 
@@ -578,18 +578,25 @@ div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; 
     height: 40px !important;
     min-width: 40px !important;
     min-height: 40px !important;
-    padding: 0 !important;
-    display: block !important;
-    margin-top: 15px !important;
-    margin-left: 15px !important;
     box-shadow: 0 4px 10px rgba(255, 75, 75, 0.5) !important;
     transition: all 0.2s ease !important;
     z-index: 999999 !important;
-    color: transparent !important; 
-    overflow: hidden !important;
+    cursor: pointer !important;
 }
 
-/* 마우스 올렸을 때 반짝이는 효과 */
+/* 열기 버튼 위치 (왼쪽 위) */
+[data-testid="collapsedControl"] {
+    margin-top: 15px !important;
+    margin-left: 15px !important;
+}
+
+/* 닫기 버튼 위치 (사이드바 안쪽 우측 상단) */
+[data-testid="stSidebarCollapseButton"] {
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* 마우스 호버(올렸을 때) 액션 */
 [data-testid="collapsedControl"]:hover,
 [data-testid="stSidebarCollapseButton"]:hover {
     background-color: #FF0000 !important;
