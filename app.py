@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 ADMIN_PW = "***"
 
-IS_PC = True
+
 
 # ==============================
 # 🕒 서버 시간 강제 세팅 (KST)
@@ -655,6 +655,7 @@ if 'logged_in_user' not in st.session_state:
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
         
         with tabs[0]:
+            device_type = st.radio("접속 환경 선택", ["💻 PC 버전", "📱 모바일 버전"], horizontal=True)
             l_id = st.text_input("아이디", placeholder="아이디를 입력하세요", key="login_id")
             l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="login_pw")
             if st.button("입장하기", use_container_width=True):
@@ -663,6 +664,7 @@ if 'logged_in_user' not in st.session_state:
                     u = users[uid]
                     st.session_state.update({
                         'logged_in_user': uid,
+                        'is_pc': (device_type == "💻 PC 버전"), # 2. 선택한 환경을 시스템에 저장
                         'global_cash':    u['cash'],
                         'inventory':      u.get('inventory', []),
                         'equipped_title': u.get('equipped_title', '🌱 신규시민'),
@@ -957,7 +959,9 @@ if "current_category" not in st.session_state:
 msg_db_check = load_db("messages_db.json", {})
 my_unread = sum(1 for m in msg_db_check.get(st.session_state.logged_in_user, {}).get("inbox", []) if not m.get("read", False))
 
-if IS_PC:
+# --- [수정 후] 사용자의 기기 선택에 따라 UI 분기 ---
+if st.session_state.get('is_pc', True):
+    # 💻 PC 모드 선택 시: 왼쪽 사이드바에 메뉴 배치
     with st.sidebar:
         # 유저 프로필
         st.markdown(f"""
@@ -968,7 +972,6 @@ if IS_PC:
     {st.session_state.logged_in_user}
     {"  🔴" if my_unread > 0 else ""}
   </div>
-  <div style='font-size:0.8rem; color:#1a73e8; margin-top:3px;'>{st.session_state.equipped_title}</div>
 </div>""", unsafe_allow_html=True)
 
         # 자산 요약
@@ -980,12 +983,10 @@ if IS_PC:
 
         st.write("---")
 
-        # 카테고리 탭
+        # 카테고리 탭 (버튼식)
         st.markdown("<div style='font-size:0.75rem; color:#999; margin-bottom:8px;'>카테고리</div>", unsafe_allow_html=True)
         for cat in CATEGORY_MENUS:
             is_active_cat = (st.session_state.current_category == cat)
-            bg = "#e8f0fe" if is_active_cat else "transparent"
-            col = "#1a73e8" if is_active_cat else "#333"
             if st.button(cat, key=f"cat_{cat}", use_container_width=True):
                 st.session_state.current_category = cat
                 st.session_state.current_page = CATEGORY_MENUS[cat][0]
@@ -993,10 +994,10 @@ if IS_PC:
 
         st.write("---")
 
-        # 현재 카테고리 내 메뉴
+        # 세부 메뉴 선택 (라디오 버튼)
         cur_cat_pages = CATEGORY_MENUS.get(st.session_state.current_category, [])
         st.markdown(f"<div style='font-size:0.75rem; color:#999; margin-bottom:8px;'>{st.session_state.current_category} 메뉴</div>", unsafe_allow_html=True)
-
+        
         cur_idx = cur_cat_pages.index(st.session_state.current_page) if st.session_state.current_page in cur_cat_pages else 0
         selected_menu = st.radio("메뉴", cur_cat_pages, index=cur_idx, label_visibility="collapsed")
         if selected_menu != st.session_state.current_page:
@@ -1008,7 +1009,7 @@ if IS_PC:
             sync_user_data(); st.session_state.clear(); st.rerun()
 
 else:
-    # 모바일 — 상단 바
+    # 📱 모바일 모드 선택 시: 사이드바 없이 상단 드롭다운 배치
     col_a, col_b = st.columns([3, 1])
     with col_a:
         unread_txt = f" 🔴{my_unread}" if my_unread > 0 else ""
@@ -1024,14 +1025,9 @@ else:
         if st.button("로그아웃"):
             sync_user_data(); st.session_state.clear(); st.rerun()
 
-    # 카테고리 선택
-    all_pages_flat = []
-    for pages in CATEGORY_MENUS.values():
-        all_pages_flat.extend(pages)
-
-    cat_sel = st.selectbox("카테고리", list(CATEGORY_MENUS.keys()), label_visibility="collapsed",
-                            index=list(CATEGORY_MENUS.keys()).index(st.session_state.current_category)
-                            if st.session_state.current_category in CATEGORY_MENUS else 0)
+    # 카테고리 및 메뉴 선택을 드롭다운으로 변경 (좁은 화면 최적화)
+    cat_sel = st.selectbox("카테고리", list(CATEGORY_MENUS.keys()), 
+                            index=list(CATEGORY_MENUS.keys()).index(st.session_state.current_category))
     if cat_sel != st.session_state.current_category:
         st.session_state.current_category = cat_sel
         st.session_state.current_page = CATEGORY_MENUS[cat_sel][0]
@@ -1039,14 +1035,14 @@ else:
 
     cur_cat_pages = CATEGORY_MENUS.get(st.session_state.current_category, [])
     cur_idx = cur_cat_pages.index(st.session_state.current_page) if st.session_state.current_page in cur_cat_pages else 0
-    selected_menu = st.selectbox("메뉴 선택", cur_cat_pages, index=cur_idx, label_visibility="collapsed")
+    selected_menu = st.selectbox("메뉴 선택", cur_cat_pages, index=cur_idx)
     if selected_menu != st.session_state.current_page:
         st.session_state.current_page = selected_menu
         st.rerun()
 
 
+# --- 공통 뉴스 배너 및 공지 출력 ---
 menu = st.session_state.current_page
-
 st.markdown(f"<div class='news-banner'>📡 {market['news']}</div>", unsafe_allow_html=True)
 if market.get('admin_msg'):
     col = market.get('admin_color', '#FF4B4B')
