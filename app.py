@@ -703,29 +703,24 @@ if 'logged_in_user' not in st.session_state:
 
     # 👇 여기서부터 복사해서 바로 아래에 붙여넣으세요! 👇
     st.markdown("""
-    <div style='background: linear-gradient(135deg, rgba(30, 0, 10, 0.7), rgba(0, 0, 0, 0.9)); border: 2px solid #FF4B4B; border-radius: 15px; padding: 25px; margin-bottom: 25px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; box-shadow: 0 0 20px rgba(255, 75, 75, 0.3);'>
-        <h2 style='color: #FF4B4B !important; margin-top: 0; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚨 [긴급] 서버 장애 사과 및 시즌 2 시작 안내 🚨</h2>
-        <p style='color: #FFF; font-size: 1rem; line-height: 1.7; margin-bottom: 20px; font-weight: 500; word-break: keep-all;'>
-            서버 장애로 인해 갑작스럽게 시즌 1을 조기 종료하게 되어 80명의 시민 여러분께 고개 숙여 깊이 사과드립니다.<br><br>
-            한 시민분의 기적적인 백업 제공으로 약 70여 분의 소중한 자산은 복구하였으나, <b>끝내 데이터를 살리지 못한 10여 분의 시민들께는 어떤 말씀으로도 표현하기 힘든 죄송한 마음뿐입니다.</b><br><br>
-            모든 분들이 겪으신 상실감과 혼란에 대한 사죄의 의미를 담아, 새로 시작되는 <b style='color:#00E5FF;'>[시즌 2]</b>에 접속하시는 모든 분들께 <b style='color:#FFD600; font-size:1.1rem;'>정착 및 사과 보상금 5억 원 💸</b>을 즉시 지급해 드립니다.
+    <div style='background: linear-gradient(135deg, rgba(255, 75, 75, 0.15), rgba(255, 0, 0, 0.25)); border: 2px solid #FF4B4B; border-radius: 15px; padding: 25px; margin-bottom: 25px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; box-shadow: 0 0 20px rgba(255, 75, 75, 0.4);'>
+        <h2 style='color: #FFD600 !important; margin-top: 0; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚨 [긴급] 서버 장애 사과 및 시즌 2 시작 🚨</h2>
+        <p style='color: #FFF; font-size: 1rem; line-height: 1.6; margin-bottom: 15px; font-weight: 500;'>
+            서버 장애로 시즌 1을 조기 종료하게 되어 80명의 시민 여러분께 고개 숙여 사과드립니다. 😭<br>
+            기적적인 백업으로 70여 분의 자산은 복구했으나, 데이터를 잃으신 10여 분께는 진심으로 죄송합니다.<br>
+            사죄의 마음을 담아 시즌 2 접속 시 <b style='color:#00E5FF; font-size: 1.1rem;'>정착 및 사과 보상금 5억 원 💸</b>을 즉시 지급합니다!
         </p>
-        
-        <div style='background: rgba(255, 214, 0, 0.05); padding: 20px; border-radius: 12px; display: inline-block; border: 1px solid rgba(255, 214, 0, 0.3); width: 85%; margin-bottom: 20px;'>
-            <div style='color: #FFD600; font-weight: 900; font-size: 1.2rem; margin-bottom: 12px; letter-spacing: 2px;'>🏆 복구된 시즌 1 명예의 전당 🏆</div>
-            <div style='color: #FFF; font-size: 1.05rem; line-height: 1.8; text-align: left; display: inline-block;'>
-                <span style='font-size:1.2rem;'>🥇</span> <b style='color:#E2E8F0; width: 50px; display: inline-block;'>1위:</b> <b style='color:#FFD600;'>아로공주님</b><br>
-                <span style='font-size:1.2rem;'>🥈</span> <b style='color:#E2E8F0; width: 50px; display: inline-block;'>2위:</b> <b style='color:#C0C0C0;'>김효민</b><br>
-                <span style='font-size:1.2rem;'>🥉</span> <b style='color:#E2E8F0; width: 50px; display: inline-block;'>3위:</b> <b style='color:#CD7F32;'>나 손현우</b>
+        <div style='background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; display: inline-block; border: 1px solid rgba(255, 214, 0, 0.3); line-height: 1.6;'>
+            <div style='color: #FFD600; font-weight: 900; font-size: 1.1rem; margin-bottom: 10px;'>🏆 복구된 시즌 1 명예의 전당 🏆</div>
+            <div style='color: #FFF; font-size: 1rem; text-align: left; display: inline-block;'>
+                🥇 <b style='color:#E2E8F0;'>1위:</b> <span style='color:#FFD600; font-weight:bold;'>아로공주님</span><br>
+                🥈 <b style='color:#E2E8F0;'>2위:</b> <span style='color:#C0C0C0; font-weight:bold;'>김효민</span><br>
+                🥉 <b style='color:#E2E8F0;'>3위:</b> <span style='color:#CD7F32; font-weight:bold;'>나 손현우</span>
             </div>
         </div>
-        
-        <p style='color: #A0AEC0; font-size: 0.95rem; margin-bottom: 0;'>
-            압도적인 자산을 증명하신 세 분께 경의를 표하며, 잃어버린 데이터를 넘어<br>
-            더욱 안정적인 서버로 보답하겠습니다. 새롭게 열린 우주에서 다시 한번 뵙기를 간절히 바랍니다.
-        </p>
     </div>
     """, unsafe_allow_html=True)
+    # 👆 여기까지 👆
     
     # ---------------------------------------------------------
     # ✨ 신규: 로그인 화면 게임 소개(스플래시) 패널 (기존 코드 유지)
