@@ -7,8 +7,10 @@ GLOBAL_CSS = """
 /* 스트림릿 기본 파일 메뉴 숨기기 */
 [data-testid="stSidebarNav"] { display: none !important; }
 
-/* 기본 텍스트 색상 강제 흰색 */
-html, body, p, span, div, td, th {
+/* 기본 텍스트 색상 강제 흰색 (단, 고유 색상이 지정된 요소는 보호) */
+html, body, p, td, th,
+span:not([style*="color"]), 
+div:not([style*="color"]) {
   font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
   color: #FFFFFF !important; 
 }
