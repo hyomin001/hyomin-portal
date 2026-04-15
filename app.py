@@ -4107,35 +4107,36 @@ elif menu == "🏰 길드/클랜":
             with st.expander("👥 멤버 목록 및 계급 관리", expanded=True):
                 can_rank = has_perm(uid, cdata, "계급관리")
                 can_kick = has_perm(uid, cdata, "추방")
-                can_lead = has_perm(uid, cdata, "위임")  # ✅ 이 줄을 꼭 추가해야 오류가 사라집니다!
+                can_lead = has_perm(uid, cdata, "위임")
+
+                # ⚠️ 주의: 여기에 혹시 st.write(cdata) 같은게 있다면 절대 넣지 마세요!
 
                 for m in cdata['members']:
                     m_rank = cdata['member_ranks'].get(m, "일반멤버")
                     
-                    # 1. 멤버 정보 박스
+                    # 1. 멤버 정보를 가로 전체를 쓰는 '카드' 형태로 배치 (겹침 방지 핵심)
                     st.markdown(f"""
-                    <div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; border-left:4px solid #00E5FF;'>
+                    <div style='background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:5px; border-left:5px solid #00E5FF;'>
                         <b style='font-size:1.1rem; color:#FFFFFF;'>{m}</b> 
-                        <span style='color:#888; font-size:0.85rem; margin-left:10px;'>계급: {m_rank}</span>
+                        <span style='color:#888; font-size:0.85rem; margin-left:10px;'>등급: {m_rank}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # 2. 조작 버튼 구역
-                    col_edit, col_kick = st.columns([3, 1])
+                    # 2. 버튼들은 정보 박스 바로 아래에 여유 있게 배치
+                    col_edit, col_kick = st.columns([2, 1])
                     
                     with col_edit:
                         if can_rank and m != uid:
+                            # 선택창 레이블을 숨겨서 버튼과 겹치지 않게 함
                             new_r = st.selectbox(
                                 "계급 변경", ["일반멤버", "운영진", "부클랜장"], 
                                 index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
-                                key=f"rank_mod_{m}", label_visibility="collapsed"
+                                key=f"rank_fix_{m}", label_visibility="collapsed"
                             )
                             if new_r != m_rank:
                                 cdata['member_ranks'][m] = new_r
                                 save_clan_db(clans); st.rerun()
-                        else:
-                            st.write("") 
-
+                    
                     with col_kick:
                         if can_kick and m != uid and m != cdata['leader']:
                             if st.button("🦶 추방", key=f"kick_btn_{m}", use_container_width=True):
@@ -4143,7 +4144,8 @@ elif menu == "🏰 길드/클랜":
                                 if m in cdata['member_ranks']: del cdata['member_ranks'][m]
                                 save_clan_db(clans); st.rerun()
                     
-                    st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True)
+                    # 멤버 사이 간격 확보
+                    st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
                     
                 # --- 클랜장 위임 기능 (따로 빼서 강조) ---
                 if can_lead:
