@@ -1105,6 +1105,40 @@ else:
         st.session_state.current_page = selected_menu
         st.rerun()
 
+# =====================================================================
+# 📊 [신규] 시즌 정보 디스플레이 (경제 카테고리 선택 시 상단 노출)
+# =====================================================================
+if st.session_state.current_category == "📈 경제":
+    # 마켓 데이터에서 시즌 정보 추출
+    sn_v = market.get('season_num', 1)
+    end_v = market.get('season_end', time.time() + 30 * 86400)
+    
+    # 남은 시간 계산
+    rem_v = max(0, int(end_v - time.time()))
+    days_v = rem_v // 86400
+    hours_v = (rem_v % 86400) // 3600
+    
+    # 날짜 포맷팅
+    end_dt_str = datetime.fromtimestamp(end_v, KST).strftime("%Y-%m-%d %H:%M")
+
+    # 상단에 깔끔한 시즌 정보 바 출력
+    st.markdown(f"""
+    <div style='background: linear-gradient(90deg, rgba(0,229,255,0.1) 0%, rgba(0,0,0,0) 100%); 
+                border-left: 4px solid {theme_color}; padding: 10px 15px; margin-bottom: 20px; border-radius: 0 10px 10px 0;'>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+            <div>
+                <span style='color: {theme_color}; font-weight: 900; font-size: 1.1rem;'>제 {sn_v}기 유니버스</span>
+                <span style='color: #888; font-size: 0.85rem; margin-left: 10px;'>시즌 운영 중</span>
+            </div>
+            <div style='text-align: right;'>
+                <div style='color: #FF4B4B; font-weight: 700; font-size: 0.9rem;'>🏁 시즌 종료 임박</div>
+                <div style='color: #DDD; font-size: 0.8rem;'>{end_dt_str} ({days_v}일 {hours_v}시간 남음)</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+# =====================================================================
+
 
 # --- 공통 뉴스 배너 및 공지 출력 ---
 menu = st.session_state.current_page
@@ -4257,6 +4291,9 @@ elif menu == "🛠️ 창조주 통제소":
     ])
 
     with t1:
+        # ---------------------------------------------------------
+        # 👤 유저 개조 및 관리 탭
+        # ---------------------------------------------------------
         def parse_creator_money(text):
             if not text: return None
             text = text.replace(',', '').replace(' ', '').strip()
@@ -4277,7 +4314,7 @@ elif menu == "🛠️ 창조주 통제소":
         u_db = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "admin"]
 
-        # 유저 선택
+        # 1. 유저 개별 조작 섹션
         if uid_list:
             sel_u = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
             u_data = u_db[sel_u]
@@ -4309,7 +4346,6 @@ elif menu == "🛠️ 창조주 통제소":
                 st.metric("현재 현금", format_korean_money(u_data.get('cash', 0)))
                 st.metric("현재 대출", format_korean_money(u_data.get('loan', 0)))
 
-            # 버튼 행 1: 자산 및 계정 관리
             st.write("")
             c_btn1, c_btn2, c_btn3 = st.columns(3)
             if c_btn1.button("🔥 유저 데이터 강제 개조", use_container_width=True):
@@ -4320,99 +4356,90 @@ elif menu == "🛠️ 창조주 통제소":
                 st.success(f"✅ {sel_u} 유저 조작 완료!")
                 st.rerun()
             
-            if c_btn2.button("🕊️ 신용 대사면 (빚 전액 탕감)", use_container_width=True):
+            if c_btn2.button("🕊️ 신용 대사면", use_container_width=True):
                 u_db[sel_u]['loan'] = 0
                 if u_db[sel_u]['equipped_title'] == "💸 신용불량자": 
                     u_db[sel_u]['equipped_title'] = "🌱 신규시민"
                 save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 유저의 빚을 모두 탕감했습니다!")
+                st.success(f"✅ {sel_u} 유저 빚 탕감 완료!")
                 st.rerun()
 
-            if c_btn3.button("🗑️ 해당 유저 계정 삭제", use_container_width=True, type="secondary"):
+            if c_btn3.button("🗑️ 계정 삭제", use_container_width=True, type="secondary"):
                 del u_db[sel_u]
                 save_db(USERS_FILE, u_db)
-                st.success("유저 삭제 완료")
                 st.rerun()
                 
             st.write("---")
-            st.markdown("##### 🗡️ 전설의 명검 강제 통제소")
+            st.markdown("##### 🗡️ 전설의 명검 강제 통제")
             c_w1, c_w2, c_w3 = st.columns(3)
-            
-            if c_w1.button("👑 신의 망치 (+15강 투척)", use_container_width=True):
+            if c_w1.button("👑 +15강 부여", use_container_width=True):
                 u_db[sel_u]['weapon_level'] = 15
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u}에게 엑스칼리버를 하사했습니다!")
-                st.rerun()
-                
-            if c_w2.button("💀 파괴의 저주 (다음 강화 무조건 파괴)", use_container_width=True):
+                save_db(USERS_FILE, u_db); st.rerun()
+            if c_w2.button("💀 파괴의 저주", use_container_width=True):
                 u_db[sel_u]['cursed_forge'] = True
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u}의 무기에 저주를 내렸습니다!")
-                st.rerun()
-                
-            if c_w3.button("🔨 무기 강제 압수 (0강으로)", use_container_width=True):
+                save_db(USERS_FILE, u_db); st.success("저주 완료"); st.rerun()
+            if c_w3.button("🔨 무기 압수(0강)", use_container_width=True):
                 u_db[sel_u]['weapon_level'] = 0
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u}의 무기를 분쇄했습니다!")
-                st.rerun()
+                save_db(USERS_FILE, u_db); st.rerun()
 
             st.write("---")
-            st.markdown("##### 🎒 인벤토리 관리")
-            give_title = st.text_input("지급할 칭호명 입력", placeholder="예: 👑 [유일무이] 테스트", key="give_title_input")
-            
-            gc1, gc2 = st.columns(2)
-            if gc1.button("🎁 칭호 강제 지급 + 장착", use_container_width=True):
+            st.markdown("##### 🎒 인벤토리 및 칭호 관리")
+            give_title = st.text_input("칭호 강제 지급 (이름 입력)", key="admin_give_t")
+            if st.button("🎁 칭호 즉시 지급", use_container_width=True):
                 if give_title.strip():
                     u_db[sel_u].setdefault('inventory', [])
                     if give_title not in u_db[sel_u]['inventory']:
                         u_db[sel_u]['inventory'].append(give_title)
                     u_db[sel_u]['equipped_title'] = give_title
-                    save_db(USERS_FILE, u_db)
-                    st.success(f"✅ {sel_u}에게 [{give_title}] 지급 완료!")
-                    st.rerun()
+                    save_db(USERS_FILE, u_db); st.success("지급 완료"); st.rerun()
 
-            if gc2.button("🗑️ 인벤토리 전체 초기화", use_container_width=True, type="secondary"):
-                u_db[sel_u]['inventory'] = []
-                u_db[sel_u]['equipped_title'] = "🌱 신규시민"
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 인벤토리 초기화 완료!")
-                st.rerun()
-
-            # 신규 추가: 인벤토리 개별 압수 (사각지대 보강)
-            st.write("")
-            st.markdown("<div style='font-size:0.9rem; color:#888;'>👇 특정 아이템만 조준하여 압수</div>", unsafe_allow_html=True)
+            # 개별 아이템 압수 기능
             current_inv = u_db[sel_u].get('inventory', [])
             if current_inv:
-                target_item = st.selectbox("압수할 아이템/칭호 선택", current_inv, key=f"admin_seize_{sel_u}")
-                if st.button(f"🔥 [{target_item}] 강제 압수", use_container_width=True):
+                st.write("")
+                target_item = st.selectbox("압수할 아이템 선택", current_inv, key=f"seize_sel_{sel_u}")
+                if st.button(f"🔥 [{target_item}] 개별 압수", use_container_width=True):
                     u_db[sel_u]['inventory'].remove(target_item)
                     if u_db[sel_u].get('equipped_title') == target_item:
                         u_db[sel_u]['equipped_title'] = "🌱 신규시민"
-                    save_db(USERS_FILE, u_db)
-                    st.success(f"✅ {sel_u}의 [{target_item}] 압수 완료!")
-                    st.rerun()
+                    save_db(USERS_FILE, u_db); st.success("압수 완료"); st.rerun()
+
+            if st.button("🗑️ 인벤토리 전체 초기화", use_container_width=True):
+                u_db[sel_u]['inventory'] = []
+                u_db[sel_u]['equipped_title'] = "🌱 신규시민"
+                save_db(USERS_FILE, u_db); st.rerun()
 
             st.write("---")
-            st.markdown("##### 🪙 포트폴리오 강제 초기화")
-            pa1, pa2, pa3 = st.columns(3)
-            if pa1.button("📈 주식 포트폴리오 초기화", use_container_width=True):
-                u_db[sel_u]['portfolio'] = {}
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 주식 리셋 완료")
-                st.rerun()
-            if pa2.button("🪙 코인 포트폴리오 초기화", use_container_width=True):
-                u_db[sel_u]['crypto_portfolio'] = {}
-                save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 코인 리셋 완료")
-                st.rerun()
-            if pa3.button("📅 일퀘 강제 초기화", use_container_width=True):
-                u_db[sel_u]['daily_quests'] = {}
-                save_db(USERS_FILE, u_db)
-                st.success("일퀘 리셋 완료")
-                st.rerun()
+            st.markdown("##### 🪙 기타 초기화")
+            pa1, pa2 = st.columns(2)
+            if pa1.button("📈 주식 리셋", use_container_width=True):
+                u_db[sel_u]['portfolio'] = {}; save_db(USERS_FILE, u_db); st.rerun()
+            if pa2.button("🪙 코인 리셋", use_container_width=True):
+                u_db[sel_u]['crypto_portfolio'] = {}; save_db(USERS_FILE, u_db); st.rerun()
 
-        else:
-            st.info("관리할 유저가 없습니다.")
+        st.write("---")
+        st.write("---")
+        
+        # 2. 서버 전체 대상 특수 도구 (칭호 회수 기능 포함)
+        st.markdown("### 🧹 서버 전체 칭호 패턴 수거")
+        st.caption("예: '[시즌2]'를 입력하면 모든 유저에게서 해당 글자로 시작하는 칭호를 회수합니다.")
+        
+        pattern = st.text_input("수거할 칭호 앞글자 패턴", value="[시즌2]", key="revoke_pattern_input")
+        if pattern.strip() and st.button(f"🚨 전 유저 '{pattern}' 칭호 강제 수거", use_container_width=True, type="secondary"):
+            all_users = load_db(USERS_FILE, {})
+            revoked_total = 0
+            for u_name, u_info in all_users.items():
+                if 'inventory' in u_info:
+                    old_len = len(u_info['inventory'])
+                    # 패턴에 걸리지 않는 것들만 남김
+                    u_info['inventory'] = [i for i in u_info['inventory'] if not str(i).startswith(pattern)]
+                    revoked_total += (old_len - len(u_info['inventory']))
+                    # 현재 착용 칭호 체크
+                    if str(u_info.get('equipped_title', '')).startswith(pattern):
+                        u_info['equipped_title'] = "🌱 신규시민"
+            save_db(USERS_FILE, all_users)
+            st.success(f"🧹 수거 완료! 총 {revoked_total}개의 칭호를 삭제했습니다.")
+            st.rerun()
 
     with t2:
         st.markdown("### 🏢 부동산 시장 통제 센터")
