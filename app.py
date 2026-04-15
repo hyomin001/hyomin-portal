@@ -728,13 +728,13 @@ if 'logged_in_user' not in st.session_state:
                     })
                     st.rerun()
 
-                # --- 여기서부터 수정 시작 ---
+                # --- 로그인 로직 단일화 (수정된 부분) ---
                 if l_id == "admin":
                     # 1. 낚시용 가짜 비번 체크
                     if l_pw == "*******q131341**134**151**":
                         st.error("😎 소스코드를 훔쳐보셨군요? 안타깝지만 그건 가짜 비밀번호입니다!")
                     
-                    # 2. 실제 어드민 해시값 비교
+                    # 2. 실제 어드민 해시값 비교 (비번: 1234)
                     elif hash_pw(l_pw) == ADMIN_HASH:
                         if "admin" not in users:
                             users["admin"] = {
@@ -750,24 +750,15 @@ if 'logged_in_user' not in st.session_state:
                             }
                             save_db(USERS_FILE, users)
                         _do_login("admin")
-                    
-                    # 3. 어드민 비번이 틀린 경우
                     else:
-                        st.error("❌ 비밀번호가 올바르지 않습니다.")
+                        st.error("❌ 창조주 인증에 실패했습니다.")
                 
-                # --- 여기가 758라인 근처 (가장 중요: if l_id == "admin"과 세로줄 맞춤) ---
+                # 3. 일반 유저 로그인 체크
                 elif l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
                     _do_login(l_id)
                 
-                # 4. 아이디가 없거나 일반 비번이 틀린 경우
+                # 4. 아이디 불일치 또는 비번 오류
                 else:
-                    st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
-                        
-                elif l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
-                    # 일반 유저 로그인 성공
-                    _do_login(l_id)
-                else:
-                    # 아이디가 없거나 비밀번호가 틀린 경우
                     st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
                     
                     # 진짜 로그인: 1234 의 해시값과 비교
