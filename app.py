@@ -728,55 +728,28 @@ if 'logged_in_user' not in st.session_state:
                     })
                     st.rerun()
 
-                # --- 로그인 로직 단일화 (수정된 부분) ---
+                # --- 로그인 검증 로직 (여기서부터 아래 else까지가 한 덩어리여야 함) ---
                 if l_id == "admin":
-                    # 1. 낚시용 가짜 비번 체크
                     if l_pw == "*******q131341**134**151**":
                         st.error("😎 소스코드를 훔쳐보셨군요? 안타깝지만 그건 가짜 비밀번호입니다!")
-                    
-                    # 2. 실제 어드민 해시값 비교 (비번: 1234)
                     elif hash_pw(l_pw) == ADMIN_HASH:
                         if "admin" not in users:
                             users["admin"] = {
-                                "pw": ADMIN_HASH,
-                                "cash": 999_999_999_999,
-                                "inventory": [],
-                                "equipped_title": "👑 절대신 창조주",
-                                "portfolio": {},
-                                "real_estate": {},
-                                "rent_time": time.time(),
-                                "loan": 0,
-                                "loan_time": time.time(),
+                                "pw": ADMIN_HASH, "cash": 999_999_999_999, "inventory": [],
+                                "equipped_title": "👑 절대신 창조주", "portfolio": {},
+                                "real_estate": {}, "rent_time": time.time(), "loan": 0, "loan_time": time.time()
                             }
                             save_db(USERS_FILE, users)
                         _do_login("admin")
                     else:
-                        st.error("❌ 창조주 인증에 실패했습니다.")
+                        st.error("❌ 비밀번호가 올바르지 않습니다.")
                 
-                # 3. 일반 유저 로그인 체크
                 elif l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
                     _do_login(l_id)
                 
-                # 4. 아이디 불일치 또는 비번 오류
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
-                    
-                    # 진짜 로그인: 1234 의 해시값과 비교
-                    elif hash_pw(l_pw) == "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4":
-                        if "admin" not in users:
-                            users["admin"] = {"pw":"****","cash":999_999_999_999,"inventory":[],
-                                             "equipped_title":"👑 절대신 창조주","portfolio":{},
-                                             "real_estate":{},"rent_time":time.time(),
-                                             "loan":0,"loan_time":time.time(),}
-                            save_db(USERS_FILE, users)
-                        _do_login("admin")
-                    else:
-                        st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
-                        
-                elif l_id != "admin" and l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
-                    _do_login(l_id)
-                else:
-                    st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
+                # --- 로그인 검증 로직 끝 ---
         with tabs[1]:
             n_id = st.text_input("새 아이디", placeholder="사용할 아이디")
             n_pw = st.text_input("새 비밀번호", type="password", placeholder="비밀번호 설정")
