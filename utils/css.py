@@ -4,6 +4,8 @@ GLOBAL_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
 * { box-sizing: border-box; }
+/* 스트림릿 기본 파일 메뉴 숨기기 */
+[data-testid="stSidebarNav"] { display: none !important; }
 
 /* 기본 텍스트 색상 강제 흰색 */
 html, body, p, span, div, td, th {
