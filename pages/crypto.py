@@ -1,16 +1,23 @@
 # pages/crypto.py
 import streamlit as st
 import pandas as pd
+import time
 from utils.config import CRYPTO_CONFIG
 from utils.core import format_korean_money, sync_user_data, claim_hidden_title
 from utils.database import load_db, log_tx, USERS_FILE
 
 def render(market, nw):
     st.title("🪙 가상화폐 거래소")
+    
     if 'crypto_data' not in market:
         st.warning("코인 시장 개장 중... 잠시 후 새로고침 해주세요.")
         st.stop()
+        
     cdata = market['crypto_data']
+
+    # --- 유저 선택 코인 인덱스 유지 로직 추가 ---
+    if "selected_crypto_idx" not in st.session_state:
+        st.session_state.selected_crypto_idx = 0
 
     def fmt_crypto_price(price):
         if price >= 1_000_000:   return f"₩{price:,.0f}"
@@ -72,7 +79,21 @@ def render(market, nw):
                 c3.metric("📈 총 평가손익", format_korean_money(int(total_eval - total_invested)))
 
     with tab_trade:
-        sel_c = st.selectbox("거래할 코인 선택", [c['id'] for c in CRYPTO_CONFIG], format_func=lambda cid: f"{next(c['icon'] for c in CRYPTO_CONFIG if c['id']==cid)} {cdata[cid]['name']} — {fmt_crypto_price(cdata[cid]['price'])}")
+        # --- 수정된 선택 박스 로직 ---
+        crypto_ids = [c['id'] for c in CRYPTO_CONFIG]
+        
+        selected_cid = st.selectbox(
+            "거래할 코인 선택", 
+            crypto_ids, 
+            index=st.session_state.selected_crypto_idx,
+            format_func=lambda cid: f"{next(c['icon'] for c in CRYPTO_CONFIG if c['id']==cid)} {cdata[cid]['name']} — {fmt_crypto_price(cdata[cid]['price'])}",
+            key="crypto_selector_box"
+        )
+        
+        # 선택된 인덱스 저장
+        st.session_state.selected_crypto_idx = crypto_ids.index(selected_cid)
+        
+        sel_c = selected_cid
         cd    = cdata[sel_c]
         cur_p = cd['price']
  
