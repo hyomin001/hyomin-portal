@@ -299,6 +299,7 @@ def get_market():
     def init_m():
         return {
             "version": 6,
+            "season_num": 2,
             "stock_data": {
                 s['id']: {"name": s['name'], "icon": s['icon'],
                           "price": random.randint(50_000, 150_000), "history": [80_000, 80_000]}
@@ -322,15 +323,19 @@ def get_market():
         d = init_m(); save_db(MARKET_FILE, d); return d
     d = load_db(MARKET_FILE, {})
     if d.get("version") != 6:
-        # ✅ 수정: 로또 관련 값만 백업 후 복원
+        # ✅ 중요: 기존 시즌 번호와 로또 데이터를 백업
+        sn_backup = d.get("season_num", 2) # 기본값을 2로 설정하여 시즌2 시작 보장
         lp = d.get("lotto_pool",      5_000_000_000)
         lt = d.get("lotto_tickets",   {})
         ll = d.get("lotto_last_draw", time.time())
-        d  = init_m()
-        d["lotto_pool"]      = lp
-        d["lotto_tickets"]   = lt
+        
+        d  = init_m() # 초기화 실행
+        d["season_num"] = sn_backup # 백업된 시즌 번호 복원
+        d["lotto_pool"] = lp
+        d["lotto_tickets"] = lt
         d["lotto_last_draw"] = ll
-        save_db(MARKET_FILE, d); return d
+        save_db(MARKET_FILE, d)
+        return d
     return d
 
 def save_market(data): save_db(MARKET_FILE, data)
@@ -349,7 +354,19 @@ def get_user_clan(uid):
         if uid in cdata.get('members', []):
             return cname
     return None
+def load_clan_chat(clan_name):
+    chat_db = load_db("clan_chats_db.json", {})
+    return chat_db.get(clan_name, [])
 
+def save_clan_chat(clan_name, messages):
+    chat_db = load_db("clan_chats_db.json", {})
+    chat_db[clan_name] = messages[-50:] # 최신 50개만 저장
+    save_db("clan_chats_db.json", chat_db)
+# 👆 여기까지
+
+def get_clan_total_nw(cname, market_data):
+    clans = load_clan_db()
+    
 def get_clan_total_nw(cname, market_data):
     clans = load_clan_db()
     if cname not in clans:
@@ -704,8 +721,6 @@ if 'logged_in_user' not in st.session_state:
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     current_season_now = market.get('season_num', 1)
     st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {current_season_now} ∙</div>", unsafe_allow_html=True)
-    current_season_now = market.get('season_num', 1)
-    st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {current_season_now} ∙</div>", unsafe_allow_html=True)
     
 
     # 👇 여기서부터 복사해서 바로 아래에 붙여넣으세요! 👇
@@ -845,8 +860,6 @@ if 'logged_in_user' not in st.session_state:
 # ==============================
 # 🌐 서버 마켓 동기화
 # ==============================
-market = get_market()
-cur_t  = time.time()
 m_up   = False
 
 if 'logged_in_user' in st.session_state:
@@ -3999,7 +4012,7 @@ elif menu == "🏰 길드/클랜":
         }
         return rank_perms.get(u_rank, rank_perms["일반멤버"]).get(perm_name, False)
 
-    tab_my, tab_list, tab_rank = st.tabs(["🏠 내 클랜", "🔍 클랜 목록", "🏆 클랜 랭킹"])
+    tab_my, tab_chat, tab_list, tab_rank = st.tabs(["🏠 내 클랜", "💬 클랜 채팅", "🔍 클랜 목록", "🏆 클랜 랭킹"])
 
     with tab_my:
         if my_clan is None:
@@ -4159,7 +4172,42 @@ elif menu == "🏰 길드/클랜":
                 else:
                     cdata['members'].remove(uid)
                     if uid in cdata['member_ranks']: del cdata['member_ranks'][uid]
-                    save_clan_db(clans); st.rerun()
+                    save_clan_db(clans); st.rerun() # <--- 여기가 tab_my 내용의 끝!
+
+    with tab_chat:
+        if my_clan is None:
+            st.warning("클랜에 가입한 멤버만 채팅을 이용할 수 있습니다.")
+        else:
+            st.subheader(f"💬 {my_clan} 아지트")
+            messages = load_clan_chat(my_clan)
+            
+            with st.form("clan_chat_form", clear_on_submit=True):
+                c_msg = st.text_input("메시지를 입력하세요", placeholder="클랜원들과 대화하세요")
+                if st.form_submit_button("전송") and c_msg.strip():
+                    new_m = {
+                        "user": uid,
+                        "content": c_msg.strip(),
+                        "time": datetime.now(KST).strftime("%H:%M")
+                    }
+                    messages.append(new_m)
+                    save_clan_chat(my_clan, messages)
+                    st.rerun()
+
+            st.write("---")
+            for m in reversed(messages):
+                is_me = (m['user'] == uid)
+                align = "right" if is_me else "left"
+                color = "#00E5FF" if is_me else "#FFD600"
+                st.markdown(f"""
+                <div style='text-align: {align}; margin-bottom: 10px;'>
+                    <b style='color: {color}; font-size: 0.8rem;'>{m['user']}</b><br>
+                    <div style='display: inline-block; background: rgba(255,255,255,0.05); 
+                         padding: 8px 12px; border-radius: 10px; font-size: 0.95rem;'>
+                        {m['content']} <span style='color: #555; font-size: 0.7rem;'>{m['time']}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                    
 
     # --- [랭킹 및 목록 탭 유지] ---
     with tab_list:
