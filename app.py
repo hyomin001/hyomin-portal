@@ -304,7 +304,7 @@ def get_market():
                           "price": random.randint(50_000, 150_000), "history": [80_000, 80_000]}
                 for s in stock_config
             },
-            "news": "🌌 HYOMIN UNIVERSE v18.2 오픈!",
+            "news": "🌌 HYOMIN UNIVERSE 시즌 2 시작!",
             "news_time": time.time(),
             "last_tick": time.time(),
             "admin_msg": "",
