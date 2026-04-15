@@ -434,13 +434,17 @@ html, body, p, span, div, td, th {
   color: #FFFFFF !important; 
 }
 
-/* 🚨 [추가할 부분] 스트림릿 기본 아이콘(화살표 등) 글자 깨짐 방지 */
+/* 🚨 [긴급 패치] 클랜 탭 등에서 발생하는 _arrow_right 텍스트 겹침 완벽 제거 */
+[data-testid="stExpanderToggleIcon"], 
+.streamlit-expanderHeader svg,
 .material-symbols-rounded,
-.material-icons,
-span[class*="material"],
-[data-testid="stExpanderToggleIcon"] {
-  font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons' !important;
+span:contains("_arrow_right") {
+    display: none !important;
 }
+summary { list-style: none !important; }
+summary::-webkit-details-marker { display: none !important; }
+[data-testid="stExpander"] summary { cursor: pointer !important; }
+
 /* 🚨 로그인 화면 텍스트(접속환경, 아이디, 비밀번호 등) 강제 흰색 처리 */
 label,
 label p,
@@ -676,7 +680,6 @@ div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; 
     .stButton>button { height:52px !important; font-size:1rem !important; }
 }
 """
-
 st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
 
 
