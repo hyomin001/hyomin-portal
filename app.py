@@ -21,19 +21,10 @@ st.set_page_config(
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
 
+
 ADMIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4" 
-ADMIN_PW = "*******q131341**134**151**"
 
-
-
-
-
-# ==============================
-# 🕒 서버 시간 강제 세팅 (KST)
-# ==============================
-os.environ['TZ'] = 'Asia/Seoul'
-try: time.tzset()
-except AttributeError: pass
+# 🕒 서버 시간 세팅 (Streamlit Cloud 최적화)
 KST = timezone(timedelta(hours=9))
 
 # ==============================
@@ -441,282 +432,177 @@ def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
 
 
 # ==============================
-# 🎨 전역 CSS 적용 (위치 최상단으로 이동!)
+# 🎨 전역 CSS 및 비주얼 테마 설정
 # ==============================
-CSS = """
+
+# --- [추천 기능] 시장 상황에 따른 포인트 컬러 동적 결정 ---
+# 나스닥(NDX) 종목의 최근 변동률을 확인하여 테마색 결정 (기본: 사이언 #00E5FF)
+ndx_h = market['stock_data'].get('NDX', {}).get('history', [0, 0])
+ndx_diff = (ndx_h[-1] - ndx_h[-2]) / ndx_h[-2] if len(ndx_h) > 1 and ndx_h[-2] > 0 else 0
+
+theme_color = "#00E5FF" 
+if ndx_diff >= 0.02:   theme_color = "#FF4B4B" # 불장(폭등): 레드 테마
+elif ndx_diff <= -0.02: theme_color = "#4B9EFF" # 하락장(폭락): 블루 테마
+
+CSS = f"""
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
-* { box-sizing: border-box; }
+* {{ box-sizing: border-box; }}
 
 /* 기본 텍스트 색상 강제 흰색 */
-html, body, p, span, div, td, th {
+html, body, p, span, div, td, th {{
   font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
   color: #FFFFFF !important; 
-}
+}}
 
-/* 🚨 [긴급 패치] 클랜 탭 등에서 발생하는 _arrow_right 텍스트 겹침 완벽 제거 */
+/* 🚨 [완벽 해결] 클랜 탭 아이콘 및 텍스트 겹침 제거 */
 [data-testid="stExpanderToggleIcon"], 
 .streamlit-expanderHeader svg,
 .material-symbols-rounded,
-span:contains("_arrow_right") {
+span:contains("_arrow_right"),
+span:contains("arrow_drop_down") {{
     display: none !important;
-}
-summary { list-style: none !important; }
-summary::-webkit-details-marker { display: none !important; }
-[data-testid="stExpander"] summary { cursor: pointer !important; }
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    font-size: 0 !important;
+}}
 
-/* 🚨 로그인 화면 텍스트(접속환경, 아이디, 비밀번호 등) 강제 흰색 처리 */
-label,
-label p,
-label div,
-.stRadio label,
-[data-testid="stWidgetLabel"] p,
-[data-testid="stWidgetLabel"] div {
+summary {{ list-style: none !important; }}
+summary::-webkit-details-marker {{ display: none !important; }}
+[data-testid="stExpander"] summary {{ cursor: pointer !important; }}
+
+/* 🚨 로그인 화면 텍스트 강제 흰색 처리 */
+label, label p, label div, .stRadio label,
+[data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] div {{
     color: #FFFFFF !important;
     font-size: 1rem !important;
     font-weight: 700 !important;
-}
+}}
 
 /* 프리미엄 다크 스페이스 배경 */
-.stApp {
+.stApp {{
   background-color: #080A12 !important;
   background-image: 
-    radial-gradient(circle at 15% 30%, rgba(0, 229, 255, 0.05), transparent 30%),
+    radial-gradient(circle at 15% 30%, {theme_color}0D, transparent 30%),
     radial-gradient(circle at 85% 70%, rgba(255, 0, 200, 0.05), transparent 30%) !important;
   background-attachment: fixed;
-}
+}}
 
-[data-testid='stSidebar'] {
+[data-testid='stSidebar'] {{
   background: rgba(10, 12, 20, 0.95) !important;
-  border-right: 1px solid rgba(0, 229, 255, 0.15) !important;
-}
+  border-right: 1px solid {theme_color}26 !important;
+}}
 
-h1 { font-family:'Orbitron', sans-serif !important; font-size: 1.8rem !important; font-weight: 900 !important; color: #FFF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
-h2 { font-size: 1.3rem !important; font-weight: 800 !important; color: #00FF88 !important; }
-h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !important; }
+h1 {{ font-family:'Orbitron', sans-serif !important; font-size: 1.8rem !important; font-weight: 900 !important; color: #FFF !important; text-shadow: 0 0 10px {theme_color}4D; }}
+h2 {{ font-size: 1.3rem !important; font-weight: 800 !important; color: #00FF88 !important; }}
+h3 {{ font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !important; }}
 
-/* 입력창 네온 스타일 */
+/* 입력창 네온 스타일 (theme_color 적용) */
 .stTextInput > div > div > input,
-.stNumberInput > div > div > input {
+.stNumberInput > div > div > input {{
   background: rgba(0, 0, 0, 0.5) !important;
-  border: 1px solid rgba(0, 229, 255, 0.3) !important;
+  border: 1px solid {theme_color}4D !important;
   border-radius: 8px !important;
   color: #FFF !important;
   font-size: 1rem !important;
   font-weight: 700 !important;
-}
+}}
 .stTextInput > div > div > input:focus,
-.stNumberInput > div > div > input:focus {
-  border-color: #00E5FF !important;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
-}
+.stNumberInput > div > div > input:focus {{
+  border-color: {theme_color} !important;
+  box-shadow: 0 0 10px {theme_color}4D !important;
+}}
 
-/* 드롭다운 및 팝업 스타일 */
-div[data-baseweb="select"] > div { background-color: #FFFFFF !important; }
-div[data-baseweb="select"] * { color: #000000 !important; font-weight: 600 !important; }
-[data-baseweb="popover"] { background-color: #FFFFFF !important; }
-[data-baseweb="popover"] *, [role="listbox"] *, [data-baseweb="menu"] * { color: #000000 !important; background-color: #FFFFFF !important; }
-[role="option"]:hover, [data-baseweb="menu"] li:hover { background-color: #EEEEEE !important; }
-div[data-baseweb="select"] div[aria-hidden="true"] { color: #666666 !important; }
+/* 드롭다운 스타일 */
+div[data-baseweb="select"] > div {{ background-color: #FFFFFF !important; }}
+div[data-baseweb="select"] * {{ color: #000000 !important; font-weight: 600 !important; }}
 
-/* 사이버펑크 버튼 스타일 */
-.stButton > button {
+/* 사이버펑크 버튼 스타일 (theme_color 적용) */
+.stButton > button {{
   font-family: 'Noto Sans KR', sans-serif !important;
   font-weight: 700 !important;
   border-radius: 8px !important;
-  border: 1px solid rgba(0, 229, 255, 0.4) !important;
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(0, 102, 255, 0.1)) !important;
-  color: #00E5FF !important;
+  border: 1px solid {theme_color}66 !important;
+  background: linear-gradient(135deg, {theme_color}0D, rgba(0, 102, 255, 0.1)) !important;
+  color: {theme_color} !important;
   transition: all 0.2s ease !important;
   font-size: 0.95rem !important;
   height: 46px !important;
-}
-.stButton > button:hover {
-  background: linear-gradient(135deg, #00E5FF, #0066FF) !important;
-  border-color: #00E5FF !important;
+}}
+.stButton > button:hover {{
+  background: linear-gradient(135deg, {theme_color}, #0066FF) !important;
+  border-color: {theme_color} !important;
   color: #000 !important;
-  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4) !important;
+  box-shadow: 0 4px 15px {theme_color}66 !important;
   transform: translateY(-2px);
-}
-.stButton > button:disabled { opacity: 0.3 !important; cursor: not-allowed !important; transform: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.1) !important; color: #888 !important; }
+}}
 
 /* 탭 스타일 */
-.stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
-.stTabs [data-baseweb="tab"] { color: #A0AEC0 !important; font-weight: 700 !important; font-size: 0.95rem !important; }
-.stTabs [aria-selected="true"] { color: #00E5FF !important; border-bottom: 2px solid #00E5FF !important; text-shadow: 0 0 10px rgba(0,229,255,0.3); }
+.stTabs [data-baseweb="tab-list"] {{ background: transparent !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }}
+.stTabs [aria-selected="true"] {{ color: {theme_color} !important; border-bottom: 2px solid {theme_color} !important; text-shadow: 0 0 10px {theme_color}4D; }}
 
-/* 매트릭 (자산 요약 등) */
-[data-testid="stMetric"] {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 12px !important;
-  padding: 16px 20px !important;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-}
-[data-testid="stMetricLabel"] { color: #888 !important; font-size: 0.85rem !important; font-weight: 700; }
-[data-testid="stMetricValue"] { color: #FFF !important; font-family: 'Orbitron', sans-serif !important; font-size: 1.4rem !important; font-weight: 900 !important; }
-
-/* 공통 카드 (글래스모피즘) */
-.card {
+/* 카드 스타일 */
+.card {{
   background: rgba(20, 24, 35, 0.6) !important;
   backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 14px;
   padding: 20px;
   margin: 8px 0;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-.card:hover { border-color: rgba(0, 229, 255, 0.3) !important; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.1); }
+}}
+.card:hover {{ border-color: {theme_color}4D !important; box-shadow: 0 6px 20px {theme_color}1A; }}
 
-/* 알림 및 프로그레스바 */
-.stAlert { border-radius: 10px !important; border: none !important; background: rgba(255,255,255,0.05) !important; }
-.stProgress > div > div { background: linear-gradient(90deg, #00E5FF, #FF00FF) !important; border-radius: 6px !important; }
-
-/* 테이블 (주식, 코인) */
-.stock-table { width: 100%; border-collapse: collapse; }
-.stock-table th { background: rgba(0, 229, 255, 0.1); color: #00E5FF !important; font-family: 'Orbitron', sans-serif !important; font-size: 0.8rem !important; padding: 12px; text-align: left; border-bottom: 1px solid rgba(0, 229, 255, 0.2); letter-spacing: 1px; }
-.stock-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; }
-.stock-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
-.p-up   { color: #FF4B4B !important; font-weight: 900; }
-.p-down { color: #4B9EFF !important; font-weight: 900; }
-.p-flat { color: #888 !important; }
-
-/* 스코어보드 및 기타 요소들 */
-.scoreboard { background: linear-gradient(135deg, #0A0F1C, #1A1C2E); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
-.score-number { font-size: 3.5rem !important; font-weight: 900; color: #00FF88 !important; text-shadow: 0 0 15px rgba(0,255,136,0.4); line-height: 1; }
-.team-label   { font-size: 1.2rem; font-weight: 900; color: #FFF !important; margin-bottom: 6px; }
-.match-time   { font-family: 'Orbitron'; color: #00E5FF !important; font-size: 1rem; margin-top: 14px; }
-.commentary-item { background: rgba(255,255,255,0.03); border-left: 3px solid #00E5FF; padding: 10px 14px; margin: 6px 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; color: #CCC !important; }
-.news-banner { background: linear-gradient(135deg, rgba(255,214,0,0.1), rgba(255,100,0,0.05)); border: 1px solid rgba(255,214,0,0.3); border-radius: 10px; padding: 12px 18px; font-weight: 700; color: #FFD600 !important; margin: 12px 0; font-size: 0.95rem; }
-.estate-card { background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 18px 22px; margin: 10px 0; }
-.estate-income { color: #00FF88 !important; font-weight: 900; font-size: 0.9rem; }
-.market-listing { background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
-.market-initial { background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
-.my-listing { background: rgba(255, 214, 0, 0.05); border: 1px solid rgba(255, 214, 0, 0.2); border-radius: 12px; padding: 16px 20px; margin: 8px 0; }
-.lotto-pool { background: linear-gradient(135deg, #11052C, #2A0845); border: 1px solid rgba(255, 0, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.6); }
-.lotto-amount { font-size: 2.5rem !important; color: #FF00FF !important; text-shadow: 0 0 15px rgba(255,0,255,0.5); font-weight: 900; }
-.vip-banner { background: linear-gradient(135deg, #2A1A00, #4A2500); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 0 20px rgba(255,214,0,0.1); }
-.slot-display { font-size: 3.5rem; text-align: center; padding: 20px; background: rgba(0,0,0,0.6); border: 1px inset rgba(255,214,0,0.2); border-radius: 14px; letter-spacing: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
-.question-box { background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 28px; line-height: 1.8; font-size: 1.1rem; color: #FFF !important; }
-.mine-card { background: linear-gradient(135deg, rgba(139,69,19,0.15), rgba(0,0,0,0.3)); border: 1px solid rgba(205,127,50,0.3); border-radius: 14px; padding: 20px; text-align: center; }
-
-/* 거래 기록 */
-.tx-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
-.cooldown-badge { background: rgba(255, 75, 75, 0.1); border: 1px solid rgba(255, 75, 75, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #FF4B4B !important; display: inline-block; margin-left: 8px; font-weight: 700; }
-
-/* ===================================================
-   🚨 직관적인 심플 빨간색 빈 버튼 (클릭 버그 완벽 수정)
-   =================================================== */
-/* 내부 요소(아이콘 등)를 삭제하지 않고 투명도만 0으로 만들어 클릭 센서 유지 */
-[data-testid="collapsedControl"] *,
-[data-testid="stSidebarCollapseButton"] * {
-    opacity: 0 !important; 
-    font-size: 0 !important;
-}
-
-/* 열기/닫기 버튼 공통 빨간 박스 디자인 */
+/* 빨간색 긴급 제어 버튼 (통제소/사이드바) */
 [data-testid="collapsedControl"],
-[data-testid="stSidebarCollapseButton"] {
+[data-testid="stSidebarCollapseButton"] {{
     background-color: #FF4B4B !important; 
     border: 2px solid #FF0000 !important;
     border-radius: 8px !important;
     width: 40px !important;
     height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
     box-shadow: 0 4px 10px rgba(255, 75, 75, 0.5) !important;
-    transition: all 0.2s ease !important;
     z-index: 999999 !important;
     cursor: pointer !important;
-}
+}}
 
-/* 열기 버튼 위치 (왼쪽 위) */
-[data-testid="collapsedControl"] {
-    margin-top: 15px !important;
-    margin-left: 15px !important;
-}
-
-/* 닫기 버튼 위치 (사이드바 안쪽 우측 상단) */
-[data-testid="stSidebarCollapseButton"] {
-    margin-top: 0 !important;
-    margin-left: 0 !important;
-}
-
-/* 마우스 호버(올렸을 때) 액션 */
-[data-testid="collapsedControl"]:hover,
-[data-testid="stSidebarCollapseButton"]:hover {
-    background-color: #FF0000 !important;
-    transform: scale(1.05) !important;
-}
-
-/* 📱 모바일 화면용 설정 (화면이 768px 이하일 때 자동 적용) */
-@media (max-width: 768px) {
-    .block-container { 
-        zoom: 0.92; 
-        padding-top: 2rem !important; 
-        padding-left: 0.5rem !important; 
-        padding-right: 0.5rem !important; 
-        padding-bottom: 2rem !important; 
-    }
-    div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
-    div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; }
-    p,span,label,td,th { font-size:0.85rem !important; }
-    h1 { font-size:1.4rem !important; }
-    h2 { font-size:1.1rem !important; }
-    h3 { font-size:0.95rem !important; }
-    .stButton>button { height:40px !important; font-size:0.85rem !important; }
-    .score-number { font-size:2.2rem !important; }
-    .lotto-amount { font-size:1.4rem !important; }
-    .card { padding: 10px !important; margin: 4px 0 !important; }
-    .estate-card, .market-listing, .market-initial { padding: 10px !important; margin: 6px 0 !important; }
-    [data-testid="stMetric"] { padding: 8px 12px !important; }
-    html, body, .stApp {
-        overflow-x: hidden !important;
-        max-width: 100vw !important;
-    }
-    * {
-        word-break: keep-all !important;
-        overflow-wrap: break-word !important;
-    }
-    div[style*="display: flex"], div[style*="display:flex"] {
-        flex-wrap: wrap !important;
-    }
-    .stock-table {
-        display: block !important;
-        overflow-x: auto !important;
-        white-space: nowrap !important;
-    }
-    .stock-table th, .stock-table td { 
-        padding: 6px 8px !important; 
-        font-size: 0.78rem !important; 
-    }
-}
-
-/* 💻 PC 화면용 설정 (화면이 769px 이상일 때 자동 적용) */
-@media (min-width: 769px) {
-    p,span,label,td,th,.stSelectbox label { font-size:1rem !important; }
-    .stButton>button { height:52px !important; font-size:1rem !important; }
-}
+/* 모바일 최적화 */
+@media (max-width: 768px) {{
+    .block-container {{ zoom: 0.92; padding-top: 2rem !important; }}
+    .stButton>button {{ height:40px !important; font-size:0.85rem !important; }}
+}}
 """
 st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
 
-
+# ==============================
+# 🔄 세션 데이터 및 DB 동기화
+# ==============================
 
 if 'logged_in_user' in st.session_state:
-    us_check = load_db(USERS_FILE, {})
+    # 1회만 DB 로드하여 세션에 주입 (불필요한 반복 로드 방지)
+    us_db = load_db(USERS_FILE, {})
     my_uid = st.session_state.logged_in_user
-    if my_uid in us_check:
-        db_user = us_check[my_uid]
-        st.session_state.global_cash = db_user.get('cash', 0)
-        st.session_state.real_estate = db_user.get('real_estate', {})
-        st.session_state.loan = db_user.get('loan', 0)
-        st.session_state.inventory = db_user.get('inventory', [])
+    
+    if my_uid in us_db:
+        u = us_db[my_uid]
+        # 실시간 동기화가 필요한 핵심 자산 데이터 업데이트
+        st.session_state.global_cash = u.get('cash', 0)
+        st.session_state.real_estate = u.get('real_estate', {})
+        st.session_state.loan = u.get('loan', 0)
+        st.session_state.inventory = u.get('inventory', [])
+        st.session_state.equipped_title = u.get('equipped_title', '🌱 신규시민')
+        st.session_state.portfolio = u.get('portfolio', {})
+        st.session_state.crypto_portfolio = u.get('crypto_portfolio', {})
+        st.session_state.weapon_level = u.get('weapon_level', 0)
+        
+        # [신규] 일일 퀘스트 및 차고지 데이터 세션 주입
+        st.session_state.daily_quests = u.get('daily_quests', {})
+        st.session_state.garage = u.get('garage', {'cars': {}, 'active_tier': None})
 
-
+# 마켓 정보 로드 및 현재 시간 정의
 market = get_market() 
-cur_t  = time.time()
+cur_t = time.time()
 # ==============================
 # 🔐 로그인
 # ==============================
@@ -1981,9 +1867,11 @@ elif menu == "🏢 부동산 거래소":
                             target = next((x for x in em3["listings"] if x["id"] == li["id"]), None)
                             if target is None:
                                 st.error("⚠️ 이미 판매된 매물입니다.")
+                            elif target["seller"] == uid:
+                                st.error("⚠️ 본인이 등록한 매물은 직접 구매할 수 없습니다.")
                             elif st.session_state.global_cash >= target["price"]:
                                 set_cooldown(cd_key)
-                                st.session_state.global_cash -= target["price"]
+                                # 구매 처리 전 다시 한번 잔액 및 수량 검증 로직 통과 후 진행
                                 st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
                                 if uid not in em3["owner_counts"]:
                                     em3["owner_counts"][uid] = {}
@@ -4327,7 +4215,12 @@ elif menu == "🎴 가챠 뽑기":
                     "#00E5FF" if "희귀" in item['grade'] else
                     "#00FF88" if "일반" in item['grade'] else "#888"
                 )
-                if item['name'] not in st.session_state.inventory:
+                # 중복 획득 방지 및 아이템 처리
+                if item['type'] == "title":
+                    if item['name'] not in st.session_state.inventory:
+                        st.session_state.inventory.append(item['name'])
+                else:
+                    # 아이템 타입(파괴방지권 등)은 중복 허용
                     st.session_state.inventory.append(item['name'])
 
                 # ▼ 들여쓰기 문제를 없애기 위해 한 줄로 깔끔하게 합쳤습니다.
@@ -4381,23 +4274,9 @@ elif menu == "🛠️ 창조주 통제소":
         u_db = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "admin"]
 
-        # 1회성 비밀번호 해시 마이그레이션 (중복 코드 제거됨)
-        if 'pw_migrated' not in st.session_state:
-            migrated = False
-            for _uid, _udata in u_db.items():
-                if _uid == "admin": continue
-                pw_val = _udata.get('pw', '')
-                if len(pw_val) != 64 and pw_val:  
-                    u_db[_uid]['pw'] = hash_pw(pw_val)
-                    migrated = True
-            
-            if migrated:
-                save_db(USERS_FILE, u_db)
-            st.session_state.pw_migrated = True
-
-        # 유저 선택 (중복 위젯 에러 해결됨)
+        # 유저 선택
         if uid_list:
-            sel_u  = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
+            sel_u = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
             u_data = u_db[sel_u]
 
             c1, c2 = st.columns(2)
@@ -4410,6 +4289,7 @@ elif menu == "🛠️ 창조주 통제소":
                 parsed_loan = parse_creator_money(raw_loan)
                 final_cash = parsed_cash if parsed_cash is not None else int(u_data.get('cash', 0))
                 final_loan = parsed_loan if parsed_loan is not None else int(u_data.get('loan', 0))
+                
                 st.markdown(f"""
                 <div style='background:rgba(0,229,255,0.1);padding:15px;border-radius:10px;border:1px solid #00E5FF;margin-top:10px;'>
                   <div style='color:#00E5FF;font-size:0.8rem;'>▼ 적용 예정 금액</div>
@@ -4418,6 +4298,7 @@ elif menu == "🛠️ 창조주 통제소":
                     <b>대출:</b> {format_korean_money(final_loan)}
                   </div>
                 </div>""", unsafe_allow_html=True)
+            
             with c2:
                 st.markdown("##### 👑 신분 개조")
                 new_title = st.text_input("칭호 수정", value=u_data.get('equipped_title',''), key="admin_title_input")
@@ -4425,20 +4306,30 @@ elif menu == "🛠️ 창조주 통제소":
                 st.metric("현재 현금", format_korean_money(u_data.get('cash', 0)))
                 st.metric("현재 대출", format_korean_money(u_data.get('loan', 0)))
 
+            # 버튼 행 1: 자산 및 계정 관리
+            st.write("")
             c_btn1, c_btn2, c_btn3 = st.columns(3)
             if c_btn1.button("🔥 유저 데이터 강제 개조", use_container_width=True):
                 u_db[sel_u]['cash'] = final_cash
                 u_db[sel_u]['loan'] = final_loan
                 u_db[sel_u]['equipped_title'] = new_title
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u} 유저 조작 완료!"); st.rerun()
+                save_db(USERS_FILE, u_db)
+                st.success(f"✅ {sel_u} 유저 조작 완료!")
+                st.rerun()
             
             if c_btn2.button("🕊️ 신용 대사면 (빚 전액 탕감)", use_container_width=True):
                 u_db[sel_u]['loan'] = 0
-                if u_db[sel_u]['equipped_title'] == "💸 신용불량자": u_db[sel_u]['equipped_title'] = "🌱 신규시민"
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u} 유저의 빚을 모두 탕감했습니다!"); st.rerun()
+                if u_db[sel_u]['equipped_title'] == "💸 신용불량자": 
+                    u_db[sel_u]['equipped_title'] = "🌱 신규시민"
+                save_db(USERS_FILE, u_db)
+                st.success(f"✅ {sel_u} 유저의 빚을 모두 탕감했습니다!")
+                st.rerun()
 
             if c_btn3.button("🗑️ 해당 유저 계정 삭제", use_container_width=True, type="secondary"):
-                del u_db[sel_u]; save_db(USERS_FILE, u_db); st.rerun()
+                del u_db[sel_u]
+                save_db(USERS_FILE, u_db)
+                st.success("유저 삭제 완료")
+                st.rerun()
                 
             st.write("---")
             st.markdown("##### 🗡️ 전설의 명검 강제 통제소")
@@ -4446,19 +4337,26 @@ elif menu == "🛠️ 창조주 통제소":
             
             if c_w1.button("👑 신의 망치 (+15강 투척)", use_container_width=True):
                 u_db[sel_u]['weapon_level'] = 15
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}에게 엑스칼리버를 하사했습니다!"); st.rerun()
+                save_db(USERS_FILE, u_db)
+                st.success(f"✅ {sel_u}에게 엑스칼리버를 하사했습니다!")
+                st.rerun()
                 
             if c_w2.button("💀 파괴의 저주 (다음 강화 무조건 파괴)", use_container_width=True):
                 u_db[sel_u]['cursed_forge'] = True
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}의 무기에 저주를 내렸습니다!"); st.rerun()
+                save_db(USERS_FILE, u_db)
+                st.success(f"✅ {sel_u}의 무기에 저주를 내렸습니다!")
+                st.rerun()
                 
             if c_w3.button("🔨 무기 강제 압수 (0강으로)", use_container_width=True):
                 u_db[sel_u]['weapon_level'] = 0
-                save_db(USERS_FILE, u_db); st.success(f"✅ {sel_u}의 무기를 분쇄했습니다!"); st.rerun()
+                save_db(USERS_FILE, u_db)
+                st.success(f"✅ {sel_u}의 무기를 분쇄했습니다!")
+                st.rerun()
 
             st.write("---")
-            st.markdown("##### 🎒 인벤토리 강제 조작")
+            st.markdown("##### 🎒 인벤토리 관리")
             give_title = st.text_input("지급할 칭호명 입력", placeholder="예: 👑 [유일무이] 테스트", key="give_title_input")
+            
             gc1, gc2 = st.columns(2)
             if gc1.button("🎁 칭호 강제 지급 + 장착", use_container_width=True):
                 if give_title.strip():
@@ -4467,8 +4365,9 @@ elif menu == "🛠️ 창조주 통제소":
                         u_db[sel_u]['inventory'].append(give_title)
                     u_db[sel_u]['equipped_title'] = give_title
                     save_db(USERS_FILE, u_db)
-                    st.success(f"✅ {sel_u}에게 [{give_title}] 지급 + 장착 완료!")
+                    st.success(f"✅ {sel_u}에게 [{give_title}] 지급 완료!")
                     st.rerun()
+
             if gc2.button("🗑️ 인벤토리 전체 초기화", use_container_width=True, type="secondary"):
                 u_db[sel_u]['inventory'] = []
                 u_db[sel_u]['equipped_title'] = "🌱 신규시민"
@@ -4476,33 +4375,52 @@ elif menu == "🛠️ 창조주 통제소":
                 st.success(f"✅ {sel_u} 인벤토리 초기화 완료!")
                 st.rerun()
 
+            # 신규 추가: 인벤토리 개별 압수 (사각지대 보강)
+            st.write("")
+            st.markdown("<div style='font-size:0.9rem; color:#888;'>👇 특정 아이템만 조준하여 압수</div>", unsafe_allow_html=True)
+            current_inv = u_db[sel_u].get('inventory', [])
+            if current_inv:
+                target_item = st.selectbox("압수할 아이템/칭호 선택", current_inv, key=f"admin_seize_{sel_u}")
+                if st.button(f"🔥 [{target_item}] 강제 압수", use_container_width=True):
+                    u_db[sel_u]['inventory'].remove(target_item)
+                    if u_db[sel_u].get('equipped_title') == target_item:
+                        u_db[sel_u]['equipped_title'] = "🌱 신규시민"
+                    save_db(USERS_FILE, u_db)
+                    st.success(f"✅ {sel_u}의 [{target_item}] 압수 완료!")
+                    st.rerun()
+
             st.write("---")
-            st.markdown("##### 🪙 코인/주식 포트폴리오 강제 초기화")
+            st.markdown("##### 🪙 포트폴리오 강제 초기화")
             pa1, pa2, pa3 = st.columns(3)
             if pa1.button("📈 주식 포트폴리오 초기화", use_container_width=True):
                 u_db[sel_u]['portfolio'] = {}
                 save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 주식 포트폴리오 초기화!"); st.rerun()
+                st.success(f"✅ {sel_u} 주식 리셋 완료")
+                st.rerun()
             if pa2.button("🪙 코인 포트폴리오 초기화", use_container_width=True):
                 u_db[sel_u]['crypto_portfolio'] = {}
                 save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 코인 포트폴리오 초기화!"); st.rerun()
+                st.success(f"✅ {sel_u} 코인 리셋 완료")
+                st.rerun()
             if pa3.button("📅 일퀘 강제 초기화", use_container_width=True):
                 u_db[sel_u]['daily_quests'] = {}
                 save_db(USERS_FILE, u_db)
-                st.success(f"✅ {sel_u} 일퀘 초기화!"); st.rerun()
+                st.success("일퀘 리셋 완료")
+                st.rerun()
 
         else:
             st.info("관리할 유저가 없습니다.")
 
     with t2:
-        u_db   = load_db(USERS_FILE, {})
+        st.markdown("### 🏢 부동산 시장 통제 센터")
+        u_db = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "admin"]
-        # 1. 부동산 신규 공급 물량 조작 (새로 추가된 기능!)
-        st.markdown("### 🏗️ 부동산 신규 공급량(초기 재고) 조작")
-        st.caption("운영사 직판 물량(initial_stock)을 늘리거나 줄여서 시장에 개입합니다.")
-        
         em_admin = load_estate_market()
+
+        # 1. 부동산 신규 공급량(초기 재고) 조작
+        st.markdown("#### 🏗️ 신규 공급(분양) 물량 조작")
+        st.caption("운영사 직판 물량의 한도를 늘리거나 줄여 시장 가격 형성에 개입합니다.")
+        
         initial_stock_data = em_admin.get("initial_stock", {eid: info["total_supply"] for eid, info in estate_config.items()})
         
         c_sup1, c_sup2, c_sup3, c_sup4 = st.columns([3, 2, 2, 2])
@@ -4511,62 +4429,60 @@ elif menu == "🛠️ 창조주 통제소":
             sup_eid = st.selectbox(
                 "조작할 매물 선택", 
                 list(estate_config.keys()), 
-                format_func=lambda x: f"{estate_config[x]['icon']} {estate_config[x]['name']} (기본공급: {estate_config[x]['total_supply']}개)"
+                format_func=lambda x: f"{estate_config[x]['icon']} {estate_config[x]['name']} (기본: {estate_config[x]['total_supply']}개)",
+                key="admin_re_sup_sel"
             )
         
         owned_total = sum(v.get(sup_eid, 0) for v in em_admin["owner_counts"].values())
         listed_count = sum(1 for l in em_admin["listings"] if l["eid"] == sup_eid)
         initial_released = owned_total + listed_count
-        
         current_limit = initial_stock_data.get(sup_eid, estate_config[sup_eid]["total_supply"])
         remaining_sup = max(0, current_limit - initial_released)
         
         with c_sup2:
             st.write("")
-            st.markdown(f"**현재 설정 한도:** {current_limit}개")
-            st.markdown(f"**마켓 잔여 물량:** <b style='color:#00FF88;'>{remaining_sup}개</b>", unsafe_allow_html=True)
+            st.markdown(f"**현재 한도:** {current_limit}개")
+            st.markdown(f"**마켓 잔량:** <b style='color:#00FF88;'>{remaining_sup}개</b>", unsafe_allow_html=True)
             
         with c_sup3:
-            sup_mod = st.number_input("조작 수량 (개)", min_value=1, step=1, value=1)
+            sup_mod = st.number_input("조작 수량 (개)", min_value=1, step=1, value=1, key="admin_re_sup_val")
             
         with c_sup4:
             st.write("")
             st.write("")
             col_a, col_b = st.columns(2)
-            with col_a:
-                if st.button("➕ 늘리기", use_container_width=True):
-                    initial_stock_data[sup_eid] = current_limit + sup_mod
-                    em_admin["initial_stock"] = initial_stock_data
-                    save_estate_market(em_admin)
-                    market['news'] = f"🏗️ [운영사 공지] {estate_config[sup_eid]['name']} 신규 분양 물량이 {sup_mod}개 추가되었습니다!"
-                    save_market(market)
-                    st.success("물량 추가 완료!")
-                    st.rerun()
-            with col_b:
-                if st.button("➖ 줄이기", use_container_width=True):
-                    new_limit = max(initial_released, current_limit - sup_mod)
-                    initial_stock_data[sup_eid] = new_limit
-                    em_admin["initial_stock"] = initial_stock_data
-                    save_estate_market(em_admin)
-                    st.success("물량 축소 완료!")
-                    st.rerun()
+            if col_a.button("➕ 늘리기", use_container_width=True):
+                initial_stock_data[sup_eid] = current_limit + sup_mod
+                em_admin["initial_stock"] = initial_stock_data
+                save_estate_market(em_admin)
+                market['news'] = f"🏗️ [분양 속보] {estate_config[sup_eid]['name']} 신규 물량 {sup_mod}개가 추가 승인되었습니다!"
+                save_market(market)
+                st.success("공급량 추가 완료!")
+                st.rerun()
+            if col_b.button("➖ 줄이기", use_container_width=True):
+                new_limit = max(initial_released, current_limit - sup_mod)
+                initial_stock_data[sup_eid] = new_limit
+                em_admin["initial_stock"] = initial_stock_data
+                save_estate_market(em_admin)
+                st.success("공급량 축소 완료!")
+                st.rerun()
 
         st.write("---")
 
-        # 2. 기존 특정 유저 부동산 압수 (몰수)
-        st.markdown("### 🏢 특정 유저 부동산 강제 압수 (몰수)")
+        # 2. 특정 유저 부동산 강제 압수 (몰수)
+        st.markdown("#### 🏢 유저 부동산 강제 압수")
         if uid_list:
-            re_target = st.selectbox("압수할 대상 유저", uid_list, key="re_target_u")
+            re_target = st.selectbox("압수 대상 유저 선택", uid_list, key="admin_re_target_u")
             u_re = u_db[re_target].get('real_estate', {})
             
             if not u_re:
-                st.info(f"{re_target} 유저는 보유 중인 부동산이 없습니다.")
+                st.info(f"{re_target}님은 보유한 부동산이 없습니다.")
             else:
                 c1, c2, c3 = st.columns([3, 2, 2])
                 with c1:
-                    re_eid = st.selectbox("압수할 매물 선택", list(u_re.keys()), format_func=lambda x: f"{estate_config[x]['icon']} {estate_config[x]['name']} (보유: {u_re[x]}채)")
+                    re_eid = st.selectbox("압수 매물 선택", list(u_re.keys()), format_func=lambda x: f"{estate_config[x]['icon']} {estate_config[x]['name']} (보유: {u_re[x]}채)", key="admin_re_seize_sel")
                 with c2:
-                    re_cnt = st.number_input("압수할 수량", min_value=1, max_value=u_re[re_eid], step=1)
+                    re_cnt = st.number_input("압수 수량", min_value=1, max_value=u_re[re_eid], step=1, key="admin_re_seize_cnt")
                 with c3:
                     st.write("") 
                     st.write("")
@@ -4581,52 +4497,47 @@ elif menu == "🛠️ 창조주 통제소":
                             if em_admin["owner_counts"][re_target][re_eid] <= 0:
                                 del em_admin["owner_counts"][re_target][re_eid]
                         save_estate_market(em_admin)
-
-                        st.toast(f"✅ {re_target} 유저의 부동산 환수 완료!", icon="🏢")
+                        st.toast(f"✅ {re_target}의 부동산을 국가로 환수했습니다.", icon="🏢")
                         st.rerun()
-        else:
-             st.info("관리할 유저가 없습니다.")
 
         st.write("---")
         
         # 3. 유저 등록 중고 매물 강제 삭제
-        st.markdown("### 🔄 유저 등록 중고 매물 강제 삭제")
-        if em_admin["listings"]:
+        st.markdown("#### 🔄 유저 중고 매물 관리")
+        if em_admin.get("listings"):
             for li in em_admin["listings"]:
                 info = estate_config.get(li["eid"], {})
                 ca, cb = st.columns([5, 1])
-                ca.markdown(f"**{info.get('icon','')} {info.get('name','?')}** — 판매자: `{li['seller']}` — {format_korean_money(li['price'])}")
+                ca.markdown(f"**{info.get('icon','')} {info.get('name','?')}** | 판매자: `{li['seller']}` | {format_korean_money(li['price'])}")
                 if cb.button("강제삭제", key=f"admin_del_re_{li['id']}"):
                     em_admin["listings"] = [x for x in em_admin["listings"] if x["id"] != li["id"]]
-                    save_estate_market(em_admin); st.rerun()
+                    save_estate_market(em_admin)
+                    st.rerun()
         else:
-            st.info("현재 유저가 등록한 중고 매물이 없습니다.")
+            st.info("현재 등록된 유저 중고 매물이 없습니다.")
             
         st.write("---")
         
         # 4. 부동산 마켓 전체 초기화
-        st.markdown("### 💣 부동산 마켓 전체 초기화")
-        if st.button("🔄 부동산 마켓 전체 초기화 (경매장 싹쓸이 & 전 유저 몰수 & 공급량 리셋)", type="secondary"):
+        st.markdown("#### 💣 부동산 전체 리셋")
+        if st.button("🔄 마켓 완전 초기화 (경매장 삭제 + 전 유저 몰수 + 공급 리셋)", type="secondary", use_container_width=True):
             # 1. 마켓 DB 초기화
-            save_estate_market({"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}})
+            new_em = {"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}}
+            save_estate_market(new_em)
             
-            # 2. 모든 유저의 개인 부동산 보유 내역 싹쓸이
+            # 2. 전 유저 보유 내역 삭제
             u_db_reset = load_db(USERS_FILE, {})
             now_time = time.time()
-            for uid_k in u_db_reset:
-                u_db_reset[uid_k]['real_estate'] = {} 
-                u_db_reset[uid_k]['rent_time'] = now_time 
+            for u_k in u_db_reset:
+                u_db_reset[u_k]['real_estate'] = {} 
+                u_db_reset[u_k]['rent_time'] = now_time 
             save_db(USERS_FILE, u_db_reset)
             
-            # 3. 현재 접속 중인 창조주(어드민) 세션 동기화
-            st.session_state.real_estate = {}
-            st.session_state.rent_time = now_time
-            
-            # 👇 [핵심] 접속 중인 다른 유저들의 브라우저도 털어버리도록 마켓에 '리셋 신호'를 발송!
+            # 3. 동기화 신호 발송
             market['force_estate_reset'] = now_time
             save_market(market)
             
-            st.toast("💣 부동산 마켓 초기화 완료!", icon="💣")
+            st.success("💣 전 우주의 부동산이 국유화(초기화)되었습니다.")
             st.rerun()
 
     with t3:
@@ -4849,34 +4760,6 @@ elif menu == "🛠️ 창조주 통제소":
         else: st.info("등록된 유저가 없습니다.")
 
         st.write("---")
-        st.markdown("### 💾 데이터베이스 파일 상태")
-        for f in [USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE]:
-            exists = "✅ 정상" if os.path.exists(f) else "❌ 없음"
-            size = f"{os.path.getsize(f):,} bytes" if os.path.exists(f) else "—"
-            st.markdown(f"<div style='color:#ccc;font-size:0.9rem;'>{exists} | <b>{f}</b> ({size})</div>", unsafe_allow_html=True)
-            
-        st.write("---")
-        st.markdown("### 🚨 긴급 데이터 백업 (다운로드)")
-        
-        # 파일이 존재하면 다운로드 버튼 생성
-        if os.path.exists(USERS_FILE):
-            with open(USERS_FILE, "rb") as f:
-                st.download_button("📥 유저 데이터 (users_db) 백업", f, file_name=f"backup_{USERS_FILE}", mime="application/json")
-                
-        if os.path.exists(MARKET_FILE):
-            with open(MARKET_FILE, "rb") as f:
-                st.download_button("📥 시장 데이터 (market_db) 백업", f, file_name=f"backup_{MARKET_FILE}", mime="application/json")
-                
-        if os.path.exists(REALESTATE_MARKET_FILE):
-            with open(REALESTATE_MARKET_FILE, "rb") as f:
-                st.download_button("📥 부동산 데이터 백업", f, file_name=f"backup_{REALESTATE_MARKET_FILE}", mime="application/json")
-
-        bak_file = USERS_FILE + ".bak"
-        if os.path.exists(bak_file):
-            with open(bak_file, "rb") as f:
-                st.download_button("🆘 긴급 구조! .bak 파일 다운로드", f, file_name="users_db.json.bak", mime="application/json")
-
-        st.write("---")
         st.markdown("### 👑 히든 칭호 발급 현황")
         st.caption("초기화하면 해당 칭호를 다음 달성자가 다시 받을 수 있습니다.")
         hidden_titles = market.get('hidden_titles', {})
@@ -5018,162 +4901,130 @@ elif menu == "🛠️ 창조주 통제소":
                         st.rerun()
         else:
             st.info("관리할 유저가 없습니다.")   
+    요청하신 대로 시즌 관리(with t9:) 탭을 완전히 개편하겠습니다. 이제 시스템이 자동으로 처리하던 부분까지 포함하여 시즌 번호, 시작일, 종료일을 창조주가 수동으로 조작하고 버튼 클릭 시 즉시 DB에 저장되도록 수정했습니다.
+
+이 코드는 기존의 with t9: 섹션을 통째로 지우고 덮어씌우시면 됩니다.
+
+🛠️ 시즌 관리 탭 전체 교체 코드 (with t9:)
+Python
     with t9:
-        st.markdown("### 🏆 시즌 관리")
-        cur_season    = market.get('season_num', 1)
-        season_end_ts = market.get('season_end', 0)
-        season_end_dt = datetime.fromtimestamp(season_end_ts, KST).strftime("%Y-%m-%d %H:%M")
-        remain_sec    = max(0, int(season_end_ts - time.time()))
-        remain_day    = remain_sec // 86400
-        remain_hr     = (remain_sec % 86400) // 3600
+        st.markdown("### 🏆 시즌 시스템 수동 통제")
+        st.caption("시즌 정보는 우주 전체 경제 시스템의 핵심입니다. 수정 후 즉시 DB에 반영됩니다.")
 
-        st.markdown(f"""
-        <div style='background:rgba(0,229,255,0.08);border:1px solid #00E5FF;
-             border-radius:12px;padding:20px;margin-bottom:16px;'>
-          <div style='color:#888;font-size:0.82rem;'>현재 운영 중인 시즌</div>
-          <div style='font-size:2rem;font-weight:900;color:#FFD600;'>시즌 {cur_season}</div>
-          <div style='color:#94A3B8;margin-top:8px;'>종료 예정: <b style='color:#FF00FF;'>{season_end_dt}</b></div>
-          <div style='color:#94A3B8;'>잔여: <b style='color:#00FF88;'>{remain_day}일 {remain_hr}시간</b></div>
-        </div>
-        """, unsafe_allow_html=True)
+        # 현재 마켓 데이터 로드
+        m_data = get_market()
+        cur_sn = m_data.get('season_num', 1)
+        start_ts = m_data.get('season_start', time.time())
+        end_ts = m_data.get('season_end', time.time() + 30 * 86400)
 
-        # ---------------------------------------------------------
-        # 🛠️ 신규 추가: 시즌 번호 강제 조정 (DB 직접 수정 도구)
-        # ---------------------------------------------------------
-        st.markdown("#### 🛠️ 시즌 번호 강제 조정")
-        st.caption("화면에 표시되는 시즌 번호가 실제와 다를 경우 수동으로 맞춥니다.")
-        c_sn1, c_sn2 = st.columns([3, 1])
-        with c_sn1:
-            new_sn = st.number_input("변경할 시즌 번호", min_value=1, value=int(cur_season), key="admin_manual_sn")
-        with c_sn2:
-            st.write("") # 간격 맞춤
-            st.write("")
-            if st.button("🪄 즉시 변경", use_container_width=True):
-                market['season_num'] = new_sn
-                save_market(market)
-                st.success(f"시즌 번호가 {new_sn}으로 변경되었습니다.")
-                st.rerun()
+        # 1. 날짜 및 번호 설정 영역
+        st.markdown("#### 📅 일정 및 기수 설정")
+        col_s1, col_s2, col_s3 = st.columns(3)
+        
+        with col_s1:
+            new_sn = st.number_input("시즌 번호 (기수)", min_value=1, value=int(cur_sn), key="adm_sn_input")
+        with col_s2:
+            # 타임스탬프를 datetime 객체로 변환하여 입력창에 표시
+            s_date = st.date_input("시즌 시작일", datetime.fromtimestamp(start_ts, KST))
+            s_time = st.time_input("시즌 시작시간", datetime.fromtimestamp(start_ts, KST))
+        with col_s3:
+            e_date = st.date_input("시즌 종료일", datetime.fromtimestamp(end_ts, KST))
+            e_time = st.time_input("시즌 종료시간", datetime.fromtimestamp(end_ts, KST))
 
-        st.write("---")
+        # 설정된 날짜를 다시 타임스탬프로 결합
+        final_start_ts = datetime.combine(s_date, s_time, tzinfo=KST).timestamp()
+        final_end_ts = datetime.combine(e_date, e_time, tzinfo=KST).timestamp()
 
-        st.markdown("### 📅 시즌 종료일 수동 조정")
-        new_days = st.number_input("지금부터 몇 일 후에 시즌 종료?", min_value=1, max_value=90, value=30)
-        if st.button("📅 시즌 종료일 변경", use_container_width=True):
-            market['season_end'] = time.time() + new_days * 86400
-            save_market(market)
-            st.success(f"✅ {new_days}일 후로 시즌 종료일 설정 완료!")
+        if st.button("💾 시즌 설정 정보 강제 업데이트", use_container_width=True):
+            m_data['season_num'] = new_sn
+            m_data['season_start'] = final_start_ts
+            m_data['season_end'] = final_end_ts
+            save_market(m_data)
+            st.success(f"✅ 시즌 {new_sn} 설정이 DB에 영구 저장되었습니다.")
             st.rerun()
 
         st.write("---")
+
+        # 2. 경제 리셋 (시즌 종료 트리거)
+        st.markdown("#### 💣 경제 시스템 수동 리셋")
+        st.caption("주의: 이 버튼은 현재 모든 유저의 현금, 주식, 코인, 부동산을 몰수하고 새 시즌 지원금(5억)만 남깁니다.")
         
-        st.markdown("### ⚡ 시즌 즉시 강제 종료")
-        st.caption("⚠️ **경제 자산(돈, 주식, 코인, 부동산)만 리셋**됩니다. 칭호, 명검, 차량, 클랜은 유지됩니다.")
-        
-        if st.button("💣 시즌 즉시 종료 & 경제 리셋 실행", use_container_width=True, type="secondary"):
-            # ① 시즌 종료 트리거 설정
-            market['season_end'] = time.time() - 1
+        reset_confirm = st.checkbox("데이터 삭제 및 경제 리셋에 동의합니다.")
+        if st.button("⚡ 즉시 경제 리셋 실행 (성장 자산 보존형)", use_container_width=True, type="secondary", disabled=not reset_confirm):
+            # 1. 모든 유저 자산 리셋 로직
+            us_reset = load_db(USERS_FILE, {})
+            now_t = time.time()
             
-            # ② 모든 유저 자산 리셋 (성장 자산 보존형)
-            us_instant = load_db(USERS_FILE, {})
-            rd_instant = []
+            # 우승자 선정을 위한 순자산 계산
+            rank_list = []
+            for u_id, u_info in us_reset.items():
+                if u_id == 'admin': continue
+                # 순자산 계산 (함수 재사용)
+                val = get_net_worth(u_id, m_data)
+                rank_list.append((u_id, val))
             
-            for uid_i, udata_i in us_instant.items():
-                if uid_i == 'admin': continue
-                
-                # 순위 계산용 순자산 측정
-                w_i = udata_i.get('cash', 0) - udata_i.get('loan', 0)
-                for sid_i, p_i in udata_i.get('portfolio', {}).items():
-                    if sid_i in market['stock_data']:
-                        w_i += p_i.get('qty', 0) * market['stock_data'][sid_i]['price']
-                for eid_i, cnt_i in udata_i.get('real_estate', {}).items():
-                    if eid_i in estate_config:
-                        w_i += estate_config[eid_i]['base_price'] * cnt_i * 0.8
-                w_lv_i = udata_i.get('weapon_level', 0)
-                if w_lv_i > 0: w_i += FORGE_DATA[w_lv_i]['sell']
-                
-                rd_instant.append((uid_i, w_i))
-
-            # 랭킹 정렬 및 상위 3인 칭호 지급
-            rd_instant.sort(key=lambda x: x[1], reverse=True)
-            sn_i = market.get('season_num', 1)
-            season_titles_i = [
-                f"🥇 [시즌{sn_i}] 전설의 우승자",
-                f"🥈 [시즌{sn_i}] 준우승의 영광",
-                f"🥉 [시즌{sn_i}] 시즌 3위",
-            ]
+            rank_list.sort(key=lambda x: x[1], reverse=True)
             
-            record_i = {}
-            for idx_i, (uid_i, w_i) in enumerate(rd_instant[:3]):
-                title_i = season_titles_i[idx_i]
-                record_i[f"rank{idx_i+1}"] = uid_i
-                if uid_i in us_instant:
-                    if title_i not in us_instant[uid_i].get('inventory', []):
-                        us_instant[uid_i].setdefault('inventory', []).append(title_i)
-                    us_instant[uid_i]['equipped_title'] = title_i
+            # 우승자 칭호 지급 로직
+            season_titles = [f"🥇 [시즌{cur_sn}] 우승자", f"🥈 [시즌{cur_sn}] 준우승", f"🥉 [시즌{cur_sn}] 3위"]
+            record_entry = {}
+            for i, (u_id, _) in enumerate(rank_list[:3]):
+                t_name = season_titles[i]
+                record_entry[f"rank{i+1}"] = u_id
+                if u_id in us_reset:
+                    if t_name not in us_reset[u_id].get('inventory', []):
+                        us_reset[u_id].setdefault('inventory', []).append(t_name)
+                    us_reset[u_id]['equipped_title'] = t_name
 
-            # 🚨 유저별 경제 데이터만 초기화 (나머지는 유지)
-            for uid_i in us_instant:
-                if uid_i == 'admin': continue
-                us_instant[uid_i]['cash']             = 500_000_000 # 새 시즌 지원금
-                us_instant[uid_i]['portfolio']        = {}
-                us_instant[uid_i]['crypto_portfolio'] = {}
-                us_instant[uid_i]['real_estate']      = {}
-                us_instant[uid_i]['loan']             = 0
-                us_instant[uid_i]['daily_quests']     = {}
-                us_instant[uid_i]['bulk_trade_count'] = 0
-                us_instant[uid_i]['loan_time']        = time.time()
-                us_instant[uid_i]['rent_time']        = time.time()
+            # 전 유저 경제 데이터 초기화
+            for u_id in us_reset:
+                if u_id == 'admin': continue
+                us_reset[u_id].update({
+                    'cash': 500_000_000,
+                    'portfolio': {},
+                    'crypto_portfolio': {},
+                    'real_estate': {},
+                    'loan': 0,
+                    'daily_quests': {},
+                    'bulk_trade_count': 0,
+                    'loan_time': now_t,
+                    'rent_time': now_t
+                })
+            save_db(USERS_FILE, us_reset)
 
-            save_db(USERS_FILE, us_instant)
-
-            # ③ 부동산 마켓 초기화 (공급량 리셋)
+            # 2. 부동산 마켓 초기화
             save_estate_market({
                 "listings": [], "owner_counts": {},
                 "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}
             })
 
-            # ④ 시즌 번호 전진 및 마켓 데이터 저장
-            market['season_records'] = market.get('season_records', {})
-            market['season_records'][str(sn_i)] = record_i
-            market['season_num']     = sn_i + 1
-            market['season_start']   = time.time()
-            market['season_end']     = time.time() + 30 * 86400
-            market['season_ending']  = False
-            market['lotto_pool']     = 5_000_000_000
-            market['lotto_tickets']  = {}
-            market['force_estate_reset'] = time.time()
-            market['news'] = f"🏆 [시즌{sn_i} 종료] {rd_instant[0][0] if rd_instant else '?'}님 우승! 🌌 시즌 {sn_i+1} 시작!"
-            save_market(market)
+            # 3. 시즌 기록 저장 및 기수 자동 증가
+            m_data['season_records'] = m_data.get('season_records', {})
+            m_data['season_records'][str(cur_sn)] = record_entry
+            m_data['season_num'] = cur_sn + 1
+            m_data['season_start'] = now_t
+            m_data['season_end'] = now_t + 30 * 86400
+            m_data['force_estate_reset'] = now_t
+            m_data['news'] = f"🏆 [시즌{cur_sn} 종료] {rank_list[0][0] if rank_list else '?'}님 우승! 새 시즌이 개막되었습니다!"
+            save_market(m_data)
 
-            
-            st.session_state.real_estate = {}
-            st.session_state.portfolio = {}
-            # 💡 안정성을 위해 hasattr 대신 in 사용 권장
-            if 'crypto_portfolio' in st.session_state:
-                st.session_state.crypto_portfolio = {}
-            st.session_state.loan = 0
-
-            # 🚨 [버그 수정] Streamlit 입력창 메모리 강제 삭제 (화면에 다음 시즌이 바로 반영되도록)
-            if "admin_manual_sn" in st.session_state:
-                del st.session_state["admin_manual_sn"]
-
-            st.toast(f"💣 시즌 {sn_i} 종료 및 시즌 {sn_i+1} 리셋 완료!", icon="🏆")
             st.balloons()
+            st.success("💣 경제 리셋 및 시즌 교체가 완료되었습니다!")
             st.rerun()
 
         st.write("---")
-        st.markdown("### 📜 역대 시즌 기록")
-        records = market.get('season_records', {})
-        if not records:
-            st.info("아직 완료된 시즌이 없습니다.")
+        
+        # 3. 기록 조회
+        st.markdown("#### 📜 시즌 역사관")
+        hist = m_data.get('season_records', {})
+        if not hist:
+            st.info("아직 기록된 역사가 없습니다.")
         else:
-            for sn, rec in sorted(records.items(), key=lambda x: int(x[0]), reverse=True):
-                st.markdown(f"""
-                **시즌 {sn}**
-                - 🥇 1위: {rec.get('rank1','?')}
-                - 🥈 2위: {rec.get('rank2','?')}
-                - 🥉 3위: {rec.get('rank3','?')}
-                """)
+            for sn_val, res in sorted(hist.items(), key=lambda x: int(x[0]), reverse=True):
+                with st.expander(f"🌌 제 {sn_val}기 유니버스 기록"):
+                    st.write(f"🥇 우승: **{res.get('rank1','-')}**")
+                    st.write(f"🥈 준우승: **{res.get('rank2','-')}**")
+                    st.write(f"🥉 3위: **{res.get('rank3','-')}**")
     
 
 
