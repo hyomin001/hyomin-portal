@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import hashlib
-w
+
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
 
@@ -1183,7 +1183,40 @@ st.markdown(f"<div class='news-banner'>📡 {market['news']}</div>", unsafe_allo
 if market.get('admin_msg'):
     col = market.get('admin_color', '#FF4B4B')
     st.markdown(f"<div style='background:rgba(255,0,0,0.08);border:1px solid {col};border-radius:10px;padding:12px 16px;color:{col}!important;font-weight:900;margin:8px 0;'>📢 [관리자 공지] {market['admin_msg']}</div>", unsafe_allow_html=True)
+# =====================================================================
+# 📅 일일 퀘스트 (전역 함수 정의부 이사 옴!)
+# =====================================================================
+def check_quest(qid, nw, st_session, market):
+    if qid == "attendance": return True
+    elif qid == "rich5": return nw >= 500_000_000
+    elif qid == "landlord": return any(v > 0 for v in st_session.real_estate.values())
+    elif qid == "debtfree": return st_session.loan == 0
+    elif qid == "investor":
+        return sum(
+            st_session.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price']
+            for s in stock_config
+        ) >= 100_000_000
+    elif qid == "coin100m":
+        if 'crypto_data' not in market: return False
+        return sum(
+            ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0)
+            for cid, ci in st_session.get('crypto_portfolio', {}).items()
+        ) >= 100_000_000
+    elif qid == "billionaire": return nw >= 100_000_000_000
+    return False
 
+def get_progress_hint(qid, nw, st_session, market):
+    if qid == "rich5":      return f"현재 순자산: {format_korean_money(nw)} / 5억"
+    elif qid == "landlord": return f"보유 부동산: {sum(v for v in st_session.real_estate.values())}채 / 1채"
+    elif qid == "investor":
+        sv = sum(st_session.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price'] for s in stock_config)
+        return f"주식 평가액: {format_korean_money(int(sv))} / 1억"
+    elif qid == "coin100m":
+        cv = sum(ci.get('qty',0) * market['crypto_data'].get(cid,{}).get('price',0) for cid, ci in st_session.get('crypto_portfolio',{}).items()) if 'crypto_data' in market else 0
+        return f"코인 평가액: {format_korean_money(int(cv))} / 1억"
+    elif qid == "debtfree": return f"현재 대출: {format_korean_money(st_session.loan)}"
+    elif qid == "billionaire": return f"현재 순자산: {format_korean_money(nw)} / 1000억"
+    return ""
 # =====================================================================
 # 💎 VIP 라운지
 # =====================================================================
@@ -3545,40 +3578,9 @@ elif menu == "✉️ 개인 쪽지함":
                     st.rerun()
 
 # =====================================================================
-# 📅 일일 퀘스트 (전역 함수 정의부)
+# 📅 일일 퀘스트
 # =====================================================================
-def check_quest(qid, nw, st_session, market):
-    if qid == "attendance": return True
-    elif qid == "rich5": return nw >= 500_000_000
-    elif qid == "landlord": return any(v > 0 for v in st_session.real_estate.values())
-    elif qid == "debtfree": return st_session.loan == 0
-    elif qid == "investor":
-        return sum(
-            st_session.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price']
-            for s in stock_config
-        ) >= 100_000_000
-    elif qid == "coin100m":
-        if 'crypto_data' not in market: return False
-        return sum(
-            ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0)
-            for cid, ci in st_session.get('crypto_portfolio', {}).items()
-        ) >= 100_000_000
-    elif qid == "billionaire": return nw >= 100_000_000_000
-    return False
-
-def get_progress_hint(qid, nw, st_session, market):
-    if qid == "rich5":      return f"현재 순자산: {format_korean_money(nw)} / 5억"
-    elif qid == "landlord": return f"보유 부동산: {sum(v for v in st_session.real_estate.values())}채 / 1채"
-    elif qid == "investor":
-        sv = sum(st_session.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price'] for s in stock_config)
-        return f"주식 평가액: {format_korean_money(int(sv))} / 1억"
-    elif qid == "coin100m":
-        cv = sum(ci.get('qty',0) * market['crypto_data'].get(cid,{}).get('price',0) for cid, ci in st_session.get('crypto_portfolio',{}).items()) if 'crypto_data' in market else 0
-        return f"코인 평가액: {format_korean_money(int(cv))} / 1억"
-    elif qid == "debtfree": return f"현재 대출: {format_korean_money(st_session.loan)}"
-    elif qid == "billionaire": return f"현재 순자산: {format_korean_money(nw)} / 1000억"
-    return ""
-
+elif menu == "📅 일일 퀘스트":
 
 # =====================================================================
 # [2] 메뉴 렌더링 (함수들이 끝난 다음 elif가 등장해야 합니다)
