@@ -1183,6 +1183,7 @@ st.markdown(f"<div class='news-banner'>📡 {market['news']}</div>", unsafe_allo
 if market.get('admin_msg'):
     col = market.get('admin_color', '#FF4B4B')
     st.markdown(f"<div style='background:rgba(255,0,0,0.08);border:1px solid {col};border-radius:10px;padding:12px 16px;color:{col}!important;font-weight:900;margin:8px 0;'>📢 [관리자 공지] {market['admin_msg']}</div>", unsafe_allow_html=True)
+
 # =====================================================================
 # 📅 일일 퀘스트 (전역 함수 정의부 이사 옴!)
 # =====================================================================
@@ -3577,10 +3578,7 @@ elif menu == "✉️ 개인 쪽지함":
                     time.sleep(1)
                     st.rerun()
 
-# =====================================================================
-# 📅 일일 퀘스트
-# =====================================================================
-elif menu == "📅 일일 퀘스트":
+
 
 # =====================================================================
 # [2] 메뉴 렌더링 (함수들이 끝난 다음 elif가 등장해야 합니다)
