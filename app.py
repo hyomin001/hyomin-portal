@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import hashlib
-
+w
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
 
@@ -3548,52 +3548,40 @@ elif menu == "✉️ 개인 쪽지함":
 # 📅 일일 퀘스트 (전역 함수 정의부)
 # =====================================================================
 def check_quest(qid, nw, st_session, market):
-    if qid == "attendance": 
-        return True
-    elif qid == "rich5": 
-        return nw >= 500_000_000
-    elif qid == "landlord": 
-        return any(v > 0 for v in st_session.real_estate.values())
-    elif qid == "debtfree": 
-        return st_session.loan == 0
+    if qid == "attendance": return True
+    elif qid == "rich5": return nw >= 500_000_000
+    elif qid == "landlord": return any(v > 0 for v in st_session.real_estate.values())
+    elif qid == "debtfree": return st_session.loan == 0
     elif qid == "investor":
         return sum(
             st_session.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price']
             for s in stock_config
         ) >= 100_000_000
     elif qid == "coin100m":
-        if 'crypto_data' not in market: 
-            return False
+        if 'crypto_data' not in market: return False
         return sum(
             ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0)
             for cid, ci in st_session.get('crypto_portfolio', {}).items()
         ) >= 100_000_000
-    elif qid == "billionaire": 
-        return nw >= 100_000_000_000
-    
+    elif qid == "billionaire": return nw >= 100_000_000_000
     return False
 
 def get_progress_hint(qid, nw, st_session, market):
-    if qid == "rich5":      
-        return f"현재 순자산: {format_korean_money(nw)} / 5억"
-    elif qid == "landlord": 
-        return f"보유 부동산: {sum(v for v in st_session.real_estate.values())}채 / 1채"
+    if qid == "rich5":      return f"현재 순자산: {format_korean_money(nw)} / 5억"
+    elif qid == "landlord": return f"보유 부동산: {sum(v for v in st_session.real_estate.values())}채 / 1채"
     elif qid == "investor":
         sv = sum(st_session.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price'] for s in stock_config)
         return f"주식 평가액: {format_korean_money(int(sv))} / 1억"
     elif qid == "coin100m":
         cv = sum(ci.get('qty',0) * market['crypto_data'].get(cid,{}).get('price',0) for cid, ci in st_session.get('crypto_portfolio',{}).items()) if 'crypto_data' in market else 0
         return f"코인 평가액: {format_korean_money(int(cv))} / 1억"
-    elif qid == "debtfree": 
-        return f"현재 대출: {format_korean_money(st_session.loan)}"
-    elif qid == "billionaire": 
-        return f"현재 순자산: {format_korean_money(nw)} / 1000억"
-    
+    elif qid == "debtfree": return f"현재 대출: {format_korean_money(st_session.loan)}"
+    elif qid == "billionaire": return f"현재 순자산: {format_korean_money(nw)} / 1000억"
     return ""
 
 
 # =====================================================================
-# 📅 일일 퀘스트 (메뉴 렌더링부)
+# [2] 메뉴 렌더링 (함수들이 끝난 다음 elif가 등장해야 합니다)
 # =====================================================================
 elif menu == "📅 일일 퀘스트":
     st.title("📅 일일 퀘스트")
@@ -3605,13 +3593,10 @@ elif menu == "📅 일일 퀘스트":
     
     for q in DAILY_QUESTS_CONFIG:
         is_claimed    = today_dq.get(q['id'], False)
-        # 전역으로 분리한 함수 호출 (필요한 인자 전달)
         is_achievable = check_quest(q['id'], nw, st.session_state, market)
+        hint = get_progress_hint(q['id'], nw, st.session_state, market)
         
         status_col = "#00FF88" if is_claimed else "#FFD600" if is_achievable else "#444"
-        
-        # 전역으로 분리한 힌트 함수 호출
-        hint = get_progress_hint(q['id'], nw, st.session_state, market)
         status_txt = "✅ 수령 완료" if is_claimed else "🟡 달성! 클릭하여 수령" if is_achievable else f"🔒 미달성 ({hint})" if hint else "🔒 미달성"
         
         st.markdown(f"""
