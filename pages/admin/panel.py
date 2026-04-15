@@ -670,6 +670,62 @@ def render(market, nw):
         else:
             for sn, rec in sorted(records.items(), key=lambda x: int(x[0]), reverse=True):
                 st.markdown(f"**시즌 {sn}**\n- 🥇 1위: {rec.get('rank1','?')}\n- 🥈 2위: {rec.get('rank2','?')}\n- 🥉 3위: {rec.get('rank3','?')}")
+        st.write("---")
+        st.markdown("### 💥 우주 대폭발 (시즌 1 완벽 초기화)")
+        st.caption("⚠️ **경고:** 모든 유저의 칭호, 차량, 명검, 클랜, 게시판, 쪽지, 거래 기록이 싹 다 날아가고 시즌 1 1일차로 완벽하게 돌아갑니다. (아이디/비밀번호만 유지)")
+        
+        delete_confirm = st.text_input("초기화하려면 '우주 대폭발' 이라고 정확히 입력하세요.", key="bigbang_confirm")
+        if st.button("💥 빅뱅 실행 (모든 데이터 영구 삭제 및 리셋)", type="primary", use_container_width=True):
+            if delete_confirm == "우주 대폭발":
+                # 1. 유저 데이터 초기화 (비밀번호 빼고 싹 리셋)
+                us_db = load_db(USERS_FILE, {})
+                for u in list(us_db.keys()):
+                    if u == "admin": continue
+                    us_db[u] = {
+                        "pw": us_db[u]["pw"], # 비밀번호 유지
+                        "cash": 500_000_000,  # 초기 정착금
+                        "inventory": [],
+                        "equipped_title": "🌱 신규시민",
+                        "portfolio": {}, "crypto_portfolio": {}, "real_estate": {},
+                        "loan": 0, "loan_time": time.time(), "rent_time": time.time(),
+                        "daily_quests": {}, "weapon_level": 0, "bulk_trade_count": 0,
+                        "garage": {'cars': {}, 'active_tier': None}
+                    }
+                save_db(USERS_FILE, us_db)
+                
+                # 2. 마켓 데이터 초기화 (시즌 1로 롤백)
+                market['season_num'] = 1
+                market['season_records'] = {}
+                market['hidden_titles'] = {}
+                market['season_start'] = time.time()
+                market['season_end'] = time.time() + 30 * 86400
+                market['lotto_pool'] = 5_000_000_000
+                market['lotto_tickets'] = {}
+                market['news'] = "🌌 [우주 대폭발] 새로운 우주가 탄생했습니다. 역사적인 시즌 1 시작!"
+                save_market(market)
+                
+                # 3. 부동산, 클랜, 게시판, 쪽지, 거래로그 전부 날리기
+                save_estate_market({"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}})
+                save_clan_db({})
+                save_db(COMMENTS_FILE, [])
+                save_db(TXLOG_FILE, {})
+                save_db("messages_db.json", {})
+                
+                # 4. 현재 접속 중인 관리자 세션 임시 리셋
+                st.session_state.inventory = []
+                st.session_state.equipped_title = "👑 절대신 창조주"
+                st.session_state.weapon_level = 0
+                st.session_state.real_estate = {}
+                st.session_state.portfolio = {}
+                if hasattr(st.session_state, 'crypto_portfolio'): st.session_state.crypto_portfolio = {}
+                st.session_state.loan = 0
+                
+                st.success("💥 우주 대폭발 완료! 모든 것이 백지상태가 되었습니다.")
+                st.balloons()
+                time.sleep(2)
+                st.rerun()
+            else:
+                st.error("입력한 문구가 일치하지 않습니다. 오타를 확인해주세요.")
     
     with t10:
         st.markdown("### 👁️ 전지적 쪽지 모니터링")
