@@ -6,14 +6,9 @@ import random
 import json
 import os
 import time
-import tempfile
-import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
-from filelock import FileLock
 
-def _get_lock(filepath: str) -> FileLock:
-    return FileLock(filepath + ".lock", timeout=5)
 import hashlib
 
 def hash_pw(pw: str) -> str:
@@ -705,48 +700,6 @@ if 'logged_in_user' not in st.session_state:
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
-   
-    
-    with st.expander("🚨 서버 관리자 전용 메뉴 (데이터 이사)"):
-        if st.button("💾 백업 데이터 ➔ 몽고DB로 복구하기", use_container_width=True):
-            client = get_mongo_client()
-            if client:
-                try:
-                    db = client["hyomin_universe"]
-                    files = [USERS_FILE, MARKET_FILE, REALESTATE_MARKET_FILE, TXLOG_FILE, COMMENTS_FILE]
-                    import os, json
-                    
-                    # 🛡️ 몽고DB 8바이트 정수 제한(922경) 방어용 마법의 함수
-                    def sanitize_for_mongo(obj):
-                        if isinstance(obj, dict):
-                            return {k: sanitize_for_mongo(v) for k, v in obj.items()}
-                        elif isinstance(obj, list):
-                            return [sanitize_for_mongo(v) for v in obj]
-                        elif isinstance(obj, int):
-                            # 900경이 넘는 천문학적인 숫자는 900경으로 컷!
-                            if obj > 9000000000000000000: return 9000000000000000000
-                            if obj < -9000000000000000000: return -9000000000000000000
-                            return obj
-                        return obj
-
-                    for fname in files:
-                        if os.path.exists(fname):
-                            with open(fname, 'r', encoding='utf-8') as f:
-                                data = json.load(f)
-                            
-                            # 데이터를 몽고DB에 넣기 전에 정화!
-                            clean_data = sanitize_for_mongo(data)
-                            col_name = fname.replace(".json", "").replace("_db", "")
-                            db[col_name].replace_one({"_id": "main"}, {"_id": "main", **clean_data}, upsert=True)
-                            
-                    st.success("🎉 기적의 복구 성공! 모든 데이터가 몽고DB로 무사히 이사했습니다!")
-                    st.info("이제 화면을 새로고침(F5)하고 원래 계정으로 로그인해 보세요!")
-                except Exception as e:
-                    st.error(f"❌ 데이터 변환 에러: {e}")
-            else:
-                st.error("❌ 스트림릿 Secrets에 주소가 등록되지 않았습니다.")
-   
-                st.error("❌ 스트림릿 Secrets에 주소가 등록되지 않았습니다.")
     
 
     # 👇 여기서부터 복사해서 바로 아래에 붙여넣으세요! 👇
@@ -756,7 +709,7 @@ if 'logged_in_user' not in st.session_state:
         <p style='color: #FFF; font-size: 1rem; line-height: 1.6; margin-bottom: 15px; font-weight: 500;'>
             서버 장애로 시즌 1을 조기 종료하게 되어 80명의 시민 여러분께 고개 숙여 사과드립니다. 😭<br>
             기적적인 백업으로 70여 분의 자산은 복구했으나, 데이터를 잃으신 10여 분께는 진심으로 죄송합니다.<br>
-            사죄의 마음을 담아 시즌 2 접속 시 <b style='color:#00E5FF; font-size: 1.1rem;'>정착 및 사과 보상금 5억 원 💸</b>을 즉시 지급합니다!
+            4월 15일 오전9시부터 시즌 2를 시작하며 이때 모든 유저의 자산은 초기화됩니다. 계정을 잃어 시즌 2 새로 회원가입시 <b style='color:#00E5FF; font-size: 1.1rem;'>정착 및 사과 보상금 5억 원 💸</b>을 즉시 지급합니다!
         </p>
         <div style='background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; display: inline-block; border: 1px solid rgba(255, 214, 0, 0.3); line-height: 1.6;'>
             <div style='color: #FFD600; font-weight: 900; font-size: 1.1rem; margin-bottom: 10px;'>🏆 복구된 시즌 1 명예의 전당 🏆</div>
@@ -1021,6 +974,8 @@ if cur_t > market.get('season_end', cur_t + 9999) and not market.get('season_end
         us_all[uid_s]['weapon_level']     = 0
         us_all[uid_s]['daily_quests']     = {}
         us_all[uid_s]['bulk_trade_count'] = 0
+        us_all[uid_s]['garage'] = {'cars': {}, 'active_tier': None}
+        
 
     save_db(USERS_FILE, us_all)
 
@@ -5018,11 +4973,93 @@ elif menu == "🛠️ 창조주 통제소":
         st.write("---")
         st.markdown("### ⚡ 시즌 즉시 강제 종료")
         st.caption("⚠️ 지금 즉시 시즌 종료 + 랭킹 보상 지급 + 전체 리셋 실행")
-        if st.button("💣 시즌 즉시 종료 & 리셋 실행", use_container_width=True, type="secondary"):
+        if st.button("💣 시즌 즉시 종료 & 전체 리셋 실행", use_container_width=True, type="secondary"):
+            # ① 시즌 종료 트리거
             market['season_end'] = time.time() - 1
+            
+            # ② 모든 유저 자산 즉시 초기화 (다음 렌더 기다리지 않고 직접 처리)
+            us_instant = load_db(USERS_FILE, {})
+            rd_instant = []
+            for uid_i, udata_i in us_instant.items():
+                if uid_i == 'admin': continue
+                w_i = udata_i.get('cash', 0) - udata_i.get('loan', 0)
+                for sid_i, p_i in udata_i.get('portfolio', {}).items():
+                    if sid_i in market['stock_data']:
+                        w_i += p_i.get('qty', 0) * market['stock_data'][sid_i]['price']
+                for eid_i, cnt_i in udata_i.get('real_estate', {}).items():
+                    if eid_i in estate_config:
+                        w_i += estate_config[eid_i]['base_price'] * cnt_i * 0.8
+                w_lv_i = udata_i.get('weapon_level', 0)
+                if w_lv_i > 0: w_i += FORGE_DATA[w_lv_i]['sell']
+                rd_instant.append((uid_i, w_i))
+            rd_instant.sort(key=lambda x: x[1], reverse=True)
+
+            sn_i = market.get('season_num', 1)
+            season_titles_i = [
+                f"🥇 [시즌{sn_i}] 전설의 우승자",
+                f"🥈 [시즌{sn_i}] 준우승의 영광",
+                f"🥉 [시즌{sn_i}] 시즌 3위",
+            ]
+            record_i = {}
+            for idx_i, (uid_i, w_i) in enumerate(rd_instant[:3]):
+                title_i = season_titles_i[idx_i]
+                record_i[f"rank{idx_i+1}"] = uid_i
+                if uid_i in us_instant:
+                    if title_i not in us_instant[uid_i].get('inventory', []):
+                        us_instant[uid_i].setdefault('inventory', []).append(title_i)
+                    us_instant[uid_i]['equipped_title'] = title_i
+
+            for uid_i in us_instant:
+                if uid_i == 'admin': continue
+                us_instant[uid_i]['cash']             = 500_000_000
+                us_instant[uid_i]['portfolio']        = {}
+                us_instant[uid_i]['crypto_portfolio'] = {}
+                us_instant[uid_i]['real_estate']      = {}
+                us_instant[uid_i]['loan']             = 0
+                us_instant[uid_i]['loan_time']        = time.time()
+                us_instant[uid_i]['rent_time']        = time.time()
+                us_instant[uid_i]['weapon_level']     = 0
+                us_instant[uid_i]['daily_quests']     = {}
+                us_instant[uid_i]['bulk_trade_count'] = 0
+                us_instant[uid_i]['garage']           = {'cars': {}, 'active_tier': None}
+            save_db(USERS_FILE, us_instant)
+
+            # ③ 클랜 은행 초기화
+            clan_db_i = load_clan_db()
+            for cn_i in clan_db_i:
+                clan_db_i[cn_i]['bank'] = 0
+            save_clan_db(clan_db_i)
+
+            # ④ 부동산 마켓 초기화
+            save_estate_market({
+                "listings": [], "owner_counts": {},
+                "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}
+            })
+
+            # ⑤ 시즌 번호 전진 및 마켓 저장
+            market['season_records'] = market.get('season_records', {})
+            market['season_records'][str(sn_i)] = record_i
+            market['season_num']     = sn_i + 1
+            market['season_start']   = time.time()
+            market['season_end']     = time.time() + 30 * 86400
+            market['season_ending']  = False
+            market['lotto_pool']     = 5_000_000_000
+            market['lotto_tickets']  = {}
+            market['force_estate_reset'] = time.time()
+            market['news'] = f"🏆 [시즌{sn_i} 종료] {rd_instant[0][0] if rd_instant else '?'}님 우승! 🌌 시즌 {sn_i+1} 시작!"
             save_market(market)
-            st.success("✅ 다음 렌더링에서 시즌이 종료됩니다. 잠시 후 새로고침하세요!")
-            st.rerun()  # 👈 이 코드를 추가하면 0.1초 만에 자동으로 리셋됩니다!
+
+            # ⑥ 현재 세션(창조주)도 동기화
+            st.session_state.real_estate = {}
+            st.session_state.loan = 0
+            st.session_state.portfolio = {}
+            if hasattr(st.session_state, 'crypto_portfolio'):
+                st.session_state.crypto_portfolio = {}
+            st.session_state.weapon_level = 0
+
+            st.toast(f"💣 시즌 {sn_i} 종료 & 전체 리셋 완료!", icon="🏆")
+            st.balloons()
+            st.rerun()
         st.write("---")
         st.markdown("### 📜 역대 시즌 기록")
         records = market.get('season_records', {})
