@@ -5145,12 +5145,17 @@ elif menu == "🛠️ 창조주 통제소":
             market['news'] = f"🏆 [시즌{sn_i} 종료] {rd_instant[0][0] if rd_instant else '?'}님 우승! 🌌 시즌 {sn_i+1} 시작!"
             save_market(market)
 
-            # ⑤ 창조주 세션 즉시 동기화
+            
             st.session_state.real_estate = {}
             st.session_state.portfolio = {}
-            if hasattr(st.session_state, 'crypto_portfolio'):
+            # 💡 안정성을 위해 hasattr 대신 in 사용 권장
+            if 'crypto_portfolio' in st.session_state:
                 st.session_state.crypto_portfolio = {}
             st.session_state.loan = 0
+
+            # 🚨 [버그 수정] Streamlit 입력창 메모리 강제 삭제 (화면에 다음 시즌이 바로 반영되도록)
+            if "admin_manual_sn" in st.session_state:
+                del st.session_state["admin_manual_sn"]
 
             st.toast(f"💣 시즌 {sn_i} 종료 및 시즌 {sn_i+1} 리셋 완료!", icon="🏆")
             st.balloons()
