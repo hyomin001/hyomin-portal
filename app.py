@@ -728,14 +728,10 @@ if 'logged_in_user' not in st.session_state:
                     })
                     st.rerun()
 
-               
-                
+                # --- 여기서부터 수정 시작 ---
                 if l_id == "admin":
-                    # 1. 소스코드의 별표(***) 비밀번호를 그대로 입력한 빌런 낚시
-                    if l_pw == "*******q131341**134**151**": 
+                    if l_pw == "*******q131341**134**151**":
                         st.error("😎 소스코드를 훔쳐보셨군요? 안타깝지만 그건 가짜 비밀번호입니다!")
-                    
-                    # 2. 실제 해시값(1234 등) 비교
                     elif hash_pw(l_pw) == ADMIN_HASH:
                         if "admin" not in users:
                             users["admin"] = {
@@ -751,10 +747,13 @@ if 'logged_in_user' not in st.session_state:
                             }
                             save_db(USERS_FILE, users)
                         _do_login("admin")
-                    
-                    # 3. 그 외 어드민 비밀번호 틀린 경우
                     else:
-                        st.error("❌ 창조주 인증에 실패했습니다.")
+                        st.error("❌ 비밀번호가 올바르지 않습니다.")
+                
+                elif l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
+                    _do_login(l_id)
+                else:
+                    st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
                         
                 elif l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
                     # 일반 유저 로그인 성공
