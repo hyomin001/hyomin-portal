@@ -35,11 +35,12 @@ if 'logged_in_user' not in st.session_state:
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {market.get('season_num', 1)} ∙</div>", unsafe_allow_html=True)
+
     # ==============================
-    # 🌠 게임 소개 및 서버 점검 스플래시 패널 (업그레이드 버전)
+    # 🌠 게임 소개 및 서버 점검 스플래시 패널
     # ==============================
     st.markdown("""
-<div style='background: linear-gradient(135deg, rgba(15, 20, 35, 0.9), rgba(5, 10, 15, 0.95)); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 30px; margin-bottom: 35px; max-width: 850px; margin-left: auto; margin-right: auto; box-shadow: 0 10px 30px rgba(0, 229, 255, 0.1);'>
+<div style='background: linear-gradient(135deg, rgba(15, 20, 35, 0.9), rgba(5, 10, 15, 0.95)); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 30px; margin-bottom: 20px; max-width: 850px; margin-left: auto; margin-right: auto; box-shadow: 0 10px 30px rgba(0, 229, 255, 0.1);'>
 <div style='text-align: center; margin-bottom: 25px;'>
 <div style='font-size: 3.5rem; margin-bottom: 10px;'>🌌</div>
 <h2 style='color: #00E5FF; margin: 0; font-family: "Orbitron", sans-serif; letter-spacing: 2px;'>WELCOME TO HYOMIN UNIVERSE</h2>
@@ -55,9 +56,7 @@ if 'logged_in_user' not in st.session_state:
 <span>🚨</span> 시스템 대공사 및 재시작 안내
 </h4>
 <p style='color: #E2E8F0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0;'>
-최근 발생한 예기치 못한 서버 다운 사태로 불편을 드려 대단히 죄송합니다. 🙇‍♂️<br><br>
-이를 교훈 삼아 <b>데이터베이스를 외부 클라우드(MongoDB)로 완벽히 분리</b>하고, <b>수천 줄의 코드를 전면 모듈화</b>하여 서버의 안정성을 극강으로 끌어올렸습니다!<br>
-더 이상 데이터가 날아갈 걱정 없이 안심하고 우주를 개척하세요!
+데이터베이스를 <b>외부 클라우드(MongoDB)로 완벽 분리</b>하고 <b>37개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다. 유저 자산은 이제 영구히 안전합니다!
 </p>
 </div>
 <div style='flex: 1; min-width: 300px; background: linear-gradient(135deg, rgba(255, 214, 0, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 12px; padding: 20px; position: relative; overflow: hidden;'>
@@ -66,37 +65,50 @@ if 'logged_in_user' not in st.session_state:
 <span>🏆</span> 정규 시즌 1 공식 개막
 </h4>
 <p style='color: #E2E8F0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0;'>
-<b style='color:#FFD600;'>[시즌 기간]</b> 2026년 4월 15일 ~ 2026년 5월 15일<br><br>
-서버 안정화와 함께 <b>정규 시즌 1</b>이 새롭게 시작되었습니다. 모든 시민분들께 사과의 마음을 담아 <b>초기 정착금 5억 원</b>을 즉시 지급합니다! 💸<br>
-지금 바로 로그인하고 서버 랭킹 1위의 영광을 차지하세요.
+<b>[시즌 기간]</b> 2026년 4월 15일 ~ 5월 15일<br>
+새로운 시즌의 시작을 기념하여 모든 시민분들께 <b>초기 정착금 5억 원</b>을 즉시 지급합니다! 💸
 </p>
 </div>
 </div>
 </div>
 """, unsafe_allow_html=True)
 
-# 시스템 상세 설명 (선택 사항)
-    with st.expander("🔍 HYOMIN UNIVERSE 시스템 아키텍처 상세 보기"):
-        st.markdown("""
-        #### 🏗️ System Architecture
-        본 유니버스는 현대적인 **클라우드 네이티브 아키텍처**로 재설계되었습니다.
-        
-        1. **통합 컨트롤러 (App Engine):** Streamlit 기반의 고성능 엔진이 UI와 백엔드 로직을 실시간으로 처리합니다.
-        2. **분산 모듈 시스템 (Modular Py):** 37개의 독립된 파이썬 모듈이 주식, 코인, 게임, 커뮤니티 기능을 분담하여 장애 발생 시에도 특정 기능만 격리 수정이 가능합니다.
-        3. **데이터 안전 보장 (External DB):** 모든 유저 데이터는 내부 서버가 아닌 글로벌 클라우드 DB(MongoDB)에 실시간 백업되어, 서버 재시작 시에도 자산이 완벽히 보존됩니다.
-        4. **실시간 경제 시뮬레이터:** `market_sync` 모듈이 24시간 내내 멈추지 않고 우주의 물가와 자산 가치를 조정합니다.
-        
-        ---
-        *창조주는 유저분들의 소중한 자산 보호와 쾌적한 플레이 환경을 위해 매일 코드를 최적화하고 있습니다.*
-        """)
-    
-
-
-    
-
-
-
-    
+    # ==============================
+    # 🔍 시스템 아키텍처 상세 안내 (HTML 전용 디자인)
+    # ==============================
+    st.markdown("""
+<div style='background: rgba(0, 229, 255, 0.03); border: 1px dashed rgba(0, 229, 255, 0.3); border-radius: 12px; padding: 20px; max-width: 850px; margin: 0 auto 35px auto;'>
+<div style='display: flex; align-items: center; gap: 10px; margin-bottom: 15px;'>
+<span style='font-size: 1.5rem;'>🔍</span>
+<h4 style='color: #00E5FF; margin: 0; font-family: "Orbitron", sans-serif; font-size: 1rem;'>SYSTEM ARCHITECTURE & MODULES</h4>
+</div>
+<div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;'>
+<div style='background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;'>
+<div style='color: #FFD600; font-weight: 800; font-size: 0.85rem; margin-bottom: 5px;'>🛡️ Data Integrity</div>
+<div style='color: #94A3B8; font-size: 0.75rem; line-height: 1.5;'>
+MongoDB Atlas 클라우드를 통한 자산 실시간 백업 및 SHA-256 암호화 보안 적용.
+</div>
+</div>
+<div style='background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;'>
+<div style='color: #00FF88; font-weight: 800; font-size: 0.85rem; margin-bottom: 5px;'>⚙️ Modular Logic</div>
+<div style='color: #94A3B8; font-size: 0.75rem; line-height: 1.5;'>
+37개 독립 모듈 구조로 경제 시뮬레이션 및 미니게임 로직의 안정성 극대화.
+</div>
+</div>
+<div style='background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;'>
+<div style='color: #00E5FF; font-weight: 800; font-size: 0.85rem; margin-bottom: 5px;'>🔄 Market Sync</div>
+<div style='color: #94A3B8; font-size: 0.75rem; line-height: 1.5;'>
+사용자 부재 시에도 시간당 주가/이자/임대료를 자동 계산하는 타임 슬롯 시스템.
+</div>
+</div>
+</div>
+<div style='margin-top: 15px; padding: 10px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;'>
+<p style='color: #64748B; font-size: 0.7rem; margin: 0;'>
+Core Engine: Python 3.10+ | Framework: Streamlit v18.2 Modular Edition
+</p>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
