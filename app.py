@@ -11,6 +11,13 @@ from datetime import datetime, timedelta, timezone
 
 import hashlib
 
+st.set_page_config(
+    page_title="HYOMIN UNIVERSE v18.2", 
+    page_icon="🌌", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
 
@@ -183,7 +190,7 @@ def get_mongo_client():
     return None
 
 def load_db(file, default):
-    """MongoDB에서 데이터 불러오기"""
+    """MongoDB에서 불러오기 (실패 시 로컬 JSON 읽기)"""
     client = get_mongo_client()
     if client:
         try:
@@ -195,13 +202,22 @@ def load_db(file, default):
                 return doc
         except Exception:
             pass
+            
+    # 🚨 몽고DB 연결 실패 시, 로컬 파일에서라도 읽어오기 (안전망)
+    if os.path.exists(file):
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
     return default
 
 def save_db(file, data):
-    """MongoDB에 데이터 저장하기"""
+    """MongoDB에 저장하기 (실패 시 로컬 JSON 저장)"""
     if data is None:
         return
     client = get_mongo_client()
+    mongo_success = False
     if client:
         try:
             db = client["hyomin_universe"]
@@ -211,6 +227,15 @@ def save_db(file, data):
                 {"_id": "main", **data},
                 upsert=True
             )
+            mongo_success = True
+        except Exception:
+            pass
+            
+    # 🚨 몽고DB 연결 실패 시, 데이터가 날아가지 않게 로컬에 저장 (안전망)
+    if not mongo_success:
+        try:
+            with open(file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
         except Exception:
             pass
 
@@ -413,12 +438,7 @@ def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
     last = st.session_state.get(f"_cd_{key}", 0)
     return max(0.0, cooldown_sec - (time.time() - last))
 
-st.set_page_config(
-    page_title="HYOMIN UNIVERSE v18.2", 
-    page_icon="🌌", 
-    layout="wide",
-    initial_sidebar_state="collapsed"  # 처음 접속 시 사이드바 접어두기
-)
+
 
 # ==============================
 # 🎨 전역 CSS 적용 (위치 최상단으로 이동!)
@@ -954,12 +974,12 @@ if cur_t - market.get('lotto_last_draw', 0) > 3600:
         m_up = True
 
 # ── 시즌 자동 종료 체크 ──
-if 'season_num' not in market:
-    market['season_num']      = 1
-    market['season_start']    = cur_t
-    market['season_end']      = cur_t + 30 * 86400
-    market['season_records']  = {}
-    m_up = True
+if 'season_end' not in market:
+    market['season_num']      = market.get('season_num', 2) # 기존 시즌 번호 유지
+    market['season_start']    = cur_t
+    market['season_end']      = cur_t + 30 * 86400
+    market['season_records']  = market.get('season_records', {})
+    m_up = True
 
 if cur_t > market.get('season_end', cur_t + 9999) and not market.get('season_ending', False):
     market['season_ending'] = True
