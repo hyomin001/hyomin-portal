@@ -362,10 +362,7 @@ def save_clan_chat(clan_name, messages):
     chat_db = load_db("clan_chats_db.json", {})
     chat_db[clan_name] = messages[-50:] # 최신 50개만 저장
     save_db("clan_chats_db.json", chat_db)
-# 👆 여기까지
 
-def get_clan_total_nw(cname, market_data):
-    clans = load_clan_db()
     
 def get_clan_total_nw(cname, market_data):
     clans = load_clan_db()
@@ -723,7 +720,8 @@ if 'logged_in_user' not in st.session_state:
     st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {current_season_now} ∙</div>", unsafe_allow_html=True)
     
 
-    # 👇 여기서부터 복사해서 바로 아래에 붙여넣으세요! 👇
+
+    
     st.markdown("""
     <div style='background: linear-gradient(135deg, rgba(255, 75, 75, 0.15), rgba(255, 0, 0, 0.25)); border: 2px solid #FF4B4B; border-radius: 15px; padding: 25px; margin-bottom: 25px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; box-shadow: 0 0 20px rgba(255, 75, 75, 0.4);'>
         <h2 style='color: #FFD600 !important; margin-top: 0; font-family: "Orbitron", monospace; letter-spacing: 1px;'>🚨 [긴급] 서버 장애 사과 및 시즌 2 시작 🚨</h2>
@@ -742,7 +740,8 @@ if 'logged_in_user' not in st.session_state:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    # 👆 여기까지 👆
+
+    
     
     # ---------------------------------------------------------
     # ✨ 신규: 로그인 화면 게임 소개(스플래시) 패널 (기존 코드 유지)
@@ -809,7 +808,8 @@ if 'logged_in_user' not in st.session_state:
                     })
                     st.rerun()
 
-                # 👇 여기서부터 수정된 페이크 꼼수 & 해시 로그인 로직! 👇
+               
+                
                 if l_id == "admin":
                     if l_pw == ADMIN_PW: 
                         # 코드를 보고 "***"를 그대로 입력한 빌런 참교육
@@ -4104,45 +4104,39 @@ elif menu == "🏰 길드/클랜":
                     if not can_w: st.caption("🔒 부클랜장 이상만 출금 가능")
 
             # --- [2. 멤버 관리 & 계급 수정 & 위임] ---
-            with st.expander("👥 멤버 목록 및 계급 관리", expanded=True):
-                can_rank = has_perm(uid, cdata, "계급관리")
-                can_kick = has_perm(uid, cdata, "추방")
-                can_lead = has_perm(uid, cdata, "위임")
-
-                # ⚠️ 주의: 여기에 혹시 st.write(cdata) 같은게 있다면 절대 넣지 마세요!
-
-                for m in cdata['members']:
+            for m in cdata['members']:
                     m_rank = cdata['member_ranks'].get(m, "일반멤버")
                     
-                    # 1. 멤버 정보를 가로 전체를 쓰는 '카드' 형태로 배치 (겹침 방지 핵심)
-                    st.markdown(f"""
-                    <div style='background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:5px; border-left:5px solid #00E5FF;'>
-                        <b style='font-size:1.1rem; color:#FFFFFF;'>{m}</b> 
-                        <span style='color:#888; font-size:0.85rem; margin-left:10px;'>등급: {m_rank}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # 2. 버튼들은 정보 박스 바로 아래에 여유 있게 배치
-                    col_edit, col_kick = st.columns([2, 1])
-                    
-                    with col_edit:
-                        if can_rank and m != uid:
-                            # 선택창 레이블을 숨겨서 버튼과 겹치지 않게 함
-                            new_r = st.selectbox(
-                                "계급 변경", ["일반멤버", "운영진", "부클랜장"], 
-                                index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
-                                key=f"rank_fix_{m}", label_visibility="collapsed"
-                            )
-                            if new_r != m_rank:
-                                cdata['member_ranks'][m] = new_r
-                                save_clan_db(clans); st.rerun()
-                    
-                    with col_kick:
-                        if can_kick and m != uid and m != cdata['leader']:
-                            if st.button("🦶 추방", key=f"kick_btn_{m}", use_container_width=True):
-                                cdata['members'].remove(m)
-                                if m in cdata['member_ranks']: del cdata['member_ranks'][m]
-                                save_clan_db(clans); st.rerun()
+                    # ✅ st.container()를 사용하여 각 멤버의 UI 영역을 확실히 분리 (겹침 현상 해결)
+                    with st.container():
+                        st.markdown(f"""
+                        <div style='background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:5px; border-left:5px solid #00E5FF;'>
+                            <b style='font-size:1.1rem; color:#FFFFFF;'>{m}</b> 
+                            <span style='color:#888; font-size:0.85rem; margin-left:10px;'>등급: {m_rank}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        col_edit, col_kick = st.columns([2, 1])
+                        
+                        with col_edit:
+                            if can_rank and m != uid:
+                                new_r = st.selectbox(
+                                    "계급 변경", ["일반멤버", "운영진", "부클랜장"], 
+                                    index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
+                                    key=f"rank_fix_{m}_{my_clan}", label_visibility="collapsed" # ✅ 키 중복 방지
+                                )
+                                if new_r != m_rank:
+                                    cdata['member_ranks'][m] = new_r
+                                    save_clan_db(clans); st.rerun()
+                        
+                        with col_kick:
+                            if can_kick and m != uid and m != cdata['leader']:
+                                if st.button("🦶 추방", key=f"kick_btn_{m}_{my_clan}", use_container_width=True): # ✅ 키 중복 방지
+                                    cdata['members'].remove(m)
+                                    if m in cdata['member_ranks']: del cdata['member_ranks'][m]
+                                    save_clan_db(clans); st.rerun()
+                        
+                        st.write("") # 컨테이너 내부 하단 여백 확보
                     
                     # 멤버 사이 간격 확보
                     st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
@@ -4350,7 +4344,25 @@ elif menu == "🛠️ 창조주 통제소":
         u_db = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "admin"]
 
-        # 기존 평문 비밀번호 → 해시 자동 마이그레이션
+        
+        if 'pw_migrated' not in st.session_state:
+            migrated = False
+            for _uid, _udata in u_db.items():
+                if _uid == "admin": continue
+                pw_val = _udata.get('pw', '')
+                if len(pw_val) != 64 and pw_val:  # sha256 hexdigest는 항상 64자
+                    u_db[_uid]['pw'] = hash_pw(pw_val)
+                    migrated = True
+            
+            if migrated:
+                save_db(USERS_FILE, u_db)
+            st.session_state.pw_migrated = True
+
+        if uid_list:
+            sel_u  = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
+
+        
+        
         u_db_migrate = load_db(USERS_FILE, {})
         migrated = False
         for _uid, _udata in u_db_migrate.items():
@@ -4983,7 +4995,7 @@ elif menu == "🛠️ 창조주 통제소":
                         st.toast(f"✅ Tier {sel_view_t} 차량 폐차 완료!", icon="🗑️")
                         st.rerun()
         else:
-            st.info("관리할 유저가 없습니다.")   # ← 여기로 이동 (uid_list_car가 비었을 때만 표시)
+            st.info("관리할 유저가 없습니다.")   
     with t9:
         st.markdown("### 🏆 시즌 관리")
         cur_season    = market.get('season_num', 1)
