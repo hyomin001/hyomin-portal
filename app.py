@@ -975,11 +975,11 @@ if cur_t - market.get('lotto_last_draw', 0) > 3600:
 
 # ── 시즌 자동 종료 체크 ──
 if 'season_end' not in market:
-    market['season_num']      = market.get('season_num', 2) # 기존 시즌 번호 유지
-    market['season_start']    = cur_t
-    market['season_end']      = cur_t + 30 * 86400
-    market['season_records']  = market.get('season_records', {})
-    m_up = True
+    market['season_num'] = market.get('season_num', 2) # 기존 시즌 번호 유지
+    market['season_start'] = cur_t
+    market['season_end'] = cur_t + 30 * 86400
+    market['season_records'] = market.get('season_records', {})
+    m_up = True
 
 if cur_t > market.get('season_end', cur_t + 9999) and not market.get('season_ending', False):
     market['season_ending'] = True
