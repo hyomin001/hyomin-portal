@@ -7,6 +7,7 @@ from utils.database import log_tx
 
 def render(market, nw):
     st.title("🏆 구단주 시뮬레이터")
+    st.markdown("<div style='color:#888;margin-bottom:16px;'>베팅 금액을 0원으로 설정하면 <b>'친선 경기(소액 기본 보상)'</b>로 진행됩니다.</div>", unsafe_allow_html=True)
 
     FORMATION_STATS = {
         "4-4-2 (균형)":     {"atk": 0.30, "def": 0.27, "emoji": "⚖️"},
@@ -29,18 +30,24 @@ def render(market, nw):
         st.markdown(f"<div class='card' style='margin-top:8px;padding:12px;text-align:center;'>공격력 {'⚡'*int(FORMATION_STATS[opp_form]['atk']*10)} &nbsp; 수비력 {'🛡️'*int(FORMATION_STATS[opp_form]['def']*10)}</div>", unsafe_allow_html=True)
 
     stadium = st.selectbox("경기장", STADIUMS)
-    betting = st.number_input("경기 베팅금액 (내 팀 승리 시 2배)", min_value=0, step=1_000_000, value=0)
+    
+    # 💡 베팅 관련 UI 강화
+    betting = st.number_input("경기 베팅금액 (0원 = 친선경기)", min_value=0, step=1_000_000, value=0)
+    if betting > 0:
+        st.caption(f"💰 승리 시 예상 수령액: {format_korean_money(betting * 2 + 10_000_000)} (원금 포함)")
+    else:
+        st.caption("🤝 친선 경기 승리 시 기본 보상: 5,000,000원")
 
     cd_soccer = cooldown_remaining("soccer_game", 10.0)
     if cd_soccer > 0:
         st.warning(f"⏱️ 경기 쿨다운 {cd_soccer:.1f}초 (광클 방지)")
     elif st.button("⚽ 킥오프!", use_container_width=True):
         if betting > 0 and st.session_state.global_cash < betting:
-            st.error("베팅 금액이 잔액을 초과합니다.")
+            st.error("베팅 금액이 현재 잔액을 초과합니다!")
         else:
             set_cooldown("soccer_game")
-            if betting > 0: st.session_state.global_cash -= betting
-
+            
+            # 베팅금 사전 차감을 없애고, 마지막에 '순수익/순손실'로 한 번에 정산하도록 변경했습니다.
             my_s  = FORMATION_STATS[my_form]
             opp_s = FORMATION_STATS[opp_form]
             h_score = a_score = 0
@@ -91,18 +98,34 @@ def render(market, nw):
 
             prog_bar.progress(1.0, text="⚽ 경기 종료!")
             st.write("---")
+            
+            # 💡 결과 및 순수익(net_profit) 정산 로직
             if h_score > a_score:
                 st.success(f"🎉 승리! {my_team} {h_score}:{a_score} {opp_team}")
-                reward = 10_000_000 + betting * 2 if betting > 0 else 5_000_000; st.balloons()
+                prize = (10_000_000 + betting * 2) if betting > 0 else 5_000_000
+                st.balloons()
             elif h_score == a_score:
                 st.warning(f"🤝 무승부! {h_score}:{a_score}")
-                reward = 2_000_000 + (betting if betting > 0 else 0)
+                prize = (2_000_000 + betting) if betting > 0 else 2_000_000
             else:
                 st.error(f"😢 패배... {h_score}:{a_score}")
-                reward = 500_000
+                prize = 500_000
 
-            st.session_state.global_cash += reward
-            log_tx(st.session_state.logged_in_user, "축구베팅", f"구단주 경기 보상", reward)
+            # 최종 순수익 (상금 - 내가 건 돈) 계산
+            net_profit = prize - betting
+            st.session_state.global_cash += net_profit
+            
+            # 거래 기록(txlog)에 순수익/순손실을 명확하게 기록
+            if net_profit > 0:
+                log_tx(st.session_state.logged_in_user, "축구베팅", f"경기 승리 보상", net_profit)
+            elif net_profit < 0:
+                log_tx(st.session_state.logged_in_user, "축구베팅", f"경기 패배 (베팅금 손실)", net_profit)
+            else:
+                log_tx(st.session_state.logged_in_user, "축구베팅", f"무승부 (원금 반환)", 0)
+                
             sync_user_data()
-            st.info(f"💰 경기 보상: +{format_korean_money(reward)}")
+            
+            # 사용자 화면에 최종 정산액 표시
+            profit_text = "수익" if net_profit > 0 else "손실" if net_profit < 0 else "변동 없음"
+            st.info(f"💰 최종 정산: {format_korean_money(net_profit)} ({profit_text})")
             st.rerun()
