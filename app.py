@@ -35,51 +35,47 @@ if 'logged_in_user' not in st.session_state:
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {market.get('season_num', 1)} ∙</div>", unsafe_allow_html=True)
-
-# ==============================
-# 🌠 게임 소개 및 서버 점검 스플래시 패널 (업그레이드 버전)
-# ==============================
-st.markdown("""
+    # ==============================
+    # 🌠 게임 소개 및 서버 점검 스플래시 패널 (업그레이드 버전)
+    # ==============================
+    st.markdown("""
 <div style='background: linear-gradient(135deg, rgba(15, 20, 35, 0.9), rgba(5, 10, 15, 0.95)); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 30px; margin-bottom: 35px; max-width: 850px; margin-left: auto; margin-right: auto; box-shadow: 0 10px 30px rgba(0, 229, 255, 0.1);'>
-    
-    <div style='text-align: center; margin-bottom: 25px;'>
-        <div style='font-size: 3.5rem; margin-bottom: 10px;'>🌌</div>
-        <h2 style='color: #00E5FF; margin: 0; font-family: "Orbitron", sans-serif; letter-spacing: 2px;'>WELCOME TO HYOMIN UNIVERSE</h2>
-        <p style='color: #94A3B8; font-size: 1rem; line-height: 1.6; margin-top: 10px;'>
-            주식, 코인, 부동산부터 짜릿한 카지노와 하이퍼카 레이싱까지.<br>
-            우주 최고의 억만장자가 되기 위한 <b>무한한 자본주의 생존 시뮬레이션</b>에 합류하세요!
-        </p>
-    </div>
-
-    <div style='display: flex; gap: 20px; flex-wrap: wrap;'>
-        
-        <div style='flex: 1; min-width: 300px; background: linear-gradient(135deg, rgba(255, 75, 75, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(255, 75, 75, 0.4); border-radius: 12px; padding: 20px; position: relative; overflow: hidden;'>
-            <div style='position: absolute; top: -15px; right: -15px; font-size: 5rem; opacity: 0.1;'>🛠️</div>
-            <h4 style='color: #FF4B4B; margin-top: 0; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;'>
-                <span>🚨</span> 시스템 대공사 및 재시작 안내
-            </h4>
-            <p style='color: #E2E8F0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0;'>
-                최근 발생한 예기치 못한 서버 다운 사태로 불편을 드려 대단히 죄송합니다. 🙇‍♂️<br><br>
-                이를 교훈 삼아 <b>데이터베이스를 외부 클라우드(MongoDB)로 완벽히 분리</b>하고, <b>수천 줄의 코드를 전면 모듈화</b>하여 서버의 안정성을 극강으로 끌어올렸습니다!<br>
-                더 이상 데이터가 날아갈 걱정 없이 안심하고 우주를 개척하세요!
-            </p>
-        </div>
-
-        <div style='flex: 1; min-width: 300px; background: linear-gradient(135deg, rgba(255, 214, 0, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 12px; padding: 20px; position: relative; overflow: hidden;'>
-            <div style='position: absolute; top: -15px; right: -15px; font-size: 5rem; opacity: 0.1;'>🏆</div>
-            <h4 style='color: #FFD600; margin-top: 0; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;'>
-                <span>🏆</span> 정규 시즌 1 공식 개막
-            </h4>
-            <p style='color: #E2E8F0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0;'>
-                <b style='color:#FFD600;'>[시즌 기간]</b> 2026년 4월 15일 ~ 2026년 5월 15일<br><br>
-                서버 안정화와 함께 <b>정규 시즌 1</b>이 새롭게 시작되었습니다. 모든 시민분들께 사과의 마음을 담아 <b>초기 정착금 5억 원</b>을 즉시 지급합니다! 💸<br>
-                지금 바로 로그인하고 서버 랭킹 1위의 영광을 차지하세요.
-            </p>
-        </div>
-
-    </div>
+<div style='text-align: center; margin-bottom: 25px;'>
+<div style='font-size: 3.5rem; margin-bottom: 10px;'>🌌</div>
+<h2 style='color: #00E5FF; margin: 0; font-family: "Orbitron", sans-serif; letter-spacing: 2px;'>WELCOME TO HYOMIN UNIVERSE</h2>
+<p style='color: #94A3B8; font-size: 1rem; line-height: 1.6; margin-top: 10px;'>
+주식, 코인, 부동산부터 짜릿한 카지노와 하이퍼카 레이싱까지.<br>
+우주 최고의 억만장자가 되기 위한 <b>무한한 자본주의 생존 시뮬레이션</b>에 합류하세요!
+</p>
+</div>
+<div style='display: flex; gap: 20px; flex-wrap: wrap;'>
+<div style='flex: 1; min-width: 300px; background: linear-gradient(135deg, rgba(255, 75, 75, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(255, 75, 75, 0.4); border-radius: 12px; padding: 20px; position: relative; overflow: hidden;'>
+<div style='position: absolute; top: -15px; right: -15px; font-size: 5rem; opacity: 0.1;'>🛠️</div>
+<h4 style='color: #FF4B4B; margin-top: 0; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;'>
+<span>🚨</span> 시스템 대공사 및 재시작 안내
+</h4>
+<p style='color: #E2E8F0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0;'>
+최근 발생한 예기치 못한 서버 다운 사태로 불편을 드려 대단히 죄송합니다. 🙇‍♂️<br><br>
+이를 교훈 삼아 <b>데이터베이스를 외부 클라우드(MongoDB)로 완벽히 분리</b>하고, <b>수천 줄의 코드를 전면 모듈화</b>하여 서버의 안정성을 극강으로 끌어올렸습니다!<br>
+더 이상 데이터가 날아갈 걱정 없이 안심하고 우주를 개척하세요!
+</p>
+</div>
+<div style='flex: 1; min-width: 300px; background: linear-gradient(135deg, rgba(255, 214, 0, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 12px; padding: 20px; position: relative; overflow: hidden;'>
+<div style='position: absolute; top: -15px; right: -15px; font-size: 5rem; opacity: 0.1;'>🏆</div>
+<h4 style='color: #FFD600; margin-top: 0; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;'>
+<span>🏆</span> 정규 시즌 1 공식 개막
+</h4>
+<p style='color: #E2E8F0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0;'>
+<b style='color:#FFD600;'>[시즌 기간]</b> 2026년 4월 15일 ~ 2026년 5월 15일<br><br>
+서버 안정화와 함께 <b>정규 시즌 1</b>이 새롭게 시작되었습니다. 모든 시민분들께 사과의 마음을 담아 <b>초기 정착금 5억 원</b>을 즉시 지급합니다! 💸<br>
+지금 바로 로그인하고 서버 랭킹 1위의 영광을 차지하세요.
+</p>
+</div>
+</div>
 </div>
 """, unsafe_allow_html=True)
+
+
 
     
 
