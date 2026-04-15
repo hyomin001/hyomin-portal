@@ -78,3 +78,7 @@ def get_user_clan(uid):
     for cname, cdata in clans.items():
         if uid in cdata.get('members', []): return cname
     return None
+
+# --- 추가: 다른 페이지들의 꼬인 주소를 해결해주는 연결 다리 ---
+from utils.config import USERS_FILE, COMMENTS_FILE, MARKET_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE, CLAN_FILE
+from utils.core import save_market
