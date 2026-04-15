@@ -1,6 +1,6 @@
 # pages/txlog.py
 import streamlit as st
-from utils.config import format_korean_money
+from utils.core import format_korean_money
 from utils.database import load_db, TXLOG_FILE
 
 def render(market, nw):
