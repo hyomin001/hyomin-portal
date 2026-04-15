@@ -699,7 +699,8 @@ if 'logged_in_user' not in st.session_state:
 </style>""", unsafe_allow_html=True)
 
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
-    st.markdown("<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 게임 v18.2 ∙</div>", unsafe_allow_html=True)
+    current_season_now = market.get('season_num', 1)
+    st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {current_season_now} ∙</div>", unsafe_allow_html=True)
     
 
     # 👇 여기서부터 복사해서 바로 아래에 붙여넣으세요! 👇
@@ -4955,12 +4956,31 @@ elif menu == "🛠️ 창조주 통제소":
         st.markdown(f"""
         <div style='background:rgba(0,229,255,0.08);border:1px solid #00E5FF;
              border-radius:12px;padding:20px;margin-bottom:16px;'>
-          <div style='color:#888;font-size:0.82rem;'>현재 시즌</div>
+          <div style='color:#888;font-size:0.82rem;'>현재 운영 중인 시즌</div>
           <div style='font-size:2rem;font-weight:900;color:#FFD600;'>시즌 {cur_season}</div>
           <div style='color:#94A3B8;margin-top:8px;'>종료 예정: <b style='color:#FF00FF;'>{season_end_dt}</b></div>
           <div style='color:#94A3B8;'>잔여: <b style='color:#00FF88;'>{remain_day}일 {remain_hr}시간</b></div>
         </div>
         """, unsafe_allow_html=True)
+
+        # ---------------------------------------------------------
+        # 🛠️ 신규 추가: 시즌 번호 강제 조정 (DB 직접 수정 도구)
+        # ---------------------------------------------------------
+        st.markdown("#### 🛠️ 시즌 번호 강제 조정")
+        st.caption("화면에 표시되는 시즌 번호가 실제와 다를 경우 수동으로 맞춥니다.")
+        c_sn1, c_sn2 = st.columns([3, 1])
+        with c_sn1:
+            new_sn = st.number_input("변경할 시즌 번호", min_value=1, value=int(cur_season), key="admin_manual_sn")
+        with c_sn2:
+            st.write("") # 간격 맞춤
+            st.write("")
+            if st.button("🪄 즉시 변경", use_container_width=True):
+                market['season_num'] = new_sn
+                save_market(market)
+                st.success(f"시즌 번호가 {new_sn}으로 변경되었습니다.")
+                st.rerun()
+
+        st.write("---")
 
         st.markdown("### 📅 시즌 종료일 수동 조정")
         new_days = st.number_input("지금부터 몇 일 후에 시즌 종료?", min_value=1, max_value=90, value=30)
@@ -4971,17 +4991,22 @@ elif menu == "🛠️ 창조주 통제소":
             st.rerun()
 
         st.write("---")
+        
         st.markdown("### ⚡ 시즌 즉시 강제 종료")
-        st.caption("⚠️ 지금 즉시 시즌 종료 + 랭킹 보상 지급 + 전체 리셋 실행")
-        if st.button("💣 시즌 즉시 종료 & 전체 리셋 실행", use_container_width=True, type="secondary"):
-            # ① 시즌 종료 트리거
+        st.caption("⚠️ **경제 자산(돈, 주식, 코인, 부동산)만 리셋**됩니다. 칭호, 명검, 차량, 클랜은 유지됩니다.")
+        
+        if st.button("💣 시즌 즉시 종료 & 경제 리셋 실행", use_container_width=True, type="secondary"):
+            # ① 시즌 종료 트리거 설정
             market['season_end'] = time.time() - 1
             
-            # ② 모든 유저 자산 즉시 초기화 (다음 렌더 기다리지 않고 직접 처리)
+            # ② 모든 유저 자산 리셋 (성장 자산 보존형)
             us_instant = load_db(USERS_FILE, {})
             rd_instant = []
+            
             for uid_i, udata_i in us_instant.items():
                 if uid_i == 'admin': continue
+                
+                # 순위 계산용 순자산 측정
                 w_i = udata_i.get('cash', 0) - udata_i.get('loan', 0)
                 for sid_i, p_i in udata_i.get('portfolio', {}).items():
                     if sid_i in market['stock_data']:
@@ -4991,15 +5016,18 @@ elif menu == "🛠️ 창조주 통제소":
                         w_i += estate_config[eid_i]['base_price'] * cnt_i * 0.8
                 w_lv_i = udata_i.get('weapon_level', 0)
                 if w_lv_i > 0: w_i += FORGE_DATA[w_lv_i]['sell']
+                
                 rd_instant.append((uid_i, w_i))
-            rd_instant.sort(key=lambda x: x[1], reverse=True)
 
+            # 랭킹 정렬 및 상위 3인 칭호 지급
+            rd_instant.sort(key=lambda x: x[1], reverse=True)
             sn_i = market.get('season_num', 1)
             season_titles_i = [
                 f"🥇 [시즌{sn_i}] 전설의 우승자",
                 f"🥈 [시즌{sn_i}] 준우승의 영광",
                 f"🥉 [시즌{sn_i}] 시즌 3위",
             ]
+            
             record_i = {}
             for idx_i, (uid_i, w_i) in enumerate(rd_instant[:3]):
                 title_i = season_titles_i[idx_i]
@@ -5009,34 +5037,28 @@ elif menu == "🛠️ 창조주 통제소":
                         us_instant[uid_i].setdefault('inventory', []).append(title_i)
                     us_instant[uid_i]['equipped_title'] = title_i
 
+            # 🚨 유저별 경제 데이터만 초기화 (나머지는 유지)
             for uid_i in us_instant:
                 if uid_i == 'admin': continue
-                us_instant[uid_i]['cash']             = 500_000_000
+                us_instant[uid_i]['cash']             = 500_000_000 # 새 시즌 지원금
                 us_instant[uid_i]['portfolio']        = {}
                 us_instant[uid_i]['crypto_portfolio'] = {}
                 us_instant[uid_i]['real_estate']      = {}
                 us_instant[uid_i]['loan']             = 0
-                us_instant[uid_i]['loan_time']        = time.time()
-                us_instant[uid_i]['rent_time']        = time.time()
-                us_instant[uid_i]['weapon_level']     = 0
                 us_instant[uid_i]['daily_quests']     = {}
                 us_instant[uid_i]['bulk_trade_count'] = 0
-                us_instant[uid_i]['garage']           = {'cars': {}, 'active_tier': None}
+                us_instant[uid_i]['loan_time']        = time.time()
+                us_instant[uid_i]['rent_time']        = time.time()
+
             save_db(USERS_FILE, us_instant)
 
-            # ③ 클랜 은행 초기화
-            clan_db_i = load_clan_db()
-            for cn_i in clan_db_i:
-                clan_db_i[cn_i]['bank'] = 0
-            save_clan_db(clan_db_i)
-
-            # ④ 부동산 마켓 초기화
+            # ③ 부동산 마켓 초기화 (공급량 리셋)
             save_estate_market({
                 "listings": [], "owner_counts": {},
                 "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}
             })
 
-            # ⑤ 시즌 번호 전진 및 마켓 저장
+            # ④ 시즌 번호 전진 및 마켓 데이터 저장
             market['season_records'] = market.get('season_records', {})
             market['season_records'][str(sn_i)] = record_i
             market['season_num']     = sn_i + 1
@@ -5049,17 +5071,17 @@ elif menu == "🛠️ 창조주 통제소":
             market['news'] = f"🏆 [시즌{sn_i} 종료] {rd_instant[0][0] if rd_instant else '?'}님 우승! 🌌 시즌 {sn_i+1} 시작!"
             save_market(market)
 
-            # ⑥ 현재 세션(창조주)도 동기화
+            # ⑤ 창조주 세션 즉시 동기화
             st.session_state.real_estate = {}
-            st.session_state.loan = 0
             st.session_state.portfolio = {}
             if hasattr(st.session_state, 'crypto_portfolio'):
                 st.session_state.crypto_portfolio = {}
-            st.session_state.weapon_level = 0
+            st.session_state.loan = 0
 
-            st.toast(f"💣 시즌 {sn_i} 종료 & 전체 리셋 완료!", icon="🏆")
+            st.toast(f"💣 시즌 {sn_i} 종료 및 시즌 {sn_i+1} 리셋 완료!", icon="🏆")
             st.balloons()
             st.rerun()
+
         st.write("---")
         st.markdown("### 📜 역대 시즌 기록")
         records = market.get('season_records', {})
@@ -5073,6 +5095,7 @@ elif menu == "🛠️ 창조주 통제소":
                 - 🥈 2위: {rec.get('rank2','?')}
                 - 🥉 3위: {rec.get('rank3','?')}
                 """)
+    
 
 
 # ── [t10] 쪽지 감시 (창조주 전용) ──
