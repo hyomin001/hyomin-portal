@@ -1,7 +1,8 @@
 # pages/home.py
 import streamlit as st
 import time
-from utils.config import format_korean_money, estate_config, stock_config
+from utils.config import estate_config, stock_config
+from utils.core import format_korean_money
 from utils.database import load_db, USERS_FILE
 
 def render(market, nw):
