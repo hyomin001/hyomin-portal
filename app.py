@@ -670,6 +670,9 @@ if 'logged_in_user' in st.session_state:
         st.session_state.loan = db_user.get('loan', 0)
         st.session_state.inventory = db_user.get('inventory', [])
 
+
+market = get_market() 
+cur_t  = time.time()
 # ==============================
 # 🔐 로그인
 # ==============================
