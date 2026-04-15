@@ -434,6 +434,13 @@ html, body, p, span, div, td, th {
   color: #FFFFFF !important; 
 }
 
+/* 🚨 [추가할 부분] 스트림릿 기본 아이콘(화살표 등) 글자 깨짐 방지 */
+.material-symbols-rounded,
+.material-icons,
+span[class*="material"],
+[data-testid="stExpanderToggleIcon"] {
+  font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons' !important;
+}
 /* 🚨 로그인 화면 텍스트(접속환경, 아이디, 비밀번호 등) 강제 흰색 처리 */
 label,
 label p,
