@@ -4104,42 +4104,47 @@ elif menu == "🏰 길드/클랜":
                     if not can_w: st.caption("🔒 부클랜장 이상만 출금 가능")
 
             # --- [2. 멤버 관리 & 계급 수정 & 위임] ---
-            for m in cdata['members']:
-                m_rank = cdata['member_ranks'].get(m, "일반멤버")
-                
-                # ✅ st.container()를 사용하여 각 멤버의 UI 영역을 확실히 분리 (겹침 현상 해결)
-                with st.container():
-                    st.markdown(f"""
-                    <div style='background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:5px; border-left:5px solid #00E5FF;'>
-                        <b style='font-size:1.1rem; color:#FFFFFF;'>{m}</b> 
-                        <span style='color:#888; font-size:0.85rem; margin-left:10px;'>등급: {m_rank}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+            with st.expander("👥 멤버 목록 및 계급 관리", expanded=True):
+                can_rank = has_perm(uid, cdata, "계급관리")
+                can_kick = has_perm(uid, cdata, "추방")
+                can_lead = has_perm(uid, cdata, "위임")
+
+                for m in cdata['members']:
+                    m_rank = cdata['member_ranks'].get(m, "일반멤버")
                     
-                    col_edit, col_kick = st.columns([2, 1])
+                    # ✅ st.container()를 사용하여 각 멤버의 UI 영역을 확실히 분리 (겹침 현상 해결)
+                    with st.container():
+                        st.markdown(f"""
+                        <div style='background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:5px; border-left:5px solid #00E5FF;'>
+                            <b style='font-size:1.1rem; color:#FFFFFF;'>{m}</b> 
+                            <span style='color:#888; font-size:0.85rem; margin-left:10px;'>등급: {m_rank}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        col_edit, col_kick = st.columns([2, 1])
+                        
+                        with col_edit:
+                            if can_rank and m != uid:
+                                new_r = st.selectbox(
+                                    "계급 변경", ["일반멤버", "운영진", "부클랜장"], 
+                                    index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
+                                    key=f"rank_fix_{m}_{my_clan}", label_visibility="collapsed"
+                                )
+                                if new_r != m_rank:
+                                    cdata['member_ranks'][m] = new_r
+                                    save_clan_db(clans); st.rerun()
+                        
+                        with col_kick:
+                            if can_kick and m != uid and m != cdata['leader']:
+                                if st.button("🦶 추방", key=f"kick_btn_{m}_{my_clan}", use_container_width=True):
+                                    cdata['members'].remove(m)
+                                    if m in cdata['member_ranks']: del cdata['member_ranks'][m]
+                                    save_clan_db(clans); st.rerun()
+                        
+                        st.write("") # 컨테이너 내부 하단 여백 확보
                     
-                    with col_edit:
-                        if can_rank and m != uid:
-                            new_r = st.selectbox(
-                                "계급 변경", ["일반멤버", "운영진", "부클랜장"], 
-                                index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
-                                key=f"rank_fix_{m}_{my_clan}", label_visibility="collapsed"
-                            )
-                            if new_r != m_rank:
-                                cdata['member_ranks'][m] = new_r
-                                save_clan_db(clans); st.rerun()
-                    
-                    with col_kick:
-                        if can_kick and m != uid and m != cdata['leader']:
-                            if st.button("🦶 추방", key=f"kick_btn_{m}_{my_clan}", use_container_width=True):
-                                cdata['members'].remove(m)
-                                if m in cdata['member_ranks']: del cdata['member_ranks'][m]
-                                save_clan_db(clans); st.rerun()
-                    
-                    st.write("") # 컨테이너 내부 하단 여백 확보
-                
-                # 멤버 사이 간격 확보
-                st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
+                    # 멤버 사이 간격 확보
+                    st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
                     
                 # --- 클랜장 위임 기능 (따로 빼서 강조) ---
                 if can_lead:
@@ -4151,10 +4156,12 @@ elif menu == "🏰 길드/클랜":
                         if st.button(f"🤝 {target_lead}에게 클랜장 위임", use_container_width=True):
                             cdata['leader'] = target_lead
                             cdata['member_ranks'][target_lead] = "클랜장"
-                            cdata['member_ranks'][uid] = "부클랜장" # 전임자는 부클랜장으로 강등(?)
+                            cdata['member_ranks'][uid] = "부클랜장" # 전임자는 부클랜장으로 강등
                             save_clan_db(clans)
                             market['news'] = f"🏰 [{my_clan}] 클랜의 수장이 {uid}님에서 {target_lead}님으로 교체되었습니다!"
                             save_market(market); st.success("위임 완료!"); st.rerun()
+
+            
 
             # --- [3. 가입 승인] ---
             if has_perm(uid, cdata, "가입승인"):
