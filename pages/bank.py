@@ -1,9 +1,8 @@
 # pages/bank.py
 import streamlit as st
 import time
-from utils.config import format_korean_money
-from utils.database import load_db, save_db, USERS_FILE
-from utils.core import cooldown_remaining, set_cooldown, log_tx, sync_user_data, claim_hidden_title
+from utils.database import load_db, save_db, USERS_FILE, log_tx
+from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
 
 def render(market, nw):
     st.title("🏦 하이리스크 뱅크")
