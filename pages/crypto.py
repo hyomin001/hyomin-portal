@@ -15,9 +15,9 @@ def render(market, nw):
         
     cdata = market['crypto_data']
 
-    # --- 유저 선택 코인 인덱스 유지 로직 추가 ---
-    if "selected_crypto_idx" not in st.session_state:
-        st.session_state.selected_crypto_idx = 0
+    # --- 유저 선택 코인 ID 고정 (비트코인 리셋 방지) ---
+    if "selected_crypto_id" not in st.session_state:
+        st.session_state.selected_crypto_id = CRYPTO_CONFIG[0]['id']
 
     def fmt_crypto_price(price):
         if price >= 1_000_000:   return f"₩{price:,.0f}"
@@ -79,21 +79,25 @@ def render(market, nw):
                 c3.metric("📈 총 평가손익", format_korean_money(int(total_eval - total_invested)))
 
     with tab_trade:
-        # --- 수정된 선택 박스 로직 ---
         crypto_ids = [c['id'] for c in CRYPTO_CONFIG]
         
-        selected_cid = st.selectbox(
+        # 세션에 저장된 코인 ID의 인덱스 번호를 찾습니다 (에러 방지용 try-except)
+        try:
+            default_idx = crypto_ids.index(st.session_state.selected_crypto_id)
+        except ValueError:
+            default_idx = 0
+            
+        sel_c = st.selectbox(
             "거래할 코인 선택", 
             crypto_ids, 
-            index=st.session_state.selected_crypto_idx,
+            index=default_idx,
             format_func=lambda cid: f"{next(c['icon'] for c in CRYPTO_CONFIG if c['id']==cid)} {cdata[cid]['name']} — {fmt_crypto_price(cdata[cid]['price'])}",
-            key="crypto_selector_box"
+            key="crypto_trade_selectbox"
         )
         
-        # 선택된 인덱스 저장
-        st.session_state.selected_crypto_idx = crypto_ids.index(selected_cid)
+        # 방금 선택된 코인 ID를 세션에 덮어씌워서 기억하게 만듭니다
+        st.session_state.selected_crypto_id = sel_c
         
-        sel_c = selected_cid
         cd    = cdata[sel_c]
         cur_p = cd['price']
  
