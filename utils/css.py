@@ -56,12 +56,20 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
 }
 
-/* 드롭다운 및 팝업 스타일 */
+/* 드롭다운 및 팝업 스타일 (글씨 안 보이는 현상 완벽 수정) */
 div[data-baseweb="select"] > div { background-color: #FFFFFF !important; }
-div[data-baseweb="select"] * { color: #000000 !important; font-weight: 600 !important; }
+div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000 !important; font-weight: 600 !important; }
+
 [data-baseweb="popover"] { background-color: #FFFFFF !important; }
-[data-baseweb="popover"] *, [role="listbox"] *, [data-baseweb="menu"] * { color: #000000 !important; background-color: #FFFFFF !important; }
-[role="option"]:hover, [data-baseweb="menu"] li:hover { background-color: #EEEEEE !important; }
+[data-baseweb="popover"] span, [data-baseweb="popover"] div, 
+[role="listbox"] span, [role="listbox"] div, [role="listbox"] li,
+[data-baseweb="menu"] span, [data-baseweb="menu"] div, [data-baseweb="menu"] li { 
+    color: #000000 !important; 
+}
+[role="listbox"], [data-baseweb="menu"] { background-color: #FFFFFF !important; }
+[role="option"]:hover, [data-baseweb="menu"] li:hover, [role="option"]:hover span, [role="option"]:hover div { 
+    background-color: #EEEEEE !important; 
+}
 
 /* 사이버펑크 버튼 스타일 */
 .stButton > button {
