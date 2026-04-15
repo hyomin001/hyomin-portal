@@ -1,4 +1,4 @@
-# utils/database.py이 파일은 몽고DB 클라우드 연결과 로컬 데이터를 저장/불러오는 역할을 전담합니다.
+# utils/database.py
 import streamlit as st
 from pymongo import MongoClient
 from datetime import datetime
@@ -79,6 +79,6 @@ def get_user_clan(uid):
         if uid in cdata.get('members', []): return cname
     return None
 
-# --- 추가: 다른 페이지들의 꼬인 주소를 해결해주는 연결 다리 ---
-from utils.config import USERS_FILE, COMMENTS_FILE, MARKET_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE, CLAN_FILE
-from utils.core import save_market
+# --- 수정됨: 순환 참조 에러를 막기 위해 함수를 직접 정의 ---
+def save_market(data):
+    save_db(MARKET_FILE, data)
