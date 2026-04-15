@@ -7,9 +7,10 @@ from datetime import datetime
 # ==============================
 # 1. 코어 모듈 임포트
 # ==============================
-from utils.config import *
+# 별표(*) 대신 필요한 변수들을 직접 명시해서 가져옵니다.
+from utils.config import MARKET_FILE, USERS_FILE, KST
 from utils.database import load_db, save_db
-from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_PW
+from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_PW, ADMIN_HASH
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
 
@@ -18,7 +19,6 @@ from utils.css import GLOBAL_CSS
 # ==============================
 st.set_page_config(page_title="HYOMIN UNIVERSE v18.2", page_icon="🌌", layout="wide", initial_sidebar_state="collapsed")
 st.markdown(f"<style>{GLOBAL_CSS}</style>", unsafe_allow_html=True)
-
 # ==============================
 # 3. 로그인 및 세션 관리
 # ==============================
