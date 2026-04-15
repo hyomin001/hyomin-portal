@@ -1,4 +1,4 @@
-# utils/market_sync.py모든 사용자의 주가, 코인값, 뉴스, 대출 이자 등 오프라인에서도 작동해야 하는 시간 관련 계산을 여기서 단번에 처리합니다
+# utils/market_sync.py
 import time
 import random
 import streamlit as st
@@ -20,7 +20,11 @@ def run_market_sync():
             sync_user_data()
 
     # 주식 시뮬레이션 (최대 60틱 보정)
-    stock_passed = cur_t - market.get('last_tick', cur_t)
+    if 'last_tick' not in market:
+        market['last_tick'] = cur_t - 10
+        m_up = True
+        
+    stock_passed = cur_t - market['last_tick']
     s_ticks = min(int(stock_passed / 10), 60)
     if s_ticks > 0:
         for _ in range(s_ticks):
@@ -33,12 +37,19 @@ def run_market_sync():
         market['last_tick'] = cur_t
         m_up = True
 
-    # 코인 시장 시뮬레이션
+    # 🪙 코인 시장 시뮬레이션 (수정된 부분: 얼어붙은 타이머 강제 가동)
     if 'crypto_data' not in market:
-        market['crypto_data'] = {c['id']: {"name": c['name'], "icon": c['icon'], "price": float(c['base_price']), "history": [float(c['base_price'])]} for c in CRYPTO_CONFIG}
+        # 최초 생성 시 history에 값이 2개 있어야 0.00% 오류가 안 남
+        market['crypto_data'] = {c['id']: {"name": c['name'], "icon": c['icon'], "price": float(c['base_price']), "history": [float(c['base_price']), float(c['base_price'])]} for c in CRYPTO_CONFIG}
         m_up = True
-    crypto_passed = cur_t - market.get('crypto_tick', cur_t)
+        
+    if 'crypto_tick' not in market:
+        market['crypto_tick'] = cur_t - 6 # 강제로 1틱(5초) 이상 지나게 만듦
+        m_up = True
+
+    crypto_passed = cur_t - market['crypto_tick']
     c_ticks = min(int(crypto_passed / 5), 60)
+    
     if c_ticks > 0:
         for _ in range(c_ticks):
             for c in CRYPTO_CONFIG:
@@ -64,7 +75,7 @@ def run_market_sync():
 
     # 로또 당첨 로직
     if cur_t - market.get('lotto_last_draw', 0) > 3600:
-        if market['lotto_tickets']:
+        if market.get('lotto_tickets'):
             pool = []
             for u, c in market['lotto_tickets'].items(): pool.extend([u] * c)
             win, prize = random.choice(pool), market['lotto_pool']
