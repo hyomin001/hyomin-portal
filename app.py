@@ -4083,7 +4083,7 @@ elif menu == "🏰 길드/클랜":
             col_b.metric("💪 클랜 전투력(순자산)", format_korean_money(get_clan_total_nw(my_clan, market)))
 
             # --- [1. 클랜 은행] ---
-            with st.expander("🏦 클랜 금고 (입/출금)"):
+            with st.expander("클랜 금고 (입금 및출금)"):
                 c_dep, c_wit = st.columns(2)
                 with c_dep:
                     d_amt = st.number_input("입금액", min_value=0, step=10_000_000, format="%d", key="d_in")
@@ -4105,41 +4105,41 @@ elif menu == "🏰 길드/클랜":
 
             # --- [2. 멤버 관리 & 계급 수정 & 위임] ---
             for m in cdata['members']:
-                    m_rank = cdata['member_ranks'].get(m, "일반멤버")
+                m_rank = cdata['member_ranks'].get(m, "일반멤버")
+                
+                # ✅ st.container()를 사용하여 각 멤버의 UI 영역을 확실히 분리 (겹침 현상 해결)
+                with st.container():
+                    st.markdown(f"""
+                    <div style='background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:5px; border-left:5px solid #00E5FF;'>
+                        <b style='font-size:1.1rem; color:#FFFFFF;'>{m}</b> 
+                        <span style='color:#888; font-size:0.85rem; margin-left:10px;'>등급: {m_rank}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
                     
-                    # ✅ st.container()를 사용하여 각 멤버의 UI 영역을 확실히 분리 (겹침 현상 해결)
-                    with st.container():
-                        st.markdown(f"""
-                        <div style='background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:5px; border-left:5px solid #00E5FF;'>
-                            <b style='font-size:1.1rem; color:#FFFFFF;'>{m}</b> 
-                            <span style='color:#888; font-size:0.85rem; margin-left:10px;'>등급: {m_rank}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        col_edit, col_kick = st.columns([2, 1])
-                        
-                        with col_edit:
-                            if can_rank and m != uid:
-                                new_r = st.selectbox(
-                                    "계급 변경", ["일반멤버", "운영진", "부클랜장"], 
-                                    index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
-                                    key=f"rank_fix_{m}_{my_clan}", label_visibility="collapsed" # ✅ 키 중복 방지
-                                )
-                                if new_r != m_rank:
-                                    cdata['member_ranks'][m] = new_r
-                                    save_clan_db(clans); st.rerun()
-                        
-                        with col_kick:
-                            if can_kick and m != uid and m != cdata['leader']:
-                                if st.button("🦶 추방", key=f"kick_btn_{m}_{my_clan}", use_container_width=True): # ✅ 키 중복 방지
-                                    cdata['members'].remove(m)
-                                    if m in cdata['member_ranks']: del cdata['member_ranks'][m]
-                                    save_clan_db(clans); st.rerun()
-                        
-                        st.write("") # 컨테이너 내부 하단 여백 확보
+                    col_edit, col_kick = st.columns([2, 1])
                     
-                    # 멤버 사이 간격 확보
-                    st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
+                    with col_edit:
+                        if can_rank and m != uid:
+                            new_r = st.selectbox(
+                                "계급 변경", ["일반멤버", "운영진", "부클랜장"], 
+                                index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
+                                key=f"rank_fix_{m}_{my_clan}", label_visibility="collapsed"
+                            )
+                            if new_r != m_rank:
+                                cdata['member_ranks'][m] = new_r
+                                save_clan_db(clans); st.rerun()
+                    
+                    with col_kick:
+                        if can_kick and m != uid and m != cdata['leader']:
+                            if st.button("🦶 추방", key=f"kick_btn_{m}_{my_clan}", use_container_width=True):
+                                cdata['members'].remove(m)
+                                if m in cdata['member_ranks']: del cdata['member_ranks'][m]
+                                save_clan_db(clans); st.rerun()
+                    
+                    st.write("") # 컨테이너 내부 하단 여백 확보
+                
+                # 멤버 사이 간격 확보
+                st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
                     
                 # --- 클랜장 위임 기능 (따로 빼서 강조) ---
                 if can_lead:
@@ -4344,13 +4344,13 @@ elif menu == "🛠️ 창조주 통제소":
         u_db = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "admin"]
 
-        
+        # 1회성 비밀번호 해시 마이그레이션 (중복 코드 제거됨)
         if 'pw_migrated' not in st.session_state:
             migrated = False
             for _uid, _udata in u_db.items():
                 if _uid == "admin": continue
                 pw_val = _udata.get('pw', '')
-                if len(pw_val) != 64 and pw_val:  # sha256 hexdigest는 항상 64자
+                if len(pw_val) != 64 and pw_val:  
                     u_db[_uid]['pw'] = hash_pw(pw_val)
                     migrated = True
             
@@ -4358,28 +4358,13 @@ elif menu == "🛠️ 창조주 통제소":
                 save_db(USERS_FILE, u_db)
             st.session_state.pw_migrated = True
 
-        if uid_list:
-            sel_u  = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
-
-        
-        
-        u_db_migrate = load_db(USERS_FILE, {})
-        migrated = False
-        for _uid, _udata in u_db_migrate.items():
-            if _uid == "admin": continue
-            pw_val = _udata.get('pw', '')
-            if len(pw_val) != 64:  # sha256 hexdigest는 항상 64자
-                u_db_migrate[_uid]['pw'] = hash_pw(pw_val)
-                migrated = True
-        if migrated:
-            save_db(USERS_FILE, u_db_migrate)
-            
-
+        # 유저 선택 (중복 위젯 에러 해결됨)
         if uid_list:
             sel_u  = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
             u_data = u_db[sel_u]
 
             c1, c2 = st.columns(2)
+            
             with c1:
                 st.markdown("##### 💰 자산 개조")
                 raw_cash = st.text_input("현금 설정 (예: 1000억, 1.5조)", placeholder="비워두면 유지", key="admin_cash_input")
