@@ -435,15 +435,19 @@ def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
 # 🎨 전역 CSS 및 비주얼 테마 설정
 # ==============================
 
-# --- [추천 기능] 시장 상황에 따른 포인트 컬러 동적 결정 ---
-# 나스닥(NDX) 종목의 최근 변동률을 확인하여 테마색 결정 (기본: 사이언 #00E5FF)
+# 1. 먼저 마켓 데이터를 불러옵니다. (위치를 이쪽으로 올리세요)
+market = get_market() 
+cur_t = time.time()
+
+# 2. 그 다음 테마 컬러를 결정합니다. (이제 market 변수를 사용할 수 있습니다)
 ndx_h = market['stock_data'].get('NDX', {}).get('history', [0, 0])
 ndx_diff = (ndx_h[-1] - ndx_h[-2]) / ndx_h[-2] if len(ndx_h) > 1 and ndx_h[-2] > 0 else 0
 
 theme_color = "#00E5FF" 
-if ndx_diff >= 0.02:   theme_color = "#FF4B4B" # 불장(폭등): 레드 테마
-elif ndx_diff <= -0.02: theme_color = "#4B9EFF" # 하락장(폭락): 블루 테마
+if ndx_diff >= 0.02:   theme_color = "#FF4B4B" 
+elif ndx_diff <= -0.02: theme_color = "#4B9EFF"
 
+# 3. CSS를 정의하고 적용합니다.
 CSS = f"""
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
