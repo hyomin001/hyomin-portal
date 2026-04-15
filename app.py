@@ -4104,16 +4104,15 @@ elif menu == "🏰 길드/클랜":
                     if not can_w: st.caption("🔒 부클랜장 이상만 출금 가능")
 
             # --- [2. 멤버 관리 & 계급 수정 & 위임] ---
-            # --- [2. 멤버 관리 & 계급 수정 & 위임] ---
-            # 💡 기존 코드를 지우고 아래 내용으로 교체하세요.
             with st.expander("👥 멤버 목록 및 계급 관리", expanded=True):
                 can_rank = has_perm(uid, cdata, "계급관리")
                 can_kick = has_perm(uid, cdata, "추방")
+                can_lead = has_perm(uid, cdata, "위임")  # ✅ 이 줄을 꼭 추가해야 오류가 사라집니다!
 
                 for m in cdata['members']:
                     m_rank = cdata['member_ranks'].get(m, "일반멤버")
                     
-                    # 1. 멤버 정보를 담은 깔끔한 박스 (글자 겹침 방지)
+                    # 1. 멤버 정보 박스
                     st.markdown(f"""
                     <div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; border-left:4px solid #00E5FF;'>
                         <b style='font-size:1.1rem; color:#FFFFFF;'>{m}</b> 
@@ -4121,11 +4120,10 @@ elif menu == "🏰 길드/클랜":
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # 2. 버튼 조작 구역 (여유 있게 배치)
+                    # 2. 조작 버튼 구역
                     col_edit, col_kick = st.columns([3, 1])
                     
                     with col_edit:
-                        # 계급 변경 (권한이 있고 본인이 아닐 때만 노출)
                         if can_rank and m != uid:
                             new_r = st.selectbox(
                                 "계급 변경", ["일반멤버", "운영진", "부클랜장"], 
@@ -4136,17 +4134,16 @@ elif menu == "🏰 길드/클랜":
                                 cdata['member_ranks'][m] = new_r
                                 save_clan_db(clans); st.rerun()
                         else:
-                            st.write("") # 공간 확보용
+                            st.write("") 
 
                     with col_kick:
-                        # 추방 버튼 (권한이 있고 본인/클랜장이 아닐 때만)
                         if can_kick and m != uid and m != cdata['leader']:
                             if st.button("🦶 추방", key=f"kick_btn_{m}", use_container_width=True):
                                 cdata['members'].remove(m)
                                 if m in cdata['member_ranks']: del cdata['member_ranks'][m]
                                 save_clan_db(clans); st.rerun()
                     
-                    st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True) # 멤버 간 간격
+                    st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True)
                     
                 # --- 클랜장 위임 기능 (따로 빼서 강조) ---
                 if can_lead:
