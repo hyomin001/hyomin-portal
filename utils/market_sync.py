@@ -1,10 +1,10 @@
-# utils/market_sync.py모든 사용자의 주가, 코인값, 뉴스, 대출 이자 등 오프라인에서도 작동해야 하는 시간 관련 계산을 여기서 단번에 처리합니다.
+# utils/market_sync.py모든 사용자의 주가, 코인값, 뉴스, 대출 이자 등 오프라인에서도 작동해야 하는 시간 관련 계산을 여기서 단번에 처리합니다
 import time
 import random
 import streamlit as st
 from utils.config import *
-from utils.database import *
-from utils.core import get_net_worth, sync_user_data, get_market, save_market, log_tx
+from utils.database import load_db, save_db, log_tx
+from utils.core import get_net_worth, sync_user_data, get_market, save_market
 
 def run_market_sync():
     market = get_market()
