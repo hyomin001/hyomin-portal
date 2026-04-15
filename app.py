@@ -704,6 +704,8 @@ if 'logged_in_user' not in st.session_state:
     st.markdown("<div class='login-title'>🌌 HYOMIN UNIVERSE</div>", unsafe_allow_html=True)
     current_season_now = market.get('season_num', 1)
     st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {current_season_now} ∙</div>", unsafe_allow_html=True)
+    current_season_now = market.get('season_num', 1)
+    st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {current_season_now} ∙</div>", unsafe_allow_html=True)
     
 
     # 👇 여기서부터 복사해서 바로 아래에 붙여넣으세요! 👇
