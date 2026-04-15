@@ -2,12 +2,17 @@
 import streamlit as st
 import pandas as pd
 import time
+from streamlit_autorefresh import st_autorefresh  # 🚀 자동 새로고침 부품 가져오기
 from utils.config import CRYPTO_CONFIG
 from utils.core import format_korean_money, sync_user_data, claim_hidden_title
 from utils.database import load_db, log_tx, USERS_FILE
 
 def render(market, nw):
     st.title("🪙 가상화폐 거래소")
+    
+    # 🚀 핵심: 5초(5000ms)마다 이 페이지를 자동으로 새로고침 하라!
+    # (유저가 아무것도 안 해도 코인 가격이 실시간으로 춤을 춥니다)
+    st_autorefresh(interval=5000, limit=None, key="crypto_auto_refresh")
     
     if 'crypto_data' not in market:
         st.warning("코인 시장 개장 중... 잠시 후 새로고침 해주세요.")
@@ -81,7 +86,6 @@ def render(market, nw):
     with tab_trade:
         crypto_ids = [c['id'] for c in CRYPTO_CONFIG]
         
-        # 세션에 저장된 코인 ID의 인덱스 번호를 찾습니다 (에러 방지용 try-except)
         try:
             default_idx = crypto_ids.index(st.session_state.selected_crypto_id)
         except ValueError:
@@ -95,7 +99,6 @@ def render(market, nw):
             key="crypto_trade_selectbox"
         )
         
-        # 방금 선택된 코인 ID를 세션에 덮어씌워서 기억하게 만듭니다
         st.session_state.selected_crypto_id = sel_c
         
         cd    = cdata[sel_c]
