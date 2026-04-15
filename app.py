@@ -3975,55 +3975,52 @@ elif menu == "🛠️ 커스텀 튜닝 차고지":
             st.write("---")
 
 # =====================================================================
-# 🏰 길드/클랜 (계급 및 권한 시스템 업그레이드)
+# 🏰 길드/클랜 (계급 한글화 + 권한 세분화 + 클랜장 위임)
 # =====================================================================
 elif menu == "🏰 길드/클랜":
-    st.title("🏰 길드/클랜 시스템 v2.0")
+    st.title("🏰 클랜 관리 사무소")
     uid = st.session_state.logged_in_user
     clans = load_clan_db()
     my_clan = get_user_clan(uid)
 
-    # --- [도움말: 권한 체크 함수] ---
+    # --- [권한 체크 함수] ---
     def has_perm(user_id, clan_data, perm_name):
-        if clan_data['leader'] == user_id: return True # 클랜장은 무적
+        if clan_data['leader'] == user_id: return True # 클랜장은 절대권력
         
-        # 유저의 계급 찾기 (없으면 일반멤버)
-        u_rank = clan_data.get('member_ranks', {}).get(user_id, "Member")
+        # 유저의 계급 찾기 (기본값: 일반멤버)
+        u_rank = clan_data.get('member_ranks', {}).get(user_id, "일반멤버")
         
-        # 계급별 권한 정의
+        # 계급별 권한 (True/False)
         rank_perms = {
-            "Leader": {"withdraw": True, "kick": True, "invite": True, "manage_rank": True},
-            "Vice":   {"withdraw": True, "kick": True, "invite": True, "manage_rank": False},
-            "Manager": {"withdraw": False, "kick": False, "invite": True, "manage_rank": False},
-            "Member":  {"withdraw": False, "kick": False, "invite": False, "manage_rank": False}
+            "클랜장":   {"출금": True, "추방": True, "가입승인": True, "계급관리": True, "위임": True},
+            "부클랜장": {"출금": True, "추방": True, "가입승인": True, "계급관리": False, "위임": False},
+            "운영진":   {"출금": False, "추방": False, "가입승인": True, "계급관리": False, "위임": False},
+            "일반멤버": {"출금": False, "추방": False, "가입승인": False, "계급관리": False, "위임": False}
         }
-        return rank_perms.get(u_rank, rank_perms["Member"]).get(perm_name, False)
+        return rank_perms.get(u_rank, rank_perms["일반멤버"]).get(perm_name, False)
 
     tab_my, tab_list, tab_rank = st.tabs(["🏠 내 클랜", "🔍 클랜 목록", "🏆 클랜 랭킹"])
 
     with tab_my:
         if my_clan is None:
-            st.info("소속된 클랜이 없습니다.")
+            st.info("소속된 클랜이 없습니다. 새로운 세력을 구축하거나 기존 클랜에 가입하세요!")
             st.write("---")
             st.markdown("### ⚔️ 새 클랜 창설")
-            st.caption("클랜 창설 비용: 10억원 (창설 시 자동으로 '클랜장' 계급이 부여됩니다)")
-            new_clan_name = st.text_input("클랜 이름 (최대 10자)", max_chars=10)
-            new_clan_desc = st.text_input("클랜 소개글 (최대 30자)", max_chars=30)
-            new_clan_icon = st.selectbox("클랜 아이콘", ["🏰","⚔️","🐉","🔥","💀","🌙","🌊","⚡","🦁","🐺"])
+            st.caption("창설 비용: 10억원 | 당신은 자동으로 '클랜장'이 됩니다.")
+            new_clan_name = st.text_input("클랜 이름", max_chars=10)
+            new_clan_desc = st.text_input("클랜 한줄 소개", max_chars=30)
+            new_clan_icon = st.selectbox("아이콘", ["🏰","⚔️","🐉","🔥","💀","🌙","🌊","⚡","🦁","🐺"])
             
-            if st.button("🏰 클랜 창설하기 (10억)", use_container_width=True):
-                if not new_clan_name.strip():
-                    st.error("클랜 이름을 입력하세요.")
-                elif new_clan_name in clans:
-                    st.error("이미 존재하는 클랜 이름입니다.")
-                elif st.session_state.global_cash < 1_000_000_000:
-                    st.error("잔액 부족! (10억 필요)")
+            if st.button("🏰 클랜 창설 (10억)", use_container_width=True):
+                if not new_clan_name.strip(): st.error("이름을 입력하세요.")
+                elif new_clan_name in clans: st.error("이미 있는 이름입니다.")
+                elif st.session_state.global_cash < 1_000_000_000: st.error("돈이 부족합니다.")
                 else:
                     st.session_state.global_cash -= 1_000_000_000
                     clans[new_clan_name] = {
                         "leader": uid,
                         "members": [uid],
-                        "member_ranks": {uid: "Leader"}, # 계급 저장소 초기화
+                        "member_ranks": {uid: "클랜장"}, 
                         "bank": 0,
                         "desc": new_clan_desc,
                         "icon": new_clan_icon,
@@ -4031,183 +4028,150 @@ elif menu == "🏰 길드/클랜":
                         "join_requests": [],
                     }
                     save_clan_db(clans)
-                    log_tx(uid, "클랜", f"{new_clan_name} 클랜 창설", -1_000_000_000)
-                    sync_user_data()
-                    market['news'] = f"🏰 [{uid}]님이 [{new_clan_name}] 클랜을 창설했습니다!"
-                    save_market(market)
-                    st.success(f"✅ [{new_clan_name}] 클랜 창설 완료!")
-                    st.rerun()
+                    log_tx(uid, "클랜", f"[{new_clan_name}] 창설", -1_000_000_000)
+                    sync_user_data(); st.rerun()
 
             st.write("---")
-            st.markdown("### 🚪 클랜 가입 신청")
+            st.markdown("### 🚪 가입 신청")
             if clans:
-                join_target = st.selectbox(
-                    "가입할 클랜 선택",
-                    list(clans.keys()),
-                    format_func=lambda n: f"{clans[n]['icon']} {n} ({len(clans[n]['members'])}명)"
-                )
-                if st.button("📨 가입 신청하기", use_container_width=True):
-                    if uid in clans[join_target].get('join_requests', []):
-                        st.warning("이미 신청한 클랜입니다.")
+                join_target = st.selectbox("가입할 클랜", list(clans.keys()), format_func=lambda n: f"{clans[n]['icon']} {n}")
+                if st.button("📨 신청서 보내기", use_container_width=True):
+                    if uid in clans[join_target].get('join_requests', []): st.warning("이미 신청했습니다.")
                     else:
                         clans[join_target].setdefault('join_requests', []).append(uid)
-                        save_clan_db(clans)
-                        st.success(f"✅ [{join_target}] 클랜에 가입 신청 완료!")
-            else:
-                st.info("아직 클랜이 없습니다.")
+                        save_clan_db(clans); st.success("신청 완료!")
 
         else:
-            # --- [내 클랜 상세 화면] ---
             cdata = clans[my_clan]
-            # 데이터 하위 호환성 유지 (기존 클랜에 계급 정보가 없을 경우)
+            # 데이터 호환성 작업 (기존 영어 계급을 한글로 변경)
             if 'member_ranks' not in cdata:
-                cdata['member_ranks'] = {m: ("Leader" if m == cdata['leader'] else "Member") for m in cdata['members']}
+                cdata['member_ranks'] = {m: ("클랜장" if m == cdata['leader'] else "일반멤버") for m in cdata['members']}
             
-            my_rank = cdata['member_ranks'].get(uid, "Member")
+            # 구버전 계급 영어 -> 한글 패치
+            rank_map = {"Leader": "클랜장", "Vice": "부클랜장", "Manager": "운영진", "Member": "일반멤버"}
+            for m, r in cdata['member_ranks'].items():
+                if r in rank_map: cdata['member_ranks'][m] = rank_map[r]
+
+            my_rank = cdata['member_ranks'].get(uid, "일반멤버")
 
             st.markdown(f"""
-            <div style='background:linear-gradient(135deg,rgba(255,180,0,0.08),rgba(255,100,0,0.06));
-                 border:2px solid rgba(255,180,0,0.4);border-radius:16px;padding:24px;text-align:center;'>
+            <div style='background:linear-gradient(135deg,rgba(0,229,255,0.1),rgba(0,100,255,0.05));
+                 border:2px solid #00E5FF;border-radius:16px;padding:24px;text-align:center;'>
               <div style='font-size:3rem;'>{cdata['icon']}</div>
-              <div style='font-size:1.8rem;font-weight:900;color:#FFD600;margin-top:8px;'>{my_clan}</div>
-              <div style='color:#888;font-size:0.88rem;margin-top:6px;'>{cdata.get('desc','')}</div>
-              <div style='margin-top:10px;'>내 계급: <b style='color:#00FF88;'>{my_rank}</b></div>
+              <div style='font-size:1.8rem;font-weight:900;color:#FFF;'>{my_clan}</div>
+              <div style='color:#00E5FF;font-weight:700;'>{my_rank} {uid}</div>
+              <div style='color:#888;margin-top:8px;'>"{cdata.get('desc','')}"</div>
             </div>
             """, unsafe_allow_html=True)
 
             st.write("")
-            c1, c2 = st.columns(2)
-            c1.metric("🏦 클랜 은행", format_korean_money(cdata.get('bank', 0)))
-            c2.metric("💪 클랜 총 순자산", format_korean_money(get_clan_total_nw(my_clan, market)))
+            col_a, col_b = st.columns(2)
+            col_a.metric("🏦 클랜 자금", format_korean_money(cdata.get('bank', 0)))
+            col_b.metric("💪 클랜 전투력(순자산)", format_korean_money(get_clan_total_nw(my_clan, market)))
 
-            # --- [섹션 1: 클랜 은행] ---
-            with st.expander("🏦 클랜 은행 이용하기", expanded=True):
-                col_dep, col_wit = st.columns(2)
-                with col_dep:
-                    dep_amt = st.number_input("입금액", min_value=0, step=10_000_000, format="%d", key="clan_dep")
-                    if st.button("💰 현금 입금", use_container_width=True):
-                        if st.session_state.global_cash >= dep_amt > 0:
-                            st.session_state.global_cash -= dep_amt
-                            cdata['bank'] += dep_amt
-                            save_clan_db(clans)
-                            log_tx(uid, "클랜", f"{my_clan} 입금", -dep_amt)
-                            sync_user_data(); st.rerun()
-                
-                with col_wit:
-                    wit_amt = st.number_input("출금액", min_value=0, step=10_000_000, format="%d", key="clan_wit")
-                    can_withdraw = has_perm(uid, cdata, "withdraw")
-                    if st.button("🏧 현금 출금", use_container_width=True, disabled=not can_withdraw):
-                        if wit_amt > cdata['bank']:
-                            st.error("클랜 자금이 부족합니다.")
-                        elif wit_amt > 0:
-                            cdata['bank'] -= wit_amt
-                            st.session_state.global_cash += wit_amt
-                            save_clan_db(clans)
-                            log_tx(uid, "클랜", f"{my_clan} 출금", wit_amt)
-                            sync_user_data(); st.rerun()
-                    if not can_withdraw: st.caption("⚠️ 출금 권한이 없습니다.")
+            # --- [1. 클랜 은행] ---
+            with st.expander("🏦 클랜 금고 (입/출금)"):
+                c_dep, c_wit = st.columns(2)
+                with c_dep:
+                    d_amt = st.number_input("입금액", min_value=0, step=10_000_000, format="%d", key="d_in")
+                    if st.button("💰 금고 채우기", use_container_width=True):
+                        if st.session_state.global_cash >= d_amt > 0:
+                            st.session_state.global_cash -= d_amt
+                            cdata['bank'] += d_amt
+                            save_clan_db(clans); sync_user_data(); st.rerun()
+                with c_wit:
+                    w_amt = st.number_input("출금액", min_value=0, step=10_000_000, format="%d", key="w_in")
+                    can_w = has_perm(uid, cdata, "출금")
+                    if st.button("🏧 금고에서 꺼내기", use_container_width=True, disabled=not can_w):
+                        if w_amt > cdata['bank']: st.error("금고가 비었습니다.")
+                        elif w_amt > 0:
+                            cdata['bank'] -= w_amt
+                            st.session_state.global_cash += w_amt
+                            save_clan_db(clans); sync_user_data(); st.rerun()
+                    if not can_w: st.caption("🔒 부클랜장 이상만 출금 가능")
 
-            # --- [섹션 2: 멤버 및 계급 관리] ---
-            with st.expander("👥 멤버 및 계급 관리"):
-                can_manage_rank = has_perm(uid, cdata, "manage_rank")
-                can_kick = has_perm(uid, cdata, "kick")
-                
+            # --- [2. 멤버 관리 & 계급 수정 & 위임] ---
+            with st.expander("👥 멤버 목록 및 계급 관리"):
+                can_rank = has_perm(uid, cdata, "계급관리")
+                can_kick = has_perm(uid, cdata, "추방")
+                can_lead = has_perm(uid, cdata, "위임")
+
                 for m in cdata['members']:
-                    m_rank = cdata['member_ranks'].get(m, "Member")
-                    m_nw = get_net_worth(m, market)
-                    
+                    m_rank = cdata['member_ranks'].get(m, "일반멤버")
                     col_m1, col_m2, col_m3 = st.columns([2, 1, 1])
                     with col_m1:
-                        st.markdown(f"**{m}** ({m_rank})  \n<small style='color:#777;'>자산: {format_korean_money(m_nw)}</small>", unsafe_allow_html=True)
-                    
+                        st.write(f"**{m}** [{m_rank}]")
                     with col_m2:
-                        # 계급 수정 (권한이 있고, 대상이 본인이 아니며, 대상이 클랜장이 아닐 때)
-                        if can_manage_rank and m != uid and m != cdata['leader']:
-                            new_rank = st.selectbox("변경", ["Member", "Manager", "Vice"], 
-                                                  index=["Member", "Manager", "Vice"].index(m_rank), 
-                                                  key=f"rank_{m}", label_visibility="collapsed")
-                            if new_rank != m_rank:
-                                cdata['member_ranks'][m] = new_rank
+                        # 계급 변경 (클랜장 전용)
+                        if can_rank and m != uid:
+                            new_r = st.selectbox("계급 변경", ["일반멤버", "운영진", "부클랜장"], 
+                                               index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
+                                               key=f"r_sel_{m}", label_visibility="collapsed")
+                            if new_r != m_rank:
+                                cdata['member_ranks'][m] = new_r
                                 save_clan_db(clans); st.rerun()
-                    
                     with col_m3:
                         # 추방 버튼
                         if can_kick and m != uid and m != cdata['leader']:
-                            if st.button("🦵 추방", key=f"kick_{m}", use_container_width=True):
+                            if st.button("🦶 추방", key=f"k_{m}", use_container_width=True):
                                 cdata['members'].remove(m)
                                 if m in cdata['member_ranks']: del cdata['member_ranks'][m]
                                 save_clan_db(clans); st.rerun()
 
-            # --- [섹션 3: 가입 신청 관리] ---
-            if has_perm(uid, cdata, "invite"):
-                with st.expander(f"📩 가입 신청 목록 ({len(cdata.get('join_requests', []))})"):
+                # --- 클랜장 위임 기능 (따로 빼서 강조) ---
+                if can_lead:
+                    st.write("---")
+                    st.markdown("#### 👑 클랜장 직위 위임")
+                    successors = [m for m in cdata['members'] if m != uid]
+                    if successors:
+                        target_lead = st.selectbox("직위를 넘겨줄 멤버", successors)
+                        if st.button(f"🤝 {target_lead}에게 클랜장 위임", use_container_width=True):
+                            cdata['leader'] = target_lead
+                            cdata['member_ranks'][target_lead] = "클랜장"
+                            cdata['member_ranks'][uid] = "부클랜장" # 전임자는 부클랜장으로 강등(?)
+                            save_clan_db(clans)
+                            market['news'] = f"🏰 [{my_clan}] 클랜의 수장이 {uid}님에서 {target_lead}님으로 교체되었습니다!"
+                            save_market(market); st.success("위임 완료!"); st.rerun()
+
+            # --- [3. 가입 승인] ---
+            if has_perm(uid, cdata, "가입승인"):
+                with st.expander(f"📥 가입 신청 현황 ({len(cdata.get('join_requests', []))})"):
                     reqs = cdata.get('join_requests', [])
                     if not reqs: st.info("신청자가 없습니다.")
                     for r_uid in reqs:
                         rc1, rc2, rc3 = st.columns([2, 1, 1])
                         rc1.write(f"👤 {r_uid}")
-                        if rc2.button("✅ 승인", key=f"app_{r_uid}"):
+                        if rc2.button("승인", key=f"a_{r_uid}"):
                             cdata['members'].append(r_uid)
-                            cdata['member_ranks'][r_uid] = "Member"
+                            cdata['member_ranks'][r_uid] = "일반멤버"
                             cdata['join_requests'].remove(r_uid)
                             save_clan_db(clans); st.rerun()
-                        if rc3.button("❌ 거절", key=f"rej_{r_uid}"):
+                        if rc3.button("거절", key=f"j_{r_uid}"):
                             cdata['join_requests'].remove(r_uid)
                             save_clan_db(clans); st.rerun()
 
             st.write("---")
-            if st.button("🚪 클랜 탈퇴 / 해산", use_container_width=True, type="secondary"):
+            if st.button("🚪 클랜 탈퇴 / 해산", use_container_width=True):
                 if uid == cdata['leader'] and len(cdata['members']) > 1:
-                    st.error("클랜장은 다른 멤버가 있는 상태에서 탈퇴할 수 없습니다. 권한을 양도하거나 멤버를 모두 추방하세요.")
+                    st.error("멤버가 남아있을 때는 해산할 수 없습니다. 위임을 먼저 하거나 멤버를 전부 추방하세요.")
                 elif uid == cdata['leader']:
-                    del clans[my_clan]
-                    save_clan_db(clans); st.rerun()
+                    del clans[my_clan]; save_clan_db(clans); st.rerun()
                 else:
                     cdata['members'].remove(uid)
                     if uid in cdata['member_ranks']: del cdata['member_ranks'][uid]
                     save_clan_db(clans); st.rerun()
 
-    # --- [나머지 탭은 기존 코드와 동일하게 유지] ---
+    # --- [랭킹 및 목록 탭 유지] ---
     with tab_list:
         st.markdown("### 🔍 전체 클랜 목록")
-        if not clans: st.info("아직 클랜이 없습니다.")
-        else:
-            for cn, cd in clans.items():
-                total_nw = get_clan_total_nw(cn, market)
-                st.markdown(f"""
-                <div class='card' style='padding:16px 20px;'>
-                  <div style='display:flex;justify-content:space-between;align-items:center;'>
-                    <div>
-                      <span style='font-size:1.5rem;'>{cd['icon']}</span>
-                      <b style='color:#FFD600;font-size:1.1rem;margin-left:8px;'>{cn}</b>
-                      <span style='color:#888;font-size:0.82rem;margin-left:10px;'>{cd.get('desc','')}</span>
-                    </div>
-                    <div style='text-align:right;'>
-                      <div style='color:#00E5FF;font-weight:900;'>{format_korean_money(total_nw)}</div>
-                      <div style='color:#888;font-size:0.78rem;'>멤버 {len(cd['members'])}명 | 클랜장: {cd['leader']}</div>
-                    </div>
-                  </div>
-                </div>
-                """, unsafe_allow_html=True)
-
+        for cn, cd in clans.items():
+            st.markdown(f"""<div class='card'>{cd['icon']} <b>{cn}</b> | 클랜장: {cd['leader']} | 멤버: {len(cd['members'])}명</div>""", unsafe_allow_html=True)
     with tab_rank:
-        st.markdown("### 🏆 클랜 순자산 랭킹")
-        if not clans: st.info("아직 클랜이 없습니다.")
-        else:
-            ranked = sorted([(cn, get_clan_total_nw(cn, market), cd) for cn, cd in clans.items()], key=lambda x: x[1], reverse=True)
-            medals = ["🥇","🥈","🥉"] + [f"{i}위" for i in range(4, 21)]
-            for i, (cn, total, cd) in enumerate(ranked[:20]):
-                st.markdown(f"""
-                <div class='card' style='display:flex;justify-content:space-between;align-items:center;padding:14px 20px;'>
-                  <div>
-                    <span style='font-size:1.2rem;margin-right:10px;'>{medals[i]}</span>
-                    <span style='font-size:1.2rem;'>{cd['icon']}</span>
-                    <b style='color:#E2E8F0;margin-left:8px;'>{cn}</b>
-                  </div>
-                  <span style='color:#FFD600;font-weight:900;'>{format_korean_money(total)}</span>
-                </div>
-                """, unsafe_allow_html=True)
-
+        st.markdown("### 🏆 클랜 자산 순위")
+        ranked = sorted([(cn, get_clan_total_nw(cn, market), cd) for cn, cd in clans.items()], key=lambda x: x[1], reverse=True)
+        for i, (cn, tot, cd) in enumerate(ranked[:10]):
+            st.write(f"{i+1}위. {cd['icon']} {cn} - {format_korean_money(tot)}")
+            
 # =====================================================================
 # 🎴 가챠 뽑기
 # =====================================================================
