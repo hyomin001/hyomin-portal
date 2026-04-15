@@ -731,9 +731,29 @@ if 'logged_in_user' not in st.session_state:
                
                 
                 if l_id == "admin":
-                    if l_pw == ADMIN_PW: 
-                        # 코드를 보고 "***"를 그대로 입력한 빌런 참교육
+                    # 소스코드에 적혀있던 가짜 별표(***) 비밀번호를 그대로 친 경우를 필터링
+                    if l_pw == "*******q131341**134**151**": 
                         st.error("😎 소스코드를 훔쳐보셨군요? 안타깝지만 그건 가짜 비밀번호입니다!")
+                    
+                    # 실제 해시값과 비교하여 로그인 성공 여부 판단
+                    elif hash_pw(l_pw) == ADMIN_HASH:
+                        if "admin" not in users:
+                            # 어드민 계정 초기 생성
+                            users["admin"] = {
+                                "pw": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", # 1234의 해시값
+                                "cash": 999_999_999_999,
+                                "inventory": [],
+                                "equipped_title": "👑 절대신 창조주",
+                                "portfolio": {},
+                                "real_estate": {},
+                                "rent_time": time.time(),
+                                "loan": 0,
+                                "loan_time": time.time(),
+                            }
+                            save_db(USERS_FILE, users)
+                        _do_login("admin")
+                    else:
+                        st.error("❌ 아이디 또는 비밀번호가 올바르지 않습니다.")
                     
                     # 진짜 로그인: 1234 의 해시값과 비교
                     elif hash_pw(l_pw) == "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4":
