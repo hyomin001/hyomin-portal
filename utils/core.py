@@ -7,7 +7,7 @@ from utils.config import (
     KST, USERS_FILE, MARKET_FILE, estate_config,
     stock_config, FORGE_DATA, MINE_ITEMS, CRYPTO_CONFIG, DAILY_QUESTS_CONFIG
 )
-from utils.database import load_db, save_db, load_clan_db, save_db as _save_db
+from utils.database import load_db, save_db, load_clan_db
 
 ADMIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4" 
 ADMIN_PW = "*******q131341**134**151**"
