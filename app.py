@@ -181,7 +181,24 @@ if 'logged_in_user' not in st.session_state:
 # 4. 로그인 후 데이터 동기화
 # ==============================
 market = run_market_sync()
-nw = get_net_worth(st.session_state.logged_in_user, market)
+
+# 순자산 계산: DB 재호출 없이 세션 상태 기반으로 계산 (렌더링 속도 개선)
+def _calc_nw_from_session(market_data):
+    from utils.config import estate_config, FORGE_DATA
+    w = st.session_state.global_cash - st.session_state.loan
+    prices = {k: v['price'] for k, v in market_data.get('stock_data', {}).items()}
+    for sid, p_data in st.session_state.portfolio.items():
+        if sid in prices: w += p_data.get('qty', 0) * prices[sid]
+    for cid, cinfo in st.session_state.get('crypto_portfolio', {}).items():
+        price = market_data.get('crypto_data', {}).get(cid, {}).get('price', 0)
+        w += cinfo.get('qty', 0) * price
+    for eid, count in st.session_state.get('real_estate', {}).items():
+        if eid in estate_config: w += estate_config[eid]['base_price'] * count * 0.8
+    w_lv = st.session_state.get('weapon_level', 0)
+    if w_lv > 0: w += FORGE_DATA[w_lv]['sell']
+    return w
+
+nw = _calc_nw_from_session(market)
 
 if st.session_state.loan > 0 and nw < 0:
     st.session_state.equipped_title = "💸 신용불량자"
@@ -201,7 +218,7 @@ CATEGORY_MENUS = {
     "🎮 미니게임": ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "💻 정처기 CBT", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
     "🌟 성장 & 혜택": ["📅 일일 퀘스트", "👑 칭호 상점"],
     "⚽ 스포츠": ["⚽ 구단주 시뮬레이터", "⚽ 조기축구 승부차기", "🏎️ 하이퍼카 레이싱", "🛠️ 커스텀 튜닝 차고지"],
-    "👥 커뮤니티": ["🏰 길드/클랜", "🏅랭킹 & 게시판", "✉️ 개인 쪽지함"],
+    "👥 커뮤니티": ["🏰 길드/클랜", "🏅 [시즌1]랭킹 & 게시판", "✉️ 개인 쪽지함"],
 }
 if is_vip: CATEGORY_MENUS["📈 경제"].insert(1, "💎 VIP 라운지")
 if is_admin: CATEGORY_MENUS["⚙️ 관리"] = ["🛠️ 창조주 통제소"]
@@ -289,7 +306,7 @@ elif menu == "📅 일일 퀘스트":
     from pages import quest; quest.render(market, nw)
 elif menu == "👑 칭호 상점":
     from pages import title_shop; title_shop.render(market, nw)
-elif menu == "🏅 랭킹 & 게시판":
+elif menu == "🏅 [시즌1]랭킹 & 게시판":
     from pages import ranking; ranking.render(market, nw)
 elif menu == "✉️ 개인 쪽지함":
     from pages import dm; dm.render(market, nw)
