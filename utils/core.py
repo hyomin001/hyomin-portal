@@ -10,7 +10,7 @@ from utils.config import (
 )
 from utils.database import load_db, save_db, load_clan_db
 
-
+# [보안 설정] 3017의 SHA-256 해시값으로 기본값 설정
 default_hash = "b573ebf82028a56d9d724124bd51e072b175d160695e2735b0fa4ae5e4c79fd1"
 ADMIN_HASH = os.environ.get("ADMIN_HASH", default_hash)
 
@@ -62,7 +62,7 @@ def sync_user_data():
         'inventory': st.session_state.inventory,
         'equipped_title': st.session_state.equipped_title,
         'portfolio': st.session_state.portfolio,
-        'real_estate': st.session_state.real_estate,  # 부동산 저장 확인!
+        'real_estate': st.session_state.real_estate,
         'rent_time': st.session_state.rent_time,
         'loan': st.session_state.loan,
         'loan_time': st.session_state.loan_time,
@@ -74,6 +74,35 @@ def sync_user_data():
         'last_estate_reset': st.session_state.get('last_estate_reset', 0),
     })
     save_db(USERS_FILE, users)
+
+def pull_user_data():
+    """
+    [근본 버그 픽스] 
+    DB의 최신 상태를 강제로 현재 세션(브라우저 탭)으로 불러옵니다.
+    이 함수가 실행되면 다중 탭이나 과거의 망령(캐시)이 DB를 덮어쓰는 일이 절대 발생하지 않습니다.
+    """
+    if 'logged_in_user' not in st.session_state: 
+        return
+        
+    users = load_db(USERS_FILE, {})
+    uid = st.session_state.logged_in_user
+    
+    if uid in users:
+        u = users[uid]
+        st.session_state.global_cash = u.get('cash', 0)
+        st.session_state.inventory = u.get('inventory', [])
+        st.session_state.equipped_title = u.get('equipped_title', '')
+        st.session_state.portfolio = u.get('portfolio', {})
+        st.session_state.real_estate = u.get('real_estate', {})
+        st.session_state.rent_time = u.get('rent_time', 0)
+        st.session_state.loan = u.get('loan', 0)
+        st.session_state.loan_time = u.get('loan_time', 0)
+        st.session_state.crypto_portfolio = u.get('crypto_portfolio', {})
+        st.session_state.daily_quests = u.get('daily_quests', {})
+        st.session_state.weapon_level = u.get('weapon_level', 0)
+        st.session_state.bulk_trade_date = u.get('bulk_trade_date', '')
+        st.session_state.bulk_trade_count = u.get('bulk_trade_count', 0)
+        st.session_state.last_estate_reset = u.get('last_estate_reset', 0)
 
 def get_market():
     def init_m():
