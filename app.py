@@ -172,7 +172,8 @@ if 'logged_in_user' not in st.session_state:
                 else:
                     users[clean_id] = {
                         "pw":hash_pw(n_pw), "cash":500_000_000, "inventory":[], "equipped_title":"🌱 신규시민",
-                        "portfolio":{}, "real_estate":{}, "rent_time":time.time(), "loan":0, "loan_time":time.time()
+                        "portfolio":{}, "real_estate":{}, "rent_time":time.time(), "loan":0, "loan_time":time.time(),
+                        "last_estate_reset": 0, "bulk_trade_date": "", "bulk_trade_count": 0,
                     }
                     save_db(USERS_FILE, users)
                     st.success("🎉 가입 성공! 정착금 5억원이 지급되었습니다!")
