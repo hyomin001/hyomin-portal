@@ -1,5 +1,4 @@
 # app.py
-# 로그인과 메뉴 네비게이션을 담당하며 선택한 메뉴에 따라 페이지의 폴더 안의 모듈호출
 import streamlit as st
 import time
 import os
@@ -10,7 +9,6 @@ from datetime import datetime
 # ==============================
 from utils.config import MARKET_FILE, USERS_FILE, KST
 from utils.database import load_db, save_db
-# [추가됨] pull_user_data 임포트 (데이터 증발 방지용)
 from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
@@ -18,118 +16,163 @@ from utils.css import GLOBAL_CSS
 # ==============================
 # 2. 페이지 기본 설정 및 CSS 주입
 # ==============================
-st.set_page_config(page_title="DOPAHYOMIN UNIVERSE v18.2", page_icon="🌌", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="HYOMIN PORTAL", page_icon="🌐", layout="wide", initial_sidebar_state="collapsed")
 st.markdown(f"<style>{GLOBAL_CSS}</style>", unsafe_allow_html=True)
 
-# [핵심 방어막] 사용자의 행동 전, 무조건 DB에서 최신 정보를 강제로 덮어씌움 (다중 탭 버그 방지)
+# [핵심 방어막] 사용자의 행동 전 최신 정보 강제 동기화 (로그인 된 경우에만 작동함)
 pull_user_data()
 
 # 라우팅(화면 이동)을 위한 세션 상태 초기화
 if "page_view" not in st.session_state:
-    st.session_state.page_view = "portal"
+    st.session_state.page_view = "portal"  # 항상 첫 화면은 포털 메인
+
+market = load_db(MARKET_FILE, {}) # 임시 로드
 
 # ==============================
-# 3. 로그인 및 세션 관리 (게이트웨이)
+# 3. [View 1] 포털 메인 화면 (로그인 불필요, 신뢰감 주는 디자인)
 # ==============================
-market = load_db(MARKET_FILE, {}) # 로그인 전 임시 로드
-
-if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+if st.session_state.page_view == "portal":
+    # 신뢰감을 주는 딥 네이비 & 깔끔한 블루 UI 스타일
     st.markdown("""
-<style>
-.stApp { background: radial-gradient(ellipse at 20% 50%, #0d0221 0%, #050510 60%, #000 100%) !important; }
-.login-title { font-family:'Orbitron',monospace !important; font-size:clamp(2rem,6vw,4rem) !important; font-weight:900; text-align:center; background:linear-gradient(135deg,#00E5FF 0%,#FF00FF 50%,#FFD600 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; padding:20px 0 5px 0; letter-spacing:4px; animation:glow 3s ease-in-out infinite alternate; }
-@keyframes glow { from{filter:drop-shadow(0 0 10px #00E5FF)} to{filter:drop-shadow(0 0 30px #FF00FF)} }
-.login-sub { text-align:center; color:#888 !important; font-size:1rem; margin-bottom:20px; letter-spacing:3px; }
-</style>""", unsafe_allow_html=True)
+        <style>
+        .portal-header {
+            text-align: center;
+            padding: 40px 0 20px 0;
+            color: #E2E8F0;
+        }
+        .portal-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #4B9EFF, #00E5FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .trust-badge {
+            display: inline-block;
+            background: rgba(75, 158, 255, 0.1);
+            border: 1px solid rgba(75, 158, 255, 0.3);
+            color: #4B9EFF;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .banner-card {
+            background: #111827; /* 다크 네이비 */
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid #1F2937;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .banner-card:hover {
+            border-color: #4B9EFF;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(75, 158, 255, 0.15);
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    st.markdown("<div class='login-title'>🌌 DOPAHYOMIN UNIVERSE</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='login-sub'>∙ 자본주의 생존 시뮬레이션 시즌 {market.get('season_num', 1)} ∙</div>", unsafe_allow_html=True)
+    # 상단 로그인/내정보 바
+    col_empty, col_btn = st.columns([8, 2])
+    with col_btn:
+        if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
+            st.markdown(f"<div style='text-align:right; color:#94A3B8; margin-bottom:5px;'>👤 {st.session_state.logged_in_user}님</div>", unsafe_allow_html=True)
+            if st.button("로그아웃", use_container_width=True):
+                sync_user_data()
+                st.session_state.clear()
+                st.rerun()
+        else:
+            if st.button("🔑 로그인 / 회원가입", use_container_width=True):
+                st.session_state.page_view = "login"
+                st.rerun()
 
-    # 🌠 게임 소개 및 서버 점검 스플래시 패널
+    # 포털 헤더
     st.markdown("""
-<div style='background: linear-gradient(135deg, rgba(15, 20, 35, 0.9), rgba(5, 10, 15, 0.95)); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 16px; padding: 30px; margin-bottom: 20px; max-width: 850px; margin-left: auto; margin-right: auto; box-shadow: 0 10px 30px rgba(0, 229, 255, 0.1);'>
-    <div style='text-align: center; margin-bottom: 25px;'>
-        <div style='font-size: 3.5rem; margin-bottom: 10px;'>🌌</div>
-        <h2 style='color: #00E5FF; margin: 0; font-family: "Orbitron", sans-serif; letter-spacing: 2px;'>WELCOME TO DOPAHYOMIN UNIVERSE</h2>
-        <p style='color: #94A3B8; font-size: 1rem; line-height: 1.6; margin-top: 10px;'>
-        주식, 코인, 부동산부터 짜릿한 카지노와 하이퍼카 레이싱까지.<br>
-        우주 최고의 억만장자가 되기 위한 <b>무한한 자본주의 생존 시뮬레이션</b>에 합류하세요!
-        </p>
-    </div>
-    <div style='display: flex; gap: 20px; flex-wrap: wrap;'>
-        <div style='flex: 1; min-width: 300px; background: linear-gradient(135deg, rgba(255, 75, 75, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(255, 75, 75, 0.4); border-radius: 12px; padding: 20px; position: relative; overflow: hidden;'>
-            <div style='position: absolute; top: -15px; right: -15px; font-size: 5rem; opacity: 0.1;'>🛠️</div>
-            <h4 style='color: #FF4B4B; margin-top: 0; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;'>
-                <span>🚨</span> 시스템 대공사 및 재시작 안내
-            </h4>
-            <p style='color: #E2E8F0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0;'>
-            데이터베이스를 <b>외부 클라우드(MongoDB)로 완벽 분리</b>하고 <b>37개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다. 유저 자산은 이제 영구히 안전합니다!<br><br>
-            <span style='color: #00E5FF; font-weight: bold;'>🔗 전용 포털 주소 오픈:</span> <b style='color: #FFD600; font-size: 1.05rem;'>dopahyomin.site</b>
+        <div class='portal-header'>
+            <div class='trust-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM</div>
+            <div class='portal-title'>HYOMIN PORTAL</div>
+            <p style='color: #94A3B8; font-size: 1.1rem; max-width: 600px; margin: 0 auto;'>
+                하나의 계정으로 효민 유니버스의 모든 경제, 엔터테인먼트, 커뮤니티 서비스를 안전하게 이용하세요.
             </p>
         </div>
-        <div style='flex: 1; min-width: 300px; background: linear-gradient(135deg, rgba(255, 214, 0, 0.1), rgba(0, 0, 0, 0.4)); border: 1px solid rgba(255, 214, 0, 0.4); border-radius: 12px; padding: 20px; position: relative; overflow: hidden;'>
-            <div style='position: absolute; top: -15px; right: -15px; font-size: 5rem; opacity: 0.1;'>🏆</div>
-            <h4 style='color: #FFD600; margin-top: 0; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;'>
-                <span>🏆</span> 정규 시즌 1 공식 개막
-            </h4>
-            <p style='color: #E2E8F0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0;'>
-            <b>[시즌 기간]</b> 2026년 4월 15일 ~ 5월 15일<br>
-            새로운 시즌의 시작을 기념하여 모든 시민분들께 <b>초기 정착금 5억 원</b>을 즉시 지급합니다! 💸
-            </p>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-    # 🔍 시스템 아키텍처 상세 안내 (HTML 전용 디자인)
+    st.write("---")
+    
+    # 배너 섹션 (클릭 시 로그인 체크 로직 추가)
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("<div class='banner-card'><h2>🌌 효민 유니버스</h2><p style='color:#94A3B8;'>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
+        if st.button("유니버스 입장하기 🚀", use_container_width=True):
+            if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
+                st.session_state.page_view = "universe"
+            else:
+                st.warning("⚠️ 해당 서비스를 이용하시려면 먼저 로그인해주세요.")
+                time.sleep(1)
+                st.session_state.page_view = "login"
+            st.rerun()
+
+        st.markdown("<div class='banner-card'><h2>📊 하이엔드 퀀트 투자</h2><p style='color:#94A3B8;'>Coming Soon...</p></div>", unsafe_allow_html=True)
+        st.button("준비 중...", key="b2", disabled=True, use_container_width=True)
+
+        st.markdown("<div class='banner-card'><h2>🤝 클랜 연합 커뮤니티</h2><p style='color:#94A3B8;'>Coming Soon...</p></div>", unsafe_allow_html=True)
+        st.button("준비 중...", key="b4", disabled=True, use_container_width=True)
+
+    with col2:
+        st.markdown("<div class='banner-card'><h2>🎮 HYOMIN 아케이드</h2><p style='color:#94A3B8;'>Coming Soon...</p></div>", unsafe_allow_html=True)
+        st.button("준비 중...", key="b1", disabled=True, use_container_width=True)
+
+        st.markdown("<div class='banner-card'><h2>🏢 글로벌 부동산 플랫폼</h2><p style='color:#94A3B8;'>Coming Soon...</p></div>", unsafe_allow_html=True)
+        st.button("준비 중...", key="b3", disabled=True, use_container_width=True)
+
+        st.markdown("<div class='banner-card'><h2>🤖 AI 비서 서비스</h2><p style='color:#94A3B8;'>Coming Soon...</p></div>", unsafe_allow_html=True)
+        st.button("준비 중...", key="b5", disabled=True, use_container_width=True)
+
+    # 포털 푸터
     st.markdown("""
-<div style='background: rgba(0, 229, 255, 0.03); border: 1px dashed rgba(0, 229, 255, 0.3); border-radius: 12px; padding: 20px; max-width: 850px; margin: 0 auto 35px auto;'>
-    <div style='display: flex; align-items: center; gap: 10px; margin-bottom: 15px;'>
-        <span style='font-size: 1.5rem;'>🔍</span>
-        <h4 style='color: #00E5FF; margin: 0; font-family: "Orbitron", sans-serif; font-size: 1rem;'>SYSTEM ARCHITECTURE & MODULES</h4>
-    </div>
-    <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;'>
-        <div style='background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;'>
-            <div style='color: #FFD600; font-weight: 800; font-size: 0.85rem; margin-bottom: 5px;'>🛡️ Data Integrity</div>
-            <div style='color: #94A3B8; font-size: 0.75rem; line-height: 1.5;'>
-            MongoDB Atlas 클라우드를 통한 자산 실시간 백업 및 SHA-256 암호화 보안 적용.
-            </div>
+        <div style='text-align: center; padding: 40px 0; color: #64748B; font-size: 0.8rem;'>
+            <p>ⓒ 2026 HYOMIN PORTAL INC. All rights reserved.</p>
+            <p>Powered by MongoDB Atlas & Streamlit Cloud</p>
         </div>
-        <div style='background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;'>
-            <div style='color: #00FF88; font-weight: 800; font-size: 0.85rem; margin-bottom: 5px;'>⚙️ Modular Logic</div>
-            <div style='color: #94A3B8; font-size: 0.75rem; line-height: 1.5;'>
-            37개 독립 모듈 구조로 경제 시뮬레이션 및 미니게임 로직의 안정성 극대화.
-            </div>
-        </div>
-        <div style='background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;'>
-            <div style='color: #00E5FF; font-weight: 800; font-size: 0.85rem; margin-bottom: 5px;'>🔄 Market Sync</div>
-            <div style='color: #94A3B8; font-size: 0.75rem; line-height: 1.5;'>
-            사용자 부재 시에도 시간당 주가/이자/임대료를 자동 계산하는 타임 슬롯 시스템.
-            </div>
-        </div>
-        <div style='background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;'>
-            <div style='color: #B554FF; font-weight: 800; font-size: 0.85rem; margin-bottom: 5px;'>🌐 Global Routing</div>
-            <div style='color: #94A3B8; font-size: 0.75rem; line-height: 1.5;'>
-            전용 도메인(dopahyomin.site) 포워딩을 통한 최적화된 접속 환경 구축.
-            </div>
-        </div>
-    </div>
-    <div style='margin-top: 15px; padding: 10px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;'>
-        <p style='color: #64748B; font-size: 0.7rem; margin: 0;'>
-        Core Engine: Python 3.10+ | Framework: Streamlit v18.2 Modular Edition
-        </p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+    st.stop()
+
+
+# ==============================
+# 4. [View 2] 로그인 / 회원가입 화면
+# ==============================
+elif st.session_state.page_view == "login":
+    
+    if st.button("🔙 포털 메인으로 돌아가기"):
+        st.session_state.page_view = "portal"
+        st.rerun()
+
+    st.markdown("<div style='text-align:center; padding: 20px 0;'>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color:#4B9EFF;'>HYOMIN ID 로그인</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#94A3B8;'>안전한 서비스 이용을 위해 로그인해주세요.</p>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
         device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"], horizontal=True)
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
+        
         with tabs[0]:
             l_id = st.text_input("아이디", placeholder="아이디를 입력하세요")
             l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
-            if st.button("🚀 유니버스 입장", use_container_width=True):
+            if st.button("🚀 로그인 및 계속하기", use_container_width=True):
                 users = load_db(USERS_FILE, {})
                 def _do_login(uid):
                     u = users[uid]
@@ -150,7 +193,9 @@ if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_us
                         'bulk_trade_count': u.get('bulk_trade_count', 0),
                         'last_estate_reset': u.get('last_estate_reset', 0),
                     })
-                    # 로그인 성공 시 포털 메인으로 라우팅 설정
+                    # 로그인 성공 시 포털로 돌아감
+                    st.success("로그인 성공!")
+                    time.sleep(0.5)
                     st.session_state.page_view = "portal"
                     st.rerun()
 
@@ -167,7 +212,7 @@ if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_us
         with tabs[1]:
             n_id = st.text_input("새 아이디", placeholder="사용할 아이디")
             n_pw = st.text_input("새 비밀번호", type="password", placeholder="비밀번호 설정")
-            if st.button("✨ 시민 등록하기", use_container_width=True):
+            if st.button("✨ 계정 생성하기", use_container_width=True):
                 users = load_db(USERS_FILE, {})
                 clean_id = n_id.strip()
                 if clean_id in users or clean_id == "admin":
@@ -183,85 +228,23 @@ if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_us
                         "last_estate_reset": 0, "bulk_trade_date": "", "bulk_trade_count": 0,
                     }
                     save_db(USERS_FILE, users)
-                    st.success("🎉 가입 성공! 정착금 5억원이 지급되었습니다!")
-    # 로그인이 안 되어있으면 여기서 앱 실행을 멈춥니다.
+                    st.success("🎉 가입 성공! 로그인 탭에서 로그인해주세요.")
     st.stop()
 
 
 # ==============================
-# 4. 포털 메인 화면 (대시보드 배너)
+# 5. [View 3] 효민 유니버스 (인게임 로직)
 # ==============================
-if st.session_state.page_view == "portal":
-    st.markdown("<div style='text-align: right;'>", unsafe_allow_html=True)
-    if st.button("🚪 로그아웃", key="portal_logout"):
-        sync_user_data()
-        st.session_state.clear()
-        st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.title(f"👋 환영합니다, {st.session_state.logged_in_user}님!")
-    st.subheader("이용하실 서비스를 선택해주세요.")
-
-    # 배너 디자인 CSS
-    st.markdown("""
-        <style>
-        .banner-card {
-            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
-            border-radius: 15px;
-            padding: 30px;
-            text-align: center;
-            border: 1px solid #444;
-            transition: 0.3s;
-            cursor: pointer;
-            margin-bottom: 20px;
-            min-height: 200px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .banner-card:hover {
-            border-color: #00E5FF;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,229,255,0.2);
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("<div class='banner-card'><h2>🌌 효민 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
-        if st.button("유니버스 입장하기 🚀", use_container_width=True):
-            st.session_state.page_view = "universe"
-            st.rerun()
-
-        st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 B</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
-        st.button("준비 중...", key="b2", disabled=True, use_container_width=True)
-
-        st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 D</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
-        st.button("준비 중...", key="b4", disabled=True, use_container_width=True)
-
-    with col2:
-        st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 A</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
-        st.button("준비 중...", key="b1", disabled=True, use_container_width=True)
-
-        st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 C</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
-        st.button("준비 중...", key="b3", disabled=True, use_container_width=True)
-
-        st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 E</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
-        st.button("준비 중...", key="b5", disabled=True, use_container_width=True)
-
-    st.stop()
-
-
-# ==============================
-# 5. 효민 유니버스 (인게임 로직)
-# ==============================
-if st.session_state.page_view == "universe":
+elif st.session_state.page_view == "universe":
     
+    # 비정상 접근(로그인 안하고 직접 URL 등) 차단
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"
+        st.rerun()
+
     # 상단에 포털로 돌아가는 버튼 추가
     st.markdown("<div style='margin-bottom: 15px;'>", unsafe_allow_html=True)
-    if st.button("🏠 포털 메인으로 돌아가기"):
+    if st.button("🏠 포털 메인으로 나가기"):
         st.session_state.page_view = "portal"
         st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
