@@ -17,31 +17,42 @@ def get_mongo_client():
 def load_db(file, default):
     """MongoDB에서 데이터 불러오기"""
     client = get_mongo_client()
-    if client:
-        try:
-            db = client["hyomin_universe"]
-            col_name = file.replace(".json", "").replace("_db", "")
-            doc = db[col_name].find_one({"_id": "main"})
-            if doc:
-                doc.pop("_id", None)
-                return doc
-        except Exception as e:
-            logging.warning(f"[load_db] {file} 로드 실패: {e}")
-    return default
+    if client is None:
+        # MongoDB가 없으면 앱을 멈춤 (빈 데이터로 덮어쓰는 사고 방지)
+        import streamlit as st
+        st.error("❌ DB 연결 실패: MongoDB에 연결할 수 없습니다. 관리자에게 문의하세요.")
+        st.stop()
+    try:
+        db = client["hyomin_universe"]
+        col_name = file.replace(".json", "").replace("_db", "")
+        doc = db[col_name].find_one({"_id": "main"})
+        if doc:
+            doc.pop("_id", None)
+            return doc
+        return default
+    except Exception as e:
+        import streamlit as st
+        logging.error(f"[load_db] {file} 로드 실패: {e}")
+        st.error(f"❌ DB 읽기 오류: {e}")
+        st.stop()
 
 def save_db(file, data):
     """MongoDB에 데이터 저장하기"""
-    if data is None: return
+    if data is None:
+        return
     client = get_mongo_client()
-    if client:
-        try:
-            db = client["hyomin_universe"]
-            col_name = file.replace(".json", "").replace("_db", "")
-            db[col_name].replace_one(
-                {"_id": "main"}, {"_id": "main", **data}, upsert=True
-            )
-        except Exception as e:
-            logging.error(f"[save_db] {file} 저장 실패: {e}")
+    if client is None:
+        # 연결이 없으면 저장 자체를 막음 (빈 데이터 덮어쓰기 방지)
+        logging.error(f"[save_db] MongoDB 연결 없음 - {file} 저장 취소")
+        return
+    try:
+        db = client["hyomin_universe"]
+        col_name = file.replace(".json", "").replace("_db", "")
+        db[col_name].replace_one(
+            {"_id": "main"}, {"_id": "main", **data}, upsert=True
+        )
+    except Exception as e:
+        logging.error(f"[save_db] {file} 저장 실패: {e}")
 
 def log_tx(uid: str, category: str, desc: str, amount: int):
     logs = load_db(TXLOG_FILE, {})
