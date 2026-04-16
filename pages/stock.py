@@ -129,7 +129,7 @@ def render(market, nw):
             if db_own < qty:
                 st.error("보유 수량 부족! (DB 검증 실패) 잠시 후 다시 시도해주세요.")
                 return False
-            earn = qty * cp_
+            earn = qty * price
             st.session_state.global_cash += earn
             st.session_state.portfolio[sid_]['qty'] -= qty
             log_tx(st.session_state.logged_in_user, "주식매도", f"{market['stock_data'][sid_]['name']} {qty}주 매도", earn)
