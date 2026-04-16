@@ -3,7 +3,8 @@ import streamlit as st
 from datetime import datetime
 from utils.config import KST, estate_config, FORGE_DATA
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown
-from utils.database import load_db, save_db, USERS_FILE, COMMENTS_FILE
+from utils.config import USERS_FILE, COMMENTS_FILE
+from utils.database import load_db, save_db
 
 def render(market, nw):
     st.title("🏅 랭킹 & 게시판")
