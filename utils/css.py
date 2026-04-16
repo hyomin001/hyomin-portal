@@ -123,4 +123,19 @@ div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000
     z-index: 999999 !important;
 }
 [data-testid="collapsedControl"] *, [data-testid="stSidebarCollapseButton"] * { opacity: 0 !important; font-size: 0 !important; }
+
+/* ================================================= */
+/* 스트림릿 기본 화살표/아이콘 폰트 강제 보호 (글씨 겹침 방지) */
+/* ================================================= */
+.material-symbols-rounded, 
+.material-icons, 
+span[class*="material-symbols"] {
+    font-family: 'Material Symbols Rounded', 'Material Icons' !important;
+    font-size: 1.2rem !important;
+}
+
+/* Expander(아코디언) 헤더 화살표 영역 겹침 방지 */
+.streamlit-expanderHeader div[data-testid="stIconMaterial"] {
+    font-family: 'Material Symbols Rounded' !important;
+}
 """
