@@ -28,10 +28,12 @@ def load_db(file, default):
         doc = db[col_name].find_one({"_id": "main"})
         if doc:
             doc.pop("_id", None)
+            # 리스트로 저장된 데이터 복원
+            if "_list" in doc and len(doc) == 1:
+                return doc["_list"]
             return doc
         return default
     except Exception as e:
-        import streamlit as st
         logging.error(f"[load_db] {file} 로드 실패: {e}")
         st.error(f"❌ DB 읽기 오류: {e}")
         st.stop()
@@ -48,8 +50,15 @@ def save_db(file, data):
     try:
         db = client["hyomin_universe"]
         col_name = file.replace(".json", "").replace("_db", "")
+        
+        # 리스트 타입이면 래핑해서 저장하고 _id 유지
+        if isinstance(data, list):
+            doc_to_save = {"_id": "main", "_list": data}
+        else:
+            doc_to_save = {"_id": "main", **data}
+            
         db[col_name].replace_one(
-            {"_id": "main"}, {"_id": "main", **data}, upsert=True
+            {"_id": "main"}, doc_to_save, upsert=True
         )
     except Exception as e:
         logging.error(f"[save_db] {file} 저장 실패: {e}")
