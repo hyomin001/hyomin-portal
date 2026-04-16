@@ -4,7 +4,8 @@ import time
 from datetime import datetime
 from utils.config import KST
 from utils.core import cooldown_remaining, set_cooldown
-from utils.database import load_db, save_db, USERS_FILE
+from utils.config import USERS_FILE
+from utils.database import load_db, save_db
 
 def render(market, nw):
     st.title("✉️ 1:1 비밀 쪽지함")
