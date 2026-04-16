@@ -34,12 +34,19 @@ def render(market, nw):
             else:
                 set_cooldown("send_money")
                 us_fresh = load_db(USERS_FILE, {})
-                if st.session_state.global_cash < amt:
+                import time as _time
+                my_data = us_fresh.get(st.session_state.logged_in_user, {})
+                last_send = my_data.get("last_send_time", 0)
+                # DB에 저장된 마지막 송금 시각과 비교 (탭 우회 방지, 5초 쿨다운)
+                if _time.time() - last_send < 5:
+                    st.error("⏱️ 너무 빠른 송금 요청입니다. 잠시 후 다시 시도해주세요.")
+                elif st.session_state.global_cash < amt:
                     st.error("잔액이 부족합니다. (재검증 실패)")
                 else:
                     st.session_state.global_cash -= amt
                     us_fresh[target]['cash'] += amt
                     us_fresh[st.session_state.logged_in_user]['cash'] = st.session_state.global_cash
+                    us_fresh[st.session_state.logged_in_user]['last_send_time'] = _time.time()
                     save_db(USERS_FILE, us_fresh)
                     log_tx(st.session_state.logged_in_user, "송금", f"{target}에게 송금", -amt)
                     log_tx(target, "송금수신", f"{st.session_state.logged_in_user}에게서 수신", amt)
