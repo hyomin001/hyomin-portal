@@ -461,12 +461,13 @@ def render(market, nw):
             
         st.write("---")
         st.markdown("### 🚨 긴급 데이터 백업 (다운로드)")
-        if os.path.exists(USERS_FILE):
-            with open(USERS_FILE, "rb") as f: st.download_button("📥 유저 데이터 백업", f, file_name=f"backup_{USERS_FILE}", mime="application/json")
-        if os.path.exists(MARKET_FILE):
-            with open(MARKET_FILE, "rb") as f: st.download_button("📥 시장 데이터 백업", f, file_name=f"backup_{MARKET_FILE}", mime="application/json")
-        if os.path.exists(REALESTATE_MARKET_FILE):
-            with open(REALESTATE_MARKET_FILE, "rb") as f: st.download_button("📥 부동산 데이터 백업", f, file_name=f"backup_{REALESTATE_MARKET_FILE}", mime="application/json")
+        import json
+        users_data = load_db(USERS_FILE, {})
+        market_data_backup = load_db(MARKET_FILE, {})
+        re_data = load_db(REALESTATE_MARKET_FILE, {})
+        st.download_button("📥 유저 데이터 백업", json.dumps(users_data, ensure_ascii=False, indent=2), file_name=f"backup_{USERS_FILE}", mime="application/json")
+        st.download_button("📥 시장 데이터 백업", json.dumps(market_data_backup, ensure_ascii=False, indent=2), file_name=f"backup_{MARKET_FILE}", mime="application/json")
+        st.download_button("📥 부동산 데이터 백업", json.dumps(re_data, ensure_ascii=False, indent=2), file_name=f"backup_{REALESTATE_MARKET_FILE}", mime="application/json")
 
         st.write("---")
         st.markdown("### 👑 히든 칭호 발급 현황")
@@ -641,6 +642,7 @@ def render(market, nw):
                 us_instant[uid_i]['bulk_trade_count'] = 0
                 us_instant[uid_i]['loan_time']        = time.time()
                 us_instant[uid_i]['rent_time']        = time.time()
+                us_instant[uid_i]['weapon_level']     = 0
 
             save_db(USERS_FILE, us_instant)
             save_estate_market({"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}})
