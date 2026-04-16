@@ -120,8 +120,16 @@ def render(market, nw):
 
         def _safe_sell(qty, price, sid_):
             own = st.session_state.portfolio.get(sid_, {'qty': 0})['qty']
-            if own < qty: st.error(f"보유 수량 부족! (현재 {own}주)"); return False
-            earn = qty * price
+            if own < qty:
+                st.error("보유 수량 부족!")
+                return False
+            # DB에서 실제 보유 수량 재확인 (탭 2개 열어 동시 매도 방지)
+            u_db_sell = load_db(USERS_FILE, {})
+            db_own = u_db_sell.get(st.session_state.logged_in_user, {}).get('portfolio', {}).get(sid_, {}).get('qty', 0)
+            if db_own < qty:
+                st.error("보유 수량 부족! (DB 검증 실패) 잠시 후 다시 시도해주세요.")
+                return False
+            earn = qty * cp_
             st.session_state.global_cash += earn
             st.session_state.portfolio[sid_]['qty'] -= qty
             log_tx(st.session_state.logged_in_user, "주식매도", f"{market['stock_data'][sid_]['name']} {qty}주 매도", earn)
