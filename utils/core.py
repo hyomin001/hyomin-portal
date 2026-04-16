@@ -10,7 +10,7 @@ from utils.config import (
 )
 from utils.database import load_db, save_db, load_clan_db
 
-# [보안 수정] 3017의 SHA-256 해시값으로 기본값 설정
+
 default_hash = "b573ebf82028a56d9d724124bd51e072b175d160695e2735b0fa4ae5e4c79fd1"
 ADMIN_HASH = os.environ.get("ADMIN_HASH", default_hash)
 
