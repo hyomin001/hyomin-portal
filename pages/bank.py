@@ -1,7 +1,9 @@
 # pages/bank.py
 import streamlit as st
 import time
-from utils.database import load_db, save_db, USERS_FILE, log_tx
+from utils.config import USERS_FILE
+from utils.database import load_db, save_db, log_tx
+
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
 
 def render(market, nw):
