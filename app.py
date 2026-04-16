@@ -143,6 +143,7 @@ if 'logged_in_user' not in st.session_state:
                         'daily_quests':     u.get('daily_quests', {}),
                         'weapon_level':   u.get('weapon_level', 0), 
                         'bulk_trade_count': u.get('bulk_trade_count', 0),
+                        'last_estate_reset': u.get('last_estate_reset', 0),
                     })
                     st.rerun()
 
