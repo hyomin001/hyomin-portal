@@ -5,7 +5,8 @@ import time
 from streamlit_autorefresh import st_autorefresh  # 🚀 자동 새로고침 부품 가져오기
 from utils.config import CRYPTO_CONFIG
 from utils.core import format_korean_money, sync_user_data, claim_hidden_title
-from utils.database import load_db, log_tx, USERS_FILE
+from utils.config import USERS_FILE
+from utils.database import load_db, log_tx
 
 def render(market, nw):
     st.title("🪙 가상화폐 거래소")
