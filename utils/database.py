@@ -2,7 +2,11 @@
 import streamlit as st
 from pymongo import MongoClient
 from datetime import datetime
-from utils.config import *
+import logging
+from utils.config import (
+    KST, USERS_FILE, COMMENTS_FILE, MARKET_FILE, TXLOG_FILE,
+    REALESTATE_MARKET_FILE, CLAN_FILE, estate_config
+)
 
 @st.cache_resource
 def get_mongo_client():
@@ -21,7 +25,8 @@ def load_db(file, default):
             if doc:
                 doc.pop("_id", None)
                 return doc
-        except Exception: pass
+        except Exception as e:
+            logging.warning(f"[load_db] {file} 로드 실패: {e}")
     return default
 
 def save_db(file, data):
@@ -35,7 +40,8 @@ def save_db(file, data):
             db[col_name].replace_one(
                 {"_id": "main"}, {"_id": "main", **data}, upsert=True
             )
-        except Exception: pass
+        except Exception as e:
+            logging.error(f"[save_db] {file} 저장 실패: {e}")
 
 def log_tx(uid: str, category: str, desc: str, amount: int):
     logs = load_db(TXLOG_FILE, {})
@@ -78,7 +84,3 @@ def get_user_clan(uid):
     for cname, cdata in clans.items():
         if uid in cdata.get('members', []): return cname
     return None
-
-# --- 수정됨: 순환 참조 에러를 막기 위해 함수를 직접 정의 ---
-def save_market(data):
-    save_db(MARKET_FILE, data)
