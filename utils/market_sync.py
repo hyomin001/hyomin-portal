@@ -76,9 +76,10 @@ def run_market_sync():
     # 로또 당첨 로직
     if cur_t - market.get('lotto_last_draw', 0) > 3600:
         if market.get('lotto_tickets'):
-            pool = []
-            for u, c in market['lotto_tickets'].items(): pool.extend([u] * c)
-            win, prize = random.choice(pool), market['lotto_pool']
+            users_list = list(market['lotto_tickets'].keys())
+            weights_list = list(market['lotto_tickets'].values())
+            win = random.choices(users_list, weights=weights_list, k=1)[0]
+            prize = market['lotto_pool']
             us = load_db(USERS_FILE, {})
             if win in us:
                 us[win]['cash'] += prize
