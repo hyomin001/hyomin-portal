@@ -3,7 +3,8 @@ import streamlit as st
 import random
 import time
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
-from utils.database import load_db, save_db, log_tx, USERS_FILE
+from utils.config import USERS_FILE
+from utils.database import load_db, save_db, log_tx
 
 def render(market, nw):
     st.title("🏎️ 하이퍼카 레이싱")
