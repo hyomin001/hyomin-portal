@@ -10,7 +10,7 @@ from datetime import datetime
 # ==============================
 from utils.config import MARKET_FILE, USERS_FILE, KST
 from utils.database import load_db, save_db
-from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_PW, ADMIN_HASH
+from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
 
