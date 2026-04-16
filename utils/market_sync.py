@@ -4,7 +4,7 @@ import random
 import streamlit as st
 from utils.config import stock_config, CRYPTO_CONFIG, USERS_FILE, MARKET_FILE
 from utils.database import load_db, save_db, log_tx, save_market
-from utils.core import get_net_worth, sync_user_data, get_market
+from utils.core import get_net_worth, sync_user_data, get_market, format_korean_money
 
 def run_market_sync():
     market = get_market()
