@@ -84,3 +84,7 @@ def get_user_clan(uid):
     for cname, cdata in clans.items():
         if uid in cdata.get('members', []): return cname
     return None
+
+def save_market(data):
+    """시장 전체 데이터를 저장"""
+    save_db(MARKET_FILE, data)
