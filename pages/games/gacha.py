@@ -5,16 +5,44 @@ from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sy
 from utils.database import log_tx, save_market
 
 GACHA_TICKET_PRICE = 50_000_000
+
+# 도파민 폭발 대규모 업데이트 가챠 풀! (전체 가중치 합: 1000)
 GACHA_POOL = [
-    {"grade": "💎 전설", "name": "👑 [시즌한정] 우주의 도박꾼", "weight": 1,  "type": "title"},
-    {"grade": "💎 전설", "name": "👑 [시즌한정] 운영자를 노린다", "weight": 1,  "type": "title"},
-    {"grade": "💎 전설", "name": "👑 [시즌한정] 갓생러",         "weight": 2,  "type": "title"},
-    {"grade": "🔴 영웅", "name": "⚔️ 전장의 지배자",            "weight": 4,  "type": "title"},
-    {"grade": "🔵 희귀", "name": "🎖️ 행운의 사나이",            "weight": 8,  "type": "title"},
-    {"grade": "🟢 일반", "name": "🍀 행운의 클로버",            "weight": 25, "type": "title"},
-    {"grade": "🟤 꽝",   "name": "파괴방지권",                  "weight": 30, "type": "item"},
-    {"grade": "🟤 꽝",   "name": "빈 깡통",                     "weight": 30, "type": "item"},
-] # (기존 코드에서 일부만 발췌했습니다. 필요시 원본 풀을 채워주세요!)
+    # --- 💎 전설 (총합 10 = 1.0%) ---
+    {"grade": "💎 전설", "name": "👑 [시즌한정] 우주의 도박꾼", "weight": 2, "type": "title"},
+    {"grade": "💎 전설", "name": "👑 [시즌한정] 운영자를 노린다", "weight": 2, "type": "title"},
+    {"grade": "💎 전설", "name": "👑 [시즌한정] 갓생러",         "weight": 2, "type": "title"},
+    {"grade": "💎 전설", "name": "👑 건물주 위의 조물주",       "weight": 2, "type": "title"},
+    {"grade": "💎 전설", "name": "👑 인간 도파민",             "weight": 2, "type": "title"},
+
+    # --- 🔴 영웅 (총합 50 = 5.0%) ---
+    {"grade": "🔴 영웅", "name": "⚔️ 전장의 지배자",           "weight": 10, "type": "title"},
+    {"grade": "🔴 영웅", "name": "🚀 화성 갈끄니까",           "weight": 10, "type": "title"},
+    {"grade": "🔴 영웅", "name": "📈 떡상의 화신",             "weight": 10, "type": "title"},
+    {"grade": "🔴 영웅", "name": "💎 다이아몬드 손",           "weight": 10, "type": "title"},
+    {"grade": "🔴 영웅", "name": "🏎️ 최고급 슈퍼카 열쇠",       "weight": 10, "type": "item"},
+
+    # --- 🔵 희귀 (총합 140 = 14.0%) ---
+    {"grade": "🔵 희귀", "name": "🎖️ 행운의 사나이",           "weight": 28, "type": "title"},
+    {"grade": "🔵 희귀", "name": "💼 여의도 펀드매니저",       "weight": 28, "type": "title"},
+    {"grade": "🔵 희귀", "name": "🏦 은행 VIP 고객",           "weight": 28, "type": "title"},
+    {"grade": "🔵 희귀", "name": "🐷 황금 돼지 저금통",         "weight": 28, "type": "item"},
+    {"grade": "🔵 희귀", "name": "🪙 비트코인 기념주화",       "weight": 28, "type": "item"},
+
+    # --- 🟢 일반 (총합 300 = 30.0%) ---
+    {"grade": "🟢 일반", "name": "🍀 행운의 클로버",           "weight": 60, "type": "title"},
+    {"grade": "🟢 일반", "name": "🐜 영차영차 개미",           "weight": 60, "type": "title"},
+    {"grade": "🟢 일반", "name": "🍜 뜨끈한 든든 국밥",         "weight": 60, "type": "item"},
+    {"grade": "🟢 일반", "name": "🎟️ 로또 5등 당첨금",         "weight": 60, "type": "item"},
+    {"grade": "🟢 일반", "name": "☕ 브랜드 커피 쿠폰",         "weight": 60, "type": "item"},
+
+    # --- 🟤 꽝 (총합 500 = 50.0%) ---
+    {"grade": "🟤 꽝",   "name": "🛡️ 파괴방지권",             "weight": 100, "type": "item"},
+    {"grade": "🟤 꽝",   "name": "🥫 빈 깡통",                "weight": 100, "type": "item"},
+    {"grade": "🟤 꽝",   "name": "🧾 찢어진 영수증",          "weight": 100, "type": "item"},
+    {"grade": "🟤 꽝",   "name": "📉 상장폐지된 주식",        "weight": 100, "type": "item"},
+    {"grade": "🟤 꽝",   "name": "🌡️ 한강물 온도계",          "weight": 100, "type": "item"},
+]
 
 def render(market, nw):
     st.title("🎴 가챠 뽑기")
