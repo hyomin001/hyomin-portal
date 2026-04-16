@@ -11,8 +11,6 @@ from utils.database import load_db, save_db, load_clan_db
 
 import os
 ADMIN_HASH = os.environ.get("ADMIN_HASH", "b573ebf82028a56d9d724124bd51e072b175d160695e2735b0fa4ae5e4c79fd1")
-if not ADMIN_HASH:
-    raise ValueError("환경변수 ADMIN_HASH가 설정되지 않았습니다. 배포 전 반드시 설정하세요.")
 
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
