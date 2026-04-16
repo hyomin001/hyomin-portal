@@ -21,10 +21,6 @@ def render(market, nw):
             
             for sid, p in udata.get('portfolio', {}).items():
                 if sid in market['stock_data']: w += p.get('qty', 0) * market['stock_data'][sid]['price']
-
-            for cid, cinfo in udata.get('crypto_portfolio', {}).items():
-                price = market.get('crypto_data', {}).get(cid, {}).get('price', 0)
-                w += cinfo.get('qty', 0) * price
             
             re_list = []
             for eid, cnt in udata.get('real_estate', {}).items():
