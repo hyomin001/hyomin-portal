@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime
 from utils.config import estate_config, KST, USERS_FILE
 from utils.database import load_db, save_db, log_tx, load_estate_market, save_estate_market, get_estate_initial_listings, save_market
+from utils.core import format_korean_money, sync_user_data, cooldown_remaining, set_cooldown, claim_hidden_title
 
 def render(market, nw):
     st.title("🏢 부동산 실거래 마켓")
@@ -95,13 +96,22 @@ def render(market, nw):
                             st.error("⚠️ 이미 매진되었습니다! 유저 매물을 확인하세요.")
                         elif st.session_state.global_cash >= info['base_price']:
                             set_cooldown(cd_key)
+                            
+                            # [버그 픽스] 세션 상태 확실하게 업데이트
                             st.session_state.global_cash -= info['base_price']
+                            if 'real_estate' not in st.session_state:
+                                st.session_state.real_estate = {}
                             st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
+                            
+                            # DB 동기화 강제 실행
+                            sync_user_data()
+
                             if uid not in em2["owner_counts"]: em2["owner_counts"][uid] = {}
                             em2["owner_counts"][uid][eid] = em2["owner_counts"][uid].get(eid, 0) + 1
                             save_estate_market(em2)
+                            
                             log_tx(uid, "부동산매입", f"{info['name']} 신규 매입", -info['base_price'])
-                            sync_user_data()
+                            
                             owned_types = sum(1 for e, c in st.session_state.real_estate.items() if c > 0)
                             if owned_types == len(estate_config): claim_hidden_title("real_estate_monopoly", "👑 [유일무이] 진짜 부루마불 우승자")
                             st.success(f"✅ {info['name']} 매입 완료!"); st.rerun()
@@ -157,8 +167,14 @@ def render(market, nw):
                                 st.error("⚠️ 이미 판매된 매물입니다.")
                             elif st.session_state.global_cash >= target["price"]:
                                 set_cooldown(cd_key)
+                                
+                                # [버그 픽스] 유저 매물 구매 시 세션 명확화 및 강제 저장
                                 st.session_state.global_cash -= target["price"]
+                                if 'real_estate' not in st.session_state:
+                                    st.session_state.real_estate = {}
                                 st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
+                                sync_user_data()
+
                                 if uid not in em3["owner_counts"]: em3["owner_counts"][uid] = {}
                                 em3["owner_counts"][uid][eid] = em3["owner_counts"][uid].get(eid, 0) + 1
                                 
@@ -177,9 +193,10 @@ def render(market, nw):
                                 em3["listings"] = [x for x in em3["listings"] if x["id"] != li["id"]]
                                 save_estate_market(em3)
                                 log_tx(uid, "부동산구매", f"{info['name']} 유저 매물 구매", -target["price"])
-                                sync_user_data()
+                                
                                 market['news'] = f"🏢 [{uid}] {info['name']} 유저 매물 구매 완료!"
                                 save_market(market)
+                                
                                 owned_types = sum(1 for e, c in st.session_state.real_estate.items() if c > 0)
                                 if owned_types == len(estate_config): claim_hidden_title("real_estate_monopoly", "👑 [유일무이] 진짜 부루마불 우승자")
                                 st.success(f"✅ {info['name']} 구매 완료! {format_korean_money(target['price'])}")
