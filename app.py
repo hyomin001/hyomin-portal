@@ -148,7 +148,7 @@ if 'logged_in_user' not in st.session_state:
 
                 if l_id == "admin" and hash_pw(l_pw) == ADMIN_HASH:
                     if "admin" not in users:
-                        users["admin"] = {"pw":"****","cash":999_999_999_999,"inventory":[], "equipped_title":"👑 절대신 창조주"}
+                        users["admin"] = {"pw": ADMIN_HASH, "cash": 999_999_999_999, "inventory": [], "equipped_title": "👑 절대신 창조주"}
                         save_db(USERS_FILE, users)
                     _do_login("admin")
                 elif l_id != "admin" and l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
@@ -166,6 +166,8 @@ if 'logged_in_user' not in st.session_state:
                     st.error("⚠️ 이미 존재하는 아이디입니다.")
                 elif len(clean_id) < 2:
                     st.error("⚠️ 아이디는 공백을 제외하고 2자 이상이어야 합니다.")
+                elif len(n_pw) < 4:
+                    st.error("⚠️ 비밀번호는 4자 이상이어야 합니다.")
                 else:
                     users[clean_id] = {
                         "pw":hash_pw(n_pw), "cash":500_000_000, "inventory":[], "equipped_title":"🌱 신규시민",
