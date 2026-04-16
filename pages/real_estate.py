@@ -5,7 +5,8 @@ import uuid
 from datetime import datetime
 from utils.config import estate_config, KST
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
-from utils.database import load_db, save_db, log_tx, USERS_FILE, load_estate_market, save_estate_market, get_estate_initial_listings, save_market
+from utils.database import load_db, save_db, log_tx, load_estate_market, save_estate_market, get_estate_initial_listings, save_market
+from utils.config import USERS_FILE, KST  # USERS_FILE은 여기서 불러옵니다!
 
 def render(market, nw):
     st.title("🏢 부동산 실거래 마켓")
