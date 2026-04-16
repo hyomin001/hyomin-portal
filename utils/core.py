@@ -1,16 +1,19 @@
-# utils/core.py자산 계산, 돈 포맷팅, 쿨다운 타이머 등 모든 페이지에서 공통으로 쓰는 로직들이 들어갑니다.
+# utils/core.py
 import hashlib
 import time
 import random
 import streamlit as st
+import os
 from utils.config import (
     KST, USERS_FILE, MARKET_FILE, estate_config,
     stock_config, FORGE_DATA, MINE_ITEMS, CRYPTO_CONFIG, DAILY_QUESTS_CONFIG
 )
 from utils.database import load_db, save_db, load_clan_db
 
-import os
-ADMIN_HASH = os.environ.get("ADMIN_HASH")
+# [보안 수정] 3017의 SHA-256 해시값으로 기본값 설정
+default_hash = "b573ebf82028a56d9d724124bd51e072b175d160695e2735b0fa4ae5e4c79fd1"
+ADMIN_HASH = os.environ.get("ADMIN_HASH", default_hash)
+
 if not ADMIN_HASH:
     raise ValueError("환경변수 ADMIN_HASH가 설정되지 않았습니다. 배포 전 반드시 설정하세요.")
 
@@ -59,7 +62,7 @@ def sync_user_data():
         'inventory': st.session_state.inventory,
         'equipped_title': st.session_state.equipped_title,
         'portfolio': st.session_state.portfolio,
-        'real_estate': st.session_state.real_estate,
+        'real_estate': st.session_state.real_estate,  # 부동산 저장 확인!
         'rent_time': st.session_state.rent_time,
         'loan': st.session_state.loan,
         'loan_time': st.session_state.loan_time,
@@ -77,7 +80,7 @@ def get_market():
         return {
             "version": 6,
             "stock_data": {s['id']: {"name": s['name'], "icon": s['icon'], "price": random.randint(50_000, 150_000), "history": [80_000, 80_000]} for s in stock_config},
-            "news": "🌌 HYOMIN UNIVERSE 시즌 2 시작!", "news_time": time.time(), "last_tick": time.time(),
+            "news": "🌌 DOPAHYOMIN UNIVERSE 시즌 1 시작!", "news_time": time.time(), "last_tick": time.time(),
             "admin_msg": "", "admin_color": "#FF4B4B", "lotto_pool": 5_000_000_000, "lotto_tickets": {}, "lotto_last_draw": time.time(),
             "next_news_target": random.choice(stock_config)['id'], "next_news_impact": random.uniform(-0.2, 0.2), "event_active": False,
         }
@@ -88,7 +91,6 @@ def get_market():
         d["lotto_pool"], d["lotto_tickets"], d["lotto_last_draw"] = lp, lt, ll
         save_db(MARKET_FILE, d); return d
     return d
-
 
 def get_clan_total_nw(cname, market_data, users_db=None):
     clans = load_clan_db()
