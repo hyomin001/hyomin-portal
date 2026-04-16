@@ -3,7 +3,8 @@ import streamlit as st
 import random
 from utils.config import stock_config, estate_config
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
-from utils.database import load_db, log_tx, USERS_FILE
+from utils.config import USERS_FILE
+from utils.database import load_db, log_tx
 
 def render(market, nw):
     st.title("💎 VIP 시크릿 라운지")
