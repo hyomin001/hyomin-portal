@@ -289,7 +289,7 @@ elif menu == "📅 일일 퀘스트":
     from pages import quest; quest.render(market, nw)
 elif menu == "👑 칭호 상점":
     from pages import title_shop; title_shop.render(market, nw)
-elif menu == "🏅 [시즌2]랭킹 & 게시판":
+elif menu == "🏅 랭킹 & 게시판":
     from pages import ranking; ranking.render(market, nw)
 elif menu == "✉️ 개인 쪽지함":
     from pages import dm; dm.render(market, nw)
