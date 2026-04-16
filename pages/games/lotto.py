@@ -2,7 +2,8 @@
 import streamlit as st
 import time
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
-from utils.database import load_db, log_tx, USERS_FILE, save_market
+from utils.config import USERS_FILE
+from utils.database import load_db, log_tx, save_market
 
 def render(market, nw):
     st.title("⚔️ 1시간 글로벌 로또")
