@@ -53,7 +53,7 @@ def render(market, nw):
                     log_tx(target, "송금수신", f"{st.session_state.logged_in_user}에게서 수신", amt)
                     sync_user_data(); st.success(f"✅ {target}님께 {format_korean_money(amt)} 송금 완료!")
                     if amt >= 10_000_000_000: claim_hidden_title("first_donate_10b", "👑 [유일무이] 자선사업가")
-                        st.rerun()
+                    st.rerun()
 
     with tab_loan:
         if st.session_state.equipped_title == "💸 신용불량자":
