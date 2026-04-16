@@ -85,6 +85,8 @@ def run_market_sync():
                 us[win]['cash'] += prize
                 save_db(USERS_FILE, us)
                 log_tx(win, "로또당첨", f"글로벌 로또 1등 잭팟!!", prize)
+                if 'logged_in_user' in st.session_state and st.session_state.logged_in_user == win:
+                    st.session_state.global_cash += prize
             market['news'] = f"🎊 [당첨 확정] {win}님이 대박 상금을 수령하셨습니다!!"
             market['lotto_pool'] = 5_000_000_000
             market['lotto_tickets'] = {}
@@ -96,9 +98,14 @@ def run_market_sync():
         elapsed = cur_t - st.session_state.loan_time
         cyc = min(int(elapsed / 10), 30)
         if cyc > 0:
+            old_loan = st.session_state.loan
             st.session_state.loan = min(int(st.session_state.loan * (1.02 ** cyc)), 999_999_999_999_999)
             st.session_state.loan_time += cyc * 10
+            added = st.session_state.loan - old_loan
+            if added > 0:
+                import streamlit as _st
+                _st.warning(f"⚠️ 오프라인 동안 대출 이자 {format_korean_money(added)}이 붙었습니다!")
             sync_user_data()
-
+            
     if m_up: save_market(market)
     return market
