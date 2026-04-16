@@ -84,7 +84,6 @@ def get_market():
         save_db(MARKET_FILE, d); return d
     return d
 
-def save_market(data): save_db(MARKET_FILE, data)
 
 def get_clan_total_nw(cname, market_data, users_db=None):
     clans = load_clan_db()
