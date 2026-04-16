@@ -10,7 +10,7 @@ from utils.config import (
 from utils.database import load_db, save_db, load_clan_db
 
 import os
-ADMIN_HASH = os.environ.get("ADMIN_HASH", "b573ebf82028a56d9d724124bd51e072b175d160695e2735b0fa4ae5e4c79fd1")
+ADMIN_HASH = os.environ.get("ADMIN_HASH", "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4")
 
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
