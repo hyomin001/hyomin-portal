@@ -39,9 +39,12 @@ def render(market, nw):
                 st.rerun()
                 
             st.write("---")
+            needs_save = False
             for m in reversed(inbox[-50:]): 
                 read_badge = "" if m.get("read_before", False) else "<span style='color:#FF4B4B;font-size:0.75rem;font-weight:900;'>[NEW]</span> "
-                m["read_before"] = True 
+                if not m.get("read_before", False):
+                    m["read_before"] = True 
+                    needs_save = True
                 st.markdown(f"""
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #00E5FF;'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
@@ -53,6 +56,9 @@ def render(market, nw):
                   </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+            if needs_save:
+                save_db("messages_db.json", msg_db)
 
     with tab_out:
         outbox = msg_db[uid].get("outbox", [])
