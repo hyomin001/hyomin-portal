@@ -7,12 +7,19 @@ GLOBAL_CSS = """
 /* 스트림릿 기본 파일 메뉴 숨기기 */
 [data-testid="stSidebarNav"] { display: none !important; }
 
-/* 기본 텍스트 색상 강제 흰색 (단, 고유 색상이 지정된 요소는 보호) */
-html, body, p, td, th,
-span:not([style*="color"]), 
-div:not([style*="color"]) {
+/* =======================================================
+   [수정됨] 아이콘 깨짐 방지! 
+   위험한 div, span 강제 덮어쓰기를 제거하고 안전한 태그에만 적용
+======================================================== */
+html, body, p, td, th, li, a {
   font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
   color: #FFFFFF !important; 
+}
+
+/* 클랜(Expander) 제목 등 특정 영역 글자만 안전하게 흰색 처리 */
+.streamlit-expanderHeader {
+  color: #FFFFFF !important;
+  font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
 }
 
 /* 로그인 화면 텍스트 강제 흰색 처리 */
@@ -123,19 +130,4 @@ div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000
     z-index: 999999 !important;
 }
 [data-testid="collapsedControl"] *, [data-testid="stSidebarCollapseButton"] * { opacity: 0 !important; font-size: 0 !important; }
-
-/* ================================================= */
-/* 스트림릿 기본 화살표/아이콘 폰트 강제 보호 (글씨 겹침 방지) */
-/* ================================================= */
-.material-symbols-rounded, 
-.material-icons, 
-span[class*="material-symbols"] {
-    font-family: 'Material Symbols Rounded', 'Material Icons' !important;
-    font-size: 1.2rem !important;
-}
-
-/* Expander(아코디언) 헤더 화살표 영역 겹침 방지 */
-.streamlit-expanderHeader div[data-testid="stIconMaterial"] {
-    font-family: 'Material Symbols Rounded' !important;
-}
 """
