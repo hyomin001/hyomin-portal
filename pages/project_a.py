@@ -26,32 +26,37 @@ st.write("🔑 KEY CHECK:", GOOGLE_API_KEY[:10])
 
 
 # ==========================================
-# 🔥 JSON 추출 함수
+# 🔥 JSON 추출 (최강 버전)
 # ==========================================
 def extract_json(text):
     try:
-        text = re.sub(r"```json|```", "", text).strip()
+        # 코드블럭 제거
+        text = re.sub(r"```json|```", "", text, flags=re.IGNORECASE).strip()
 
-        start = text.find("[")
-        end = text.rfind("]") + 1
+        # JSON 배열 찾기
+        matches = re.findall(r'\[\s*{.*?}\s*\]', text, re.DOTALL)
 
-        if start == -1 or end == -1:
-            return None
+        for match in matches:
+            try:
+                return json.loads(match)
+            except:
+                continue
 
-        return json.loads(text[start:end])
+        return None
+
     except:
         return None
 
 
 # ==========================================
-# 🔥 Gemini 호출 (Fallback 포함)
+# 🔥 Gemini 호출 (Fallback + 재시도)
 # ==========================================
 def call_gemini(prompt):
 
     models = [
-        "gemini-2.5-flash",       # 1순위 (성능)
-        "gemini-2.5-flash-lite",  # 2순위 (안정)
-        "gemini-2.0-flash"        # 3순위 (보험)
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-2.0-flash"
     ]
 
     headers = {"Content-Type": "application/json"}
@@ -67,7 +72,7 @@ def call_gemini(prompt):
     for model in models:
         url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={GOOGLE_API_KEY}"
 
-        for attempt in range(2):  # 모델당 2번 시도
+        for attempt in range(2):
             try:
                 response = requests.post(url, headers=headers, json=payload)
 
@@ -77,15 +82,15 @@ def call_gemini(prompt):
                     return result['candidates'][0]['content']['parts'][0]['text']
 
                 elif response.status_code == 503:
-                    time.sleep(2)  # 서버 과부하 → 대기 후 재시도
+                    time.sleep(2)
 
                 else:
-                    break  # 다른 에러면 다음 모델
+                    break
 
             except:
                 time.sleep(1)
 
-    raise Exception("❌ 모든 모델 실패 (잠시 후 다시 시도)")
+    raise Exception("❌ 모든 모델 실패")
 
 
 # ==========================================
@@ -132,9 +137,11 @@ def render():
 난이도: {difficulty}
 스타일: {q_type}
 
-⚠️ JSON 배열만 출력
-⚠️ 설명 금지
-⚠️ ``` 사용 금지
+⚠️ 매우 중요:
+- JSON 배열만 출력
+- 설명 절대 금지
+- ``` 사용 금지
+- JSON 외 텍스트 포함 금지
 
 [
   {{
@@ -149,9 +156,16 @@ def render():
 {source_text[:30000]}
 """
 
-                    response_text = call_gemini(prompt)
+                    quiz_json = None
+                    response_text = None
 
-                    quiz_json = extract_json(response_text)
+                    # 🔥 JSON 실패 시 재요청
+                    for _ in range(3):
+                        response_text = call_gemini(prompt)
+                        quiz_json = extract_json(response_text)
+
+                        if quiz_json:
+                            break
 
                     if not quiz_json:
                         raise Exception(f"JSON 파싱 실패\n\n응답:\n{response_text}")
