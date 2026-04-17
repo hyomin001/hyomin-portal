@@ -3,9 +3,10 @@ import requests
 import json
 import re
 import os
+import time
 
 # ==========================================
-# 🔐 API KEY 불러오기 (secrets + 환경변수)
+# 🔐 API KEY 불러오기
 # ==========================================
 GOOGLE_API_KEY = None
 
@@ -15,81 +16,84 @@ elif os.getenv("GOOGLE_API_KEY"):
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 if not GOOGLE_API_KEY:
-    st.error("❌ API 키를 불러오지 못했습니다.")
+    st.error("❌ API 키 없음")
     st.stop()
 
 GOOGLE_API_KEY = GOOGLE_API_KEY.strip()
 
-# 🔥 디버깅용
 st.write("🔑 KEY CHECK:", GOOGLE_API_KEY[:10])
 # ==========================================
 
 
 # ==========================================
-# 🔥 JSON 추출 함수 (핵심)
+# 🔥 JSON 추출 함수
 # ==========================================
 def extract_json(text):
     try:
-        # 코드블럭 제거
         text = re.sub(r"```json|```", "", text).strip()
 
-        # JSON 배열 추출
         start = text.find("[")
         end = text.rfind("]") + 1
 
         if start == -1 or end == -1:
             return None
 
-        json_str = text[start:end]
-        return json.loads(json_str)
-
+        return json.loads(text[start:end])
     except:
         return None
 
 
 # ==========================================
-# Gemini 호출
+# 🔥 Gemini 호출 (Fallback 포함)
 # ==========================================
-def call_gemini_direct(prompt):
-    model = "gemini-2.5-flash"
+def call_gemini(prompt):
 
-    url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={GOOGLE_API_KEY}"
+    models = [
+        "gemini-2.5-flash",       # 1순위 (성능)
+        "gemini-2.5-flash-lite",  # 2순위 (안정)
+        "gemini-2.0-flash"        # 3순위 (보험)
+    ]
 
-    headers = {
-        "Content-Type": "application/json"
-    }
+    headers = {"Content-Type": "application/json"}
 
     payload = {
-        "contents": [
-            {
-                "parts": [{"text": prompt}]
-            }
-        ],
+        "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.7,
             "maxOutputTokens": 2048
         }
     }
 
-    response = requests.post(url, headers=headers, json=payload)
+    for model in models:
+        url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={GOOGLE_API_KEY}"
 
-    if response.status_code != 200:
-        raise Exception(f"API 오류 ({response.status_code}): {response.text}")
+        for attempt in range(2):  # 모델당 2번 시도
+            try:
+                response = requests.post(url, headers=headers, json=payload)
 
-    result = response.json()
+                if response.status_code == 200:
+                    st.info(f"🤖 사용 모델: {model}")
+                    result = response.json()
+                    return result['candidates'][0]['content']['parts'][0]['text']
 
-    try:
-        return result['candidates'][0]['content']['parts'][0]['text']
-    except:
-        raise Exception(f"응답 파싱 실패: {result}")
+                elif response.status_code == 503:
+                    time.sleep(2)  # 서버 과부하 → 대기 후 재시도
+
+                else:
+                    break  # 다른 에러면 다음 모델
+
+            except:
+                time.sleep(1)
+
+    raise Exception("❌ 모든 모델 실패 (잠시 후 다시 시도)")
 
 
 # ==========================================
 # 메인 UI
 # ==========================================
-def render(market=None, nw=None):
+def render():
     st.title("👨‍🏫 일타강사 제미나이")
-    st.subheader("자격증 & 시험 합격 정밀 케어")
+    st.subheader("AI 문제 출제 + 채점 + 약점 분석")
 
     if "quiz_data" not in st.session_state:
         st.session_state.quiz_data = None
@@ -98,6 +102,9 @@ def render(market=None, nw=None):
     if "ai_feedback" not in st.session_state:
         st.session_state.ai_feedback = None
 
+    # ==============================
+    # 입력
+    # ==============================
     with st.expander("📚 학습 자료 입력", expanded=True):
         source_text = st.text_area("시험 범위 입력", height=250)
 
@@ -125,7 +132,7 @@ def render(market=None, nw=None):
 난이도: {difficulty}
 스타일: {q_type}
 
-⚠️ 반드시 JSON 배열만 출력
+⚠️ JSON 배열만 출력
 ⚠️ 설명 금지
 ⚠️ ``` 사용 금지
 
@@ -142,9 +149,8 @@ def render(market=None, nw=None):
 {source_text[:30000]}
 """
 
-                    response_text = call_gemini_direct(prompt)
+                    response_text = call_gemini(prompt)
 
-                    # 🔥 JSON 추출
                     quiz_json = extract_json(response_text)
 
                     if not quiz_json:
@@ -226,10 +232,14 @@ def render(market=None, nw=None):
 3. 공부법
 """
 
-                st.session_state.ai_feedback = call_gemini_direct(feedback_prompt)
+                st.session_state.ai_feedback = call_gemini(feedback_prompt)
 
             except:
                 st.session_state.ai_feedback = "피드백 생성 실패"
 
         if st.session_state.ai_feedback:
             st.info(st.session_state.ai_feedback)
+
+
+# 실행
+render()
