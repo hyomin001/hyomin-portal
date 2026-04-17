@@ -143,7 +143,7 @@ if st.session_state.page_view == "portal":
 
     with col2:
         # ✅ 배너 A 활성화 수정 부분
-        st.markdown("<div class='banner-card'><h2>🎓 비밀 프로젝트 A</h2><p>AI 무한 모의고사</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🧠 AI 무한 모의고사 </h2><p>공부한 내용 복붙하면, AI가 끝없이 문제를 만들어 드립니다.</p></div>", unsafe_allow_html=True)
         if st.button("AI 아카데미 입장 📚", key="b1", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_a"
