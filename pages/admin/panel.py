@@ -281,6 +281,30 @@ def render(market, nw):
                         save_db(COMMENTS_FILE, all_c); st.rerun()
 
     with t4:
+        # [신규 추가] 점검 모드 기능 업그레이드!
+        st.markdown("### 🚧 서버 점검 관리 (Maintenance Mode)")
+        st.caption("점검 모드를 켜면 일반 유저의 유니버스 접속이 차단되며 포털 첫 화면에 점검 배너가 뜹니다.")
+
+        current_m_mode = market.get("maintenance_mode", False)
+        current_m_msg = market.get("maintenance_msg", "현재 서버 점검 및 업데이트 중입니다. 이용에 불편을 드려 죄송합니다.")
+
+        c_m1, c_m2 = st.columns([1, 2])
+        with c_m1:
+            new_m_mode = st.toggle("🚨 점검 모드 켜기 (유저 접속 차단)", value=current_m_mode)
+        with c_m2:
+            new_m_msg = st.text_input("점검 배너 메시지 입력", value=current_m_msg)
+
+        if st.button("⚙️ 점검 설정 적용 (서버 즉시 반영)", use_container_width=True):
+            market["maintenance_mode"] = new_m_mode
+            market["maintenance_msg"] = new_m_msg
+            save_market(market)
+            if new_m_mode:
+                st.error("🚨 점검 모드가 활성화되었습니다. 이제 일반 유저들은 접속할 수 없습니다.")
+            else:
+                st.success("✅ 점검이 끝났습니다. 우주의 문이 다시 열렸습니다!")
+            st.rerun()
+
+        st.write("---")
         st.markdown("### 🕊️ 창조주의 은총 (에어드랍)")
         st.caption("모든 유저(관리자 제외)에게 동일한 현금을 일괄 지급합니다.")
         airdrop_amt = st.number_input("지급할 금액", min_value=0, step=10_000_000, value=100_000_000)
@@ -312,13 +336,6 @@ def render(market, nw):
                 market_ban['board_banned'].remove(ban_target)
                 save_market(market_ban)
                 st.success(f"✅ {ban_target} 이용 정지 해제!"); st.rerun()
-
-        st.write("---")
-        st.markdown("### 📢 긴급 서버 점검 공지")
-        if st.button("🚨 서버 점검 공지 발령 (모든 유저 화면에 표시)", use_container_width=True):
-            market['admin_msg'] = "🚨 현재 서버 점검 중입니다. 잠시 후 다시 접속해주세요."
-            market['admin_color'] = "#FF0000"
-            save_market(market); st.success("점검 공지 발령 완료!"); st.rerun()
 
         st.write("---")
         st.markdown("### 🌪️ 창조주의 분노 (부유세 강제 징수)")
