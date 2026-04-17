@@ -2,20 +2,35 @@ import streamlit as st
 import requests
 import json
 import re
+import os
 
 # ==========================================
-# 🔐 Streamlit Secrets에서 API KEY 불러오기
+# 🔐 API KEY 불러오기 (secrets + 환경변수)
 # ==========================================
-try:
+GOOGLE_API_KEY = None
+
+# 1️⃣ Streamlit secrets 우선
+if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-except:
-    st.error("❌ API 키가 설정되지 않았습니다. secrets.toml 확인하세요.")
+
+# 2️⃣ 환경변수 fallback
+elif os.getenv("GOOGLE_API_KEY"):
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# 3️⃣ 키 없으면 종료
+if not GOOGLE_API_KEY:
+    st.error("❌ API 키를 불러오지 못했습니다. secrets 설정 확인하세요.")
     st.stop()
+
+# 🔥 공백 제거 (중요)
+GOOGLE_API_KEY = GOOGLE_API_KEY.strip()
+
+# 🔥 디버깅용 (앞 10자리만 확인)
+st.write("🔑 KEY CHECK:", GOOGLE_API_KEY[:10])
 # ==========================================
 
 
 def call_gemini_direct(prompt):
-    # 🔥 최신 안정 모델
     model = "gemini-2.5-flash"
 
     url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={GOOGLE_API_KEY}"
@@ -211,5 +226,3 @@ def render(market=None, nw=None):
         if st.session_state.ai_feedback:
             st.info("👨‍🏫 합격 전략 가이드")
             st.write(st.session_state.ai_feedback)
-
-st.write("KEY:", GOOGLE_API_KEY[:10])
