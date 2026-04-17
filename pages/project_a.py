@@ -93,7 +93,7 @@ def call_gemini(prompt):
 # ==========================================
 # 메인 UI
 # ==========================================
-def render():
+def render(market=None, nw=None):
     st.title("👨‍🏫 일타강사 제미나이")
     st.subheader("AI 문제 출제 + 채점 + 약점 분석")
 
