@@ -26,7 +26,7 @@ def render(market, nw):
         st.session_state.user_answers = {}
 
     # 1. 자료 입력 섹션
-    with st.expander("📚 학습 자료 입력 (여기에 책 한 권 분량도 가능!)", expanded=True):
+    with st.expander("📚 학습 자료 입력 (최대 5만 자, A4 30장 분량도 거뜬합니다!)", expanded=True):
         source_text = st.text_area("학습할 내용을 붙여넣으세요.", height=300, 
                                  placeholder="교과서 내용, 요약본, 자격증 기출 이론 등 무엇이든 좋습니다.")
         
