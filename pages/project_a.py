@@ -26,14 +26,12 @@ st.write("🔑 KEY CHECK:", GOOGLE_API_KEY[:10])
 
 
 # ==========================================
-# 🔥 JSON 추출 (최강 버전)
+# 🔥 JSON 추출
 # ==========================================
 def extract_json(text):
     try:
-        # 코드블럭 제거
         text = re.sub(r"```json|```", "", text, flags=re.IGNORECASE).strip()
 
-        # JSON 배열 찾기
         matches = re.findall(r'\[\s*{.*?}\s*\]', text, re.DOTALL)
 
         for match in matches:
@@ -43,7 +41,6 @@ def extract_json(text):
                 continue
 
         return None
-
     except:
         return None
 
@@ -107,6 +104,12 @@ def render():
     if "ai_feedback" not in st.session_state:
         st.session_state.ai_feedback = None
 
+    # 🔥 세션 초기화 버튼
+    if st.button("🧹 초기화"):
+        st.session_state.clear()
+        st.success("초기화 완료")
+        st.stop()
+
     # ==============================
     # 입력
     # ==============================
@@ -153,7 +156,7 @@ def render():
 ]
 
 자료:
-{source_text[:30000]}
+{source_text[:10000]}
 """
 
                     quiz_json = None
@@ -167,8 +170,11 @@ def render():
                         if quiz_json:
                             break
 
+                    # ❌ 최종 실패
                     if not quiz_json:
-                        raise Exception(f"JSON 파싱 실패\n\n응답:\n{response_text}")
+                        st.error("🔥 JSON 깨짐 - 다시 시도하세요")
+                        st.text_area("응답 확인", response_text, height=300)
+                        st.stop()
 
                     st.session_state.quiz_data = quiz_json
                     st.session_state.user_answers = {}
