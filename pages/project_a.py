@@ -9,27 +9,47 @@ import os
 # ==========================================
 GOOGLE_API_KEY = None
 
-# 1️⃣ Streamlit secrets 우선
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-
-# 2️⃣ 환경변수 fallback
 elif os.getenv("GOOGLE_API_KEY"):
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-# 3️⃣ 키 없으면 종료
 if not GOOGLE_API_KEY:
-    st.error("❌ API 키를 불러오지 못했습니다. secrets 설정 확인하세요.")
+    st.error("❌ API 키를 불러오지 못했습니다.")
     st.stop()
 
-# 🔥 공백 제거 (중요)
 GOOGLE_API_KEY = GOOGLE_API_KEY.strip()
 
-# 🔥 디버깅용 (앞 10자리만 확인)
+# 🔥 디버깅용
 st.write("🔑 KEY CHECK:", GOOGLE_API_KEY[:10])
 # ==========================================
 
 
+# ==========================================
+# 🔥 JSON 추출 함수 (핵심)
+# ==========================================
+def extract_json(text):
+    try:
+        # 코드블럭 제거
+        text = re.sub(r"```json|```", "", text).strip()
+
+        # JSON 배열 추출
+        start = text.find("[")
+        end = text.rfind("]") + 1
+
+        if start == -1 or end == -1:
+            return None
+
+        json_str = text[start:end]
+        return json.loads(json_str)
+
+    except:
+        return None
+
+
+# ==========================================
+# Gemini 호출
+# ==========================================
 def call_gemini_direct(prompt):
     model = "gemini-2.5-flash"
 
@@ -51,28 +71,26 @@ def call_gemini_direct(prompt):
         }
     }
 
+    response = requests.post(url, headers=headers, json=payload)
+
+    if response.status_code != 200:
+        raise Exception(f"API 오류 ({response.status_code}): {response.text}")
+
+    result = response.json()
+
     try:
-        response = requests.post(url, headers=headers, json=payload)
-
-        if response.status_code != 200:
-            raise Exception(f"API 오류 ({response.status_code}): {response.text}")
-
-        result = response.json()
-
         return result['candidates'][0]['content']['parts'][0]['text']
+    except:
+        raise Exception(f"응답 파싱 실패: {result}")
 
-    except Exception as e:
-        raise Exception(f"Gemini 호출 실패: {e}")
 
-
+# ==========================================
+# 메인 UI
+# ==========================================
 def render(market=None, nw=None):
     st.title("👨‍🏫 일타강사 제미나이")
     st.subheader("자격증 & 시험 합격 정밀 케어")
-    st.caption("AI가 문제 출제 + 채점 + 약점 분석까지 해드립니다.")
 
-    # ==============================
-    # 세션 초기화
-    # ==============================
     if "quiz_data" not in st.session_state:
         st.session_state.quiz_data = None
     if "user_answers" not in st.session_state:
@@ -80,15 +98,8 @@ def render(market=None, nw=None):
     if "ai_feedback" not in st.session_state:
         st.session_state.ai_feedback = None
 
-    # ==============================
-    # 입력 UI
-    # ==============================
     with st.expander("📚 학습 자료 입력", expanded=True):
-        source_text = st.text_area(
-            "시험 범위를 복붙하세요",
-            height=250,
-            placeholder="교과서, 요약본 등 입력"
-        )
+        source_text = st.text_area("시험 범위 입력", height=250)
 
         c1, c2, c3 = st.columns(3)
 
@@ -104,7 +115,7 @@ def render(market=None, nw=None):
     # ==============================
     if st.button("🚀 모의고사 시작", use_container_width=True):
         if not source_text.strip():
-            st.warning("⚠️ 학습 내용을 입력하세요.")
+            st.warning("내용 입력하세요")
         else:
             with st.spinner("문제 생성 중..."):
                 try:
@@ -114,7 +125,9 @@ def render(market=None, nw=None):
 난이도: {difficulty}
 스타일: {q_type}
 
-반드시 JSON만 출력:
+⚠️ 반드시 JSON 배열만 출력
+⚠️ 설명 금지
+⚠️ ``` 사용 금지
 
 [
   {{
@@ -131,13 +144,11 @@ def render(market=None, nw=None):
 
                     response_text = call_gemini_direct(prompt)
 
-                    # 🔥 JSON 추출 안정화
-                    json_match = re.search(r'\[\s*{.*}\s*\]', response_text, re.DOTALL)
+                    # 🔥 JSON 추출
+                    quiz_json = extract_json(response_text)
 
-                    if not json_match:
-                        raise Exception("JSON 형식 추출 실패")
-
-                    quiz_json = json.loads(json_match.group())
+                    if not quiz_json:
+                        raise Exception(f"JSON 파싱 실패\n\n응답:\n{response_text}")
 
                     st.session_state.quiz_data = quiz_json
                     st.session_state.user_answers = {}
@@ -175,24 +186,24 @@ def render(market=None, nw=None):
 
             for i, q in enumerate(st.session_state.quiz_data):
                 user_ans = st.session_state.user_answers.get(i)
-                is_correct = (user_ans == q['answer'])
+                is_correct = user_ans == q['answer']
 
                 if is_correct:
                     correct += 1
-                    st.success(f"{i+1}번 정답 ✅")
+                    st.success(f"{i+1}번 정답")
                 else:
-                    st.error(f"{i+1}번 오답 ❌ (정답: {q['answer']})")
+                    st.error(f"{i+1}번 오답 (정답: {q['answer']})")
 
                 analysis.append({
                     "q": q['question'],
                     "is_correct": is_correct
                 })
 
-                with st.expander("📖 해설 보기"):
+                with st.expander("해설"):
                     st.write(q['explanation'])
 
             score = int(correct / len(st.session_state.quiz_data) * 100)
-            st.metric("🎯 점수", f"{score}점", f"{correct}/{len(st.session_state.quiz_data)}")
+            st.metric("점수", f"{score}점")
 
             # ==============================
             # AI 피드백
@@ -210,9 +221,9 @@ def render(market=None, nw=None):
 {summary}
 
 3줄 피드백:
-1. 전체 평가
-2. 취약 개념
-3. 공부 전략
+1. 평가
+2. 약점
+3. 공부법
 """
 
                 st.session_state.ai_feedback = call_gemini_direct(feedback_prompt)
@@ -220,9 +231,5 @@ def render(market=None, nw=None):
             except:
                 st.session_state.ai_feedback = "피드백 생성 실패"
 
-        # ==============================
-        # 피드백 출력
-        # ==============================
         if st.session_state.ai_feedback:
-            st.info("👨‍🏫 합격 전략 가이드")
-            st.write(st.session_state.ai_feedback)
+            st.info(st.session_state.ai_feedback)
