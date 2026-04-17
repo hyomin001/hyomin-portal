@@ -11,32 +11,39 @@ import time
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"].strip()
 
 # ==========================================
-# 🔥 JSON 추출
+# 🔥 JSON 추출 (강화)
 # ==========================================
 def extract_json(text):
     try:
         text = text.replace("```json", "").replace("```", "").strip()
+
         start = text.find("[")
         end = text.rfind("]")
 
         if start != -1 and end != -1:
             return json.loads(text[start:end+1])
+
         return None
     except:
         return None
 
 
 # ==========================================
-# 🔥 Gemini 호출
+# 🔥 Gemini 호출 (완전 안정화)
 # ==========================================
 def call_gemini(prompt):
 
-    models = ["gemini-2.5-flash", "gemini-2.0-flash"]
+    models = [
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite"
+    ]
 
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "temperature": 0.8,
+            "temperature": 0.7,
             "maxOutputTokens": 2048
         }
     }
@@ -44,26 +51,30 @@ def call_gemini(prompt):
     for model in models:
         url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={GOOGLE_API_KEY}"
 
-        for _ in range(2):
+        for attempt in range(3):
             try:
-                res = requests.post(url, json=payload)
+                res = requests.post(url, json=payload, timeout=15)
 
                 if res.status_code == 200:
+                    st.info(f"🤖 사용 모델: {model}")
                     return res.json()['candidates'][0]['content']['parts'][0]['text']
 
-                elif res.status_code == 503:
-                    time.sleep(2)
-
                 else:
-                    break
-            except:
+                    st.warning(f"{model} 실패 ({res.status_code})")
+                    st.text(res.text)
+
+                if res.status_code in [429, 503]:
+                    time.sleep(2 + attempt)
+
+            except Exception as e:
+                st.warning(f"{model} 오류: {e}")
                 time.sleep(1)
 
-    raise Exception("❌ API 실패")
+    raise Exception("❌ 모든 모델 호출 실패")
 
 
 # ==========================================
-# 🔥 문제 생성
+# 🔥 문제 생성 (JSON 강제)
 # ==========================================
 def generate_quiz(text, count, difficulty, q_type):
 
@@ -79,7 +90,8 @@ def generate_quiz(text, count, difficulty, q_type):
 - 실제 시험처럼 출제
 - 헷갈리는 오답 포함
 - 핵심 개념 기반
-- 설명 없이 JSON만 출력
+- 반드시 JSON 배열만 출력
+- 다른 말 절대 금지
 
 [
   {{
@@ -91,12 +103,13 @@ def generate_quiz(text, count, difficulty, q_type):
 ]
 
 자료:
-{text[:10000]}
+{text[:5000]}
 """
 
     for _ in range(3):
         res = call_gemini(prompt)
         quiz = extract_json(res)
+
         if quiz:
             return quiz
 
@@ -108,8 +121,8 @@ def generate_quiz(text, count, difficulty, q_type):
 # ==========================================
 def render(market=None, nw=None):
 
-    st.title("🔥 AI 모의고사 시스템")
-    st.caption("파일 업로드 + 문제 생성 + 오답 분석 + 재출제")
+    st.title("🔥 AI 모의고사 시스템 (안정화 버전)")
+    st.caption("문제 생성 + 채점 + 오답 분석 + 재출제")
 
     # 상태
     if "quiz" not in st.session_state:
@@ -125,7 +138,7 @@ def render(market=None, nw=None):
         st.rerun()
 
     # ==============================
-    # 📁 파일 업로드
+    # 파일 업로드
     # ==============================
     uploaded_file = st.file_uploader(
         "📄 파일 업로드 (txt, pdf)",
@@ -135,21 +148,23 @@ def render(market=None, nw=None):
     file_text = ""
 
     if uploaded_file:
-        if uploaded_file.name.endswith(".txt"):
-            file_text = uploaded_file.read().decode("utf-8")
+        try:
+            if uploaded_file.name.endswith(".txt"):
+                file_text = uploaded_file.read().decode("utf-8")
 
-        elif uploaded_file.name.endswith(".pdf"):
-            try:
+            elif uploaded_file.name.endswith(".pdf"):
                 import PyPDF2
                 reader = PyPDF2.PdfReader(uploaded_file)
+
                 for page in reader.pages:
                     txt = page.extract_text()
                     if txt:
                         file_text += txt
-            except:
-                st.error("PDF 읽기 실패 (PyPDF2 필요)")
 
-        st.success(f"파일 업로드 완료: {uploaded_file.name}")
+            st.success(f"파일 업로드 완료: {uploaded_file.name}")
+
+        except Exception as e:
+            st.error(f"파일 처리 실패: {e}")
 
     # ==============================
     # 입력
@@ -165,22 +180,27 @@ def render(market=None, nw=None):
     # 문제 생성
     # ==============================
     if st.button("🚀 문제 생성", use_container_width=True):
+
         if not text.strip():
             st.warning("내용 입력하세요")
             return
 
         with st.spinner("문제 생성 중..."):
-            quiz = generate_quiz(text, count, difficulty, q_type)
+            try:
+                quiz = generate_quiz(text, count, difficulty, q_type)
 
-            if not quiz:
-                st.error("❌ 문제 생성 실패")
-                return
+                if not quiz:
+                    st.error("🔥 JSON 생성 실패 (AI 응답 문제)")
+                    return
 
-            st.session_state.quiz = quiz
-            st.session_state.answers = {}
-            st.session_state.wrong = []
+                st.session_state.quiz = quiz
+                st.session_state.answers = {}
+                st.session_state.wrong = []
 
-            st.success("✅ 생성 완료")
+                st.success("✅ 생성 완료")
+
+            except Exception as e:
+                st.error(f"❌ 오류 발생: {e}")
 
     # ==============================
     # 문제 풀이
@@ -226,27 +246,31 @@ def render(market=None, nw=None):
 
             st.session_state.wrong = wrong_list
 
-            # 난이도 피드백
             if score < 50:
                 st.warning("👉 난이도 낮춰서 다시 추천")
             elif score > 80:
                 st.success("👉 더 어려운 문제 도전 가능")
 
         # ==============================
-        # 🔥 틀린 문제 재출제
+        # 틀린 문제 재출제
         # ==============================
         if st.session_state.wrong:
             if st.button("🔥 틀린 문제 다시 풀기"):
 
                 wrong_text = " ".join([q["question"] for q in st.session_state.wrong])
 
-                new_quiz = generate_quiz(
-                    wrong_text,
-                    len(st.session_state.wrong),
-                    "어려움",
-                    "함정"
-                )
+                with st.spinner("재출제 중..."):
+                    try:
+                        new_quiz = generate_quiz(
+                            wrong_text,
+                            len(st.session_state.wrong),
+                            "어려움",
+                            "함정"
+                        )
 
-                if new_quiz:
-                    st.session_state.quiz = new_quiz
-                    st.success("재출제 완료!")
+                        if new_quiz:
+                            st.session_state.quiz = new_quiz
+                            st.success("재출제 완료!")
+
+                    except Exception as e:
+                        st.error(f"재출제 실패: {e}")
