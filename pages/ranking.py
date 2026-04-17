@@ -1,5 +1,6 @@
 # pages/ranking.py
 import streamlit as st
+import time  # time 모듈 추가
 from datetime import datetime
 from utils.config import KST, estate_config, FORGE_DATA
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown
@@ -9,8 +10,11 @@ from utils.database import load_db, save_db
 def render(market, nw):
     st.title("🏅 랭킹 & 게시판")
 
-    tab_rank, tab_board = st.tabs(["🏆 순위표", "💬 게시판"])
+    tab_rank, tab_board = st.tabs(["🏆 순위표", "💬 자유 게시판"])
 
+    # ==========================================
+    # 🏆 탭 1: 순위표 로직 (기존 유지)
+    # ==========================================
     with tab_rank:
         users_all = load_db(USERS_FILE, {})
         rank_data = []
@@ -82,15 +86,27 @@ def render(market, nw):
   </div>
 </div>""", unsafe_allow_html=True)
 
+
+    # ==========================================
+    # 💬 탭 2: 게시판 로직 (완벽 개편)
+    # ==========================================
     with tab_board:
-        msg = st.text_input("메시지 작성", placeholder="랭커 게시판에 글을 남겨보세요!")
-        cd_post = cooldown_remaining("board_post", 5.0)
-        if cd_post > 0:
-            st.warning(f"⏱️ 도배 방지 쿨다운 {cd_post:.1f}초")
-        elif st.button("📝 등록", use_container_width=True):
-            if msg.strip():
-                if st.session_state.logged_in_user in market.get('board_banned', []):
-                    st.error("🔇 게시판 이용이 정지된 계정입니다.")
+        st.markdown("### 📝 자유 게시판")
+        st.caption("우주 시민들과 자유롭게 대화를 나눠보세요!")
+
+        # 1. 폼(Form) 적용: 엔터키를 쳐도 글이 날아가지 않고 안전하게 저장됨
+        with st.form("board_form", clear_on_submit=True):
+            msg = st.text_input("메시지 작성", placeholder="내용을 입력하세요")
+            submit_btn = st.form_submit_button("🚀 글 등록하기", use_container_width=True)
+
+            if submit_btn:
+                cd_post = cooldown_remaining("board_post", 5.0)
+                if cd_post > 0:
+                    st.error(f"⏱️ 도배 방지! {cd_post:.1f}초 후에 다시 작성해주세요.")
+                elif not msg.strip():
+                    st.warning("⚠️ 내용을 입력해주세요.")
+                elif st.session_state.logged_in_user in market.get('board_banned', []):
+                    st.error("🔇 창조주에 의해 게시판 이용이 정지된 계정입니다.")
                 else:
                     set_cooldown("board_post")
                     comments = load_db(COMMENTS_FILE, [])
@@ -101,19 +117,39 @@ def render(market, nw):
                         "time":    datetime.now(KST).strftime("%m/%d %H:%M")
                     })
                     save_db(COMMENTS_FILE, comments)
+                    st.success("✅ 게시글이 등록되었습니다!")
+                    time.sleep(0.5)
                     st.rerun()
 
-        st.write("")
+        st.write("---")
+        
+        col1, col2 = st.columns([8, 2])
+        with col1: st.markdown("#### 💬 실시간 소통 현황")
+        with col2:
+            if st.button("🔄 새로고침", use_container_width=True): st.rerun()
+
+        # 2. 게시판 출력 로직 (스크롤 컨테이너 + 예외 처리 추가)
         all_c = load_db(COMMENTS_FILE, [])
-        for c in reversed(all_c[-50:]):
-            is_me = (c['name'] == st.session_state.logged_in_user)
-            border = "border-left:3px solid #FFD600;" if is_me else ""
-            me_badge = " <span style='background:#FFD600;color:#000;font-size:0.7rem;padding:1px 6px;border-radius:4px;font-weight:900;'>나</span>" if is_me else ""
-            st.markdown(f"""
-<div class='card' style='margin:6px 0;padding:12px 16px;{border}'>
-  <div style='display:flex;justify-content:space-between;margin-bottom:6px;'>
-    <span><b style='color:#00E5FF;'>{c['name']}</b>{me_badge} <span style='color:#FFD600;font-size:0.82rem;'>{c.get('title','')}</span></span>
-    <span style='color:#777;font-size:0.78rem;'>{c.get('time','')}</span>
-  </div>
-  <div style='color:#94A3B8;font-size:0.92rem;'>{c['comment']}</div>
-</div>""", unsafe_allow_html=True)
+        
+        if not all_c:
+            st.info("텅~ 비었습니다. 영광스러운 첫 번째 글의 주인공이 되어보세요!")
+        else:
+            # 글이 많아도 화면이 길어지지 않게 고정 높이의 스크롤 박스 생성
+            with st.container(height=600):
+                for c in reversed(all_c[-100:]): # 최근 100개까지만 표시
+                    is_me = (c['name'] == st.session_state.logged_in_user)
+                    border = "border-left: 4px solid #00E5FF;" if is_me else "border-left: 4px solid #334155;"
+                    me_badge = " <span style='background:#00E5FF;color:#000;font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:900;'>나</span>" if is_me else ""
+                    
+                    st.markdown(f"""
+                    <div class='card' style='margin:8px 0; padding:15px; {border} background: rgba(30, 41, 59, 0.4);'>
+                        <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
+                            <span>
+                                <b style='color:#FFFFFF; font-size:1.05rem;'>{c['name']}</b>{me_badge}
+                                <span style='color:#94A3B8; font-size:0.85rem; margin-left:8px;'>{c.get('title','')}</span>
+                            </span>
+                            <span style='color:#64748B; font-size:0.8rem;'>{c.get('time','')}</span>
+                        </div>
+                        <div style='color:#E2E8F0; font-size:0.95rem; line-height: 1.5;'>{c['comment']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
