@@ -13,7 +13,7 @@ GOOGLE_API_KEY = "AIzaSyAfC4sXq5DXu9tkwbDDWKjlV_T8k6R83rg"
 
 # AI 모델 설정 (404 에러 해결을 위해 -latest 추가)
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+model = genai.GenerativeModel('gemini-pro')
 
 def render(market, nw):
     st.title("👨‍🏫 일타강사 제미나이")
@@ -27,7 +27,7 @@ def render(market, nw):
         st.session_state.user_answers = {}
 
     # 1. 자료 입력 섹션
-    with st.expander("📚 학습 자료 입력 (시험 범위 챕터를 통째로 복붙하세요!)", expanded=True):
+    with st.expander("📚 학습 자료 입력 (최대 5만 자, A4 30장 분량도 거뜬합니다!)", expanded=True):
         source_text = st.text_area("학습할 내용을 붙여넣으세요.", height=300, 
                                  placeholder="교과서 내용, 요약본, 자격증 기출 이론 등 무엇이든 좋습니다. (최대 5만 자 제한)")
         
