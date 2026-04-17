@@ -261,5 +261,4 @@ def render(market=None, nw=None):
             st.info(st.session_state.ai_feedback)
 
 
-# 실행
-render()
+
