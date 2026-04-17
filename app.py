@@ -142,8 +142,16 @@ if st.session_state.page_view == "portal":
         st.button("준비 중...", key="b4", disabled=True, use_container_width=True)
 
     with col2:
-        st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 A</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
-        st.button("준비 중...", key="b1", disabled=True, use_container_width=True)
+        # ✅ 배너 A 활성화 수정 부분
+        st.markdown("<div class='banner-card'><h2>🎓 비밀 프로젝트 A</h2><p>AI 무한 모의고사</p></div>", unsafe_allow_html=True)
+        if st.button("AI 아카데미 입장 📚", key="b1", use_container_width=True):
+            if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
+                st.session_state.page_view = "project_a"
+            else:
+                st.warning("⚠️ 해당 서비스를 이용하시려면 먼저 로그인해주세요.")
+                time.sleep(1)
+                st.session_state.page_view = "login"
+            st.rerun()
 
         st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 C</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
         st.button("준비 중...", key="b3", disabled=True, use_container_width=True)
@@ -421,3 +429,25 @@ elif st.session_state.page_view == "universe":
         from pages.admin import panel; panel.render(market, nw)
     else:
         st.info(f"🚧 '{menu}' 페이지는 존재하지 않거나 로드할 수 없습니다.")
+
+
+# ==============================
+# ✅ 8. [View 4] 비밀 프로젝트 A (AI 아카데미)
+# ==============================
+elif st.session_state.page_view == "project_a":
+    
+    # 비정상 접근 차단 (로그인 필요)
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"
+        st.rerun()
+
+    # 상단에 포털로 돌아가는 버튼 추가
+    st.markdown("<div style='margin-bottom: 15px;'>", unsafe_allow_html=True)
+    if st.button("🏠 포털 메인으로 나가기"):
+        st.session_state.page_view = "portal"
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 모듈 임포트 후 렌더링 함수 실행 (인자 규격 맞춤)
+    from pages import project_a
+    project_a.render(market, 0)
