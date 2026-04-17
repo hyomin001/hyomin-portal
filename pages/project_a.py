@@ -4,9 +4,10 @@ import json
 import re
 import os
 import time
+from datetime import datetime
 
 # ==========================================
-# 🔐 API KEY 불러오기 (창조주님 원본 그대로)
+# 🔐 API KEY 불러오기 (스트림릿 Secrets 자동 연동)
 # ==========================================
 GOOGLE_API_KEY = None
 
@@ -16,86 +17,73 @@ elif os.getenv("GOOGLE_API_KEY"):
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 if not GOOGLE_API_KEY:
-    st.error("❌ API 키 없음")
+    st.error("❌ API 키가 설정되지 않았습니다. Streamlit Secrets를 확인해주세요!")
     st.stop()
 
 GOOGLE_API_KEY = GOOGLE_API_KEY.strip()
 
-st.write("🔑 KEY CHECK:", GOOGLE_API_KEY[:10])
 # ==========================================
-
-
-# ==========================================
-# 🔥 JSON 추출 (창조주님 원본 그대로)
+# 🔥 JSON 추출 (강력한 정규식 & 파싱 로직으로 업그레이드)
 # ==========================================
 def extract_json(text):
     try:
-        text = re.sub(r"```json|```", "", text, flags=re.IGNORECASE).strip()
-
-        matches = re.findall(r'\[\s*{.*?}\s*\]', text, re.DOTALL)
-
-        for match in matches:
-            try:
-                return json.loads(match)
-            except:
-                continue
-
-        return None
+        # 1. 쓸데없는 마크다운 찌꺼기 완벽 제거
+        text = text.replace("```json", "").replace("```", "").strip()
+        
+        # 2. 처음 시작하는 '[' 와 마지막에 끝나는 ']' 사이만 추출
+        start_idx = text.find('[')
+        end_idx = text.rfind(']')
+        
+        if start_idx != -1 and end_idx != -1:
+            clean_json = text[start_idx:end_idx+1]
+            return json.loads(clean_json)
+            
+        # 3. 최후의 보루
+        return json.loads(text)
     except:
         return None
 
-
 # ==========================================
-# 🔥 Gemini 호출 (Fallback + 재시도) (창조주님 원본 그대로)
+# 🔥 Gemini 호출 (JSON 강제 모드 & 토큰 용량 2배)
 # ==========================================
 def call_gemini(prompt):
-
     models = [
         "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
         "gemini-2.0-flash"
     ]
-
     headers = {"Content-Type": "application/json"}
-
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.7,
-            "maxOutputTokens": 2048
+            "maxOutputTokens": 4096, # 👈 토큰 제한을 늘려 텍스트가 잘리는 것 방지!
+            "responseMimeType": "application/json" # 👈 무조건 JSON 형태로만 대답하도록 강제 (에러 원천 차단)
         }
     }
 
     for model in models:
         url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={GOOGLE_API_KEY}"
-
         for attempt in range(2):
             try:
                 response = requests.post(url, headers=headers, json=payload)
-
                 if response.status_code == 200:
-                    st.info(f"🤖 사용 모델: {model}")
                     result = response.json()
                     return result['candidates'][0]['content']['parts'][0]['text']
-
                 elif response.status_code == 503:
                     time.sleep(2)
-
                 else:
                     break
-
             except:
                 time.sleep(1)
-
-    raise Exception("❌ 모든 모델 실패")
-
+    raise Exception("❌ 모든 모델 호출 실패")
 
 # ==========================================
 # 메인 UI
 # ==========================================
 def render(market=None, nw=None):
     st.title("👨‍🏫 일타강사 제미나이")
-    st.subheader("AI 문제 출제 + 채점 + 약점 분석")
+    st.subheader("비밀 프로젝트 A: AI 무한 모의고사 + 오답노트")
 
     if "quiz_data" not in st.session_state:
         st.session_state.quiz_data = None
@@ -104,18 +92,17 @@ def render(market=None, nw=None):
     if "ai_feedback" not in st.session_state:
         st.session_state.ai_feedback = None
 
-    # 🔥 세션 초기화 버튼 (창조주님 원본)
-    if st.button("🧹 초기화"):
-        st.session_state.clear()
-        st.success("초기화 완료")
-        st.rerun() # st.stop() 대신 rerun()으로 변경하여 화면 새로고침
+    # 🔥 세션 초기화 버튼
+    c_title1, c_title2 = st.columns([8, 2])
+    with c_title2:
+        if st.button("🧹 화면 초기화", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
 
     # ==============================
-    # 입력 (🚀 파일 업로드 기능 추가됨)
+    # 1. 자료 입력 (파일 업로드)
     # ==============================
-    with st.expander("📚 학습 자료 입력_최대 5만자", expanded=True):
-        
-        # [추가됨] 파일 업로더
+    with st.expander("📚 학습 자료 입력 (파일 업로드 지원_최대 5만자)", expanded=True):
         uploaded_file = st.file_uploader("📄 문서 파일 업로드 (선택사항)", type=['txt', 'pdf'])
         file_text = ""
         
@@ -131,88 +118,75 @@ def render(market=None, nw=None):
                         if extracted: file_text += extracted + "\n"
                 except ImportError:
                     st.error("⚠️ PDF 기능을 쓰려면 requirements.txt에 PyPDF2 를 추가해주세요!")
+        
+        source_text = st.text_area("시험 범위 직접 입력 (파일을 올리면 자동 채워짐)", value=file_text, height=200)
 
-        # 업로드된 파일이 있으면 텍스트 박스에 자동으로 채워짐
-        source_text = st.text_area("시험 범위 입력", value=file_text, height=250)
-
+        st.write("---")
         c1, c2, c3 = st.columns(3)
-
-        with c1:
-            q_count = st.slider("문제 수", 3, 10, 5)
-        with c2:
-            difficulty = st.selectbox("난이도", ["쉬움", "보통", "어려움", "최악"])
-        with c3:
-            q_type = st.selectbox("출제 스타일", ["핵심 개념", "실전 응용", "함정 문제"])
+        with c1: q_count = st.slider("문제 수", 3, 10, 5)
+        with c2: difficulty = st.selectbox("난이도", ["쉬움", "보통", "어려움", "최악 (함정 다수)"])
+        with c3: q_type = st.selectbox("출제 스타일", ["핵심 개념 위주", "실전 응용 위주", "기출 변형 스타일"])
 
     # ==============================
-    # 문제 생성
+    # 2. 문제 생성
     # ==============================
-    if st.button("🚀 모의고사 시작", use_container_width=True):
+    if st.button("🚀 나만의 모의고사 출제하기", type="primary", use_container_width=True):
         if not source_text.strip():
-            st.warning("내용 입력하세요")
+            st.warning("⚠️ 내용을 먼저 입력하거나 파일을 업로드하세요!")
         else:
-            with st.spinner("문제 생성 중..."):
+            with st.spinner("AI가 방대한 자료를 분석하여 영혼을 갈아 문제를 출제 중입니다... (약 10~20초 소요)"):
                 try:
                     prompt = f"""
-다음 자료 기반으로 {q_count}개 객관식 문제 생성
+                    다음 자료 기반으로 {q_count}개 객관식 문제 생성
 
-난이도: {difficulty}
-스타일: {q_type}
+                    난이도: {difficulty}
+                    스타일: {q_type}
 
-⚠️ 매우 중요:
-- JSON 배열만 출력
-- 설명 절대 금지
-- ``` 사용 금지
-- JSON 외 텍스트 포함 금지
+                    ⚠️ 매우 중요:
+                    - JSON 배열만 출력
+                    - 설명 절대 금지
+                    - JSON 외 텍스트 포함 금지
 
-[
-  {{
-    "question": "문제",
-    "options": ["1번", "2번", "3번", "4번"],
-    "answer": "정답 텍스트 그대로",
-    "explanation": "해설"
-  }}
-]
+                    [
+                      {{
+                        "question": "문제",
+                        "options": ["1번", "2번", "3번", "4번"],
+                        "answer": "정답 텍스트 그대로",
+                        "explanation": "해설"
+                      }}
+                    ]
 
-자료:
-{source_text[:10000]}
-"""
-
+                    자료:
+                    {source_text[:20000]}
+                    """
                     quiz_json = None
                     response_text = None
-
-                    # 🔥 JSON 실패 시 재요청 (창조주님 원본 그대로)
+                    
                     for _ in range(3):
                         response_text = call_gemini(prompt)
                         quiz_json = extract_json(response_text)
+                        if quiz_json: break
 
-                        if quiz_json:
-                            break
-
-                    # ❌ 최종 실패
                     if not quiz_json:
-                        st.error("🔥 JSON 깨짐 - 다시 시도하세요")
-                        st.text_area("응답 확인", response_text, height=300)
+                        st.error("🔥 AI 응답 오류 - 잠시 후 다시 시도해주세요.")
+                        with st.expander("에러 난 원본 응답 보기"):
+                            st.write(response_text)
                         st.stop()
 
                     st.session_state.quiz_data = quiz_json
                     st.session_state.user_answers = {}
                     st.session_state.ai_feedback = None
-
-                    st.success("✅ 출제 완료!")
-
+                    st.success("✅ 출제 완료! 아래에서 문제를 풀어보세요.")
                 except Exception as e:
                     st.error(f"❌ 오류 발생: {e}")
 
     # ==============================
-    # 문제 풀이
+    # 3. 문제 풀이 및 다운로드
     # ==============================
     if st.session_state.quiz_data:
         st.write("---")
         
-        # [추가됨] 🌟 시험지 다운로드 버튼
-        from datetime import datetime
-        quiz_txt = f"🎓 일타강사 제미나이 - 모의고사 ({datetime.now().strftime('%Y-%m-%d')})\n"
+        quiz_txt = f"🎓 효민 AI 아카데미 - 모의고사 ({datetime.now().strftime('%Y-%m-%d')})\n"
         quiz_txt += f"난이도: {difficulty} | 스타일: {q_type}\n{'='*40}\n\n"
         for i, q in enumerate(st.session_state.quiz_data):
             quiz_txt += f"Q{i+1}. {q['question']}\n"
@@ -220,28 +194,23 @@ def render(market=None, nw=None):
                 quiz_txt += f"  {idx+1}) {opt}\n"
             quiz_txt += "\n"
             
-        st.download_button("📥 빈 시험지 다운로드 (오프라인 인쇄용)", quiz_txt, file_name="mock_exam.txt")
+        st.download_button("📥 빈 시험지 다운로드 (오프라인 인쇄용)", quiz_txt, file_name="hyomin_mock_exam.txt", use_container_width=True)
         st.write("")
 
         for i, q in enumerate(st.session_state.quiz_data):
             st.markdown(f"### Q{i+1}. {q['question']}")
-
-            user_choice = st.radio(
-                "정답 선택",
-                q['options'],
-                key=f"q_{i}",
-                index=None
-            )
-
+            user_choice = st.radio("정답 선택", q['options'], key=f"q_{i}", index=None)
             st.session_state.user_answers[i] = user_choice
 
+        st.write("---")
+        
         # ==============================
-        # 채점
+        # 4. 채점 및 오답노트
         # ==============================
-        if st.button("💯 채점하기", use_container_width=True):
+        if st.button("💯 답안지 제출 및 채점하기", type="primary", use_container_width=True):
             correct = 0
             analysis = []
-            wrong_notes = [] # [추가됨] 오답노트 배열
+            wrong_notes = []
 
             for i, q in enumerate(st.session_state.quiz_data):
                 user_ans = st.session_state.user_answers.get(i)
@@ -249,66 +218,43 @@ def render(market=None, nw=None):
 
                 if is_correct:
                     correct += 1
-                    st.success(f"{i+1}번 정답")
+                    st.success(f"**Q{i+1}. 정답입니다!**")
                 else:
-                    st.error(f"{i+1}번 오답 (정답: {q['answer']})")
-                    # [추가됨] 틀린 문제 수집
+                    user_ans_text = user_ans if user_ans else "선택 안 함"
+                    st.error(f"**Q{i+1}. 오답입니다.** (내 답: {user_ans_text} ➔ 정답: {q['answer']})")
                     wrong_notes.append({
-                        "num": i+1, "q": q['question'], 
-                        "my_ans": user_ans if user_ans else "선택 안 함", 
-                        "real_ans": q['answer'], "exp": q['explanation']
+                        "q_num": i+1, "question": q['question'], 
+                        "my_ans": user_ans_text, "real_ans": q['answer'], "exp": q['explanation']
                     })
 
-                analysis.append({
-                    "q": q['question'],
-                    "is_correct": is_correct
-                })
-
-                with st.expander("해설"):
+                analysis.append({"q": q['question'], "is_correct": is_correct})
+                with st.expander("💡 해설 보기"):
                     st.write(q['explanation'])
 
-            score = int(correct / len(st.session_state.quiz_data) * 100)
-            st.metric("점수", f"{score}점")
+            score = int((correct / len(st.session_state.quiz_data)) * 100)
+            st.metric("🎯 최종 점수", f"{score}점")
+            
+            if score == 100: st.balloons()
 
-            # [추가됨] 🌟 오답 노트 출력 영역
             if wrong_notes:
                 st.write("---")
                 st.markdown("### 📓 나만의 오답 노트")
                 for w in wrong_notes:
                     st.markdown(f"""
                     <div style='background:rgba(255, 75, 75, 0.1); border-left: 4px solid #FF4B4B; padding:15px; margin-bottom:10px; border-radius:8px;'>
-                        <b>Q{w['num']}. {w['q']}</b><br>
+                        <b>Q{w['q_num']}. {w['question']}</b><br>
                         <span style='color:#FF4B4B;'>❌ 내 답: {w['my_ans']}</span> | <span style='color:#00E5FF;'>✅ 정답: {w['real_ans']}</span><br>
                         <hr style='margin: 8px 0; border-color: rgba(255,255,255,0.1);'>
                         <span style='color:#E2E8F0; font-size: 0.9rem;'>{w['exp']}</span>
                     </div>
                     """, unsafe_allow_html=True)
 
-            # ==============================
-            # AI 피드백
-            # ==============================
             try:
-                summary = "\n".join([
-                    f"- {d['q']}: {'맞음' if d['is_correct'] else '틀림'}"
-                    for d in analysis
-                ])
-
-                feedback_prompt = f"""
-점수: {score}
-
-결과:
-{summary}
-
-3줄 피드백:
-1. 평가
-2. 약점
-3. 공부법
-"""
-
+                summary = "\n".join([f"- {d['q']}: {'맞음' if d['is_correct'] else '틀림'}" for d in analysis])
+                feedback_prompt = f"점수: {score}\n결과:\n{summary}\n\n3줄 피드백:\n1. 종합 평가\n2. 취약점 분석\n3. 추천 공부법"
                 st.session_state.ai_feedback = call_gemini(feedback_prompt)
-
             except:
-                st.session_state.ai_feedback = "피드백 생성 실패"
+                st.session_state.ai_feedback = "피드백 생성에 실패했습니다."
 
-        if st.session_state.ai_feedback:
-            st.info(st.session_state.ai_feedback)
+            if st.session_state.ai_feedback:
+                st.info(st.session_state.ai_feedback)
