@@ -23,7 +23,7 @@ if not GOOGLE_API_KEY:
 GOOGLE_API_KEY = GOOGLE_API_KEY.strip()
 
 # ==========================================
-# 🔥 JSON 추출 (강력한 정규식 & 파싱 로직으로 업그레이드)
+# 🔥 JSON 추출 (강력한 정규식 & 파싱 로직)
 # ==========================================
 def extract_json(text):
     try:
@@ -44,7 +44,7 @@ def extract_json(text):
         return None
 
 # ==========================================
-# 🔥 Gemini 호출 (JSON 강제 모드 & 토큰 용량 2배)
+# 🔥 Gemini 호출 (JSON 강제 모드 & 토큰 용량 2배 상향)
 # ==========================================
 def call_gemini(prompt):
     models = [
@@ -57,8 +57,8 @@ def call_gemini(prompt):
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.7,
-            "maxOutputTokens": 4096, # 👈 토큰 제한을 늘려 텍스트가 잘리는 것 방지!
-            "responseMimeType": "application/json" # 👈 무조건 JSON 형태로만 대답하도록 강제 (에러 원천 차단)
+            "maxOutputTokens": 8192, # 👈 토큰 제한을 8192로 대폭 상향하여 글자 짤림 방지!
+            "responseMimeType": "application/json" # 무조건 JSON 형태로만 대답하도록 강제
         }
     }
 
@@ -136,6 +136,7 @@ def render(market=None, nw=None):
         else:
             with st.spinner("AI가 방대한 자료를 분석하여 영혼을 갈아 문제를 출제 중입니다... (약 10~20초 소요)"):
                 try:
+                    # 👈 프롬프트에 간결함 요구 조건 추가
                     prompt = f"""
                     다음 자료 기반으로 {q_count}개 객관식 문제 생성
 
@@ -146,6 +147,7 @@ def render(market=None, nw=None):
                     - JSON 배열만 출력
                     - 설명 절대 금지
                     - JSON 외 텍스트 포함 금지
+                    - 선택지와 해설은 너무 길지 않게 핵심만 간결하게 작성할 것
 
                     [
                       {{
