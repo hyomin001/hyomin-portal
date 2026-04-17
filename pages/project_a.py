@@ -12,12 +12,12 @@ GOOGLE_API_KEY = "AIzaSyAfC4sXq5DXu9tkwbDDWKjlV_T8k6R83rg"
 # ==========================================
 
 # AI 모델 설정 (404 에러 해결을 위해 -latest 추가)
-genai.configure(AIzaSyAfC4sXq5DXu9tkwbDDWKjlV_T8k6R83rg)
-model = genai.GenerativeModel('gemini-2.5-flash')
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def render(market, nw):
     st.title("👨‍🏫 일타강사 제미나이")
-    st.subheader("비밀 프로젝트 A: 맞춤형 무한 모의고사")
+    st.subheader("시험/자격증_맞춤형 무한 모의고사")
     st.caption("복붙 한 번에 퀴즈가 와르르! AI가 출제위원에 빙의하여 실전 훈련을 돕습니다.")
 
     # 세션 상태 초기화
