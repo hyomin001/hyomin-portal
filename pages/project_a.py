@@ -6,7 +6,7 @@ import os
 import time
 
 # ==========================================
-# 🔐 API KEY 불러오기
+# 🔐 API KEY 불러오기 (창조주님 원본 그대로)
 # ==========================================
 GOOGLE_API_KEY = None
 
@@ -26,7 +26,7 @@ st.write("🔑 KEY CHECK:", GOOGLE_API_KEY[:10])
 
 
 # ==========================================
-# 🔥 JSON 추출
+# 🔥 JSON 추출 (창조주님 원본 그대로)
 # ==========================================
 def extract_json(text):
     try:
@@ -46,7 +46,7 @@ def extract_json(text):
 
 
 # ==========================================
-# 🔥 Gemini 호출 (Fallback + 재시도)
+# 🔥 Gemini 호출 (Fallback + 재시도) (창조주님 원본 그대로)
 # ==========================================
 def call_gemini(prompt):
 
@@ -104,17 +104,36 @@ def render(market=None, nw=None):
     if "ai_feedback" not in st.session_state:
         st.session_state.ai_feedback = None
 
-    # 🔥 세션 초기화 버튼
+    # 🔥 세션 초기화 버튼 (창조주님 원본)
     if st.button("🧹 초기화"):
         st.session_state.clear()
         st.success("초기화 완료")
-        st.stop()
+        st.rerun() # st.stop() 대신 rerun()으로 변경하여 화면 새로고침
 
     # ==============================
-    # 입력
+    # 입력 (🚀 파일 업로드 기능 추가됨)
     # ==============================
     with st.expander("📚 학습 자료 입력_최대 5만자", expanded=True):
-        source_text = st.text_area("시험 범위 입력", height=250)
+        
+        # [추가됨] 파일 업로더
+        uploaded_file = st.file_uploader("📄 문서 파일 업로드 (선택사항)", type=['txt', 'pdf'])
+        file_text = ""
+        
+        if uploaded_file is not None:
+            if uploaded_file.name.endswith('.txt'):
+                file_text = uploaded_file.read().decode('utf-8')
+            elif uploaded_file.name.endswith('.pdf'):
+                try:
+                    import PyPDF2
+                    pdf_reader = PyPDF2.PdfReader(uploaded_file)
+                    for page in pdf_reader.pages:
+                        extracted = page.extract_text()
+                        if extracted: file_text += extracted + "\n"
+                except ImportError:
+                    st.error("⚠️ PDF 기능을 쓰려면 requirements.txt에 PyPDF2 를 추가해주세요!")
+
+        # 업로드된 파일이 있으면 텍스트 박스에 자동으로 채워짐
+        source_text = st.text_area("시험 범위 입력", value=file_text, height=250)
 
         c1, c2, c3 = st.columns(3)
 
@@ -162,7 +181,7 @@ def render(market=None, nw=None):
                     quiz_json = None
                     response_text = None
 
-                    # 🔥 JSON 실패 시 재요청
+                    # 🔥 JSON 실패 시 재요청 (창조주님 원본 그대로)
                     for _ in range(3):
                         response_text = call_gemini(prompt)
                         quiz_json = extract_json(response_text)
@@ -190,6 +209,19 @@ def render(market=None, nw=None):
     # ==============================
     if st.session_state.quiz_data:
         st.write("---")
+        
+        # [추가됨] 🌟 시험지 다운로드 버튼
+        from datetime import datetime
+        quiz_txt = f"🎓 일타강사 제미나이 - 모의고사 ({datetime.now().strftime('%Y-%m-%d')})\n"
+        quiz_txt += f"난이도: {difficulty} | 스타일: {q_type}\n{'='*40}\n\n"
+        for i, q in enumerate(st.session_state.quiz_data):
+            quiz_txt += f"Q{i+1}. {q['question']}\n"
+            for idx, opt in enumerate(q['options']):
+                quiz_txt += f"  {idx+1}) {opt}\n"
+            quiz_txt += "\n"
+            
+        st.download_button("📥 빈 시험지 다운로드 (오프라인 인쇄용)", quiz_txt, file_name="mock_exam.txt")
+        st.write("")
 
         for i, q in enumerate(st.session_state.quiz_data):
             st.markdown(f"### Q{i+1}. {q['question']}")
@@ -209,6 +241,7 @@ def render(market=None, nw=None):
         if st.button("💯 채점하기", use_container_width=True):
             correct = 0
             analysis = []
+            wrong_notes = [] # [추가됨] 오답노트 배열
 
             for i, q in enumerate(st.session_state.quiz_data):
                 user_ans = st.session_state.user_answers.get(i)
@@ -219,6 +252,12 @@ def render(market=None, nw=None):
                     st.success(f"{i+1}번 정답")
                 else:
                     st.error(f"{i+1}번 오답 (정답: {q['answer']})")
+                    # [추가됨] 틀린 문제 수집
+                    wrong_notes.append({
+                        "num": i+1, "q": q['question'], 
+                        "my_ans": user_ans if user_ans else "선택 안 함", 
+                        "real_ans": q['answer'], "exp": q['explanation']
+                    })
 
                 analysis.append({
                     "q": q['question'],
@@ -230,6 +269,20 @@ def render(market=None, nw=None):
 
             score = int(correct / len(st.session_state.quiz_data) * 100)
             st.metric("점수", f"{score}점")
+
+            # [추가됨] 🌟 오답 노트 출력 영역
+            if wrong_notes:
+                st.write("---")
+                st.markdown("### 📓 나만의 오답 노트")
+                for w in wrong_notes:
+                    st.markdown(f"""
+                    <div style='background:rgba(255, 75, 75, 0.1); border-left: 4px solid #FF4B4B; padding:15px; margin-bottom:10px; border-radius:8px;'>
+                        <b>Q{w['num']}. {w['q']}</b><br>
+                        <span style='color:#FF4B4B;'>❌ 내 답: {w['my_ans']}</span> | <span style='color:#00E5FF;'>✅ 정답: {w['real_ans']}</span><br>
+                        <hr style='margin: 8px 0; border-color: rgba(255,255,255,0.1);'>
+                        <span style='color:#E2E8F0; font-size: 0.9rem;'>{w['exp']}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
 
             # ==============================
             # AI 피드백
@@ -259,6 +312,3 @@ def render(market=None, nw=None):
 
         if st.session_state.ai_feedback:
             st.info(st.session_state.ai_feedback)
-
-
-
