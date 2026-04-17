@@ -211,3 +211,5 @@ def render(market=None, nw=None):
         if st.session_state.ai_feedback:
             st.info("👨‍🏫 합격 전략 가이드")
             st.write(st.session_state.ai_feedback)
+
+st.write("KEY:", GOOGLE_API_KEY[:10])
