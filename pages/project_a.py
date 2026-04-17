@@ -11,7 +11,7 @@ GOOGLE_API_KEY = "AIzaSyAfC4sXq5DXu9tkwbDDWKjlV_T8k6R83rg"
 
 def call_gemini_direct(prompt):
     """google-generativeai 패키지 없이 직접 API와 통신하는 다이렉트 함수"""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GOOGLE_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GOOGLE_API_KEY}"
     headers = {'Content-Type': 'application/json'}
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
