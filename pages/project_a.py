@@ -4,18 +4,23 @@ import json
 import re
 
 # ==========================================
-# 🔑 [필독] 새로 발급받으신 API 키를 유지해주세요!
+# 🔑 [필독] 새로 발급받으신 API 키를 여기에 넣으세요!
+# 보안을 위해 이전에 노출된 키는 구글 AI 스튜디오에서 삭제 후 새 키를 권장합니다.
 # ==========================================
-GOOGLE_API_KEY = "AIzaSyAfC4sXq5DXu9tkwbDDWKjlV_T8k6R83rg"
+GOOGLE_API_KEY = "AIzaSyAfC4sXq5DXu9tkwbDDWKjlV_T8k6R83rg
+"
 # ==========================================
 
 def call_gemini_direct(prompt):
-    """google-generativeai 패키지 없이 직접 API와 통신하는 다이렉트 함수"""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GOOGLE_API_KEY}"
+    # 모델명을 gemini-1.5-flash로 수정하고 v1 엔드포인트를 사용합니다.
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GOOGLE_API_KEY}"
     headers = {'Content-Type': 'application/json'}
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.7}
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 2048
+        }
     }
     
     response = requests.post(url, headers=headers, json=payload)
@@ -28,8 +33,8 @@ def call_gemini_direct(prompt):
 
 def render(market, nw):
     st.title("👨‍🏫 일타강사 제미나이")
-    st.subheader("자격증 & 시험 맞춤형 무한 모의고사")
-    st.caption("복붙 한 번에 퀴즈가 와르르! 출제부터 성적 분석, 약점 보완 피드백까지 완벽하게 케어합니다.")
+    st.subheader("자격증 & 시험 합격 정밀 케어")
+    st.caption("복붙 한 번에 퀴즈 출제부터 약점 분석까지! 당신의 암기 메이트가 되어드립니다.")
 
     if "quiz_data" not in st.session_state:
         st.session_state.quiz_data = None
@@ -38,9 +43,9 @@ def render(market, nw):
     if "ai_feedback" not in st.session_state:
         st.session_state.ai_feedback = None
 
-    with st.expander("📚 학습 자료 및 출제 설정 (시험 범위 챕터를 통째로 복붙하세요!)", expanded=True):
-        source_text = st.text_area("학습할 내용을 붙여넣으세요.", height=250, 
-                                 placeholder="교과서 내용, 요약본, 자격증 기출 이론 등 무엇이든 좋습니다. (최대 5만 자 제한)")
+    with st.expander("📚 학습 자료 및 시험 설정", expanded=True):
+        source_text = st.text_area("시험 범위를 복붙하세요 (교과서, 요약본 등)", height=250, 
+                                 placeholder="여기에 입력된 내용을 바탕으로 AI가 문제를 창조합니다.")
         
         c1, c2, c3 = st.columns(3)
         with c1:
@@ -48,21 +53,19 @@ def render(market, nw):
         with c2:
             difficulty = st.selectbox("난이도", ["쉬움", "보통", "어려움", "최악"])
         with c3:
-            q_type = st.selectbox("출제 스타일", ["단순 개념 암기", "실전 상황 응용", "헷갈리는 함정 위주"])
+            q_type = st.selectbox("출제 스타일", ["핵심 개념 위주", "실전 응용 문제", "함정/지엽적 문제"])
 
-    if st.button("🚀 AI 모의고사 출제 시작", use_container_width=True):
+    if st.button("🚀 AI 출제위원 소환 (모의고사 시작)", use_container_width=True):
         if not source_text.strip():
             st.warning("⚠️ 학습할 내용을 먼저 입력해주세요!")
-        elif GOOGLE_API_KEY == "여기에_새로_발급받은_키를_넣으세요" or not GOOGLE_API_KEY.startswith("AIza"):
-            st.error("⚠️ API 키가 올바르게 입력되지 않았습니다. 코드를 다시 확인해주세요.")
         else:
-            st.toast("📡 일타강사 모드 가동 중...", icon="⏳")
-            with st.spinner("👨‍🏫 방대한 자료를 분석하여 맞춤형 문제를 출제하고 있습니다... (약 10~20초 소요)"):
+            st.toast("📡 출제위원이 자료를 분석 중입니다...", icon="⏳")
+            with st.spinner("👨‍🏫 일타강사가 시험 적중 예상 문제를 뽑아내고 있습니다..."):
                 try:
                     prompt = f"""
-                    다음 제공된 학습 자료를 바탕으로 {q_count}개의 객관식 문제를 만들어줘.
-                    난이도는 '{difficulty}'로, 출제 스타일은 '{q_type}'에 맞춰서 내줘.
-                    응답은 반드시 아래와 같은 JSON 형식으로만 보내줘. 다른 설명은 절대 하지 마.
+                    다음 학습 자료를 바탕으로 {q_count}개의 객관식 문제를 만들어줘.
+                    난이도는 '{difficulty}', 스타일은 '{q_type}'으로 설정해.
+                    반드시 아래 JSON 형식으로만 응답해.
 
                     json_format:
                     [
@@ -70,11 +73,11 @@ def render(market, nw):
                         "question": "문제 내용",
                         "options": ["1번 선택지", "2번 선택지", "3번 선택지", "4번 선택지"],
                         "answer": "정답 번호 (예: 1번 선택지)",
-                        "explanation": "해설 내용"
+                        "explanation": "이 문제가 왜 정답인지, 그리고 어떤 핵심 개념을 담고 있는지 상세히 설명"
                       }}
                     ]
 
-                    학습 자료:
+                    자료:
                     {source_text[:50000]}
                     """
                     
@@ -84,28 +87,25 @@ def render(market, nw):
                     if json_match:
                         st.session_state.quiz_data = json.loads(json_match.group())
                         st.session_state.user_answers = {}
-                        st.session_state.ai_feedback = None # 새 퀴즈 시 피드백 초기화
-                        st.success(f"✅ 출제 완료! 총 {len(st.session_state.quiz_data)}문제가 준비되었습니다.")
+                        st.session_state.ai_feedback = None 
+                        st.success("✅ 출제가 완료되었습니다! 문제를 풀어보세요.")
                     else:
-                        st.error("AI 응답 형식 오류. 다시 시도해주세요.")
-                        
+                        st.error("AI가 형식을 지키지 않았습니다. 다시 시도해주세요.")
                 except Exception as e:
                     st.error(f"❌ 오류 발생: {e}")
 
-    # ==========================================
-    # 📝 문제 풀이 및 멘토링 피드백 섹션
-    # ==========================================
+    # 문제 풀이 및 정밀 분석
     if st.session_state.quiz_data:
         st.write("---")
         for i, q in enumerate(st.session_state.quiz_data):
             st.markdown(f"#### Q{i+1}. {q['question']}")
-            user_choice = st.radio(f"답안 선택 ({i+1}번)", q['options'], key=f"q_{i}", index=None)
+            user_choice = st.radio(f"정답 선택 ({i+1}번)", q['options'], key=f"q_{i}", index=None)
             st.session_state.user_answers[i] = user_choice
             st.write("")
 
-        if st.button("💯 채점 및 일타강사 분석 받기", use_container_width=True):
+        if st.button("💯 채점 및 AI 약점 분석 리포트 보기", use_container_width=True):
             correct_count = 0
-            result_summary_for_ai = "" # AI 피드백을 위한 결과 요약 텍스트
+            analysis_data = []
             
             for i, q in enumerate(st.session_state.quiz_data):
                 user_ans = st.session_state.user_answers.get(i)
@@ -113,43 +113,33 @@ def render(market, nw):
                 
                 if is_correct:
                     correct_count += 1
-                    st.success(f"Q{i+1}: 정답입니다! 🎉")
-                    result_summary_for_ai += f"Q{i+1}: 맞춤 (주제: {q['question']})\n"
+                    st.success(f"Q{i+1}: 정답! ✨")
                 else:
-                    display_ans = user_ans if user_ans else "미선택"
-                    st.error(f"Q{i+1}: 오답입니다. (제출한 답: {display_ans} / 정답: {q['answer']})")
-                    result_summary_for_ai += f"Q{i+1}: 틀림 (주제: {q['question']})\n"
+                    st.error(f"Q{i+1}: 오답 (선택: {user_ans if user_ans else '미선택'} / 정답: {q['answer']})")
                 
-                with st.expander("💡 해설 보기"):
+                analysis_data.append({"q": q['question'], "is_correct": is_correct})
+                with st.expander("📖 해설 및 핵심 포인트"):
                     st.write(q['explanation'])
             
             score = int((correct_count / len(st.session_state.quiz_data)) * 100)
-            if score == 100:
-                st.balloons()
-            st.metric("최종 점수", f"{score}점", f"{correct_count} / {len(st.session_state.quiz_data)}")
+            st.metric("최종 합격 점수", f"{score}점", f"{correct_count} / {len(st.session_state.quiz_data)}")
 
-            # 🧠 AI 학습 코멘트 생성
-            with st.spinner("📊 제출하신 답안을 바탕으로 일타강사가 취약점을 분석하고 있습니다..."):
+            # 🧠 AI 맞춤형 멘토링 생성
+            with st.spinner("📊 일타강사가 당신의 취약 단원을 분석 중입니다..."):
                 try:
+                    summary = "\n".join([f"- {d['q']}: {'맞음' if d['is_correct'] else '틀림'}" for d in analysis_data])
                     feedback_prompt = f"""
-                    사용자가 방금 시험을 치렀고, 총 {len(st.session_state.quiz_data)}문제 중 {correct_count}문제를 맞혔어. 점수는 {score}점이야.
-                    아래는 각 문제의 주제와 사용자의 정답 여부야:
-                    {result_summary_for_ai}
+                    사용자가 {score}점을 받았어. 아래는 문제별 결과야:
+                    {summary}
                     
-                    너는 친절하고 명쾌한 일타강사야. 이 결과를 바탕으로 사용자에게 학습 조언(피드백)을 3~4문장으로 해줘.
-                    사용자가 틀린 문제들의 주제를 파악해서, 어떤 개념을 더 복습해야 할지 구체적으로 짚어줘.
-                    마크다운을 활용해서 가독성 좋고 동기부여가 되는 따뜻하면서도 예리한 멘트를 작성해.
+                    일타강사로서 다음 내용을 포함해 3~4문장으로 피드백해줘:
+                    1. 전체적인 학습 상태 평가
+                    2. 틀린 문제를 통해 본 '취약 개념' 지목
+                    3. 앞으로의 암기 전략 조언 (마크다운 활용)
                     """
                     st.session_state.ai_feedback = call_gemini_direct(feedback_prompt)
-                except Exception as e:
-                    st.session_state.ai_feedback = "피드백 생성 중 통신 지연이 발생했습니다. 오답 노트 위주로 복습해주세요!"
+                except:
+                    st.session_state.ai_feedback = "분석 중 통신 지연이 발생했습니다. 오답 해설을 다시 읽어보세요!"
 
-        # AI 피드백 결과 화면에 예쁘게 출력
         if st.session_state.ai_feedback:
-            st.markdown("""
-            <div style="background: rgba(37, 99, 235, 0.05); border-left: 5px solid #2563EB; padding: 20px; border-radius: 8px; margin-top: 20px;">
-                <h3 style="color: #2563EB; margin-top: 0;">👨‍🏫 일타강사 제미나이의 성적 분석 리포트</h3>
-                <div style="color: #333; line-height: 1.6;">
-            """, unsafe_allow_html=True)
-            st.markdown(st.session_state.ai_feedback)
-            st.markdown("</div></div>", unsafe_allow_html=True)
+            st.info(f"👨‍🏫 **일타강사의 합격 전략 가이드**\n\n{st.session_state.ai_feedback}")
