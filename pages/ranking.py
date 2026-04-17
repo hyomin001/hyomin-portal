@@ -10,10 +10,11 @@ from utils.database import load_db, save_db
 def render(market, nw):
     st.title("🏅 랭킹 & 게시판")
 
+    # 탭 이름이 '자유 게시판'으로 바뀌어야 정상 적용된 것입니다!
     tab_rank, tab_board = st.tabs(["🏆 순위표", "💬 자유 게시판"])
 
     # ==========================================
-    # 🏆 탭 1: 순위표 로직 (기존 유지)
+    # 🏆 탭 1: 순위표 로직
     # ==========================================
     with tab_rank:
         users_all = load_db(USERS_FILE, {})
@@ -27,7 +28,6 @@ def render(market, nw):
             for sid, p in udata.get('portfolio', {}).items():
                 if sid in market['stock_data']: w += p.get('qty', 0) * market['stock_data'][sid]['price']
             
-            # 코인 포트폴리오 순자산 합산 추가
             for cid, cinfo in udata.get('crypto_portfolio', {}).items():
                 price = market.get('crypto_data', {}).get(cid, {}).get('price', 0)
                 w += cinfo.get('qty', 0) * price
