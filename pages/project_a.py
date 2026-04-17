@@ -113,7 +113,7 @@ def render(market=None, nw=None):
     # ==============================
     # 입력
     # ==============================
-    with st.expander("📚 학습 자료 입력", expanded=True):
+    with st.expander("📚 학습 자료 입력_최대 5만자", expanded=True):
         source_text = st.text_area("시험 범위 입력", height=250)
 
         c1, c2, c3 = st.columns(3)
