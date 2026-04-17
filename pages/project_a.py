@@ -13,7 +13,7 @@ GOOGLE_API_KEY = "AIzaSyAfC4sXq5DXu9tkwbDDWKjlV_T8k6R83rg"
 
 # AI 모델 설정 (404 에러 해결을 위해 -latest 추가)
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-pro')
 
 def render(market, nw):
     st.title("👨‍🏫 일타강사 제미나이")
