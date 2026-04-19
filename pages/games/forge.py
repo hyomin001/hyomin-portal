@@ -5,7 +5,7 @@ import time
 from utils.config import FORGE_DATA
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
 from utils.config import USERS_FILE
-from utils.database import load_db, log_tx, save_market
+from utils.database import load_db, save_db, log_tx, save_market  # 👈 save_db 임포트 추가!
 
 def render(market, nw):
     st.title("🗡️ 전설의 명검 강화소")
@@ -47,14 +47,21 @@ def render(market, nw):
             st.markdown("---")
             st.markdown(f"**🎟️ 내 파괴 방지권:** {ticket_count}개")
             if st.button("🎟️ 파괴 방지권 구매 (500억원)", key="buy_ticket", use_container_width=True):
-                if st.session_state.global_cash >= 50_000_000_000: 
-                    st.session_state.global_cash -= 50_000_000_000 
+                # 🛡️ [보안] 파괴 방지권 구매 시 DB 즉시 차감
+                uid = st.session_state.logged_in_user
+                us = load_db(USERS_FILE, {})
+                db_cash = us.get(uid, {}).get('cash', 0)
+                
+                if db_cash >= 50_000_000_000:
+                    us[uid]['cash'] = db_cash - 50_000_000_000
+                    save_db(USERS_FILE, us)
+                    st.session_state.global_cash = us[uid]['cash']
                     st.session_state.inventory.append("파괴방지권")
                     sync_user_data()
                     st.success("✅ 파괴 방지권 구매 완료!")
                     st.rerun()
                 else:
-                    st.error("잔액이 부족합니다.")
+                    st.error("잔액이 부족합니다! (DB 검증 실패)")
             
         with c2:
             st.markdown("#### 🎯 선택")
@@ -80,21 +87,33 @@ def render(market, nw):
                         st.error("⚠️ 파괴 방지권이 없습니다! (중복 클릭 감지)")
                     else:
                         set_cooldown("forge_action")
-                        st.session_state.global_cash -= cost
+                        uid = st.session_state.logged_in_user
+                        
+                        # 🛡️ [보안] DB 기준 잔액 재확인 (광클 이중 강화 방지)
+                        us = load_db(USERS_FILE, {})
+                        db_cash = us.get(uid, {}).get('cash', 0)
+                        
+                        if db_cash < cost:
+                            st.error("❌ 잔액 부족! (DB 재검증 실패)")
+                            st.stop()
+                            
+                        # DB에서 즉시 차감
+                        us[uid]['cash'] = db_cash - cost
+                        save_db(USERS_FILE, us)
+                        
+                        # 세션 동기화
+                        st.session_state.global_cash = us[uid]['cash']
                         
                         if use_ticket:
                             st.session_state.inventory.remove("파괴방지권")
                         
-                        uid = st.session_state.logged_in_user
-                        us = load_db(USERS_FILE, {}) 
                         is_cursed = us.get(uid, {}).get('cursed_forge', False)
                         success = random.random() < next_info['rate'] 
                         
                         if is_cursed:
                             success = False
                             us[uid]['cursed_forge'] = False
-                            us[uid]['cash'] = st.session_state.global_cash
-                            save_db(USERS_FILE, us)
+                            save_db(USERS_FILE, us) # 저주 해제 상태 즉시 저장
                             st.toast("💀 누군가의 불길한 기운이 개입했습니다...", icon="💀")
                             time.sleep(1)
 
