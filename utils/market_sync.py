@@ -103,8 +103,7 @@ def run_market_sync():
             st.session_state.loan_time += cyc * 10
             added = st.session_state.loan - old_loan
             if added > 0:
-                import streamlit as _st
-                _st.warning(f"⚠️ 오프라인 동안 대출 이자 {format_korean_money(added)}이 붙었습니다!")
+                st.warning(f"⚠️ 오프라인 동안 대출 이자 {format_korean_money(added)}이 붙었습니다!")
             sync_user_data()
             
     if m_up: save_market(market)
