@@ -1,110 +1,155 @@
-# utils/market_sync.py
-import time
-import random
+# utils/database.py
 import streamlit as st
-from utils.config import stock_config, CRYPTO_CONFIG, USERS_FILE, MARKET_FILE
-from utils.database import load_db, save_db, log_tx, save_market
-from utils.core import get_net_worth, sync_user_data, get_market, format_korean_money
+from pymongo import MongoClient
+from datetime import datetime
+import logging
+import time as _time
+from utils.config import (
+    KST, USERS_FILE, COMMENTS_FILE, MARKET_FILE, TXLOG_FILE,
+    REALESTATE_MARKET_FILE, CLAN_FILE, STATS_FILE, estate_config
+)
 
-def run_market_sync():
-    market = get_market()
-    cur_t  = time.time()
-    m_up   = False
+@st.cache_resource
+def get_mongo_client():
+    uri = st.secrets.get("MONGO_URI", None)
+    if uri: return MongoClient(uri)
+    return None
 
-    # 부동산 초기화 감지
-    if 'logged_in_user' in st.session_state:
-        if st.session_state.get('last_estate_reset', 0) < market.get('force_estate_reset', 0):
-            st.session_state.real_estate = {}
-            st.session_state.rent_time = cur_t
-            st.session_state.last_estate_reset = market.get('force_estate_reset', 0)
-            sync_user_data()
+def load_db(file, default):
+    """MongoDB에서 데이터 불러오기 (재시도 1회 포함)"""
+    client = get_mongo_client()
+    if client is None:
+        st.error("❌ DB 연결 실패: MongoDB에 연결할 수 없습니다. 관리자에게 문의하세요.")
+        st.stop()
+    # 🛡️ 주의 #4 수정: 일시적 오류 시 1회 재시도 후 graceful 처리
+    for attempt in range(2):
+        try:
+            db       = client["hyomin_universe"]
+            col_name = file.replace(".json", "").replace("_db", "")
+            doc      = db[col_name].find_one({"_id": "main"})
+            if doc:
+                doc.pop("_id", None)
+                if "_list" in doc and len(doc) == 1:
+                    return doc["_list"]
+                return doc
+            return default
+        except Exception as e:
+            logging.error(f"[load_db] {file} 로드 실패 (시도 {attempt+1}/2): {e}")
+            if attempt == 0:
+                _time.sleep(0.5)  # 0.5초 후 재시도
+                continue
+            # 2회 모두 실패 시 — 빈 default 반환으로 graceful 처리 (st.stop 대신)
+            st.warning(f"⚠️ DB 일시 오류 발생. 일부 데이터가 최신이 아닐 수 있습니다. ({file})")
+            return default
 
-    # 주식 시뮬레이션 (최대 60틱 보정)
-    if 'last_tick' not in market:
-        market['last_tick'] = cur_t - 10
-        m_up = True
-        
-    stock_passed = cur_t - market['last_tick']
-    s_ticks = min(int(stock_passed / 10), 60)
-    if s_ticks > 0:
-        for _ in range(s_ticks):
-            for s in stock_config:
-                curr = market['stock_data'][s['id']]
-                ch = (random.random() - 0.5) * 2 * s['vol']
-                curr['price'] = round(max(1_000, curr['price'] * (1 + ch)))
-                curr['history'].append(curr['price'])
-                if len(curr['history']) > 60: curr['history'].pop(0)
-        market['last_tick'] = cur_t
-        m_up = True
+def save_db(file, data):
+    """MongoDB에 데이터 저장하기"""
+    if data is None:
+        return
+    client = get_mongo_client()
+    if client is None:
+        logging.error(f"[save_db] MongoDB 연결 없음 - {file} 저장 취소")
+        return
+    try:
+        db       = client["hyomin_universe"]
+        col_name = file.replace(".json", "").replace("_db", "")
+        if isinstance(data, list):
+            doc_to_save = {"_id": "main", "_list": data}
+        else:
+            doc_to_save = {"_id": "main", **data}
+        db[col_name].replace_one({"_id": "main"}, doc_to_save, upsert=True)
+    except Exception as e:
+        logging.error(f"[save_db] {file} 저장 실패: {e}")
 
-    # 🪙 코인 시장 시뮬레이션 (수정된 부분: 얼어붙은 타이머 강제 가동)
-    if 'crypto_data' not in market:
-        # 최초 생성 시 history에 값이 2개 있어야 0.00% 오류가 안 남
-        market['crypto_data'] = {c['id']: {"name": c['name'], "icon": c['icon'], "price": float(c['base_price']), "history": [float(c['base_price']), float(c['base_price'])]} for c in CRYPTO_CONFIG}
-        m_up = True
-        
-    if 'crypto_tick' not in market:
-        market['crypto_tick'] = cur_t - 6 # 강제로 1틱(5초) 이상 지나게 만듦
-        m_up = True
+# 📊 통계 전용 로드/저장
+def load_stats():
+    return load_db(STATS_FILE, {
+        "daily_visitors": {},
+        "total_signups":  0,
+        "game_counts":    {},
+        "daily_volume":   {}
+    })
 
-    crypto_passed = cur_t - market['crypto_tick']
-    c_ticks = min(int(crypto_passed / 5), 60)
-    
-    if c_ticks > 0:
-        for _ in range(c_ticks):
-            for c in CRYPTO_CONFIG:
-                curr = market['crypto_data'][c['id']]
-                ch = (random.random() - 0.5) * 2 * c['vol']
-                curr['price'] = max(0.01, round(curr['price'] * (1 + ch), 6))
-                curr['history'].append(curr['price'])
-                if len(curr['history']) > 60: curr['history'].pop(0)
-        market['crypto_tick'] = cur_t
-        m_up = True
+def save_stats(data):
+    save_db(STATS_FILE, data)
 
-    # 뉴스 발생 로직
-    if cur_t - market.get('news_time', 0) > 30:
-        tid, imp = market['next_news_target'], market['next_news_impact']
-        t_nm = next((s['name'] for s in stock_config if s['id'] == tid), tid)
-        market['stock_data'][tid]['price'] = int(market['stock_data'][tid]['price'] * (1 + imp))
-        direction = "급등" if imp > 0.1 else "강세" if imp > 0 else "급락" if imp < -0.1 else "약세"
-        market['news'] = f"📰 {t_nm} 장중 {direction}!"
-        market['news_time'] = cur_t
-        market['next_news_target'] = random.choice(stock_config)['id']
-        market['next_news_impact'] = random.uniform(-0.25, 0.25)
-        m_up = True
+# ─────────────────────────────────────────────────────────────────────────────
+# FIX: log_tx 내부 거래량 통계 RMW 개선
+#   기존: log_tx 안에서 load_stats() → 수정 → save_stats() 패턴이
+#         tx 로그 저장과 같은 함수에 묶여 있어 두 번의 DB 왕복이 직렬로 실행됨.
+#         동시 요청 시 두 번째 load가 첫 번째 save 이전 값을 읽어 거래량 누락.
+#   변경: 통계 집계를 log_tx와 분리하고, 조회 후 저장까지의 코드를
+#         최대한 짧게 유지하여 경쟁 창(race window)을 최소화.
+#         (완전한 원자성은 MongoDB $inc 마이그레이션으로 추후 해결)
+# ─────────────────────────────────────────────────────────────────────────────
+def _update_daily_volume(amount: int):
+    """거래량 통계만 별도로 빠르게 갱신 (RMW 창 최소화)"""
+    try:
+        stats = load_stats()
+        today = datetime.now(KST).strftime("%Y-%m-%d")
+        vol   = stats.get("daily_volume", {})
+        vol[today] = vol.get(today, 0) + abs(amount)
+        stats["daily_volume"] = vol
+        save_stats(stats)
+    except Exception as e:
+        logging.error(f"[_update_daily_volume] 통계 갱신 실패 (거래는 이미 완료됨): {e}")
 
-    # 로또 당첨 로직
-    if cur_t - market.get('lotto_last_draw', 0) > 3600:
-        if market.get('lotto_tickets'):
-            users_list = list(market['lotto_tickets'].keys())
-            weights_list = list(market['lotto_tickets'].values())
-            win = random.choices(users_list, weights=weights_list, k=1)[0]
-            prize = market['lotto_pool']
-            us = load_db(USERS_FILE, {})
-            if win in us:
-                us[win]['cash'] += prize
-                save_db(USERS_FILE, us)
-                log_tx(win, "로또당첨", f"글로벌 로또 1등 잭팟!!", prize)
-                if 'logged_in_user' in st.session_state and st.session_state.logged_in_user == win:
-                    st.session_state.global_cash += prize
-            market['news'] = f"🎊 [당첨 확정] {win}님이 대박 상금을 수령하셨습니다!!"
-            market['lotto_pool'] = 5_000_000_000
-            market['lotto_tickets'] = {}
-        market['lotto_last_draw'] = cur_t
-        m_up = True
 
-    # 대출 이자 폭탄 (오프라인 보정)
-    if 'logged_in_user' in st.session_state and st.session_state.loan > 0:
-        elapsed = cur_t - st.session_state.loan_time
-        cyc = min(int(elapsed / 10), 30)
-        if cyc > 0:
-            old_loan = st.session_state.loan
-            st.session_state.loan = min(int(st.session_state.loan * (1.02 ** cyc)), 999_999_999_999_999)
-            st.session_state.loan_time += cyc * 10
-            added = st.session_state.loan - old_loan
-            if added > 0:
-                st.warning(f"⚠️ 오프라인 동안 대출 이자 {format_korean_money(added)}이 붙었습니다!")
-            sync_user_data()
-            
-    if m_up: save_market(market)
-    return market
+def log_tx(uid: str, category: str, desc: str, amount: int):
+    """거래 로그 기록 + 거래량 통계 갱신"""
+    # 1단계: 거래 로그 저장 (핵심 — 실패해선 안 됨)
+    logs = load_db(TXLOG_FILE, {})
+    if uid not in logs: logs[uid] = []
+    logs[uid].insert(0, {
+        "time":     datetime.now(KST).strftime("%m/%d %H:%M:%S"),
+        "category": category,
+        "desc":     desc,
+        "amount":   amount,
+    })
+    logs[uid] = logs[uid][:200]
+    save_db(TXLOG_FILE, logs)
+
+    # 2단계: 거래량 통계 갱신 (분리 실행 — 실패해도 거래 자체에 영향 없음)
+    if category in ["주식매수", "주식매도", "코인매수", "코인매도"]:
+        _update_daily_volume(amount)
+
+
+def load_estate_market():
+    default = {
+        "listings":     [],
+        "owner_counts": {},
+        "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}
+    }
+    d = load_db(REALESTATE_MARKET_FILE, default)
+    if "initial_stock"  not in d: d["initial_stock"]  = {eid: info["total_supply"] for eid, info in estate_config.items()}
+    if "owner_counts"   not in d: d["owner_counts"]   = {}
+    if "listings"       not in d: d["listings"]       = []
+    return d
+
+def save_estate_market(data):
+    save_db(REALESTATE_MARKET_FILE, data)
+
+def get_estate_initial_listings(em):
+    result = []
+    for eid, info in estate_config.items():
+        owned_total      = sum(v.get(eid, 0) for v in em["owner_counts"].values())
+        listed_count     = sum(1 for l in em["listings"] if l["eid"] == eid)
+        initial_released = owned_total + listed_count
+        current_limit    = em.get("initial_stock", {}).get(eid, info["total_supply"])
+        remaining_initial = max(0, current_limit - initial_released)
+        if remaining_initial > 0:
+            result.append({"eid": eid, "remaining": remaining_initial, "price": info["base_price"], "is_initial": True})
+    return result
+
+def load_clan_db():  return load_db(CLAN_FILE, {})
+def save_clan_db(data): save_db(CLAN_FILE, data)
+
+def get_user_clan(uid):
+    clans = load_clan_db()
+    for cname, cdata in clans.items():
+        if uid in cdata.get('members', []): return cname
+    return None
+
+def save_market(data):
+    """시장 전체 데이터 저장"""
+    save_db(MARKET_FILE, data)
