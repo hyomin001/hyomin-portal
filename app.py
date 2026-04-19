@@ -114,7 +114,7 @@ if st.session_state.page_view == "portal":
             <div class='trust-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM</div>
             <div class='portal-title'>HYOMIN PORTAL</div>
             <p style='color: #475569; font-size: 1.1rem; max-width: 600px; margin: 0 auto;'>
-                하나의 계정으로 효민 유니버스의 모든 경제, 엔터테인먼트, 커뮤니티 서비스를 통합 이용하세요.
+                하나의 계정으로 유니버스의 모든 경제, 엔터테인먼트, 커뮤니티 서비스를 통합 이용하세요.
             </p>
         </div>
     """, unsafe_allow_html=True)
@@ -125,7 +125,7 @@ if st.session_state.page_view == "portal":
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("<div class='banner-card'><h2>🌌 효민 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🌌 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
         if st.button("유니버스 입장하기 🚀", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "universe"
@@ -135,7 +135,7 @@ if st.session_state.page_view == "portal":
                 st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("<div class='banner-card'><h2>🗳️ 효민 월드 배틀</h2><p>실시간 진영 투표 — 오늘의 질문에 답해라</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🗳️ 월드 배틀</h2><p>실시간 진영 투표 — 오늘의 질문에 답해라</p></div>", unsafe_allow_html=True)
         if st.button("지금 투표하기 🔥", key="b2", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_b"
