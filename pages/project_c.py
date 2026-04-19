@@ -1137,9 +1137,9 @@ def render():
 
         st.markdown("""
         <div style='font-family:"JetBrains Mono",monospace; padding: 28px 0 12px; text-align:center;'>
-          <div class='glitch-text' data-text='&gt;_ THE TERMINAL'
+          <div class='glitch-text' data-text='&gt;_ THE TERMINAL 방탈출'
                style='font-size:2rem; display:inline-block; margin-bottom:8px;'>
-            &gt;_ THE TERMINAL
+            &gt;_ THE TERMINAL 방탈출
           </div>
           <div style='color:#3a6a3a; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
             효민 유니버스 ARG · 방탈출 · 해킹 시뮬레이터
