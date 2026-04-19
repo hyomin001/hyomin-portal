@@ -3,15 +3,8 @@ import streamlit as st
 import time
 from datetime import datetime
 from utils.config import estate_config, stock_config, USERS_FILE
-from utils.core import format_korean_money, KST
-from utils.database import load_db, load_stats
-
-# 📈 [통계 대시보드] 실시간 접속자 계산 함수 (4단계)
-def get_online_users():
-    users = load_db(USERS_FILE, {})
-    now = time.time()
-    # 마지막 활동(last_seen) 기록이 현재로부터 5분(300초) 이내인 유저 수 집계
-    return sum(1 for u in users.values() if now - u.get('last_seen', 0) < 300)
+from utils.core import format_korean_money, get_online_users, KST
+from utils.database import load_stats
 
 def render(market, nw):
     # 📊 [통계 대시보드] 데이터 로드 및 집계 (7단계)
