@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import html  # 👈 XSS 방어(HTML 이스케이프) 모듈 추가
 from datetime import datetime
-from utils.config import KST, stock_config, estate_config, USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE, FORGE_DATA
+from utils.config import KST, stock_config, estate_config, USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE, FORGE_DATA, MESSAGES_FILE # 👈 MESSAGES_FILE 상수 추가
 from utils.core import hash_pw, format_korean_money, sync_user_data, get_net_worth
 from utils.database import load_db, save_db, save_market, load_estate_market, save_estate_market, load_clan_db, save_clan_db, get_user_clan
 
@@ -280,9 +280,10 @@ def render(market, nw):
             for idx, c in reversed(list(enumerate(all_c))):
                 col_txt, col_btn = st.columns([6, 1])
                 with col_txt:
-                    # 🛡️ XSS 방어: 게시판 글 내용 HTML 이스케이프 적용
+                    # 🛡️ XSS 방어: 작성자 닉네임과 게시판 글 내용 모두 HTML 이스케이프 적용
+                    safe_name = html.escape(c.get('name', ''))
                     safe_comment = html.escape(c.get('comment', ''))
-                    st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;'><b style='color:#00E5FF;'>{c['name']}</b>: {safe_comment} <span style='color:#888; font-size:0.8rem;'>({c.get('time','')})</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;'><b style='color:#00E5FF;'>{safe_name}</b>: {safe_comment} <span style='color:#888; font-size:0.8rem;'>({c.get('time','')})</span></div>", unsafe_allow_html=True)
                 with col_btn:
                     if st.button("🗑️ 삭제", key=f"del_board_{idx}", use_container_width=True):
                         all_c.pop(idx) 
@@ -530,12 +531,13 @@ def render(market, nw):
                 sign  = "+" if amt > 0 else ""
                 
                 # 🛡️ XSS 방어: 활동 로그 내용 HTML 이스케이프 적용
+                safe_uid = html.escape(log.get('uid', ''))
                 safe_desc = html.escape(log.get('desc', ''))
                 
                 st.markdown(f"""
                 <div style='font-size:0.85rem; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);'>
                     <span style='color:#777;'>[{log['time']}]</span> 
-                    <b style='color:#00E5FF;'>{log['uid']}</b>님이 
+                    <b style='color:#00E5FF;'>{safe_uid}</b>님이 
                     <span style='color:#94A3B8;'>{safe_desc}</span> 
                     <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
                 </div>
@@ -614,7 +616,7 @@ def render(market, nw):
           <div style='color:#94A3B8;'>잔여: <b style='color:#00FF88;'>{remain_sec // 86400}일 {(remain_sec % 86400) // 3600}시간</b></div>
         </div>""", unsafe_allow_html=True)
 
-        st.markdown("#### 🛠️ 시즌 번 강제 조정")
+        st.markdown("#### 🛠️ 시즌 번호 강제 조정")
         c_sn1, c_sn2 = st.columns([3, 1])
         with c_sn1: new_sn = st.number_input("변경할 시즌 번호", min_value=1, value=int(cur_season), key="admin_manual_sn")
         with c_sn2:
@@ -739,7 +741,7 @@ def render(market, nw):
                 save_clan_db({})
                 save_db(COMMENTS_FILE, [])
                 save_db(TXLOG_FILE, {})
-                save_db("messages_db.json", {})
+                save_db(MESSAGES_FILE, {})  # 👈 MESSAGES_FILE 적용
                 
                 # 4. 현재 접속 중인 관리자 세션 임시 리셋
                 st.session_state.inventory = []
@@ -759,7 +761,7 @@ def render(market, nw):
     
     with t10:
         st.markdown("### 👁️ 전지적 쪽지 모니터링")
-        all_msg_db = load_db("messages_db.json", {})
+        all_msg_db = load_db(MESSAGES_FILE, {}) # 👈 MESSAGES_FILE 적용
         
         if not all_msg_db:
             st.info("현재 우주에 생성된 쪽지 데이터가 없습니다.")
@@ -773,14 +775,16 @@ def render(market, nw):
                     st.markdown(f"**📥 {target_u}의 받은 쪽지**")
                     for m in reversed(u_msgs.get("inbox", [])):
                         # 🛡️ XSS 방어 적용
+                        safe_sender = html.escape(m.get('sender', '알 수 없음'))
                         safe_content = html.escape(m.get('content', ''))
-                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'><b style='color:#00E5FF;'>{m['sender']}</b> → {safe_content} <br><span style='color:#777;'>{m['time']}</span></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'><b style='color:#00E5FF;'>{safe_sender}</b> → {safe_content} <br><span style='color:#777;'>{m['time']}</span></div>", unsafe_allow_html=True)
                 with col_out:
                     st.markdown(f"**📤 {target_u}의 보낸 쪽지**")
                     for m in reversed(u_msgs.get("outbox", [])):
                         # 🛡️ XSS 방어 적용
+                        safe_receiver = html.escape(m.get('receiver', '알 수 없음'))
                         safe_content = html.escape(m.get('content', ''))
-                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>→ <b style='color:#FFD600;'>{m['receiver']}</b>: {safe_content} <br><span style='color:#777;'>{m['time']}</span></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>→ <b style='color:#FFD600;'>{safe_receiver}</b>: {safe_content} <br><span style='color:#777;'>{m['time']}</span></div>", unsafe_allow_html=True)
 
             with admin_sub_tabs[1]:
                 st.markdown("**🌐 우주 전체 쪽지 타임라인**")
@@ -791,9 +795,13 @@ def render(market, nw):
                 global_logs.sort(key=lambda x: x['time'], reverse=True)
                 for log in global_logs[:100]:
                     # 🛡️ XSS 방어 적용
+                    safe_from = html.escape(log.get('from', '알 수 없음'))
+                    safe_to = html.escape(log.get('to', '알 수 없음'))
                     safe_content = html.escape(log.get('content', ''))
-                    st.markdown(f"<div style='font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding:5px 0;'><span style='color:#777;'>[{log['time']}]</span> <b style='color:#00E5FF;'>{log['from']}</b> ➔ <b style='color:#FFD600;'>{log['to']}</b> : {safe_content}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding:5px 0;'><span style='color:#777;'>[{log['time']}]</span> <b style='color:#00E5FF;'>{safe_from}</b> ➔ <b style='color:#FFD600;'>{safe_to}</b> : {safe_content}</div>", unsafe_allow_html=True)
 
             with admin_sub_tabs[2]:
                 if st.button("💣 우주 전체 쪽지 DB 초기화", use_container_width=True, type="secondary"):
-                    save_db("messages_db.json", {}); st.success("전체 쪽지 데이터가 소멸되었습니다."); st.rerun()
+                    save_db(MESSAGES_FILE, {})  # 👈 MESSAGES_FILE 적용
+                    st.success("전체 쪽지 데이터가 소멸되었습니다.")
+                    st.rerun()
