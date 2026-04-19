@@ -104,7 +104,8 @@ def render(market, nw):
 
         # 1. 폼(Form) 적용: 엔터키를 쳐도 글이 날아가지 않고 안전하게 저장됨
         with st.form("board_form", clear_on_submit=True):
-            msg = st.text_input("메시지 작성", placeholder="내용을 입력하세요")
+            # 🛡️ 주의 #2 수정: max_chars 제한으로 DB 폭탄 방지
+            msg = st.text_input("메시지 작성", placeholder="내용을 입력하세요 (최대 200자)", max_chars=200)
             submit_btn = st.form_submit_button("🚀 글 등록하기", use_container_width=True)
 
             if submit_btn:
@@ -113,6 +114,8 @@ def render(market, nw):
                     st.error(f"⏱️ 도배 방지! {cd_post:.1f}초 후에 다시 작성해주세요.")
                 elif not msg.strip():
                     st.warning("⚠️ 내용을 입력해주세요.")
+                elif len(msg.strip()) > 200:
+                    st.error("⚠️ 댓글은 200자 이내로 작성해주세요.")
                 elif st.session_state.logged_in_user in market.get('board_banned', []):
                     st.error("🔇 창조주에 의해 게시판 이용이 정지된 계정입니다.")
                 else:
@@ -121,9 +124,12 @@ def render(market, nw):
                     comments.append({
                         "name":    st.session_state.logged_in_user,
                         "title":   st.session_state.equipped_title,
-                        "comment": msg.strip(),
+                        "comment": msg.strip()[:200],  # 🛡️ 서버사이드에서도 잘라내기
                         "time":    datetime.now(KST).strftime("%m/%d %H:%M")
                     })
+                    # 🛡️ DB 무한 증식 방지 — 최근 500개만 유지
+                    if len(comments) > 500:
+                        comments = comments[-500:]
                     save_db(COMMENTS_FILE, comments)
                     st.success("✅ 게시글이 등록되었습니다!")
                     time.sleep(0.5)
