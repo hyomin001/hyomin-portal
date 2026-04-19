@@ -1,8 +1,9 @@
 # pages/project_b.py
-# 🗳️ 효민 월드 배틀 — 실시간 진영 투표 (Modern UI & Blind Voting)
+# 🗳️ 효민 월드 배틀 v2.0 — 실시간 진영 투표 (완전 익명 · 배틀 아레나 UI)
 import streamlit as st
 import time
 import html
+import random
 from datetime import datetime
 from utils.config import KST
 from utils.database import load_db, save_db
@@ -12,98 +13,409 @@ VOTE_FILE = "vote_db.json"
 def load_vote_db():
     return load_db(VOTE_FILE, {
         "current": {
-            "topic":   "오늘의 질문을 기다리는 중...",
-            "side_a":  "A",
-            "side_b":  "B",
-            "votes_a": [],
-            "votes_b": [],
-            "created": 0,
+            "topic":    "오늘의 질문을 기다리는 중...",
+            "side_a":   "A",
+            "side_b":   "B",
+            "desc_a":   "",
+            "desc_b":   "",
+            "emoji_a":  "🔵",
+            "emoji_b":  "🔴",
+            "votes_a":  [],
+            "votes_b":  [],
+            "created":  0,
+            "deadline": 0,
         },
-        "history": []
+        "history": [],
+        "total_participants": 0,
     })
 
 def save_vote_db(data):
     save_db(VOTE_FILE, data)
 
-# 모던 UI를 위한 커스텀 CSS (Pretendard 폰트 적용 및 글래스모피즘/소프트 섀도우)
+# ══════════════════════════════════════════════════════════════
+#  CSS — 배틀 아레나 다크 테마
+# ══════════════════════════════════════════════════════════════
+
 VOTE_CSS = """
 <style>
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css");
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
-.vw { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 10px; }
+:root {
+  --blue:      #3D8EF0;
+  --blue-glow: rgba(61,142,240,0.35);
+  --blue-dim:  rgba(61,142,240,0.12);
+  --red:       #F04F3D;
+  --red-glow:  rgba(240,79,61,0.35);
+  --red-dim:   rgba(240,79,61,0.12);
+  --bg:        #0D0F14;
+  --bg2:       #13161E;
+  --bg3:       #1A1E2A;
+  --border:    rgba(255,255,255,0.07);
+  --text:      #E8EAF0;
+  --text-dim:  #6B7280;
+  --gold:      #F5C842;
+}
 
-/* 뱃지 & 헤더 */
+/* ── 전체 래퍼 ─────────────────────────── */
+.vw {
+  font-family: 'Noto Sans KR', -apple-system, sans-serif;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 8px 4px 40px;
+  color: var(--text);
+}
+
+/* ── LIVE 뱃지 ─────────────────────────── */
 .live-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(239, 68, 68, 0.1); color: #EF4444;
-    border-radius: 20px; padding: 6px 16px; margin-bottom: 24px;
-    font-size: 0.85rem; font-weight: 700; letter-spacing: 0.5px;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(239,68,68,0.12); color: #EF4444;
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 999px; padding: 5px 14px;
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 1.5px;
 }
-.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #EF4444; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-
-.topic-wrapper { text-align: center; margin-bottom: 40px; }
-.topic-title { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; color: #111827; line-height: 1.3; word-break: keep-all; }
-.topic-desc { font-size: 0.95rem; color: #6B7280; margin-top: 12px; font-weight: 500; }
-
-/* 카드 섹션 */
-.arena { display: flex; gap: 16px; margin-bottom: 30px; align-items: stretch; position: relative; }
-.card { 
-    flex: 1; border-radius: 24px; padding: 32px 20px; 
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: #FFFFFF; border: 1px solid #F3F4F6;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.03); position: relative; overflow: hidden;
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #EF4444;
+  animation: livepulse 1.4s ease-in-out infinite;
 }
-.card-a { border-top: 6px solid #3B82F6; }
-.card-b { border-top: 6px solid #EF4444; }
-
-.card-name { font-size: 1.4rem; font-weight: 800; color: #1F2937; text-align: center; z-index: 1; word-break: keep-all; }
-.card-result-wrap { margin-top: 16px; text-align: center; z-index: 1; animation: fadeIn 0.5s ease; }
-.card-count { font-size: 2.5rem; font-weight: 800; color: #111827; line-height: 1; }
-.card-unit { font-size: 1rem; font-weight: 600; color: #6B7280; margin-left: 4px; }
-.card-pct { font-size: 1.1rem; font-weight: 700; margin-top: 8px; }
-.pct-a { color: #3B82F6; }
-.pct-b { color: #EF4444; }
-
-.vs-badge { 
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 40px; height: 40px; border-radius: 50%; background: #F9FAFB; color: #9CA3AF; 
-    font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; justify-content: center; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #FFFFFF; z-index: 10;
+@keyframes livepulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
+  50%     { box-shadow: 0 0 0 7px rgba(239,68,68,0); }
 }
 
-/* 프로그레스 바 */
-.ratio-wrap { margin: 10px 0 30px; animation: fadeIn 0.5s ease; }
-.ratio-bar { height: 16px; background: #F3F4F6; border-radius: 12px; overflow: hidden; display: flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-.ratio-a { background: #3B82F6; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
-.ratio-b { background: #EF4444; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
-.ratio-footer { display: flex; justify-content: space-between; font-size: 0.85rem; color: #6B7280; margin-top: 10px; font-weight: 600; }
-
-/* 알림 박스 */
-.info-box { 
-    background: #F8FAFC; border-radius: 16px; padding: 16px 20px; 
-    display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+/* ── 헤더 ──────────────────────────────── */
+.battle-header { text-align: center; margin: 20px 0 36px; }
+.battle-eyebrow {
+  font-size: 0.75rem; letter-spacing: 3px; color: var(--text-dim);
+  text-transform: uppercase; margin-bottom: 14px;
 }
-.info-icon { font-size: 1.5rem; }
-.info-text { font-size: 0.95rem; font-weight: 700; color: #1E293B; }
-.info-sub { font-size: 0.8rem; color: #64748B; margin-top: 4px; }
-
-/* 기록 섹션 */
-.hist-section { margin-top: 40px; }
-.hist-head { font-size: 1.1rem; font-weight: 800; color: #111827; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-.hist-row { 
-    display: flex; align-items: center; justify-content: space-between; padding: 16px; 
-    border-radius: 16px; background: #FFFFFF; border: 1px solid #F3F4F6; 
-    margin-bottom: 10px; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+.battle-topic {
+  font-family: 'Black Han Sans', 'Noto Sans KR', sans-serif;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  line-height: 1.25;
+  color: #fff;
+  word-break: keep-all;
+  text-shadow: 0 2px 30px rgba(0,0,0,0.5);
 }
-.hist-topic { flex: 1; color: #374151; font-weight: 600; padding-right: 16px; }
-.hist-win-a { color: #3B82F6; font-weight: 700; background: rgba(59,130,246,0.1); padding: 6px 12px; border-radius: 8px; }
-.hist-win-b { color: #EF4444; font-weight: 700; background: rgba(239,68,68,0.1); padding: 6px 12px; border-radius: 8px; }
-.hist-win-tie { color: #6B7280; font-weight: 700; background: #F3F4F6; padding: 6px 12px; border-radius: 8px; }
+.battle-sub {
+  font-size: 0.88rem; color: var(--text-dim); margin-top: 14px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+/* ── 배틀 아레나 ────────────────────────── */
+.arena-wrap {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  gap: 12px; margin-bottom: 28px; align-items: stretch;
+}
+
+/* 팀 카드 */
+.team-card {
+  border-radius: 20px; padding: 28px 16px 24px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; cursor: pointer;
+  position: relative; overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 180px;
+  border: 1px solid var(--border);
+}
+.team-card::before {
+  content: ''; position: absolute;
+  inset: 0; opacity: 0; transition: opacity 0.2s;
+}
+.team-card:hover { transform: translateY(-4px); }
+
+.team-card-a {
+  background: linear-gradient(160deg, var(--bg2) 60%, rgba(61,142,240,0.08));
+  border-top: 3px solid var(--blue);
+}
+.team-card-a::before { background: radial-gradient(ellipse at top, var(--blue-dim), transparent 70%); }
+.team-card-a:hover {
+  box-shadow: 0 12px 40px var(--blue-glow), inset 0 0 30px rgba(61,142,240,0.05);
+}
+.team-card-a:hover::before { opacity: 1; }
+
+.team-card-b {
+  background: linear-gradient(160deg, var(--bg2) 60%, rgba(240,79,61,0.08));
+  border-top: 3px solid var(--red);
+}
+.team-card-b::before { background: radial-gradient(ellipse at top, var(--red-dim), transparent 70%); }
+.team-card-b:hover {
+  box-shadow: 0 12px 40px var(--red-glow), inset 0 0 30px rgba(240,79,61,0.05);
+}
+.team-card-b:hover::before { opacity: 1; }
+
+/* 선택됨 강조 */
+.team-card-a.picked {
+  background: linear-gradient(160deg, #0f1e35 60%, rgba(61,142,240,0.15));
+  border: 1.5px solid var(--blue);
+  box-shadow: 0 0 30px var(--blue-glow), inset 0 0 20px rgba(61,142,240,0.06);
+}
+.team-card-b.picked {
+  background: linear-gradient(160deg, #2a0f0d 60%, rgba(240,79,61,0.15));
+  border: 1.5px solid var(--red);
+  box-shadow: 0 0 30px var(--red-glow), inset 0 0 20px rgba(240,79,61,0.06);
+}
+
+.team-emoji {
+  font-size: 2.6rem; line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+  animation: floaty 3s ease-in-out infinite;
+}
+@keyframes floaty {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-5px); }
+}
+
+.team-name {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.2rem; color: #fff;
+  text-align: center; line-height: 1.3;
+  word-break: keep-all;
+}
+.team-desc { font-size: 0.78rem; color: var(--text-dim); text-align: center; }
+
+/* 결과 숫자 */
+.team-result {
+  text-align: center; animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn { from { opacity:0; transform: scale(0.7); } to { opacity:1; transform: scale(1); } }
+.result-num { font-family: 'Black Han Sans', sans-serif; font-size: 2.4rem; color: #fff; line-height: 1; }
+.result-unit { font-size: 0.8rem; color: var(--text-dim); margin-left: 2px; }
+.result-pct-a { font-size: 1rem; font-weight: 700; color: var(--blue); margin-top: 4px; }
+.result-pct-b { font-size: 1rem; font-weight: 700; color: var(--red); margin-top: 4px; }
+
+/* 내 선택 체크 */
+.my-pick {
+  position: absolute; top: 10px; right: 12px;
+  font-size: 1rem; background: rgba(255,255,255,0.1);
+  border-radius: 50%; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* VS 배지 */
+.vs-center {
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px;
+}
+.vs-badge {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--bg3); border: 2px solid var(--border);
+  color: var(--text-dim); font-size: 0.85rem; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  letter-spacing: 0.5px;
+}
+.vs-total { font-size: 0.72rem; color: var(--text-dim); text-align: center; }
+
+/* ── 비율 바 ─────────────────────────── */
+.ratio-section { margin-bottom: 24px; }
+.ratio-labels {
+  display: flex; justify-content: space-between;
+  font-size: 0.82rem; font-weight: 700; margin-bottom: 8px;
+}
+.ratio-label-a { color: var(--blue); }
+.ratio-label-b { color: var(--red); }
+.ratio-track {
+  height: 14px; border-radius: 99px;
+  background: rgba(255,255,255,0.05);
+  overflow: hidden; display: flex; position: relative;
+}
+.ratio-fill-a {
+  background: linear-gradient(90deg, #2563EB, #60A5FA);
+  transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  border-radius: 99px 0 0 99px;
+}
+.ratio-fill-b {
+  background: linear-gradient(90deg, #F87171, #EF4444);
+  transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  border-radius: 0 99px 99px 0;
+}
+.ratio-footer {
+  display: flex; justify-content: space-between;
+  font-size: 0.78rem; color: var(--text-dim); margin-top: 8px;
+}
+
+/* ── 기세 인디케이터 ──────────────────── */
+.momentum-bar {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.82rem; margin-bottom: 20px;
+}
+.momentum-fire { color: #F97316; animation: shake 0.5s ease-in-out infinite alternate; }
+@keyframes shake { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+
+/* ── 알림/상태 박스 ──────────────────── */
+.status-box {
+  border-radius: 16px; padding: 16px 20px;
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 20px; border: 1px solid var(--border);
+  background: var(--bg2);
+  animation: slideUp 0.4s ease;
+}
+@keyframes slideUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+.status-icon { font-size: 1.8rem; flex-shrink: 0; }
+.status-title { font-size: 0.95rem; font-weight: 700; color: #fff; }
+.status-sub { font-size: 0.8rem; color: var(--text-dim); margin-top: 3px; }
+
+/* ── 히스토리 ────────────────────────── */
+.hist-section { margin-top: 44px; }
+.hist-head {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.05rem; color: var(--text-dim);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.hist-head::before {
+  content: ''; display: block; width: 3px; height: 18px;
+  background: var(--gold); border-radius: 2px;
+}
+.hist-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 18px;
+  margin-bottom: 10px; transition: border-color 0.15s;
+}
+.hist-card:hover { border-color: rgba(255,255,255,0.15); }
+.hist-top {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 12px; margin-bottom: 10px;
+}
+.hist-topic { font-size: 0.9rem; font-weight: 700; color: var(--text); flex: 1; word-break: keep-all; }
+.hist-badge {
+  font-size: 0.75rem; font-weight: 700; padding: 4px 10px;
+  border-radius: 6px; flex-shrink: 0; white-space: nowrap;
+}
+.hist-badge-a { background: var(--blue-dim); color: var(--blue); }
+.hist-badge-b { background: var(--red-dim); color: var(--red); }
+.hist-badge-tie { background: rgba(255,255,255,0.07); color: var(--text-dim); }
+.hist-mini-bar {
+  height: 6px; border-radius: 99px; overflow: hidden;
+  display: flex; background: rgba(255,255,255,0.05);
+}
+.hist-fill-a { background: var(--blue); }
+.hist-fill-b { background: var(--red); }
+.hist-meta {
+  display: flex; justify-content: space-between;
+  font-size: 0.73rem; color: var(--text-dim); margin-top: 7px;
+}
+
+/* ── 파티클 캔버스 ────────────────────── */
+#vote-confetti {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 9999;
+}
+
+/* ── Streamlit 오버라이드 ──────────────── */
+.stApp { background-color: #0D0F14 !important; }
+div[data-testid="stVerticalBlock"] { gap: 0 !important; }
+
+.stButton > button {
+  font-family: 'Black Han Sans', 'Noto Sans KR', sans-serif !important;
+  font-size: 1rem !important; letter-spacing: 1px !important;
+  border-radius: 12px !important; border: 1px solid var(--border) !important;
+  background: var(--bg3) !important; color: var(--text) !important;
+  transition: all 0.18s ease !important;
+  padding: 12px 0 !important;
+}
+.stButton > button:hover {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.2) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important;
+}
+.stButton > button[kind="primary"] {
+  background: linear-gradient(135deg, #1D4ED8, #3B82F6) !important;
+  color: #fff !important; border-color: transparent !important;
+}
+.stButton > button[kind="primary"]:hover {
+  background: linear-gradient(135deg, #2563EB, #60A5FA) !important;
+  box-shadow: 0 8px 24px rgba(59,130,246,0.4) !important;
+}
+
+.stTextInput input, .stTextArea textarea {
+  background: var(--bg3) !important; color: var(--text) !important;
+  border: 1px solid var(--border) !important; border-radius: 10px !important;
+  font-family: 'Noto Sans KR', sans-serif !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+  border-color: var(--blue) !important;
+  box-shadow: 0 0 0 3px rgba(61,142,240,0.15) !important;
+}
+label[data-testid="stWidgetLabel"] { color: var(--text-dim) !important; font-size: 0.82rem !important; }
 </style>
 """
+
+# ══════════════════════════════════════════════════════════════
+#  JS — 파티클 컨페티 + 자동 새로고침
+# ══════════════════════════════════════════════════════════════
+
+def confetti_js(color_a="#3D8EF0", color_b="#F04F3D"):
+    return f"""
+<canvas id="vote-confetti"></canvas>
+<script>
+(function() {{
+  var c = document.getElementById('vote-confetti');
+  if (!c) return;
+  var ctx = c.getContext('2d');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  var particles = [];
+  var colors = ['{color_a}', '{color_b}', '#F5C842', '#fff', '#a78bfa'];
+  for (var i = 0; i < 120; i++) {{
+    particles.push({{
+      x: Math.random() * c.width,
+      y: -10 - Math.random() * 200,
+      r: 4 + Math.random() * 6,
+      d: 2 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      tilt: Math.random() * 10 - 5,
+      tiltAngle: 0,
+      tiltSpeed: 0.1 + Math.random() * 0.1,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle',
+    }});
+  }}
+  var angle = 0, ttl = 180, frame;
+  function draw() {{
+    ctx.clearRect(0, 0, c.width, c.height);
+    angle += 0.01;
+    particles.forEach(function(p) {{
+      p.y += p.d; p.x += Math.sin(angle) * 1.2;
+      p.tiltAngle += p.tiltSpeed; p.tilt = Math.sin(p.tiltAngle) * 12;
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      if (p.shape === 'rect') {{
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.tilt * Math.PI/180);
+        ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r * 1.6); ctx.restore();
+      }} else {{
+        ctx.arc(p.x, p.y, p.r/2, 0, Math.PI*2); ctx.fill();
+      }}
+      if (p.y > c.height) {{ p.y = -10; p.x = Math.random() * c.width; }}
+    }});
+    ttl--;
+    if (ttl > 0) {{ frame = requestAnimationFrame(draw); }}
+    else {{ ctx.clearRect(0,0,c.width,c.height); }}
+  }}
+  draw();
+}})();
+</script>
+"""
+
+AUTO_REFRESH_JS = """
+<script>
+// 30초마다 자동 새로고침 (투표 수 실시간 반영)
+if (!window._voteRefreshTimer) {
+  window._voteRefreshTimer = setInterval(function() {
+    // Streamlit rerun trigger — 버튼 클릭 시뮬레이션 없이 조용히
+    var ev = new Event('streamlit:formsSubmitted', {bubbles: true});
+    window.dispatchEvent(ev);
+  }, 30000);
+}
+</script>
+"""
+
+
+# ══════════════════════════════════════════════════════════════
+#  메인 렌더
+# ══════════════════════════════════════════════════════════════
 
 def render():
     st.markdown(VOTE_CSS, unsafe_allow_html=True)
@@ -113,101 +425,199 @@ def render():
     vdb      = load_vote_db()
     cur      = vdb["current"]
 
-    total   = len(cur["votes_a"]) + len(cur["votes_b"])
-    pct_a   = round(len(cur["votes_a"]) / total * 100) if total else 50
-    pct_b   = 100 - pct_a
-    voted_a = uid in cur["votes_a"]
-    voted_b = uid in cur["votes_b"]
+    # ── 통계 계산 (누가 투표했는지는 절대 노출 안 함) ──
+    cnt_a = len(cur["votes_a"])
+    cnt_b = len(cur["votes_b"])
+    total = cnt_a + cnt_b
+    pct_a = round(cnt_a / total * 100) if total else 50
+    pct_b = 100 - pct_a
+
+    voted_a    = uid in cur["votes_a"]
+    voted_b    = uid in cur["votes_b"]
     user_voted = voted_a or voted_b
     user_side  = "A" if voted_a else ("B" if voted_b else None)
 
+    # safe escape
     s_topic  = html.escape(cur['topic'])
     s_side_a = html.escape(cur['side_a'])
     s_side_b = html.escape(cur['side_b'])
+    s_desc_a = html.escape(cur.get('desc_a', ''))
+    s_desc_b = html.escape(cur.get('desc_b', ''))
+    emoji_a  = cur.get('emoji_a', '🔵')
+    emoji_b  = cur.get('emoji_b', '🔴')
+
+    # 마감 계산
+    deadline = cur.get('deadline', 0)
+    is_closed = deadline > 0 and time.time() > deadline
+    time_left = ""
+    if deadline > 0 and not is_closed:
+        rem = int(deadline - time.time())
+        h, m = divmod(rem // 60, 60)
+        s_rem = rem % 60
+        time_left = f"{h}시간 {m}분 {s_rem}초 남음" if h > 0 else f"{m}분 {s_rem}초 남음"
+
+    # ── 기세 텍스트 (순수 시각 장식, 실제 속도 측정 아님) ──
+    momentum_txt = ""
+    if total >= 5:
+        if pct_a > pct_b + 15:
+            momentum_txt = f"🔥 {s_side_a} 압도적 우세!"
+        elif pct_b > pct_a + 15:
+            momentum_txt = f"🔥 {s_side_b} 압도적 우세!"
+        elif pct_a > pct_b + 5:
+            momentum_txt = f"📈 {s_side_a} 기세 상승 중"
+        elif pct_b > pct_a + 5:
+            momentum_txt = f"📈 {s_side_b} 기세 상승 중"
+        else:
+            momentum_txt = "⚡ 초접전! 팽팽한 박빙 승부"
 
     st.markdown("<div class='vw'>", unsafe_allow_html=True)
 
-    # 헤더 섹션
+    # ── 헤더 ────────────────────────────────────────
+    live_or_closed = (
+        "<span class='live-badge'><span class='live-dot'></span> LIVE 실시간</span>"
+        if not is_closed else
+        "<span class='live-badge' style='background:rgba(107,114,128,0.12);color:#6B7280;border-color:rgba(107,114,128,0.2);'>⏹ 투표 종료</span>"
+    )
+    time_note = ""
+    if time_left:
+        time_note = f"<span style='color:#F97316;font-size:0.78rem;'>⏰ {time_left}</span>"
+    elif is_closed:
+        time_note = "<span style='color:#6B7280;font-size:0.78rem;'>투표가 종료되었습니다</span>"
+
     st.markdown(f"""
-    <div style="text-align: center;">
-        <div class='live-badge'>
-            <div class='live-dot'></div>
-            LIVE 실시간 투표
-        </div>
-    </div>
-    <div class='topic-wrapper'>
-        <div class='topic-title'>Q. {s_topic}</div>
-        <div class='topic-desc'>{"👇 아래에서 진영을 선택하면 결과가 공개됩니다." if not user_voted else "✨ 투표가 완료되었습니다! 현재 결과를 확인하세요."}</div>
+    <div class='battle-header'>
+      <div style='display:flex;justify-content:center;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;'>
+        {live_or_closed}
+        {time_note}
+      </div>
+      <div class='battle-eyebrow'>효민 월드 배틀 · 익명 투표</div>
+      <div class='battle-topic'>Q. {s_topic}</div>
+      <div class='battle-sub'>
+        {"🔒 투표 전에는 결과가 숨겨집니다 · 완전 익명" if not user_voted else "✅ 투표 완료 · 익명으로 처리됩니다"}
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 투표 카드 & 결과 (블라인드 처리 로직 적용)
+    # ── 배틀 카드 ─────────────────────────────────────
+    pick_a_cls = "picked" if voted_a else ""
+    pick_b_cls = "picked" if voted_b else ""
+    my_pick_a  = "<div class='my-pick'>✓</div>" if voted_a else ""
+    my_pick_b  = "<div class='my-pick'>✓</div>" if voted_b else ""
+
     if user_voted:
-        # 투표 한 사람에게만 결과(숫자, 게이지) 공개
-        st.markdown(f"""
-        <div class='arena'>
-            <div class='card card-a'>
-                <div class='card-name'>🔵 {s_side_a}</div>
-                <div class='card-result-wrap'>
-                    <div class='card-count'>{len(cur['votes_a'])}<span class='card-unit'>표</span></div>
-                    <div class='card-pct pct-a'>{pct_a}%</div>
-                </div>
-            </div>
-            <div class='vs-badge'>VS</div>
-            <div class='card card-b'>
-                <div class='card-name'>🔴 {s_side_b}</div>
-                <div class='card-result-wrap'>
-                    <div class='card-count'>{len(cur['votes_b'])}<span class='card-unit'>표</span></div>
-                    <div class='card-pct pct-b'>{pct_b}%</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class='ratio-wrap'>
-            <div class='ratio-bar'>
-                <div class='ratio-a' style='width:{pct_a}%'></div>
-                <div class='ratio-b' style='width:{pct_b}%'></div>
-            </div>
-            <div class='ratio-footer'>
-                <span>참여자 총 {total}명</span>
-                <span>익명 투표</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # 결과 공개
+        result_a = f"""
+        <div class='team-result'>
+          <div class='result-num'>{cnt_a}<span class='result-unit'>표</span></div>
+          <div class='result-pct-a'>{pct_a}%</div>
+        </div>"""
+        result_b = f"""
+        <div class='team-result'>
+          <div class='result-num'>{cnt_b}<span class='result-unit'>표</span></div>
+          <div class='result-pct-b'>{pct_b}%</div>
+        </div>"""
     else:
-        # 투표 전에는 블라인드 뷰 제공
+        result_a = result_b = ""
+
+    desc_a_html = f"<div class='team-desc'>{s_desc_a}</div>" if s_desc_a else ""
+    desc_b_html = f"<div class='team-desc'>{s_desc_b}</div>" if s_desc_b else ""
+
+    st.markdown(f"""
+    <div class='arena-wrap'>
+      <div class='team-card team-card-a {pick_a_cls}'>
+        {my_pick_a}
+        <div class='team-emoji' style='animation-delay:0s;'>{emoji_a}</div>
+        <div class='team-name'>{s_side_a}</div>
+        {desc_a_html}
+        {result_a}
+      </div>
+
+      <div class='vs-center'>
+        <div class='vs-badge'>VS</div>
+        <div class='vs-total'>{total}명<br>참여</div>
+      </div>
+
+      <div class='team-card team-card-b {pick_b_cls}'>
+        {my_pick_b}
+        <div class='team-emoji' style='animation-delay:1.5s;'>{emoji_b}</div>
+        <div class='team-name'>{s_side_b}</div>
+        {desc_b_html}
+        {result_b}
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── 비율 바 (투표 후 공개) ──────────────────────
+    if user_voted and total > 0:
+        lead_name = s_side_a if pct_a > pct_b else (s_side_b if pct_b > pct_a else "")
         st.markdown(f"""
-        <div class='arena'>
-            <div class='card card-a' style='min-height: 160px;'>
-                <div class='card-name'>🔵 {s_side_a}</div>
-            </div>
-            <div class='vs-badge'>VS</div>
-            <div class='card card-b' style='min-height: 160px;'>
-                <div class='card-name'>🔴 {s_side_b}</div>
-            </div>
+        <div class='ratio-section'>
+          <div class='ratio-labels'>
+            <span class='ratio-label-a'>{emoji_a} {pct_a}%</span>
+            <span class='ratio-label-b'>{pct_b}% {emoji_b}</span>
+          </div>
+          <div class='ratio-track'>
+            <div class='ratio-fill-a' style='width:{pct_a}%'></div>
+            <div class='ratio-fill-b' style='width:{pct_b}%'></div>
+          </div>
+          <div class='ratio-footer'>
+            <span>총 {total}명 참여 (익명)</span>
+            <span>{"무승부" if pct_a == pct_b else f"{lead_name} 우세"}</span>
+          </div>
         </div>
         """, unsafe_allow_html=True)
 
+        if momentum_txt:
+            st.markdown(f"""
+            <div class='momentum-bar'>
+              <span style='color:var(--text-dim);font-size:0.8rem;'>현재 흐름</span>
+              <span style='font-weight:700;font-size:0.88rem;color:var(--text);'>{momentum_txt}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── 투표 액션 ──────────────────────────────────
     st.write("")
 
-    # 투표 액션 & 상태
     if not uid:
-        st.info("💡 투표에 참여하려면 먼저 로그인해주세요.")
-
-    elif user_voted:
-        name = s_side_a if user_side == 'A' else s_side_b
-        icon = "🔵" if user_side == 'A' else "🔴"
-        st.markdown(f"""
-        <div class='info-box'>
-            <div class='info-icon'>{icon}</div>
-            <div>
-                <div class='info-text'>[{name}] 진영을 선택하셨습니다.</div>
-                <div class='info-sub'>언제든지 아래 버튼을 눌러 선택을 바꿀 수 있습니다.</div>
-            </div>
+        st.markdown("""
+        <div class='status-box'>
+          <div class='status-icon'>🔐</div>
+          <div>
+            <div class='status-title'>로그인이 필요합니다</div>
+            <div class='status-sub'>투표에 참여하려면 먼저 로그인해주세요.</div>
+          </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        if st.button("🔄 마음이 바뀌었어요 (선택 취소)", use_container_width=True):
+
+    elif is_closed:
+        st.markdown("""
+        <div class='status-box' style='border-color:rgba(107,114,128,0.2);'>
+          <div class='status-icon'>⏹</div>
+          <div>
+            <div class='status-title'>투표가 종료되었습니다</div>
+            <div class='status-sub'>다음 배틀을 기대해주세요!</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif user_voted:
+        name_picked = s_side_a if user_side == 'A' else s_side_b
+        icon_picked = emoji_a if user_side == 'A' else emoji_b
+        color_picked = "#3D8EF0" if user_side == 'A' else "#F04F3D"
+
+        st.markdown(f"""
+        <div class='status-box' style='border-color:rgba(255,255,255,0.12);'>
+          <div class='status-icon'>{icon_picked}</div>
+          <div>
+            <div class='status-title' style='color:{color_picked};'>
+              [{name_picked}] 진영 선택 완료
+            </div>
+            <div class='status-sub'>완전 익명으로 처리됩니다 · 마음이 바뀌면 취소할 수 있어요</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("🔄  선택 취소하기", use_container_width=True, key="cancel_vote"):
             vdb2 = load_vote_db()
             vdb2["current"]["votes_a"] = [v for v in vdb2["current"]["votes_a"] if v != uid]
             vdb2["current"]["votes_b"] = [v for v in vdb2["current"]["votes_b"] if v != uid]
@@ -215,68 +625,102 @@ def render():
             st.rerun()
 
     else:
-        # 투표 버튼 영역
-        st.markdown("<div style='text-align: center; margin-bottom: 10px; font-size: 0.9rem; font-weight: 600; color: #4B5563;'>어느 쪽을 선택하시겠습니까?</div>", unsafe_allow_html=True)
+        # 투표 버튼
+        st.markdown("<div style='text-align:center;font-size:0.82rem;color:var(--text-dim);margin-bottom:14px;'>⬇ 진영을 선택하면 실시간 결과가 공개됩니다</div>", unsafe_allow_html=True)
         col_a, col_b = st.columns(2)
         with col_a:
-            if st.button(f"🔵 {cur['side_a']} 투표하기", use_container_width=True):
+            if st.button(f"{emoji_a}  {cur['side_a']} 선택", use_container_width=True, type="primary", key="vote_a"):
                 vdb2 = load_vote_db()
                 if uid not in vdb2["current"]["votes_a"]:
                     vdb2["current"]["votes_a"].append(uid)
+                    vdb2["total_participants"] = vdb2.get("total_participants", 0) + 1
                 save_vote_db(vdb2)
+                st.markdown(confetti_js("#3D8EF0", "#60A5FA"), unsafe_allow_html=True)
                 st.rerun()
         with col_b:
-            if st.button(f"🔴 {cur['side_b']} 투표하기", use_container_width=True):
+            if st.button(f"{emoji_b}  {cur['side_b']} 선택", use_container_width=True, key="vote_b"):
                 vdb2 = load_vote_db()
                 if uid not in vdb2["current"]["votes_b"]:
                     vdb2["current"]["votes_b"].append(uid)
+                    vdb2["total_participants"] = vdb2.get("total_participants", 0) + 1
                 save_vote_db(vdb2)
+                st.markdown(confetti_js("#F04F3D", "#F87171"), unsafe_allow_html=True)
                 st.rerun()
 
-    # 역대 전적 (수치 비공개, 승리 여부만 깔끔하게 노출하여 익명성/호기심 보호)
-    if vdb["history"]:
+    # ── 히스토리 ──────────────────────────────────
+    if vdb.get("history"):
+        recent = list(reversed(vdb["history"][-6:]))
         rows_html = ""
-        for h in reversed(vdb["history"][-5:]): # 최근 5개만 노출
-            ta, tb = h['votes_a'], h['votes_b']
+        for h in recent:
+            ta, tb = h.get('votes_a', 0), h.get('votes_b', 0)
+            total_h = ta + tb or 1
+            pa = round(ta / total_h * 100)
+            pb = 100 - pa
             if ta > tb:
-                win_cls, win_txt = "hist-win-a", f"🔵 {html.escape(h['side_a'])} 승리"
+                badge_cls, badge_txt = "hist-badge-a", f"{html.escape(h['side_a'])} 승 🎉"
             elif tb > ta:
-                win_cls, win_txt = "hist-win-b", f"🔴 {html.escape(h['side_b'])} 승리"
+                badge_cls, badge_txt = "hist-badge-b", f"{html.escape(h['side_b'])} 승 🎉"
             else:
-                win_cls, win_txt = "hist-win-tie", "🤝 무승부"
-                
+                badge_cls, badge_txt = "hist-badge-tie", "🤝 무승부"
+
+            date_str = h.get('ended', '')
             rows_html += f"""
-            <div class='hist-row'>
-                <span class='hist-topic'>{html.escape(h['topic'])}</span>
-                <span class='{win_cls}'>{win_txt}</span>
+            <div class='hist-card'>
+              <div class='hist-top'>
+                <div class='hist-topic'>{html.escape(h['topic'])}</div>
+                <div class='hist-badge {badge_cls}'>{badge_txt}</div>
+              </div>
+              <div class='hist-mini-bar'>
+                <div class='hist-fill-a' style='width:{pa}%'></div>
+                <div class='hist-fill-b' style='width:{pb}%'></div>
+              </div>
+              <div class='hist-meta'>
+                <span>{html.escape(h['side_a'])} {pa}% · {html.escape(h['side_b'])} {pb}%</span>
+                <span>{total_h}명 참여 · {date_str}</span>
+              </div>
             </div>"""
 
         st.markdown(f"""
         <div class='hist-section'>
-            <div class='hist-head'>🏆 최근 종료된 배틀 결과</div>
-            {rows_html}
+          <div class='hist-head'>지난 배틀 결과</div>
+          {rows_html}
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(AUTO_REFRESH_JS, unsafe_allow_html=True)
 
-    # 관리자 패널
+    # ══════════════════════════════════════════════
+    #  관리자 패널
+    # ══════════════════════════════════════════════
     if is_admin:
-        st.write("---")
-        st.markdown("#### 🛠️ [관리자] 새 투표 시작")
-        with st.expander("주제 설정 패널 열기", expanded=False):
-            new_topic = st.text_input("질문 (예: 평생 한 가지만 먹어야 한다면?)", max_chars=50)
+        st.write("")
+        st.divider()
+        st.markdown("#### ⚙️ 관리자 패널")
+
+        with st.expander("📝 새 배틀 설정", expanded=False):
+            st.markdown("**새 투표 주제**")
+            new_topic = st.text_input("질문", max_chars=60, placeholder="예: 치킨 vs 피자, 뭘 선택할래?")
+
             c1, c2 = st.columns(2)
             with c1:
-                new_side_a = st.text_input("🔵 A 진영 이름", max_chars=20)
+                st.markdown("**🔵 A 진영**")
+                new_side_a  = st.text_input("진영 이름 A", max_chars=20, key="adm_na")
+                new_desc_a  = st.text_input("설명 A (선택)", max_chars=40, key="adm_da", placeholder="짧은 설명")
+                new_emoji_a = st.text_input("이모지 A", max_chars=4, key="adm_ea", value="🔵")
             with c2:
-                new_side_b = st.text_input("🔴 B 진영 이름", max_chars=20)
-                
-            if st.button("🚀 위 주제로 새 투표 라이브 시작", use_container_width=True, type="primary"):
+                st.markdown("**🔴 B 진영**")
+                new_side_b  = st.text_input("진영 이름 B", max_chars=20, key="adm_nb")
+                new_desc_b  = st.text_input("설명 B (선택)", max_chars=40, key="adm_db", placeholder="짧은 설명")
+                new_emoji_b = st.text_input("이모지 B", max_chars=4, key="adm_eb", value="🔴")
+
+            hours = st.slider("투표 마감 시간 (0 = 무기한)", 0, 72, 0, key="adm_hours")
+
+            if st.button("🚀 새 배틀 시작!", use_container_width=True, type="primary", key="adm_start"):
                 if new_topic and new_side_a and new_side_b:
                     vdb2 = load_vote_db()
-                    old  = vdb2["current"]
-                    if old["votes_a"] or old["votes_b"]:
+                    old = vdb2["current"]
+                    if old.get("votes_a") or old.get("votes_b"):
                         vdb2["history"].append({
                             "topic":   old["topic"],
                             "side_a":  old["side_a"],
@@ -286,15 +730,36 @@ def render():
                             "ended":   datetime.now(KST).strftime("%Y-%m-%d"),
                         })
                     vdb2["current"] = {
-                        "topic":   new_topic.strip(),
-                        "side_a":  new_side_a.strip(),
-                        "side_b":  new_side_b.strip(),
-                        "votes_a": [],
-                        "votes_b": [],
-                        "created": time.time(),
+                        "topic":    new_topic.strip(),
+                        "side_a":   new_side_a.strip(),
+                        "side_b":   new_side_b.strip(),
+                        "desc_a":   new_desc_a.strip(),
+                        "desc_b":   new_desc_b.strip(),
+                        "emoji_a":  new_emoji_a.strip() or "🔵",
+                        "emoji_b":  new_emoji_b.strip() or "🔴",
+                        "votes_a":  [],
+                        "votes_b":  [],
+                        "created":  time.time(),
+                        "deadline": time.time() + hours * 3600 if hours > 0 else 0,
                     }
                     save_vote_db(vdb2)
-                    st.success("✅ 새 투표가 시작되었습니다!")
+                    st.success("✅ 새 배틀이 시작되었습니다!")
                     st.rerun()
                 else:
                     st.error("질문과 양쪽 진영 이름을 모두 입력해주세요.")
+
+        with st.expander("📊 현재 통계 (관리자 전용)", expanded=False):
+            st.markdown(f"""
+            - **주제:** {cur['topic']}
+            - **A 진영 ({cur['side_a']}):** {cnt_a}표 ({pct_a}%)
+            - **B 진영 ({cur['side_b']}):** {cnt_b}표 ({pct_b}%)
+            - **총 참여:** {total}명
+            - **투표자 수 (익명 처리):** {total}명 (개인 정보 미노출)
+            """)
+            if st.button("🗑️ 현재 투표 초기화", key="adm_reset"):
+                vdb2 = load_vote_db()
+                vdb2["current"]["votes_a"] = []
+                vdb2["current"]["votes_b"] = []
+                save_vote_db(vdb2)
+                st.success("초기화 완료!")
+                st.rerun()
