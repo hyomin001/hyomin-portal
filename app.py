@@ -7,9 +7,9 @@ from datetime import datetime
 # ==============================
 # 1. 코어 모듈 임포트
 # ==============================
-from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE
-from utils.database import load_db, save_db
-from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data
+from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE
+from utils.database import load_db, save_db, load_stats
+from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
 
@@ -33,7 +33,7 @@ if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
 if "page_view" not in st.session_state:
     st.session_state.page_view = "portal"  # 항상 첫 화면은 포털 메인
 
-market = load_db(MARKET_FILE, {}) # 임시 로드
+market = load_db(MARKET_FILE, {})  # universe·project_a 뷰에서만 실제로 사용됨
 
 # 🌟 [포털 & 로그인 전용 밝은 테마 CSS]
 PORTAL_LIGHT_CSS = """
@@ -92,6 +92,54 @@ h1, h2, h3, h4, p, span, div {
 /* 배너 안의 텍스트 색상 명시 */
 .banner-card h2 { color: #1E293B !important; margin-bottom: 8px; }
 .banner-card p { color: #64748B !important; font-weight: 500; }
+
+/* ── 통계 카드 (포털 메인 전용 라이트 테마) ── */
+.stat-grid {
+    display: flex;
+    gap: 16px;
+    margin: 24px 0 8px 0;
+    flex-wrap: wrap;
+}
+.stat-card {
+    flex: 1;
+    min-width: 160px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 20px 18px 16px 18px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.06);
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.stat-card:hover {
+    box-shadow: 0 6px 20px rgba(37,99,235,0.13);
+    transform: translateY(-3px);
+}
+.stat-icon { font-size: 1.8rem; margin-bottom: 6px; line-height: 1; }
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #1E40AF !important;
+    line-height: 1.1;
+    margin-bottom: 4px;
+}
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748B !important;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.stat-card.online .stat-value { color: #16A34A !important; }
+.stat-card.volume  .stat-value { color: #7C3AED !important; }
+.stat-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #94A3B8 !important;
+    margin-bottom: 4px;
+}
 </style>
 """
 
@@ -128,8 +176,47 @@ if st.session_state.page_view == "portal":
     """, unsafe_allow_html=True)
 
     st.write("---")
-    
-    # 배너 섹션 (클릭 시 로그인 체크)
+
+    # ── 📊 실시간 서비스 현황 통계 카드 ──────────────────────────────────
+    try:
+        _stats      = load_stats()
+        _today      = datetime.now(KST).strftime("%Y-%m-%d")
+        _online     = get_online_users()
+        _today_v    = len(_stats.get("daily_visitors", {}).get(_today, []))
+        _total_s    = _stats.get("total_signups", 0)
+        _today_vol  = _stats.get("daily_volume",  {}).get(_today, 0)
+        _vol_str    = format_korean_money(_today_vol) if _today_vol else "0원"
+
+        st.markdown("<div class='stat-section-title'>📡 실시간 서비스 현황</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="stat-grid">
+            <div class="stat-card online">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-value">{_online}명</div>
+                <div class="stat-label">지금 접속 중</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-value">{_today_v}명</div>
+                <div class="stat-label">오늘 방문자</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value">{_total_s}명</div>
+                <div class="stat-label">누적 가입자</div>
+            </div>
+            <div class="stat-card volume">
+                <div class="stat-icon">💹</div>
+                <div class="stat-value">{_vol_str}</div>
+                <div class="stat-label">오늘 누적 거래량</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    except Exception:
+        pass  # DB 미연결 상태에서도 포털은 항상 표시되어야 함
+    # ───────────────────────────────────────────────────────────────────────
+
+    st.write("---")
     col1, col2 = st.columns(2)
 
     with col1:
