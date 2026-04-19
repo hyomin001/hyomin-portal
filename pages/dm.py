@@ -1,6 +1,7 @@
 # pages/dm.py
 import streamlit as st
 import time
+import html
 from datetime import datetime
 from utils.config import KST
 from utils.core import cooldown_remaining, set_cooldown
@@ -45,6 +46,9 @@ def render(market, nw):
                 if not m.get("read_before", False):
                     m["read_before"] = True 
                     needs_save = True
+
+                safe_content = html.escape(m.get('content', ''))
+                
                 st.markdown(f"""
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #00E5FF;'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
