@@ -32,6 +32,17 @@ def load_vote_db():
 def save_vote_db(data):
     save_db(VOTE_FILE, data)
 
+def safe_md(text: str) -> str:
+    """HTML escape + Markdown 특수문자 무력화 (언더바, 별표, 백틱, 물결 등)"""
+    escaped = html.escape(str(text))
+    # Streamlit은 unsafe_allow_html=True 여도 내부 텍스트를 MD로 파싱함
+    # 언더바(_), 별표(*), 백틱(`), 물결(~)을 HTML 엔티티로 치환
+    escaped = escaped.replace('_', '&#95;')
+    escaped = escaped.replace('*', '&#42;')
+    escaped = escaped.replace('`', '&#96;')
+    escaped = escaped.replace('~', '&#126;')
+    return escaped
+
 # ══════════════════════════════════════════════════════════════
 #  CSS — 배틀 아레나 다크 테마
 # ══════════════════════════════════════════════════════════════
@@ -437,12 +448,12 @@ def render():
     user_voted = voted_a or voted_b
     user_side  = "A" if voted_a else ("B" if voted_b else None)
 
-    # safe escape
-    s_topic  = html.escape(cur['topic'])
-    s_side_a = html.escape(cur['side_a'])
-    s_side_b = html.escape(cur['side_b'])
-    s_desc_a = html.escape(cur.get('desc_a', ''))
-    s_desc_b = html.escape(cur.get('desc_b', ''))
+    # safe escape — 언더바 등 마크다운 특수문자도 엔티티 변환
+    s_topic  = safe_md(cur['topic'])
+    s_side_a = safe_md(cur['side_a'])
+    s_side_b = safe_md(cur['side_b'])
+    s_desc_a = safe_md(cur.get('desc_a', ''))
+    s_desc_b = safe_md(cur.get('desc_b', ''))
     emoji_a  = cur.get('emoji_a', '🔵')
     emoji_b  = cur.get('emoji_b', '🔴')
 
@@ -501,51 +512,80 @@ def render():
     # ── 배틀 카드 ─────────────────────────────────────
     pick_a_cls = "picked" if voted_a else ""
     pick_b_cls = "picked" if voted_b else ""
-    my_pick_a  = "<div class='my-pick'>✓</div>" if voted_a else ""
-    my_pick_b  = "<div class='my-pick'>✓</div>" if voted_b else ""
+    my_pick_a  = "<div class='my-pick'>&#10003;</div>" if voted_a else ""
+    my_pick_b  = "<div class='my-pick'>&#10003;</div>" if voted_b else ""
 
+    # 결과 블록: 투표 후에만 숫자 공개, 투표 전엔 빈 문자열
     if user_voted:
-        # 결과 공개
-        result_a = f"""
-        <div class='team-result'>
-          <div class='result-num'>{cnt_a}<span class='result-unit'>표</span></div>
-          <div class='result-pct-a'>{pct_a}%</div>
-        </div>"""
-        result_b = f"""
-        <div class='team-result'>
-          <div class='result-num'>{cnt_b}<span class='result-unit'>표</span></div>
-          <div class='result-pct-b'>{pct_b}%</div>
-        </div>"""
+        result_a = (
+            "<div class='team-result'>"
+            f"<div class='result-num'>{cnt_a}"
+            "<span class='result-unit'>&#54364;</span></div>"
+            f"<div class='result-pct-a'>{pct_a}%</div>"
+            "</div>"
+        )
+        result_b = (
+            "<div class='team-result'>"
+            f"<div class='result-num'>{cnt_b}"
+            "<span class='result-unit'>&#54364;</span></div>"
+            f"<div class='result-pct-b'>{pct_b}%</div>"
+            "</div>"
+        )
     else:
         result_a = result_b = ""
 
     desc_a_html = f"<div class='team-desc'>{s_desc_a}</div>" if s_desc_a else ""
     desc_b_html = f"<div class='team-desc'>{s_desc_b}</div>" if s_desc_b else ""
 
-    st.markdown(f"""
-    <div class='arena-wrap'>
-      <div class='team-card team-card-a {pick_a_cls}'>
-        {my_pick_a}
-        <div class='team-emoji' style='animation-delay:0s;'>{emoji_a}</div>
-        <div class='team-name'>{s_side_a}</div>
-        {desc_a_html}
-        {result_a}
-      </div>
+    # 카드 HTML을 문자열 연결로 구성 (f-string 중첩 방지)
+    card_a_html = (
+        "<div class='team-card team-card-a " + pick_a_cls + "'>"
+        + my_pick_a
+        + "<div class='team-emoji' style='animation-delay:0s;'>" + emoji_a + "</div>"
+        + "<div class='team-name'>" + s_side_a + "</div>"
+        + desc_a_html
+        + result_a
+        + "</div>"
+    )
+    card_b_html = (
+        "<div class='team-card team-card-b " + pick_b_cls + "'>"
+        + my_pick_b
+        + "<div class='team-emoji' style='animation-delay:1.5s;'>" + emoji_b + "</div>"
+        + "<div class='team-name'>" + s_side_b + "</div>"
+        + desc_b_html
+        + result_b
+        + "</div>"
+    )
 
-      <div class='vs-center'>
-        <div class='vs-badge'>VS</div>
-        <div class='vs-total'>{total}명<br>참여</div>
-      </div>
+    vs_html = (
+        "<div class='vs-center'>"
+        "<div class='vs-badge'>VS</div>"
+        f"<div class='vs-total'>{total}&#47;&#47;<br>&#52632;&#44396;</div>"
+        "</div>"
+    )
+    # vs 가운데 텍스트: "N명\n참여"
+    vs_html = (
+        "<div class='vs-center'>"
+        "<div class='vs-badge'>VS</div>"
+        f"<div class='vs-total'>{total}&#47;&#47;</div>"
+        "</div>"
+    )
+    vs_html = (
+        "<div class='vs-center'>"
+        + "<div class='vs-badge'>VS</div>"
+        + f"<div class='vs-total'>{total}명<br>참여</div>"
+        + "</div>"
+    )
 
-      <div class='team-card team-card-b {pick_b_cls}'>
-        {my_pick_b}
-        <div class='team-emoji' style='animation-delay:1.5s;'>{emoji_b}</div>
-        <div class='team-name'>{s_side_b}</div>
-        {desc_b_html}
-        {result_b}
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    arena_html = (
+        "<div class='arena-wrap'>"
+        + card_a_html
+        + vs_html
+        + card_b_html
+        + "</div>"
+    )
+
+    st.markdown(arena_html, unsafe_allow_html=True)
 
     # ── 비율 바 (투표 후 공개) ──────────────────────
     if user_voted and total > 0:
@@ -601,21 +641,22 @@ def render():
         """, unsafe_allow_html=True)
 
     elif user_voted:
-        name_picked = s_side_a if user_side == 'A' else s_side_b
+        name_picked = s_side_a if user_side == 'A' else s_side_b  # already safe_md
         icon_picked = emoji_a if user_side == 'A' else emoji_b
         color_picked = "#3D8EF0" if user_side == 'A' else "#F04F3D"
 
-        st.markdown(f"""
-        <div class='status-box' style='border-color:rgba(255,255,255,0.12);'>
-          <div class='status-icon'>{icon_picked}</div>
-          <div>
-            <div class='status-title' style='color:{color_picked};'>
-              [{name_picked}] 진영 선택 완료
-            </div>
-            <div class='status-sub'>완전 익명으로 처리됩니다 · 마음이 바뀌면 취소할 수 있어요</div>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+        status_html = (
+            "<div class='status-box' style='border-color:rgba(255,255,255,0.12);'>"
+            f"<div class='status-icon'>{icon_picked}</div>"
+            "<div>"
+            f"<div class='status-title' style='color:{color_picked};'>"
+            f"[{name_picked}] 진영 선택 완료"
+            "</div>"
+            "<div class='status-sub'>완전 익명으로 처리됩니다 &middot; 마음이 바뀌면 취소할 수 있어요</div>"
+            "</div>"
+            "</div>"
+        )
+        st.markdown(status_html, unsafe_allow_html=True)
 
         if st.button("🔄  선택 취소하기", use_container_width=True, key="cancel_vote"):
             vdb2 = load_vote_db()
@@ -656,36 +697,41 @@ def render():
             total_h = ta + tb or 1
             pa = round(ta / total_h * 100)
             pb = 100 - pa
+            h_sa = safe_md(h.get('side_a', ''))
+            h_sb = safe_md(h.get('side_b', ''))
+            h_tp = safe_md(h.get('topic', ''))
             if ta > tb:
-                badge_cls, badge_txt = "hist-badge-a", f"{html.escape(h['side_a'])} 승 🎉"
+                badge_cls, badge_txt = "hist-badge-a", h_sa + " 승 🎉"
             elif tb > ta:
-                badge_cls, badge_txt = "hist-badge-b", f"{html.escape(h['side_b'])} 승 🎉"
+                badge_cls, badge_txt = "hist-badge-b", h_sb + " 승 🎉"
             else:
                 badge_cls, badge_txt = "hist-badge-tie", "🤝 무승부"
 
             date_str = h.get('ended', '')
-            rows_html += f"""
-            <div class='hist-card'>
-              <div class='hist-top'>
-                <div class='hist-topic'>{html.escape(h['topic'])}</div>
-                <div class='hist-badge {badge_cls}'>{badge_txt}</div>
-              </div>
-              <div class='hist-mini-bar'>
-                <div class='hist-fill-a' style='width:{pa}%'></div>
-                <div class='hist-fill-b' style='width:{pb}%'></div>
-              </div>
-              <div class='hist-meta'>
-                <span>{html.escape(h['side_a'])} {pa}% · {html.escape(h['side_b'])} {pb}%</span>
-                <span>{total_h}명 참여 · {date_str}</span>
-              </div>
-            </div>"""
+            rows_html += (
+                "<div class='hist-card'>"
+                "<div class='hist-top'>"
+                f"<div class='hist-topic'>{h_tp}</div>"
+                f"<div class='hist-badge {badge_cls}'>{badge_txt}</div>"
+                "</div>"
+                "<div class='hist-mini-bar'>"
+                f"<div class='hist-fill-a' style='width:{pa}%'></div>"
+                f"<div class='hist-fill-b' style='width:{pb}%'></div>"
+                "</div>"
+                "<div class='hist-meta'>"
+                f"<span>{h_sa} {pa}% · {h_sb} {pb}%</span>"
+                f"<span>{total_h}명 참여 · {date_str}</span>"
+                "</div>"
+                + "</div>"
+            )
 
-        st.markdown(f"""
-        <div class='hist-section'>
-          <div class='hist-head'>지난 배틀 결과</div>
-          {rows_html}
-        </div>
-        """, unsafe_allow_html=True)
+        hist_section_html = (
+            "<div class='hist-section'>"
+            "<div class='hist-head'>지난 배틀 결과</div>"
+            + rows_html
+            + "</div>"
+        )
+        st.markdown(hist_section_html, unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
     st.markdown(AUTO_REFRESH_JS, unsafe_allow_html=True)
@@ -749,13 +795,11 @@ def render():
                     st.error("질문과 양쪽 진영 이름을 모두 입력해주세요.")
 
         with st.expander("📊 현재 통계 (관리자 전용)", expanded=False):
-            st.markdown(f"""
-            - **주제:** {cur['topic']}
-            - **A 진영 ({cur['side_a']}):** {cnt_a}표 ({pct_a}%)
-            - **B 진영 ({cur['side_b']}):** {cnt_b}표 ({pct_b}%)
-            - **총 참여:** {total}명
-            - **투표자 수 (익명 처리):** {total}명 (개인 정보 미노출)
-            """)
+            # st.write는 마크다운을 안전하게 처리
+            st.write(f"**주제:** {cur['topic']}")
+            st.write(f"**A 진영 ({cur['side_a']}):** {cnt_a}표 ({pct_a}%)")
+            st.write(f"**B 진영 ({cur['side_b']}):** {cnt_b}표 ({pct_b}%)")
+            st.write(f"**총 참여:** {total}명 (개인 정보 미노출 · 완전 익명)")
             if st.button("🗑️ 현재 투표 초기화", key="adm_reset"):
                 vdb2 = load_vote_db()
                 vdb2["current"]["votes_a"] = []
