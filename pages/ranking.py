@@ -1,6 +1,7 @@
 # pages/ranking.py
 import streamlit as st
 import time  # time 모듈 추가
+import html  # 👈 XSS 방어(HTML 이스케이프)를 위한 모듈 추가
 from datetime import datetime
 from utils.config import KST, estate_config, FORGE_DATA
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown
@@ -141,6 +142,9 @@ def render(market, nw):
                     border = "border-left: 4px solid #00E5FF;" if is_me else "border-left: 4px solid #334155;"
                     me_badge = " <span style='background:#00E5FF;color:#000;font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:900;'>나</span>" if is_me else ""
                     
+                    # 🛡️ XSS 방어: HTML 태그를 단순 문자로 변환하여 실행 방지
+                    safe_comment = html.escape(c.get('comment', ''))
+                    
                     st.markdown(f"""
                     <div class='card' style='margin:8px 0; padding:15px; {border} background: rgba(30, 41, 59, 0.4);'>
                         <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
@@ -150,6 +154,6 @@ def render(market, nw):
                             </span>
                             <span style='color:#64748B; font-size:0.8rem;'>{c.get('time','')}</span>
                         </div>
-                        <div style='color:#E2E8F0; font-size:0.95rem; line-height: 1.5;'>{c['comment']}</div>
+                        <div style='color:#E2E8F0; font-size:0.95rem; line-height: 1.5;'>{safe_comment}</div>
                     </div>
                     """, unsafe_allow_html=True)
