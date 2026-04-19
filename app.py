@@ -7,7 +7,7 @@ from datetime import datetime
 # ==============================
 # 1. 코어 모듈 임포트
 # ==============================
-from utils.config import MARKET_FILE, USERS_FILE, KST
+from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE # 👈 MESSAGES_FILE 상수 추가!
 from utils.database import load_db, save_db
 from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data
 from utils.market_sync import run_market_sync
@@ -322,7 +322,8 @@ elif st.session_state.page_view == "universe":
         st.session_state.current_category = get_current_category()
 
     # UI 분기 (PC / 모바일)
-    msg_db_check = load_db("messages_db.json", {})
+    # 🛡️ MESSAGES_FILE 상수로 변경 완료
+    msg_db_check = load_db(MESSAGES_FILE, {})
     my_unread = sum(1 for m in msg_db_check.get(st.session_state.logged_in_user, {}).get("inbox", []) if not m.get("read", False))
     unread_txt = f" 🔴{my_unread}" if my_unread > 0 else ""
 
