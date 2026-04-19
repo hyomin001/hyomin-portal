@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 from utils.config import (
     KST, USERS_FILE, COMMENTS_FILE, MARKET_FILE, TXLOG_FILE,
-    REALESTATE_MARKET_FILE, CLAN_FILE, estate_config
+    REALESTATE_MARKET_FILE, CLAN_FILE, STATS_FILE, estate_config  # 👈 STATS_FILE 임포트 추가!
 )
 
 @st.cache_resource
@@ -63,6 +63,18 @@ def save_db(file, data):
     except Exception as e:
         logging.error(f"[save_db] {file} 저장 실패: {e}")
 
+# 📊 [통계 대시보드] 통계 파일 로드/저장 전용 함수 (1단계)
+def load_stats():
+    return load_db(STATS_FILE, {
+        "daily_visitors": {},   # 예: {"2026-04-19": ["uid1","uid2"]}
+        "total_signups": 0,
+        "game_counts": {},      # 예: {"슬롯": 42, "블랙잭": 17 ...}
+        "daily_volume": {}      # 예: {"2026-04-19": 500000000}
+    })
+
+def save_stats(data):
+    save_db(STATS_FILE, data)
+
 def log_tx(uid: str, category: str, desc: str, amount: int):
     logs = load_db(TXLOG_FILE, {})
     if uid not in logs: logs[uid] = []
@@ -72,6 +84,15 @@ def log_tx(uid: str, category: str, desc: str, amount: int):
     })
     logs[uid] = logs[uid][:200]
     save_db(TXLOG_FILE, logs)
+
+    # 📊 [통계 대시보드] 거래량 자동 집계 (6단계)
+    if category in ["주식매수", "주식매도", "코인매수", "코인매도"]:
+        stats = load_stats()
+        today = datetime.now(KST).strftime("%Y-%m-%d")
+        vol = stats.get("daily_volume", {})
+        vol[today] = vol.get(today, 0) + abs(amount)
+        stats["daily_volume"] = vol
+        save_stats(stats)
 
 def load_estate_market():
     default = {"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}}
