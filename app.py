@@ -7,7 +7,7 @@ from datetime import datetime
 # ==============================
 # 1. 코어 모듈 임포트
 # ==============================
-from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE # 👈 MESSAGES_FILE 상수 추가!
+from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE
 from utils.database import load_db, save_db
 from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data
 from utils.market_sync import run_market_sync
@@ -20,6 +20,14 @@ st.set_page_config(page_title="HYOMIN PORTAL", page_icon="🌐", layout="wide", 
 
 # [핵심 방어막] 사용자의 행동 전 최신 정보 강제 동기화
 pull_user_data()
+
+# 📊 [통계 대시보드] 로그인된 유저라면 last_seen 갱신 (4단계)
+if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
+    users_last_seen = load_db(USERS_FILE, {})
+    ls_uid = st.session_state.logged_in_user
+    if ls_uid in users_last_seen:
+        users_last_seen[ls_uid]['last_seen'] = time.time()
+        save_db(USERS_FILE, users_last_seen)
 
 # 라우팅(화면 이동)을 위한 세션 상태 초기화
 if "page_view" not in st.session_state:
@@ -212,6 +220,19 @@ elif st.session_state.page_view == "login":
                         'bulk_trade_count': u.get('bulk_trade_count', 0),
                         'last_estate_reset': u.get('last_estate_reset', 0),
                     })
+                    
+                    # 📊 [통계 대시보드] 오늘 방문자 기록 (2단계)
+                    from utils.database import load_stats, save_stats
+                    stats = load_stats()
+                    today = datetime.now(KST).strftime("%Y-%m-%d")
+                    visitors = stats.get("daily_visitors", {})
+                    if today not in visitors:
+                        visitors[today] = []
+                    if uid not in visitors[today]:
+                        visitors[today].append(uid)
+                    stats["daily_visitors"] = visitors
+                    save_stats(stats)
+
                     st.success("로그인 성공!")
                     time.sleep(0.5)
                     st.session_state.page_view = "portal"
@@ -246,6 +267,13 @@ elif st.session_state.page_view == "login":
                         "last_estate_reset": 0, "bulk_trade_date": "", "bulk_trade_count": 0,
                     }
                     save_db(USERS_FILE, users)
+                    
+                    # 📊 [통계 대시보드] 누적 가입자 기록 (3단계)
+                    from utils.database import load_stats, save_stats
+                    stats = load_stats()
+                    stats["total_signups"] = stats.get("total_signups", 0) + 1
+                    save_stats(stats)
+                    
                     st.success("🎉 가입 성공! 로그인 탭에서 로그인해주세요.")
     st.stop()
 
