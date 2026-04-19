@@ -305,7 +305,7 @@ elif st.session_state.page_view == "universe":
 
     CATEGORY_MENUS = {
         "📈 경제": ["🏠 홈 광장 (튜토리얼)", "📈 주식 트레이딩", "🪙 코인 거래소", "🏢 부동산 거래소", "🏦 은행 (대출/송금)", "📜 내 거래 기록"],
-        "🎮 미니게임": ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "💻 정처기 CBT", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
+        "🎮 미니게임": ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "🃏 텍사스 홀덤", "💻 정처기 CBT", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
         "🌟 성장 & 혜택": ["📅 일일 퀘스트", "👑 칭호 상점"],
         "⚽ 스포츠": ["⚽ 구단주 시뮬레이터", "⚽ 조기축구 승부차기", "🏎️ 하이퍼카 레이싱", "🛠️ 커스텀 튜닝 차고지"],
         "👥 커뮤니티": ["🏰 길드/클랜", "🏅 [시즌1]랭킹 & 게시판", "✉️ 개인 쪽지함"],
@@ -408,6 +408,8 @@ elif st.session_state.page_view == "universe":
         from pages.games import slot; slot.render(market, nw)
     elif menu == "🃏 블랙잭 카지노":
         from pages.games import blackjack; blackjack.render(market, nw)
+    elif menu == "🃏 텍사스 홀덤":
+        from pages.games import holdem; holdem.render(market, nw)
     elif menu == "⛏️ 광산 (노가다)":
         from pages.games import mine; mine.render(market, nw)
     elif menu == "💻 정처기 CBT":
