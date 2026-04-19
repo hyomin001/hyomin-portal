@@ -5,7 +5,7 @@ import html  # 👈 XSS 방어(HTML 이스케이프)를 위한 모듈
 from datetime import datetime
 from utils.config import KST
 from utils.core import cooldown_remaining, set_cooldown
-from utils.config import USERS_FILE
+from utils.config import USERS_FILE, MESSAGES_FILE  # 👈 MESSAGES_FILE 상수 임포트 추가!
 from utils.database import load_db, save_db
 
 def render(market, nw):
@@ -13,7 +13,7 @@ def render(market, nw):
     st.markdown("<div style='color:#888;margin-bottom:16px;'>다른 시민들과 은밀하게 작전을 모의하거나 흥정하세요. 시스템은 여러분의 대화를 엿듣지 않습니다. (아마도요)</div>", unsafe_allow_html=True)
 
     uid = st.session_state.logged_in_user
-    msg_db = load_db("messages_db.json", {})
+    msg_db = load_db(MESSAGES_FILE, {})  # 👈 상수로 교체
     
     if uid not in msg_db:
         msg_db[uid] = {"inbox": [], "outbox": []}
@@ -28,14 +28,14 @@ def render(market, nw):
                 m["read"] = True
                 unread_exist = True
         if unread_exist:
-            save_db("messages_db.json", msg_db)
+            save_db(MESSAGES_FILE, msg_db)  # 👈 상수로 교체
             
         if not inbox:
             st.info("받은 쪽지가 없습니다.")
         else:
             if st.button("🗑️ 받은 쪽지 모두 비우기", use_container_width=True, type="secondary"):
                 msg_db[uid]["inbox"] = []
-                save_db("messages_db.json", msg_db)
+                save_db(MESSAGES_FILE, msg_db)  # 👈 상수로 교체
                 st.success("받은 쪽지함이 비워졌습니다.")
                 st.rerun()
                 
@@ -64,7 +64,7 @@ def render(market, nw):
                 """, unsafe_allow_html=True)
                 
             if needs_save:
-                save_db("messages_db.json", msg_db)
+                save_db(MESSAGES_FILE, msg_db)  # 👈 상수로 교체
 
     with tab_out:
         outbox = msg_db[uid].get("outbox", [])
@@ -73,7 +73,7 @@ def render(market, nw):
         else:
             if st.button("🗑️ 보낸 쪽지 모두 비우기", key="clear_outbox", use_container_width=True, type="secondary"):
                 msg_db[uid]["outbox"] = []
-                save_db("messages_db.json", msg_db)
+                save_db(MESSAGES_FILE, msg_db)  # 👈 상수로 교체
                 st.success("보낸 쪽지함이 비워졌습니다.")
                 st.rerun()
                 
@@ -124,7 +124,7 @@ def render(market, nw):
                     msg_db[target_user]["inbox"].append(new_msg_in)
                     msg_db[uid]["outbox"].append(new_msg_out)
                     
-                    save_db("messages_db.json", msg_db)
+                    save_db(MESSAGES_FILE, msg_db)  # 👈 상수로 교체
                     st.success(f"✅ {target_user}님에게 쪽지를 성공적으로 전송했습니다!")
                     time.sleep(1)
                     st.rerun()
