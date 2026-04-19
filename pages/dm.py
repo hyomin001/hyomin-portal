@@ -1,7 +1,7 @@
 # pages/dm.py
 import streamlit as st
 import time
-import html
+import html  # 👈 XSS 방어(HTML 이스케이프)를 위한 모듈 추가
 from datetime import datetime
 from utils.config import KST
 from utils.core import cooldown_remaining, set_cooldown
@@ -46,7 +46,8 @@ def render(market, nw):
                 if not m.get("read_before", False):
                     m["read_before"] = True 
                     needs_save = True
-
+                
+                # 🛡️ XSS 방어: HTML 태그를 단순 문자로 변환하여 실행 방지
                 safe_content = html.escape(m.get('content', ''))
                 
                 st.markdown(f"""
@@ -56,7 +57,7 @@ def render(market, nw):
                     <span style='color:#777;font-size:0.75rem;'>{m['time']}</span>
                   </div>
                   <div style='color:#CBD5E1;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
-                    {m['content']}
+                    {safe_content}
                   </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -77,6 +78,10 @@ def render(market, nw):
                 
             st.write("---")
             for m in reversed(outbox[-50:]):
+                
+                # 🛡️ XSS 방어: 보낸 쪽지함에도 동일하게 적용
+                safe_content = html.escape(m.get('content', ''))
+                
                 st.markdown(f"""
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #FFD600; background:rgba(255,215,0,0.02);'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
@@ -84,7 +89,7 @@ def render(market, nw):
                     <span style='color:#777;font-size:0.75rem;'>{m['time']}</span>
                   </div>
                   <div style='color:#94A3B8;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
-                    {m['content']}
+                    {safe_content}
                   </div>
                 </div>
                 """, unsafe_allow_html=True)
