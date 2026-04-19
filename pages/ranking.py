@@ -70,20 +70,27 @@ def render(market, nw):
             me       = "🫵" if r['uid'] == st.session_state.logged_in_user else ""
             nw_color = "#FFD600" if i==0 else "#C0C0C0" if i==1 else "#CD7F32" if i==2 else "#00E5FF"
             
+            # 🛡️ XSS 방어: 랭킹에 표시되는 모든 유저 데이터를 이스케이프 처리
+            s_uid    = html.escape(r['uid'])
+            s_title  = html.escape(r['title'])
+            s_weapon = html.escape(r['weapon'])
+            s_car    = html.escape(r['car'])
+            s_estate = html.escape(r['estate'])
+            
             st.markdown(f"""
 <div class='card' style='display:flex; flex-direction:column; padding:16px 20px; margin:8px 0;'>
   <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;'>
     <div style='display:flex; align-items:center;'>
       <span style='font-size:1.3rem; min-width:40px;'>{medals[i]}</span>
-      <span style='font-weight:900; color:#CBD5E1; font-size:1.1rem; margin-right:10px;'>{r['uid']} {me}</span>
-      <span style='color:#888; font-size:0.85rem;'>{r['title']}</span>
+      <span style='font-weight:900; color:#CBD5E1; font-size:1.1rem; margin-right:10px;'>{s_uid} {me}</span>
+      <span style='color:#888; font-size:0.85rem;'>{s_title}</span>
     </div>
     <span style='font-weight:900; color:{nw_color}; font-size:1.1rem;'>{format_korean_money(r['nw'])}</span>
   </div>
   <div style='background:rgba(255,255,255,0.03); border-radius:8px; padding:10px 14px; font-size:0.88rem; color:#94A3B8; line-height:1.7;'>
-    <div><b>🗡️ 명검:</b> <span style='color:#00FF88;'>{r['weapon']}</span></div>
-    <div><b>🏎️ 차량:</b> <span style='color:#00E5FF;'>{r['car']}</span></div>
-    <div><b>🏢 부동산:</b> <span style='color:#FFD600;'>{r['estate']}</span></div>
+    <div><b>🗡️ 명검:</b> <span style='color:#00FF88;'>{s_weapon}</span></div>
+    <div><b>🏎️ 차량:</b> <span style='color:#00E5FF;'>{s_car}</span></div>
+    <div><b>🏢 부동산:</b> <span style='color:#FFD600;'>{s_estate}</span></div>
   </div>
 </div>""", unsafe_allow_html=True)
 
@@ -142,18 +149,20 @@ def render(market, nw):
                     border = "border-left: 4px solid #00E5FF;" if is_me else "border-left: 4px solid #334155;"
                     me_badge = " <span style='background:#00E5FF;color:#000;font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:900;'>나</span>" if is_me else ""
                     
-                    # 🛡️ XSS 방어: HTML 태그를 단순 문자로 변환하여 실행 방지
-                    safe_comment = html.escape(c.get('comment', ''))
+                    # 🛡️ XSS 방어: 이름, 칭호, 내용 모두 안전하게 변환
+                    s_name    = html.escape(c['name'])
+                    s_ctitle  = html.escape(c.get('title', ''))
+                    s_comment = html.escape(c.get('comment', ''))
                     
                     st.markdown(f"""
                     <div class='card' style='margin:8px 0; padding:15px; {border} background: rgba(30, 41, 59, 0.4);'>
                         <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
                             <span>
-                                <b style='color:#FFFFFF; font-size:1.05rem;'>{c['name']}</b>{me_badge}
-                                <span style='color:#94A3B8; font-size:0.85rem; margin-left:8px;'>{c.get('title','')}</span>
+                                <b style='color:#FFFFFF; font-size:1.05rem;'>{s_name}</b>{me_badge}
+                                <span style='color:#94A3B8; font-size:0.85rem; margin-left:8px;'>{s_ctitle}</span>
                             </span>
                             <span style='color:#64748B; font-size:0.8rem;'>{c.get('time','')}</span>
                         </div>
-                        <div style='color:#E2E8F0; font-size:0.95rem; line-height: 1.5;'>{safe_comment}</div>
+                        <div style='color:#E2E8F0; font-size:0.95rem; line-height: 1.5;'>{s_comment}</div>
                     </div>
                     """, unsafe_allow_html=True)
