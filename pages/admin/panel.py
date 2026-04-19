@@ -3,12 +3,18 @@ import streamlit as st
 import time
 import os
 import pandas as pd
+import html  # 👈 XSS 방어(HTML 이스케이프) 모듈 추가
 from datetime import datetime
 from utils.config import KST, stock_config, estate_config, USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE, FORGE_DATA
 from utils.core import hash_pw, format_korean_money, sync_user_data, get_net_worth
 from utils.database import load_db, save_db, save_market, load_estate_market, save_estate_market, load_clan_db, save_clan_db, get_user_clan
 
 def render(market, nw):
+    # 🛡️ [보안] 함수 자체에도 admin 검증 — 라우팅 우회 방어
+    if st.session_state.get('logged_in_user') != 'admin':
+        st.error("⛔ 접근 권한이 없습니다.")
+        st.stop()
+
     st.title("🛠️ 창조주 통제소")
     st.markdown("<div style='color:#FF4B4B;font-size:0.85rem;margin-bottom:10px;'>⚠️ 창조주 전용 패널입니다. 이곳의 모든 조작은 우주(서버) 전체에 즉시 반영됩니다.</div>", unsafe_allow_html=True)
 
@@ -274,14 +280,15 @@ def render(market, nw):
             for idx, c in reversed(list(enumerate(all_c))):
                 col_txt, col_btn = st.columns([6, 1])
                 with col_txt:
-                    st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;'><b style='color:#00E5FF;'>{c['name']}</b>: {c['comment']} <span style='color:#888; font-size:0.8rem;'>({c.get('time','')})</span></div>", unsafe_allow_html=True)
+                    # 🛡️ XSS 방어: 게시판 글 내용 HTML 이스케이프 적용
+                    safe_comment = html.escape(c.get('comment', ''))
+                    st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;'><b style='color:#00E5FF;'>{c['name']}</b>: {safe_comment} <span style='color:#888; font-size:0.8rem;'>({c.get('time','')})</span></div>", unsafe_allow_html=True)
                 with col_btn:
                     if st.button("🗑️ 삭제", key=f"del_board_{idx}", use_container_width=True):
                         all_c.pop(idx) 
                         save_db(COMMENTS_FILE, all_c); st.rerun()
 
     with t4:
-        # [신규 추가] 점검 모드 기능 업그레이드!
         st.markdown("### 🚧 서버 점검 관리 (Maintenance Mode)")
         st.caption("점검 모드를 켜면 일반 유저의 유니버스 접속이 차단되며 포털 첫 화면에 점검 배너가 뜹니다.")
 
@@ -521,11 +528,15 @@ def render(market, nw):
                 amt   = log['amount']
                 color = "#FF4B4B" if amt > 0 else "#4B9EFF"
                 sign  = "+" if amt > 0 else ""
+                
+                # 🛡️ XSS 방어: 활동 로그 내용 HTML 이스케이프 적용
+                safe_desc = html.escape(log.get('desc', ''))
+                
                 st.markdown(f"""
                 <div style='font-size:0.85rem; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);'>
                     <span style='color:#777;'>[{log['time']}]</span> 
                     <b style='color:#00E5FF;'>{log['uid']}</b>님이 
-                    <span style='color:#94A3B8;'>{log['desc']}</span> 
+                    <span style='color:#94A3B8;'>{safe_desc}</span> 
                     <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
                 </div>
                 """, unsafe_allow_html=True)
@@ -603,7 +614,7 @@ def render(market, nw):
           <div style='color:#94A3B8;'>잔여: <b style='color:#00FF88;'>{remain_sec // 86400}일 {(remain_sec % 86400) // 3600}시간</b></div>
         </div>""", unsafe_allow_html=True)
 
-        st.markdown("#### 🛠️ 시즌 번호 강제 조정")
+        st.markdown("#### 🛠️ 시즌 번 강제 조정")
         c_sn1, c_sn2 = st.columns([3, 1])
         with c_sn1: new_sn = st.number_input("변경할 시즌 번호", min_value=1, value=int(cur_season), key="admin_manual_sn")
         with c_sn2:
@@ -761,11 +772,15 @@ def render(market, nw):
                 with col_in:
                     st.markdown(f"**📥 {target_u}의 받은 쪽지**")
                     for m in reversed(u_msgs.get("inbox", [])):
-                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'><b style='color:#00E5FF;'>{m['sender']}</b> → {m['content']} <br><span style='color:#777;'>{m['time']}</span></div>", unsafe_allow_html=True)
+                        # 🛡️ XSS 방어 적용
+                        safe_content = html.escape(m.get('content', ''))
+                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'><b style='color:#00E5FF;'>{m['sender']}</b> → {safe_content} <br><span style='color:#777;'>{m['time']}</span></div>", unsafe_allow_html=True)
                 with col_out:
                     st.markdown(f"**📤 {target_u}의 보낸 쪽지**")
                     for m in reversed(u_msgs.get("outbox", [])):
-                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>→ <b style='color:#FFD600;'>{m['receiver']}</b>: {m['content']} <br><span style='color:#777;'>{m['time']}</span></div>", unsafe_allow_html=True)
+                        # 🛡️ XSS 방어 적용
+                        safe_content = html.escape(m.get('content', ''))
+                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>→ <b style='color:#FFD600;'>{m['receiver']}</b>: {safe_content} <br><span style='color:#777;'>{m['time']}</span></div>", unsafe_allow_html=True)
 
             with admin_sub_tabs[1]:
                 st.markdown("**🌐 우주 전체 쪽지 타임라인**")
@@ -775,7 +790,9 @@ def render(market, nw):
                         global_logs.append({"time": m['time'], "from": sender_id, "to": m['receiver'], "content": m['content']})
                 global_logs.sort(key=lambda x: x['time'], reverse=True)
                 for log in global_logs[:100]:
-                    st.markdown(f"<div style='font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding:5px 0;'><span style='color:#777;'>[{log['time']}]</span> <b style='color:#00E5FF;'>{log['from']}</b> ➔ <b style='color:#FFD600;'>{log['to']}</b> : {log['content']}</div>", unsafe_allow_html=True)
+                    # 🛡️ XSS 방어 적용
+                    safe_content = html.escape(log.get('content', ''))
+                    st.markdown(f"<div style='font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding:5px 0;'><span style='color:#777;'>[{log['time']}]</span> <b style='color:#00E5FF;'>{log['from']}</b> ➔ <b style='color:#FFD600;'>{log['to']}</b> : {safe_content}</div>", unsafe_allow_html=True)
 
             with admin_sub_tabs[2]:
                 if st.button("💣 우주 전체 쪽지 DB 초기화", use_container_width=True, type="secondary"):
