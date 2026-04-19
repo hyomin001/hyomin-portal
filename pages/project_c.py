@@ -1137,15 +1137,15 @@ def render():
 
         st.markdown("""
         <div style='font-family:"JetBrains Mono",monospace; padding: 28px 0 12px; text-align:center;'>
-          <div class='glitch-text' data-text='&gt;_ THE TERMINAL 방탈출'
+          <div class='glitch-text' data-text='💻 THE TERMINAL 방탈출'
                style='font-size:2rem; display:inline-block; margin-bottom:8px;'>
-            &gt;_ THE TERMINAL 방탈출
+            💻 THE TERMINAL 방탈출
           </div>
           <div style='color:#3a6a3a; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
-            효민 유니버스 ARG · 방탈출 · 해킹 시뮬레이터
+            초고난이도 커맨드라인 해킹 시뮬레이터
           </div>
           <div style='color:#1a3a1a; font-size:0.75rem; margin-top:6px;'>
-            마우스는 잊어라 — 오직 커맨드라인으로만 진실에 접근할 수 있다
+            마우스는 잊어라 — 오직 커맨드라인으로 숨겨진 단서를 찾아 방을 탈출하라
           </div>
         </div>
         """, unsafe_allow_html=True)
