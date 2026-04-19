@@ -160,7 +160,7 @@ if st.session_state.page_view == "portal":
                 st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("<div class='banner-card'><h2>💻 THE TERMINAL</h2><p>커맨드라인으로 효민 유니버스의 흑막을 파헤쳐라</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>💻 THE TERMINAL 방탈출</h2><p>오직 커맨드라인으로 숨겨진 단서를 찾아 방을 탈출하라</p></div>", unsafe_allow_html=True)
         if st.button("터미널 접속 >_", key="b3", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_c"
