@@ -8,7 +8,8 @@ from datetime import datetime
 # ==============================
 # 1. 코어 모듈 임포트
 # ==============================
-from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE
+# 💡 [추가] 랭킹 1위 자산 계산을 위해 estate_config, FORGE_DATA 임포트 추가
+from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA
 from utils.database import load_db, save_db, load_stats, save_stats
 from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
 from utils.market_sync import run_market_sync
@@ -128,6 +129,7 @@ h1, h2, h3, h4, p, span, div { color: #0F172A; }
 # ==============================
 if st.session_state.page_view == "portal":
     st.markdown(PORTAL_LIGHT_CSS, unsafe_allow_html=True)
+    market = load_db(MARKET_FILE, {}) # 포털용 임시 로드
 
     col_empty, col_btn = st.columns([8, 2])
     with col_btn:
@@ -157,12 +159,32 @@ if st.session_state.page_view == "portal":
         _online    = get_online_users()
         _today_v   = len(_stats.get("daily_visitors", {}).get(_today, []))
         
-        # 💡 [핵심 수정] 단순 가입자 수가 아닌, DB의 실제 계정 수 (admin 제외) 계산
         _users_db_for_stats = load_db(USERS_FILE, {})
         _total_s   = len([u for u in _users_db_for_stats.keys() if u != "admin"])
         
-        _today_vol = _stats.get("daily_volume", {}).get(_today, 0)
-        _vol_str   = format_korean_money(_today_vol) if _today_vol else "0원"
+        # 👑 [랭킹 1위 계산] 순자산 1위 유저 찾기
+        _top_uid = "없음"
+        _top_nw = 0
+        _prices = {k: v['price'] for k, v in market.get('stock_data', {}).items()}
+        
+        for _u, _udata in _users_db_for_stats.items():
+            if _u == "admin": continue
+            _w = _udata.get('cash', 0) - _udata.get('loan', 0)
+            for _sid, _p_data in _udata.get('portfolio', {}).items():
+                if _sid in _prices: _w += _p_data.get('qty', 0) * _prices[_sid]
+            for _cid, _cinfo in _udata.get('crypto_portfolio', {}).items():
+                _cprice = market.get('crypto_data', {}).get(_cid, {}).get('price', 0)
+                _w += _cinfo.get('qty', 0) * _cprice
+            for _eid, _count in _udata.get('real_estate', {}).items():
+                if _eid in estate_config: _w += estate_config[_eid]['base_price'] * _count * 0.8
+            _w_lv = _udata.get('weapon_level', 0)
+            if _w_lv > 0: _w += FORGE_DATA[_w_lv]['sell']
+            
+            if _w > _top_nw:
+                _top_nw = _w
+                _top_uid = _u
+
+        _nw_str = format_korean_money(_top_nw) if _top_nw > 0 else "0원"
         
         st.markdown("<div class='stat-section-title'>📡 실시간 서비스 현황</div>", unsafe_allow_html=True)
         st.markdown(f"""
@@ -170,10 +192,9 @@ if st.session_state.page_view == "portal":
             <div class="stat-card online"><div class="stat-icon">🟢</div><div class="stat-value">{_online}명</div><div class="stat-label">지금 접속 중</div></div>
             <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">{_today_v}명</div><div class="stat-label">오늘 방문자</div></div>
             <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">{_total_s}명</div><div class="stat-label">누적 가입자</div></div>
-            <div class="stat-card volume"><div class="stat-icon">💹</div><div class="stat-value">{_vol_str}</div><div class="stat-label">오늘 누적 거래량</div></div>
+            <div class="stat-card volume"><div class="stat-icon">👑</div><div class="stat-value" style="font-size:1.4rem;">{_nw_str}</div><div class="stat-label">1위: {_top_uid}</div></div>
         </div>""", unsafe_allow_html=True)
     except Exception as e:
-        # 혹시나 통계 로드 중 에러가 나더라도 포털 화면이 깨지지 않도록 방어
         pass
 
     st.write("---")
