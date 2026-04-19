@@ -1,5 +1,5 @@
 # pages/project_b.py
-# 🗳️ 효민 월드 배틀 — 실시간 블라인드 진영 투표
+# 🗳️ 효민 월드 배틀 — 실시간 진영 투표 (Modern UI & Blind Voting)
 import streamlit as st
 import time
 import html
@@ -12,7 +12,7 @@ VOTE_FILE = "vote_db.json"
 def load_vote_db():
     return load_db(VOTE_FILE, {
         "current": {
-            "topic":   "오늘의 블라인드 매치를 기다리는 중...",
+            "topic":   "오늘의 질문을 기다리는 중...",
             "side_a":  "A",
             "side_b":  "B",
             "votes_a": [],
@@ -25,83 +25,83 @@ def load_vote_db():
 def save_vote_db(data):
     save_db(VOTE_FILE, data)
 
-# 🌟 고퀄리티 프리미엄 UI CSS (Toss / Apple 감성)
+# 모던 UI를 위한 커스텀 CSS (Pretendard 폰트 적용 및 글래스모피즘/소프트 섀도우)
 VOTE_CSS = """
 <style>
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css");
 
-.vw-container { 
-    font-family: 'Pretendard', sans-serif; 
-    max-width: 800px; 
-    margin: 0 auto; 
-    padding: 20px 10px;
-    color: #1E293B;
-}
+.vw { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 10px; }
 
-/* 상단 라이브 뱃지 */
-.premium-badge {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    background: rgba(15, 23, 42, 0.04); border: 1px solid rgba(15, 23, 42, 0.08);
-    border-radius: 30px; padding: 8px 18px; margin-bottom: 30px;
-    font-size: 0.85rem; font-weight: 700; color: #475569;
+/* 뱃지 & 헤더 */
+.live-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(239, 68, 68, 0.1); color: #EF4444;
+    border-radius: 20px; padding: 6px 16px; margin-bottom: 24px;
+    font-size: 0.85rem; font-weight: 700; letter-spacing: 0.5px;
 }
-.live-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: #3B82F6;
-    animation: vpulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-@keyframes vpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #EF4444; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-/* 타이틀 섹션 */
-.topic-header { text-align: center; margin-bottom: 40px; }
-.topic-eyebrow { font-size: 0.85rem; font-weight: 800; color: #3B82F6; letter-spacing: 1px; margin-bottom: 12px; }
-.topic-title { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900; color: #0F172A; line-height: 1.3; word-break: keep-all; }
-.topic-desc { font-size: 1rem; color: #64748B; margin-top: 12px; font-weight: 500; }
+.topic-wrapper { text-align: center; margin-bottom: 40px; }
+.topic-title { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; color: #111827; line-height: 1.3; word-break: keep-all; }
+.topic-desc { font-size: 0.95rem; color: #6B7280; margin-top: 12px; font-weight: 500; }
 
-/* 블라인드 매치 카드 (투표 전) */
-.blind-card {
-    background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 24px;
-    padding: 50px 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
-    margin-bottom: 20px;
+/* 카드 섹션 */
+.arena { display: flex; gap: 16px; margin-bottom: 30px; align-items: stretch; position: relative; }
+.card { 
+    flex: 1; border-radius: 24px; padding: 32px 20px; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #FFFFFF; border: 1px solid #F3F4F6;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03); position: relative; overflow: hidden;
 }
-.blind-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.8; }
-.blind-text { font-size: 1.2rem; font-weight: 800; color: #0F172A; margin-bottom: 5px; }
-.blind-sub { font-size: 0.9rem; color: #94A3B8; font-weight: 500; }
+.card-a { border-top: 6px solid #3B82F6; }
+.card-b { border-top: 6px solid #EF4444; }
 
-/* 결과 공개 카드 (투표 후) */
-.result-arena { display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px; }
-.result-row { 
-    display: flex; align-items: center; justify-content: space-between;
-    background: #F8FAFC; border-radius: 20px; padding: 24px 30px;
-    position: relative; overflow: hidden; border: 1px solid #F1F5F9;
-}
-.result-row.winner { background: #FFFFFF; border: 1px solid #E2E8F0; box-shadow: 0 8px 30px rgba(0,0,0,0.04); }
-.result-row.winner::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
-    background: #3B82F6; border-radius: 6px 0 0 6px;
-}
-.result-info { display: flex; flex-direction: column; z-index: 1; }
-.result-name { font-size: 1.3rem; font-weight: 800; color: #0F172A; margin-bottom: 4px; }
-.result-pct { font-size: 2.2rem; font-weight: 900; color: #3B82F6; line-height: 1; }
-.result-row:not(.winner) .result-pct { color: #94A3B8; }
-.result-bar-bg { width: 100%; height: 8px; background: #F1F5F9; border-radius: 10px; margin-top: 15px; overflow: hidden; position: relative; z-index: 1; }
-.result-bar-fill { height: 100%; background: #3B82F6; border-radius: 10px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
-.result-row:not(.winner) .result-bar-fill { background: #CBD5E1; }
+.card-name { font-size: 1.4rem; font-weight: 800; color: #1F2937; text-align: center; z-index: 1; word-break: keep-all; }
+.card-result-wrap { margin-top: 16px; text-align: center; z-index: 1; animation: fadeIn 0.5s ease; }
+.card-count { font-size: 2.5rem; font-weight: 800; color: #111827; line-height: 1; }
+.card-unit { font-size: 1rem; font-weight: 600; color: #6B7280; margin-left: 4px; }
+.card-pct { font-size: 1.1rem; font-weight: 700; margin-top: 8px; }
+.pct-a { color: #3B82F6; }
+.pct-b { color: #EF4444; }
 
-/* 내가 투표한 항목 뱃지 */
-.my-pick-badge {
-    background: #0F172A; color: #FFFFFF; font-size: 0.75rem; font-weight: 700;
-    padding: 4px 10px; border-radius: 12px; margin-left: 10px; vertical-align: middle;
+.vs-badge { 
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 40px; height: 40px; border-radius: 50%; background: #F9FAFB; color: #9CA3AF; 
+    font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; justify-content: center; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #FFFFFF; z-index: 10;
 }
 
-/* 역대 전적 (깔끔한 리스트형) */
-.history-title { font-size: 1.1rem; font-weight: 800; color: #0F172A; margin: 40px 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #F1F5F9; }
-.history-item { 
-    display: flex; justify-content: space-between; align-items: center; 
-    padding: 16px 0; border-bottom: 1px solid #F1F5F9;
+/* 프로그레스 바 */
+.ratio-wrap { margin: 10px 0 30px; animation: fadeIn 0.5s ease; }
+.ratio-bar { height: 16px; background: #F3F4F6; border-radius: 12px; overflow: hidden; display: flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+.ratio-a { background: #3B82F6; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+.ratio-b { background: #EF4444; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+.ratio-footer { display: flex; justify-content: space-between; font-size: 0.85rem; color: #6B7280; margin-top: 10px; font-weight: 600; }
+
+/* 알림 박스 */
+.info-box { 
+    background: #F8FAFC; border-radius: 16px; padding: 16px 20px; 
+    display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
 }
-.history-topic { font-size: 0.95rem; font-weight: 600; color: #334155; flex: 1; padding-right: 20px; word-break: keep-all; }
-.history-winner { font-size: 0.9rem; font-weight: 800; color: #3B82F6; background: rgba(59, 130, 246, 0.1); padding: 6px 14px; border-radius: 20px; white-space: nowrap; }
-.history-tie { color: #64748B; background: rgba(100, 116, 139, 0.1); }
+.info-icon { font-size: 1.5rem; }
+.info-text { font-size: 0.95rem; font-weight: 700; color: #1E293B; }
+.info-sub { font-size: 0.8rem; color: #64748B; margin-top: 4px; }
+
+/* 기록 섹션 */
+.hist-section { margin-top: 40px; }
+.hist-head { font-size: 1.1rem; font-weight: 800; color: #111827; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.hist-row { 
+    display: flex; align-items: center; justify-content: space-between; padding: 16px; 
+    border-radius: 16px; background: #FFFFFF; border: 1px solid #F3F4F6; 
+    margin-bottom: 10px; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+.hist-topic { flex: 1; color: #374151; font-weight: 600; padding-right: 16px; }
+.hist-win-a { color: #3B82F6; font-weight: 700; background: rgba(59,130,246,0.1); padding: 6px 12px; border-radius: 8px; }
+.hist-win-b { color: #EF4444; font-weight: 700; background: rgba(239,68,68,0.1); padding: 6px 12px; border-radius: 8px; }
+.hist-win-tie { color: #6B7280; font-weight: 700; background: #F3F4F6; padding: 6px 12px; border-radius: 8px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 """
 
@@ -114,146 +114,165 @@ def render():
     cur      = vdb["current"]
 
     total   = len(cur["votes_a"]) + len(cur["votes_b"])
-    pct_a   = round(len(cur["votes_a"]) / total * 100) if total else 0
-    pct_b   = 100 - pct_a if total else 0
-    
+    pct_a   = round(len(cur["votes_a"]) / total * 100) if total else 50
+    pct_b   = 100 - pct_a
     voted_a = uid in cur["votes_a"]
     voted_b = uid in cur["votes_b"]
     user_voted = voted_a or voted_b
+    user_side  = "A" if voted_a else ("B" if voted_b else None)
 
     s_topic  = html.escape(cur['topic'])
     s_side_a = html.escape(cur['side_a'])
     s_side_b = html.escape(cur['side_b'])
 
-    st.markdown("<div class='vw-container'>", unsafe_allow_html=True)
+    st.markdown("<div class='vw'>", unsafe_allow_html=True)
 
-    # 1. 라이브 뱃지 & 주제
+    # 헤더 섹션
     st.markdown(f"""
-    <div style='text-align: center;'>
-        <div class='premium-badge'>
-            <div class='live-dot'></div> 
-            실시간 익명 투표 진행 중
+    <div style="text-align: center;">
+        <div class='live-badge'>
+            <div class='live-dot'></div>
+            LIVE 실시간 투표
         </div>
     </div>
-    <div class='topic-header'>
-        <div class='topic-eyebrow'>Q. 오늘의 논제</div>
-        <div class='topic-title'>{s_topic}</div>
-        <div class='topic-desc'>투표 결과는 철저히 익명으로 보호되며, 참여 후 현황을 확인할 수 있습니다.</div>
+    <div class='topic-wrapper'>
+        <div class='topic-title'>Q. {s_topic}</div>
+        <div class='topic-desc'>{"👇 아래에서 진영을 선택하면 결과가 공개됩니다." if not user_voted else "✨ 투표가 완료되었습니다! 현재 결과를 확인하세요."}</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. 메인 투표 / 결과 UI
-    if not uid:
-        st.info("💡 투표에 참여하고 사람들의 생각을 확인하려면 먼저 로그인해주세요.")
-        
-    elif not user_voted:
-        # [투표 전] 블라인드 카드 & 선택 버튼
+    # 투표 카드 & 결과 (블라인드 처리 로직 적용)
+    if user_voted:
+        # 투표 한 사람에게만 결과(숫자, 게이지) 공개
         st.markdown(f"""
-        <div class='blind-card'>
-            <div class='blind-icon'>🔒</div>
-            <div class='blind-text'>결과 블라인드 처리됨</div>
-            <div class='blind-sub'>현재 {total}명이 참여했습니다. 나의 선택을 내려 결과를 확인하세요.</div>
+        <div class='arena'>
+            <div class='card card-a'>
+                <div class='card-name'>🔵 {s_side_a}</div>
+                <div class='card-result-wrap'>
+                    <div class='card-count'>{len(cur['votes_a'])}<span class='card-unit'>표</span></div>
+                    <div class='card-pct pct-a'>{pct_a}%</div>
+                </div>
+            </div>
+            <div class='vs-badge'>VS</div>
+            <div class='card card-b'>
+                <div class='card-name'>🔴 {s_side_b}</div>
+                <div class='card-result-wrap'>
+                    <div class='card-count'>{len(cur['votes_b'])}<span class='card-unit'>표</span></div>
+                    <div class='card-pct pct-b'>{pct_b}%</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class='ratio-wrap'>
+            <div class='ratio-bar'>
+                <div class='ratio-a' style='width:{pct_a}%'></div>
+                <div class='ratio-b' style='width:{pct_b}%'></div>
+            </div>
+            <div class='ratio-footer'>
+                <span>참여자 총 {total}명</span>
+                <span>익명 투표</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        st.write("")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button(f"👈 {cur['side_a']}", use_container_width=True):
-                vdb2 = load_vote_db()
-                vdb2["current"]["votes_a"].append(uid)
-                save_vote_db(vdb2)
-                st.rerun()
-        with col2:
-            if st.button(f"{cur['side_b']} 👉", use_container_width=True):
-                vdb2 = load_vote_db()
-                vdb2["current"]["votes_b"].append(uid)
-                save_vote_db(vdb2)
-                st.rerun()
-
     else:
-        # [투표 후] 결과 공개 (우세한 쪽을 강조)
-        st.success("✅ 소중한 의견이 익명으로 반영되었습니다!")
-        
-        is_a_winner = pct_a >= pct_b
-        is_b_winner = pct_b >= pct_a
-        
-        badge_a = "<span class='my-pick-badge'>나의 선택</span>" if voted_a else ""
-        badge_b = "<span class='my-pick-badge'>나의 선택</span>" if voted_b else ""
-        
-        cls_a = "winner" if is_a_winner else ""
-        cls_b = "winner" if is_b_winner else ""
-
+        # 투표 전에는 블라인드 뷰 제공
         st.markdown(f"""
-        <div class='result-arena'>
-            <div class='result-row {cls_a}'>
-                <div class='result-info'>
-                    <div class='result-name'>{s_side_a} {badge_a}</div>
-                </div>
-                <div style='text-align: right; width: 60%;'>
-                    <div class='result-pct'>{pct_a}%</div>
-                    <div class='result-bar-bg'><div class='result-bar-fill' style='width: {pct_a}%;'></div></div>
-                </div>
+        <div class='arena'>
+            <div class='card card-a' style='min-height: 160px;'>
+                <div class='card-name'>🔵 {s_side_a}</div>
             </div>
-            
-            <div class='result-row {cls_b}'>
-                <div class='result-info'>
-                    <div class='result-name'>{s_side_b} {badge_b}</div>
-                </div>
-                <div style='text-align: right; width: 60%;'>
-                    <div class='result-pct'>{pct_b}%</div>
-                    <div class='result-bar-bg'><div class='result-bar-fill' style='width: {pct_b}%;'></div></div>
-                </div>
+            <div class='vs-badge'>VS</div>
+            <div class='card card-b' style='min-height: 160px;'>
+                <div class='card-name'>🔴 {s_side_b}</div>
             </div>
         </div>
-        <div style='text-align: center; color: #94A3B8; font-size: 0.85rem; margin-bottom: 20px;'>총 {total}명 참여완료</div>
+        """, unsafe_allow_html=True)
+
+    st.write("")
+
+    # 투표 액션 & 상태
+    if not uid:
+        st.info("💡 투표에 참여하려면 먼저 로그인해주세요.")
+
+    elif user_voted:
+        name = s_side_a if user_side == 'A' else s_side_b
+        icon = "🔵" if user_side == 'A' else "🔴"
+        st.markdown(f"""
+        <div class='info-box'>
+            <div class='info-icon'>{icon}</div>
+            <div>
+                <div class='info-text'>[{name}] 진영을 선택하셨습니다.</div>
+                <div class='info-sub'>언제든지 아래 버튼을 눌러 선택을 바꿀 수 있습니다.</div>
+            </div>
+        </div>
         """, unsafe_allow_html=True)
         
-        # 선택 변경 기능 (선택적)
-        if st.button("🔄 마음이 바뀌었습니다 (다시 투표하기)", use_container_width=True):
+        if st.button("🔄 마음이 바뀌었어요 (선택 취소)", use_container_width=True):
             vdb2 = load_vote_db()
             vdb2["current"]["votes_a"] = [v for v in vdb2["current"]["votes_a"] if v != uid]
             vdb2["current"]["votes_b"] = [v for v in vdb2["current"]["votes_b"] if v != uid]
             save_vote_db(vdb2)
             st.rerun()
 
-    # 3. 역대 전적 (결과만 심플하게)
+    else:
+        # 투표 버튼 영역
+        st.markdown("<div style='text-align: center; margin-bottom: 10px; font-size: 0.9rem; font-weight: 600; color: #4B5563;'>어느 쪽을 선택하시겠습니까?</div>", unsafe_allow_html=True)
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button(f"🔵 {cur['side_a']} 투표하기", use_container_width=True):
+                vdb2 = load_vote_db()
+                if uid not in vdb2["current"]["votes_a"]:
+                    vdb2["current"]["votes_a"].append(uid)
+                save_vote_db(vdb2)
+                st.rerun()
+        with col_b:
+            if st.button(f"🔴 {cur['side_b']} 투표하기", use_container_width=True):
+                vdb2 = load_vote_db()
+                if uid not in vdb2["current"]["votes_b"]:
+                    vdb2["current"]["votes_b"].append(uid)
+                save_vote_db(vdb2)
+                st.rerun()
+
+    # 역대 전적 (수치 비공개, 승리 여부만 깔끔하게 노출하여 익명성/호기심 보호)
     if vdb["history"]:
-        st.markdown("<div class='history-title'>📖 명예의 전당 (과거 투표 결과)</div>", unsafe_allow_html=True)
-        hist_html = ""
-        for h in reversed(vdb["history"][-7:]): # 최근 7개만 노출
+        rows_html = ""
+        for h in reversed(vdb["history"][-5:]): # 최근 5개만 노출
             ta, tb = h['votes_a'], h['votes_b']
             if ta > tb:
-                win_text = f"👑 {html.escape(h['side_a'])} 승리"
-                win_cls = "history-winner"
+                win_cls, win_txt = "hist-win-a", f"🔵 {html.escape(h['side_a'])} 승리"
             elif tb > ta:
-                win_text = f"👑 {html.escape(h['side_b'])} 승리"
-                win_cls = "history-winner"
+                win_cls, win_txt = "hist-win-b", f"🔴 {html.escape(h['side_b'])} 승리"
             else:
-                win_text = "🤝 무승부"
-                win_cls = "history-winner history-tie"
+                win_cls, win_txt = "hist-win-tie", "🤝 무승부"
                 
-            hist_html += f"""
-            <div class='history-item'>
-                <div class='history-topic'>Q. {html.escape(h['topic'])}</div>
-                <div class='{win_cls}'>{win_text}</div>
-            </div>
-            """
-        st.markdown(hist_html, unsafe_allow_html=True)
+            rows_html += f"""
+            <div class='hist-row'>
+                <span class='hist-topic'>{html.escape(h['topic'])}</span>
+                <span class='{win_cls}'>{win_txt}</span>
+            </div>"""
+
+        st.markdown(f"""
+        <div class='hist-section'>
+            <div class='hist-head'>🏆 최근 종료된 배틀 결과</div>
+            {rows_html}
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # 4. 관리자 패널 (기존 로직 유지, 디자인 정돈)
+    # 관리자 패널
     if is_admin:
         st.write("---")
-        with st.expander("⚙️ 관리자 전용 — 새 투표 개설", expanded=False):
-            st.caption("새 투표를 시작하면 현재 투표는 '명예의 전당'으로 넘어갑니다.")
-            new_topic = st.text_input("새로운 논제 (예: 평생 탕수육 부먹 vs 평생 찍먹)", max_chars=50)
+        st.markdown("#### 🛠️ [관리자] 새 투표 시작")
+        with st.expander("주제 설정 패널 열기", expanded=False):
+            new_topic = st.text_input("질문 (예: 평생 한 가지만 먹어야 한다면?)", max_chars=50)
             c1, c2 = st.columns(2)
-            with c1: new_side_a = st.text_input("👈 A 진영", max_chars=20)
-            with c2: new_side_b = st.text_input("👉 B 진영", max_chars=20)
-            
-            if st.button("🚀 새 투표 시작하기", use_container_width=True, type="primary"):
+            with c1:
+                new_side_a = st.text_input("🔵 A 진영 이름", max_chars=20)
+            with c2:
+                new_side_b = st.text_input("🔴 B 진영 이름", max_chars=20)
+                
+            if st.button("🚀 위 주제로 새 투표 라이브 시작", use_container_width=True, type="primary"):
                 if new_topic and new_side_a and new_side_b:
                     vdb2 = load_vote_db()
                     old  = vdb2["current"]
@@ -275,7 +294,7 @@ def render():
                         "created": time.time(),
                     }
                     save_vote_db(vdb2)
-                    st.success("✅ 새 투표가 시작됐습니다!")
+                    st.success("✅ 새 투표가 시작되었습니다!")
                     st.rerun()
                 else:
-                    st.error("⚠️ 질문과 양쪽 진영 이름을 모두 입력해주세요.")
+                    st.error("질문과 양쪽 진영 이름을 모두 입력해주세요.")
