@@ -495,7 +495,7 @@ def render():
     elif is_closed:
         time_note = "<span style='color:#6B7280;font-size:0.78rem;'>투표가 종료되었습니다</span>"
 
-    st.markdown(f"""
+    st.html(f"""
     <div class='battle-header'>
       <div style='display:flex;justify-content:center;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;'>
         {live_or_closed}
@@ -507,7 +507,7 @@ def render():
         {"🔒 투표 전에는 결과가 숨겨집니다 · 완전 익명" if not user_voted else "✅ 투표 완료 · 익명으로 처리됩니다"}
       </div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
     # ── 배틀 카드 ─────────────────────────────────────
     pick_a_cls = "picked" if voted_a else ""
@@ -585,12 +585,12 @@ def render():
         + "</div>"
     )
 
-    st.markdown(arena_html, unsafe_allow_html=True)
+    st.html(arena_html)
 
     # ── 비율 바 (투표 후 공개) ──────────────────────
     if user_voted and total > 0:
         lead_name = s_side_a if pct_a > pct_b else (s_side_b if pct_b > pct_a else "")
-        st.markdown(f"""
+        st.html(f"""
         <div class='ratio-section'>
           <div class='ratio-labels'>
             <span class='ratio-label-a'>{emoji_a} {pct_a}%</span>
@@ -605,21 +605,21 @@ def render():
             <span>{"무승부" if pct_a == pct_b else f"{lead_name} 우세"}</span>
           </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
         if momentum_txt:
-            st.markdown(f"""
+            st.html(f"""
             <div class='momentum-bar'>
               <span style='color:var(--text-dim);font-size:0.8rem;'>현재 흐름</span>
               <span style='font-weight:700;font-size:0.88rem;color:var(--text);'>{momentum_txt}</span>
             </div>
-            """, unsafe_allow_html=True)
+            """)
 
     # ── 투표 액션 ──────────────────────────────────
     st.write("")
 
     if not uid:
-        st.markdown("""
+        st.html("""
         <div class='status-box'>
           <div class='status-icon'>🔐</div>
           <div>
@@ -627,10 +627,10 @@ def render():
             <div class='status-sub'>투표에 참여하려면 먼저 로그인해주세요.</div>
           </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
     elif is_closed:
-        st.markdown("""
+        st.html("""
         <div class='status-box' style='border-color:rgba(107,114,128,0.2);'>
           <div class='status-icon'>⏹</div>
           <div>
@@ -638,7 +638,7 @@ def render():
             <div class='status-sub'>다음 배틀을 기대해주세요!</div>
           </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
     elif user_voted:
         name_picked = s_side_a if user_side == 'A' else s_side_b  # already safe_md
@@ -656,7 +656,7 @@ def render():
             "</div>"
             "</div>"
         )
-        st.markdown(status_html, unsafe_allow_html=True)
+        st.html(status_html)
 
         if st.button("🔄  선택 취소하기", use_container_width=True, key="cancel_vote"):
             vdb2 = load_vote_db()
@@ -667,7 +667,7 @@ def render():
 
     else:
         # 투표 버튼
-        st.markdown("<div style='text-align:center;font-size:0.82rem;color:var(--text-dim);margin-bottom:14px;'>⬇ 진영을 선택하면 실시간 결과가 공개됩니다</div>", unsafe_allow_html=True)
+        st.html("<div style='text-align:center;font-size:0.82rem;color:var(--text-dim);margin-bottom:14px;'>⬇ 진영을 선택하면 실시간 결과가 공개됩니다</div>")
         col_a, col_b = st.columns(2)
         with col_a:
             if st.button(f"{emoji_a}  {cur['side_a']} 선택", use_container_width=True, type="primary", key="vote_a"):
@@ -731,8 +731,9 @@ def render():
             + rows_html
             + "</div>"
         )
-        st.markdown(hist_section_html, unsafe_allow_html=True)
+        st.html(hist_section_html)
 
+    st.html("</div>")
     st.markdown("</div>", unsafe_allow_html=True)
     st.markdown(AUTO_REFRESH_JS, unsafe_allow_html=True)
 
