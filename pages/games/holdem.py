@@ -8,7 +8,7 @@ from utils.config import USERS_FILE
 from utils.database import load_db, save_db, log_tx
 
 # ─────────────────────────────
-# 🃏 1. 카드 및 덱 정의 (예쁜 UI)
+# 🃏 1. 카드 및 덱 정의 (예쁜 UI - 한 줄로 압축!)
 # ─────────────────────────────
 SUITS = ["♠", "♥", "♦", "♣"]
 RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
@@ -18,26 +18,12 @@ def make_deck():
     return [{"suit": s, "rank": r, "val": RANK_VAL[r]} for s in SUITS for r in RANKS]
 
 def card_html(card):
-    # 하트와 다이아몬드는 빨간색, 스페이드와 클로버는 흰색 톤으로 구분
+    # 하트와 다이아몬드는 빨간색, 스페이드와 클로버는 흰색 톤으로 구분 (줄바꿈 제거하여 깨짐 방지)
     color = "#FF4B4B" if card['suit'] in ["♥", "♦"] else "#E2E8F0"
-    return f"""
-    <div style='display:inline-block; padding:15px 20px; margin:5px; background:linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02)); 
-         border:1px solid {color}66; border-radius:10px; color:{color}; font-weight:900; font-size:1.6rem; 
-         box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align:center; min-width:60px;'>
-        <div style='font-size:1rem; margin-bottom:-5px;'>{card['suit']}</div>
-        <div>{card['rank']}</div>
-    </div>
-    """
+    return f"<div style='display:inline-block; padding:15px 20px; margin:5px; background:linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02)); border:1px solid {color}66; border-radius:10px; color:{color}; font-weight:900; font-size:1.6rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align:center; min-width:60px;'><div style='font-size:1rem; margin-bottom:-5px;'>{card['suit']}</div><div>{card['rank']}</div></div>"
 
 def hidden_card_html():
-    return f"""
-    <div style='display:inline-block; padding:15px 20px; margin:5px; background:linear-gradient(145deg, #1E293B, #0F172A); 
-         border:1px solid #334155; border-radius:10px; color:#64748B; font-weight:900; font-size:1.6rem; 
-         box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align:center; min-width:60px;'>
-        <div style='font-size:1rem; margin-bottom:-5px;'>🂠</div>
-        <div>?</div>
-    </div>
-    """
+    return "<div style='display:inline-block; padding:15px 20px; margin:5px; background:linear-gradient(145deg, #1E293B, #0F172A); border:1px solid #334155; border-radius:10px; color:#64748B; font-weight:900; font-size:1.6rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align:center; min-width:60px;'><div style='font-size:1rem; margin-bottom:-5px;'>🂠</div><div>?</div></div>"
 
 # ─────────────────────────────
 # 🔍 2. 실시간 족보 판독기 (핵심 기능)
@@ -48,7 +34,7 @@ HAND_NAMES = {
     6: "🏠 풀하우스 (Full House)",
     5: "🌊 플러시 (Flush)",
     4: "➡️ 스트레이트 (Straight)",
-    3: "3️⃣ 트리플 (Three of a Kind)",
+    3: "3️⃣ 트리플 (Three of Kind)",
     2: "2️⃣ 투페어 (Two Pair)",
     1: "1️⃣ 원페어 (One Pair)",
     0: "🃏 하이카드 (탑)"
@@ -270,7 +256,7 @@ def render(market, nw):
 
         with b3:
             raise_cost = (state['dealer_bet'] - state['player_bet']) + BET_UNIT
-            if st.button(f"🔥 레이즈 (+{format_korean_money(raise_cost)})", use_container_width=True, type="primary"):
+            if st.button(f"🔥 베팅 / 레이즈 (+{format_korean_money(raise_cost)})", use_container_width=True, type="primary"):
                 u_fresh = load_db(USERS_FILE, {})
                 db_cash = u_fresh.get(uid, {}).get('cash', 0)
                 
@@ -315,7 +301,6 @@ def render(market, nw):
             elif p_score_val < d_score_val:
                 state['result'] = 'lose'
             else:
-                # 족보가 같으면 탑(Top) 숫자로 승부 판별
                 if p_ordered > d_ordered:
                     state['result'] = 'win'
                 elif p_ordered < d_ordered:
@@ -354,7 +339,6 @@ def render(market, nw):
 
         st.write("---")
         
-        # 다시하기 버튼
         if st.button("🔄 다음 판 플레이", use_container_width=True, type="primary"):
             st.session_state.holdem['rematch_ready'] = True
             st.rerun()
