@@ -156,9 +156,14 @@ if st.session_state.page_view == "portal":
         _today     = datetime.now(KST).strftime("%Y-%m-%d")
         _online    = get_online_users()
         _today_v   = len(_stats.get("daily_visitors", {}).get(_today, []))
-        _total_s   = _stats.get("total_signups", 0)
+        
+        # 💡 [핵심 수정] 단순 가입자 수가 아닌, DB의 실제 계정 수 (admin 제외) 계산
+        _users_db_for_stats = load_db(USERS_FILE, {})
+        _total_s   = len([u for u in _users_db_for_stats.keys() if u != "admin"])
+        
         _today_vol = _stats.get("daily_volume", {}).get(_today, 0)
         _vol_str   = format_korean_money(_today_vol) if _today_vol else "0원"
+        
         st.markdown("<div class='stat-section-title'>📡 실시간 서비스 현황</div>", unsafe_allow_html=True)
         st.markdown(f"""
         <div class="stat-grid">
@@ -167,7 +172,8 @@ if st.session_state.page_view == "portal":
             <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">{_total_s}명</div><div class="stat-label">누적 가입자</div></div>
             <div class="stat-card volume"><div class="stat-icon">💹</div><div class="stat-value">{_vol_str}</div><div class="stat-label">오늘 누적 거래량</div></div>
         </div>""", unsafe_allow_html=True)
-    except Exception:
+    except Exception as e:
+        # 혹시나 통계 로드 중 에러가 나더라도 포털 화면이 깨지지 않도록 방어
         pass
 
     st.write("---")
@@ -283,7 +289,6 @@ elif st.session_state.page_view == "login":
                         "equipped_title": "🌱 신규시민", "portfolio": {}, "real_estate": {},
                         "rent_time": time.time(), "loan": 0, "loan_time": time.time(),
                         "last_estate_reset": 0, "bulk_trade_date": "", "bulk_trade_count": 0,
-                        # 🛡️ 버그 #2 수정: 누락된 필드 추가
                         "crypto_portfolio": {},
                         "daily_quests": {},
                         "weapon_level": 0,
@@ -306,7 +311,6 @@ elif st.session_state.page_view == "universe":
         st.session_state.page_view = "login"; st.rerun()
 
     # FIX 2 이어서 + 점검모드 체크 (FIX 3)
-    # market은 여기서 처음 로드됨 — 포털·로그인 화면은 DB 히트 없음
     market = run_market_sync()
 
     if market.get("maintenance_mode") and st.session_state.logged_in_user != "admin":
@@ -429,7 +433,7 @@ elif st.session_state.page_view == "universe":
     elif menu == "⛏️ 광산 (노가다)":         from pages.games import mine;    mine.render(market, nw)
     elif menu == "💻 정처기 CBT":            from pages.games import quiz;    quiz.render(market, nw)
     elif menu == "⚔️ 글로벌 로또":           from pages.games import lotto;   lotto.render(market, nw)
-    elif menu == "🗡️ 전설의 명검 강화":     from pages.games import forge;   forge.render(market, nw)
+    elif menu == "🗡️ 전설의 명검 강화":      from pages.games import forge;   forge.render(market, nw)
     elif menu == "🎴 가챠 뽑기":             from pages.games import gacha;   gacha.render(market, nw)
     elif menu == "⚽ 구단주 시뮬레이터":     from pages.sports import soccer_sim;  soccer_sim.render(market, nw)
     elif menu == "⚽ 조기축구 승부차기":      from pages.sports import penalty;    penalty.render(market, nw)
