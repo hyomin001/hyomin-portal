@@ -1,6 +1,7 @@
 # pages/clan.py
 import streamlit as st
 import time
+import html  # 👈 XSS 방어(HTML 이스케이프)를 위한 모듈 추가
 from utils.core import format_korean_money, sync_user_data, get_clan_total_nw
 from utils.database import load_clan_db, save_clan_db, get_user_clan, load_db, log_tx, save_market
 
@@ -68,13 +69,19 @@ def render(market, nw):
 
             my_rank = cdata['member_ranks'].get(uid, "일반멤버")
 
+            # 🛡️ XSS 방어: 내 클랜 카드 렌더링 전 모든 문자열 이스케이프
+            s_my_clan = html.escape(my_clan)
+            s_my_rank = html.escape(my_rank)
+            s_uid     = html.escape(uid)
+            s_desc    = html.escape(cdata.get('desc', ''))
+
             st.markdown(f"""
             <div style='background:linear-gradient(135deg,rgba(0,229,255,0.1),rgba(0,100,255,0.05));
                  border:2px solid #00E5FF;border-radius:16px;padding:24px;text-align:center;'>
               <div style='font-size:3rem;'>{cdata['icon']}</div>
-              <div style='font-size:1.8rem;font-weight:900;color:#FFF;'>{my_clan}</div>
-              <div style='color:#00E5FF;font-weight:700;'>{my_rank} {uid}</div>
-              <div style='color:#888;margin-top:8px;'>"{cdata.get('desc','')}"</div>
+              <div style='font-size:1.8rem;font-weight:900;color:#FFF;'>{s_my_clan}</div>
+              <div style='color:#00E5FF;font-weight:700;'>{s_my_rank} {s_uid}</div>
+              <div style='color:#888;margin-top:8px;'>"{s_desc}"</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -172,10 +179,14 @@ def render(market, nw):
     with tab_list:
         st.markdown("### 🔍 전체 클랜 목록")
         for cn, cd in clans.items():
-            st.markdown(f"<div class='card'>{cd['icon']} <b>{cn}</b> | 클랜장: {cd['leader']} | 멤버: {len(cd['members'])}명</div>", unsafe_allow_html=True)
+            # 🛡️ XSS 방어: 클랜 목록 렌더링 전 이름과 리더 닉네임 이스케이프 처리
+            s_cn     = html.escape(cn)
+            s_leader = html.escape(cd['leader'])
+            st.markdown(f"<div class='card'>{cd['icon']} <b>{s_cn}</b> | 클랜장: {s_leader} | 멤버: {len(cd['members'])}명</div>", unsafe_allow_html=True)
             
     with tab_rank:
         st.markdown("### 🏆 클랜 자산 순위")
+        # st.write()는 기본적으로 자동 이스케이프가 되므로 안전합니다!
         ranked = sorted([(cn, get_clan_total_nw(cn, market), cd) for cn, cd in clans.items()], key=lambda x: x[1], reverse=True)
         for i, (cn, tot, cd) in enumerate(ranked[:10]):
             st.write(f"{i+1}위. {cd['icon']} {cn} - {format_korean_money(tot)}")
