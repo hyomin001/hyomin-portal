@@ -275,14 +275,19 @@ elif st.session_state.page_view == "login":
                     st.error("⚠️ 아이디는 한글/영문/숫자/언더바(_)만 사용 가능하며 2~20자여야 합니다.")
                 elif clean_id in users or clean_id == "admin":
                     st.error("⚠️ 이미 존재하는 아이디입니다.")
-                elif len(n_pw) < 4:
-                    st.error("⚠️ 비밀번호는 4자 이상이어야 합니다.")
+                elif len(n_pw) < 6:
+                    st.error("⚠️ 비밀번호는 6자 이상이어야 합니다.")
                 else:
                     users[clean_id] = {
                         "pw": hash_pw(n_pw), "cash": 500_000_000, "inventory": [],
                         "equipped_title": "🌱 신규시민", "portfolio": {}, "real_estate": {},
                         "rent_time": time.time(), "loan": 0, "loan_time": time.time(),
                         "last_estate_reset": 0, "bulk_trade_date": "", "bulk_trade_count": 0,
+                        # 🛡️ 버그 #2 수정: 누락된 필드 추가
+                        "crypto_portfolio": {},
+                        "daily_quests": {},
+                        "weapon_level": 0,
+                        "garage": {'cars': {}, 'active_tier': None},
                     }
                     save_db(USERS_FILE, users)
                     stats = load_stats()
