@@ -10,12 +10,11 @@ from utils.config import (
 )
 from utils.database import load_db, save_db, load_clan_db
 
-# [보안 설정] 3017의 SHA-256 해시값으로 기본값 설정
-default_hash = "b573ebf82028a56d9d724124bd51e072b175d160695e2735b0fa4ae5e4c79fd1"
-ADMIN_HASH = os.environ.get("ADMIN_HASH", default_hash)
+# 🛡️ [보안 설정] 하드코딩된 해시값 제거 및 환경변수(Secrets) 강제
+ADMIN_HASH = os.environ.get("ADMIN_HASH", "")
 
 if not ADMIN_HASH:
-    raise ValueError("환경변수 ADMIN_HASH가 설정되지 않았습니다. 배포 전 반드시 설정하세요.")
+    raise ValueError("환경변수 ADMIN_HASH가 설정되지 않았습니다. 배포 전 반드시 Streamlit Secrets에 설정하세요.")
 
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
