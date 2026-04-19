@@ -1,9 +1,11 @@
 # pages/clan.py
 import streamlit as st
 import time
-import html  # 👈 XSS 방어(HTML 이스케이프)를 위한 모듈 추가
+import html
+import re
+from utils.config import USERS_FILE
 from utils.core import format_korean_money, sync_user_data, get_clan_total_nw
-from utils.database import load_clan_db, save_clan_db, get_user_clan, load_db, log_tx, save_market
+from utils.database import load_clan_db, save_clan_db, get_user_clan, load_db, save_db, log_tx, save_market
 
 def render(market, nw):
     st.title("🏰 클랜 관리 사무소")
@@ -35,18 +37,34 @@ def render(market, nw):
             new_clan_icon = st.selectbox("아이콘", ["🏰","⚔️","🐉","🔥","💀","🌙","🌊","⚡","🦁","🐺"])
             
             if st.button("🏰 클랜 창설 (10억)", use_container_width=True):
-                if not new_clan_name.strip(): st.error("이름을 입력하세요.")
-                elif new_clan_name in clans: st.error("이미 있는 이름입니다.")
-                elif st.session_state.global_cash < 1_000_000_000: st.error("돈이 부족합니다.")
+                clean_clan_name = new_clan_name.strip()
+                # 🛡️ 주의 #5: 클랜명 특수문자 필터링 — 한글·영문·숫자·공백·이모지 허용, HTML 특수문자 차단
+                if not clean_clan_name:
+                    st.error("이름을 입력하세요.")
+                elif not re.match(r'^[a-zA-Z0-9가-힣 _\-!?.★☆♥♦♣♠🏰⚔️🐉🔥💀🌙🌊⚡🦁🐺]{1,10}$', clean_clan_name):
+                    st.error("⚠️ 클랜명에 사용할 수 없는 특수문자가 포함되어 있습니다.")
+                elif clean_clan_name in clans:
+                    st.error("이미 있는 이름입니다.")
+                elif st.session_state.global_cash < 1_000_000_000:
+                    st.error("돈이 부족합니다.")
                 else:
-                    st.session_state.global_cash -= 1_000_000_000
-                    clans[new_clan_name] = {
-                        "leader": uid, "members": [uid], "member_ranks": {uid: "클랜장"}, 
-                        "bank": 0, "desc": new_clan_desc, "icon": new_clan_icon,
-                        "created": time.time(), "join_requests": [],
-                    }
-                    save_clan_db(clans); log_tx(uid, "클랜", f"[{new_clan_name}] 창설", -1_000_000_000)
-                    sync_user_data(); st.rerun()
+                    # 🛡️ 버그 #1: DB 잔액 재검증 후 차감
+                    us_fresh = load_db(USERS_FILE, {})
+                    db_cash = us_fresh.get(uid, {}).get('cash', 0)
+                    if db_cash < 1_000_000_000:
+                        st.error("잔액이 부족합니다. (DB 재검증 실패)")
+                    else:
+                        us_fresh[uid]['cash'] = db_cash - 1_000_000_000
+                        save_db(USERS_FILE, us_fresh)
+                        st.session_state.global_cash = us_fresh[uid]['cash']
+                        clans[clean_clan_name] = {
+                            "leader": uid, "members": [uid], "member_ranks": {uid: "클랜장"},
+                            "bank": 0, "desc": new_clan_desc, "icon": new_clan_icon,
+                            "created": time.time(), "join_requests": [],
+                        }
+                        save_clan_db(clans)
+                        log_tx(uid, "클랜", f"[{clean_clan_name}] 창설", -1_000_000_000)
+                        st.rerun()
 
             st.write("---")
             st.markdown("### 🚪 가입 신청")
@@ -95,19 +113,46 @@ def render(market, nw):
                 with c_dep:
                     d_amt = st.number_input("입금액", min_value=0, step=10_000_000, format="%d", key="d_in")
                     if st.button("💰 금고 채우기", use_container_width=True):
-                        if st.session_state.global_cash >= d_amt > 0:
-                            st.session_state.global_cash -= d_amt
-                            cdata['bank'] += d_amt
-                            save_clan_db(clans); sync_user_data(); st.rerun()
+                        if d_amt <= 0:
+                            st.error("금액을 입력하세요.")
+                        else:
+                            # 🛡️ 버그 #1 수정: DB 잔액 재검증 후 차감 (다중탭 이중입금 방지)
+                            us_fresh = load_db(USERS_FILE, {})
+                            db_cash = us_fresh.get(uid, {}).get('cash', 0)
+                            if db_cash < d_amt:
+                                st.error("잔액이 부족합니다. (DB 재검증 실패)")
+                            else:
+                                us_fresh[uid]['cash'] = db_cash - d_amt
+                                save_db(USERS_FILE, us_fresh)
+                                st.session_state.global_cash = us_fresh[uid]['cash']
+                                # clan DB는 users DB 저장 완료 후 반영
+                                clans_fresh = load_clan_db()
+                                if my_clan in clans_fresh:
+                                    clans_fresh[my_clan]['bank'] = clans_fresh[my_clan].get('bank', 0) + d_amt
+                                    save_clan_db(clans_fresh)
+                                log_tx(uid, "클랜", f"[{my_clan}] 금고 입금", -d_amt)
+                                st.success(f"✅ {format_korean_money(d_amt)} 입금 완료!")
+                                st.rerun()
                 with c_wit:
                     w_amt = st.number_input("출금액", min_value=0, step=10_000_000, format="%d", key="w_in")
                     can_w = has_perm(uid, cdata, "출금")
                     if st.button("🏧 금고에서 꺼내기", use_container_width=True, disabled=not can_w):
-                        if w_amt > cdata['bank']: st.error("금고가 비었습니다.")
-                        elif w_amt > 0:
-                            cdata['bank'] -= w_amt
-                            st.session_state.global_cash += w_amt
-                            save_clan_db(clans); sync_user_data(); st.rerun()
+                        if w_amt <= 0:
+                            st.error("금액을 입력하세요.")
+                        else:
+                            # 🛡️ 버그 #1 수정: 클랜 DB 재조회로 최신 금고 잔액 검증
+                            clans_fresh = load_clan_db()
+                            bank_now = clans_fresh.get(my_clan, {}).get('bank', 0)
+                            if w_amt > bank_now:
+                                st.error("금고 잔액이 부족합니다. (DB 재검증 실패)")
+                            else:
+                                clans_fresh[my_clan]['bank'] = bank_now - w_amt
+                                save_clan_db(clans_fresh)
+                                st.session_state.global_cash += w_amt
+                                sync_user_data()
+                                log_tx(uid, "클랜", f"[{my_clan}] 금고 출금", w_amt)
+                                st.success(f"✅ {format_korean_money(w_amt)} 출금 완료!")
+                                st.rerun()
                     if not can_w: st.caption("🔒 부클랜장 이상만 출금 가능")
 
             with st.expander("👥 멤버 목록 및 계급 관리"):
