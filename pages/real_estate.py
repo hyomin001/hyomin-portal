@@ -97,26 +97,33 @@ def render(market, nw):
                         elif st.session_state.global_cash >= info['base_price']:
                             set_cooldown(cd_key)
                             
-                            # [버그 픽스] 세션 상태 확실하게 업데이트
-                            st.session_state.global_cash -= info['base_price']
-                            if 'real_estate' not in st.session_state:
-                                st.session_state.real_estate = {}
-                            st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
+                            # 🛡️ [보안] DB 기준 잔액 재확인 (다중 탭 이중 매입 방지)
+                            u_fresh = load_db(USERS_FILE, {})
+                            db_cash = u_fresh.get(uid, {}).get('cash', 0)
                             
-                            # DB 동기화 강제 실행
-                            sync_user_data()
+                            if db_cash < info['base_price']:
+                                st.error("❌ 잔액 부족! (DB 재검증 실패)")
+                            else:
+                                # DB 잔액 원자적 차감
+                                u_fresh[uid]['cash'] = db_cash - info['base_price']
+                                save_db(USERS_FILE, u_fresh)
+                                
+                                # 세션 동기화
+                                st.session_state.global_cash = u_fresh[uid]['cash']
+                                if 'real_estate' not in st.session_state:
+                                    st.session_state.real_estate = {}
+                                st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
+                                sync_user_data()
 
-                            if uid not in em2["owner_counts"]: em2["owner_counts"][uid] = {}
-                            em2["owner_counts"][uid][eid] = em2["owner_counts"][uid].get(eid, 0) + 1
-                            save_estate_market(em2)
-                            
-                            log_tx(uid, "부동산매입", f"{info['name']} 신규 매입", -info['base_price'])
-                            
-                            owned_types = sum(1 for e, c in st.session_state.real_estate.items() if c > 0)
-                            if owned_types == len(estate_config): claim_hidden_title("real_estate_monopoly", "👑 [유일무이] 진짜 부루마불 우승자")
-                            st.success(f"✅ {info['name']} 매입 완료!"); st.rerun()
-                        else:
-                            st.error("잔액 부족!")
+                                if uid not in em2["owner_counts"]: em2["owner_counts"][uid] = {}
+                                em2["owner_counts"][uid][eid] = em2["owner_counts"][uid].get(eid, 0) + 1
+                                save_estate_market(em2)
+                                
+                                log_tx(uid, "부동산매입", f"{info['name']} 신규 매입", -info['base_price'])
+                                
+                                owned_types = sum(1 for e, c in st.session_state.real_estate.items() if c > 0)
+                                if owned_types == len(estate_config): claim_hidden_title("real_estate_monopoly", "👑 [유일무이] 진짜 부루마불 우승자")
+                                st.success(f"✅ {info['name']} 매입 완료!"); st.rerun()
 
         st.write("---")
         st.markdown("### 🔄 유저 매물 (2차 시장)")
@@ -163,46 +170,56 @@ def render(market, nw):
                         elif st.button("🛒 구매" if can_buy else "💸 잔액부족", key=f"buy_listing_{li['id']}", use_container_width=True, disabled=not can_buy):
                             em3 = load_estate_market()
                             target = next((x for x in em3["listings"] if x["id"] == li["id"]), None)
+                            
                             if target is None:
                                 st.error("⚠️ 이미 판매된 매물입니다.")
                             elif st.session_state.global_cash >= target["price"]:
                                 set_cooldown(cd_key)
                                 
-                                # [버그 픽스] 유저 매물 구매 시 세션 명확화 및 강제 저장
-                                st.session_state.global_cash -= target["price"]
-                                if 'real_estate' not in st.session_state:
-                                    st.session_state.real_estate = {}
-                                st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
-                                sync_user_data()
+                                # 🛡️ [보안] DB 기준 잔액 재확인 (유저 매물 구매 시 다중 탭 방지)
+                                u_fresh = load_db(USERS_FILE, {})
+                                db_cash = u_fresh.get(uid, {}).get('cash', 0)
+                                
+                                if db_cash < target["price"]:
+                                    st.error("❌ 잔액 부족! (DB 재검증 실패)")
+                                else:
+                                    # 구매자의 DB 잔액 원자적 차감
+                                    u_fresh[uid]['cash'] = db_cash - target["price"]
+                                    save_db(USERS_FILE, u_fresh)
+                                    
+                                    # 구매자의 세션 동기화
+                                    st.session_state.global_cash = u_fresh[uid]['cash']
+                                    if 'real_estate' not in st.session_state:
+                                        st.session_state.real_estate = {}
+                                    st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
+                                    sync_user_data()
 
-                                if uid not in em3["owner_counts"]: em3["owner_counts"][uid] = {}
-                                em3["owner_counts"][uid][eid] = em3["owner_counts"][uid].get(eid, 0) + 1
-                                
-                                seller = target["seller"]
-                                us = load_db(USERS_FILE, {})
-                                if seller in us:
-                                    us[seller]['cash'] += target["price"]
-                                    if seller not in em3["owner_counts"]: em3["owner_counts"][seller] = {}
-                                    em3["owner_counts"][seller][eid] = max(0, em3["owner_counts"][seller].get(eid, 0) - 1)
-                                    if 'real_estate' in us[seller] and eid in us[seller]['real_estate']:
-                                        us[seller]['real_estate'][eid] = max(0, us[seller]['real_estate'][eid] - 1)
-                                        if us[seller]['real_estate'][eid] <= 0: del us[seller]['real_estate'][eid]
-                                    save_db(USERS_FILE, us)
-                                    log_tx(seller, "부동산판매", f"{info['name']} 판매 완료", target["price"])
-                                
-                                em3["listings"] = [x for x in em3["listings"] if x["id"] != li["id"]]
-                                save_estate_market(em3)
-                                log_tx(uid, "부동산구매", f"{info['name']} 유저 매물 구매", -target["price"])
-                                
-                                market['news'] = f"🏢 [{uid}] {info['name']} 유저 매물 구매 완료!"
-                                save_market(market)
-                                
-                                owned_types = sum(1 for e, c in st.session_state.real_estate.items() if c > 0)
-                                if owned_types == len(estate_config): claim_hidden_title("real_estate_monopoly", "👑 [유일무이] 진짜 부루마불 우승자")
-                                st.success(f"✅ {info['name']} 구매 완료! {format_korean_money(target['price'])}")
-                                st.rerun()
-                            else:
-                                st.error("잔액 부족!")
+                                    if uid not in em3["owner_counts"]: em3["owner_counts"][uid] = {}
+                                    em3["owner_counts"][uid][eid] = em3["owner_counts"][uid].get(eid, 0) + 1
+                                    
+                                    # 판매자에게 대금 지급 (이미 위에서 load_db 했으므로 u_fresh 재사용)
+                                    seller = target["seller"]
+                                    if seller in u_fresh:
+                                        u_fresh[seller]['cash'] += target["price"]
+                                        if seller not in em3["owner_counts"]: em3["owner_counts"][seller] = {}
+                                        em3["owner_counts"][seller][eid] = max(0, em3["owner_counts"][seller].get(eid, 0) - 1)
+                                        if 'real_estate' in u_fresh[seller] and eid in u_fresh[seller]['real_estate']:
+                                            u_fresh[seller]['real_estate'][eid] = max(0, u_fresh[seller]['real_estate'][eid] - 1)
+                                            if u_fresh[seller]['real_estate'][eid] <= 0: del u_fresh[seller]['real_estate'][eid]
+                                        save_db(USERS_FILE, u_fresh) # 판매자 잔액 업데이트 저장
+                                        log_tx(seller, "부동산판매", f"{info['name']} 판매 완료", target["price"])
+                                    
+                                    em3["listings"] = [x for x in em3["listings"] if x["id"] != li["id"]]
+                                    save_estate_market(em3)
+                                    log_tx(uid, "부동산구매", f"{info['name']} 유저 매물 구매", -target["price"])
+                                    
+                                    market['news'] = f"🏢 [{uid}] {info['name']} 유저 매물 구매 완료!"
+                                    save_market(market)
+                                    
+                                    owned_types = sum(1 for e, c in st.session_state.real_estate.items() if c > 0)
+                                    if owned_types == len(estate_config): claim_hidden_title("real_estate_monopoly", "👑 [유일무이] 진짜 부루마불 우승자")
+                                    st.success(f"✅ {info['name']} 구매 완료! {format_korean_money(target['price'])}")
+                                    st.rerun()
 
     with tab_my_estate:
         owned_any = any(v > 0 for v in st.session_state.real_estate.values())
