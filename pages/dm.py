@@ -1,7 +1,7 @@
 # pages/dm.py
 import streamlit as st
 import time
-import html  # 👈 XSS 방어(HTML 이스케이프)를 위한 모듈 추가
+import html  # 👈 XSS 방어(HTML 이스케이프)를 위한 모듈
 from datetime import datetime
 from utils.config import KST
 from utils.core import cooldown_remaining, set_cooldown
@@ -47,14 +47,15 @@ def render(market, nw):
                     m["read_before"] = True 
                     needs_save = True
                 
-                # 🛡️ XSS 방어: HTML 태그를 단순 문자로 변환하여 실행 방지
+                # 🛡️ XSS 방어: 보낸 사람과 내용을 모두 안전하게 변환
+                safe_sender  = html.escape(m.get('sender', '알 수 없음'))
                 safe_content = html.escape(m.get('content', ''))
                 
                 st.markdown(f"""
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #00E5FF;'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
-                    <span style='font-size:0.9rem;'>{read_badge}보낸 사람: <b style='color:#00E5FF;'>{m['sender']}</b></span>
-                    <span style='color:#777;font-size:0.75rem;'>{m['time']}</span>
+                    <span style='font-size:0.9rem;'>{read_badge}보낸 사람: <b style='color:#00E5FF;'>{safe_sender}</b></span>
+                    <span style='color:#777;font-size:0.75rem;'>{m.get('time', '')}</span>
                   </div>
                   <div style='color:#CBD5E1;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
                     {safe_content}
@@ -79,14 +80,15 @@ def render(market, nw):
             st.write("---")
             for m in reversed(outbox[-50:]):
                 
-                # 🛡️ XSS 방어: 보낸 쪽지함에도 동일하게 적용
-                safe_content = html.escape(m.get('content', ''))
+                # 🛡️ XSS 방어: 받는 사람과 내용을 모두 안전하게 변환
+                safe_receiver = html.escape(m.get('receiver', '알 수 없음'))
+                safe_content  = html.escape(m.get('content', ''))
                 
                 st.markdown(f"""
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #FFD600; background:rgba(255,215,0,0.02);'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
-                    <span style='font-size:0.9rem;color:#94A3B8;'>받는 사람: <b style='color:#FFD600;'>{m['receiver']}</b></span>
-                    <span style='color:#777;font-size:0.75rem;'>{m['time']}</span>
+                    <span style='font-size:0.9rem;color:#94A3B8;'>받는 사람: <b style='color:#FFD600;'>{safe_receiver}</b></span>
+                    <span style='color:#777;font-size:0.75rem;'>{m.get('time', '')}</span>
                   </div>
                   <div style='color:#94A3B8;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
                     {safe_content}
