@@ -317,9 +317,12 @@ def render(market, nw):
         st.caption("모든 유저(관리자 제외)에게 동일한 현금을 일괄 지급합니다.")
         airdrop_amt = st.number_input("지급할 금액", min_value=0, step=10_000_000, value=100_000_000)
         if st.button("💸 전 우주에 현금 살포하기", use_container_width=True):
-            for u in u_db:
-                if u != "admin": u_db[u]['cash'] += airdrop_amt
-            save_db(USERS_FILE, u_db)
+            # FIX: 에어드랍 시 항상 최신 DB 로드 (t1에서 로드한 stale u_db 사용 금지)
+            fresh_db = load_db(USERS_FILE, {})
+            for u in fresh_db:
+                if u != "admin": fresh_db[u]['cash'] += airdrop_amt
+            save_db(USERS_FILE, fresh_db)
+            # 현재 로그인된 어드민 세션 현금은 변경 안 함 (admin은 에어드랍 제외)
             market['news'] = f"🕊️ [창조주의 은총] 모든 시민에게 {format_korean_money(airdrop_amt)}이 지급되었습니다!"
             save_market(market); st.toast("에어드랍 완료!", icon="🕊️"); st.rerun()
 
@@ -478,11 +481,16 @@ def render(market, nw):
         else: st.info("등록된 유저가 없습니다.")
 
         st.write("---")
-        st.markdown("### 💾 데이터베이스 파일 상태")
-        for f in [USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE]:
-            exists = "✅ 정상" if os.path.exists(f) else "❌ 없음"
-            size = f"{os.path.getsize(f):,} bytes" if os.path.exists(f) else "—"
-            st.markdown(f"<div style='color:#ccc;font-size:0.9rem;'>{exists} | <b>{f}</b> ({size})</div>", unsafe_allow_html=True)
+        st.markdown("### 💾 데이터베이스 연결 상태")
+        # FIX: MongoDB 기반이므로 os.path.exists 대신 실제 컬렉션 존재 여부 확인
+        from utils.database import get_mongo_client
+        _mongo_ok = get_mongo_client() is not None
+        _status   = "✅ MongoDB 연결됨" if _mongo_ok else "❌ MongoDB 연결 실패"
+        st.markdown(f"<div style='color:#ccc;font-size:0.9rem;'>{_status}</div>", unsafe_allow_html=True)
+        if _mongo_ok:
+            for _col in [USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE]:
+                _col_name = _col.replace(".json", "").replace("_db", "")
+                st.markdown(f"<div style='color:#888;font-size:0.85rem;margin-left:12px;'>📂 컬렉션: <b>{_col_name}</b></div>", unsafe_allow_html=True)
             
         st.write("---")
         st.markdown("### 🚨 긴급 데이터 백업 (다운로드)")
