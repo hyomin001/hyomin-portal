@@ -152,3 +152,13 @@ def claim_hidden_title(title_id, title_name):
 def set_cooldown(key: str): st.session_state[f"_cd_{key}"] = time.time()
 def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
     return max(0.0, cooldown_sec - (time.time() - st.session_state.get(f"_cd_{key}", 0)))
+
+# 📊 [통계] 실시간 접속자 계산 — home.py·app.py 공용
+def get_online_users() -> int:
+    """last_seen 타임스탬프 기준 5분 이내 활동한 유저 수 반환"""
+    try:
+        users = load_db(USERS_FILE, {})
+        now = time.time()
+        return sum(1 for u in users.values() if now - u.get('last_seen', 0) < 300)
+    except Exception:
+        return 0
