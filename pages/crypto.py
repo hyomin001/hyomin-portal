@@ -6,7 +6,7 @@ from streamlit_autorefresh import st_autorefresh  # 🚀 자동 새로고침 부
 from utils.config import CRYPTO_CONFIG
 from utils.core import format_korean_money, sync_user_data, claim_hidden_title
 from utils.config import USERS_FILE
-from utils.database import load_db, log_tx
+from utils.database import load_db, save_db, log_tx  # 👈 save_db 임포트 추가!
 
 def render(market, nw):
     st.title("🪙 가상화폐 거래소")
@@ -132,20 +132,34 @@ def render(market, nw):
                 elif st.session_state.global_cash < buy_won: st.error("잔액 부족!")
                 else:
                     qty_to_buy = buy_won / cur_p
-                    u_db_check = load_db(USERS_FILE, {})
-                    if u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0) < buy_won:
-                        st.error("잔액 부족! (DB 검증 실패)")
+                    
+                    # 🛡️ [보안] DB 기준 잔액 재확인 (다중 탭 이중 매입 방지)
+                    u_fresh = load_db(USERS_FILE, {})
+                    uid = st.session_state.logged_in_user
+                    db_cash = u_fresh.get(uid, {}).get('cash', 0)
+                    
+                    if db_cash < buy_won:
+                        st.error("❌ 잔액 부족! (DB 재검증 실패)")
                     else:
-                        st.session_state.global_cash -= buy_won
+                        # DB에서 즉시 차감 및 저장
+                        u_fresh[uid]['cash'] = db_cash - buy_won
+                        save_db(USERS_FILE, u_fresh)
+                        
+                        # 세션 동기화
+                        st.session_state.global_cash = db_cash - buy_won
+                        
                         cp_port = st.session_state.get('crypto_portfolio', {})
                         old = cp_port.get(sel_c, {'qty': 0, 'avg_price': 0})
                         new_q = old['qty'] + qty_to_buy
                         new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
                         cp_port[sel_c] = {'qty': new_q, 'avg_price': new_a}
                         st.session_state.crypto_portfolio = cp_port
-                        log_tx(st.session_state.logged_in_user, "코인매수", f"{cd['name']} 매수", -int(buy_won))
-                        sync_user_data(); st.success("✅ 매수 완료!")
-                        if sel_c == "HYO" and buy_won >= 1_000_000_000_000_000: claim_hidden_title("pepe_all_in", "👑 [유일무이] 상남자특_김효민_믿음")
+                        
+                        log_tx(uid, "코인매수", f"{cd['name']} 매수", -int(buy_won))
+                        sync_user_data()
+                        st.success("✅ 매수 완료!")
+                        if sel_c == "HYO" and buy_won >= 1_000_000_000_000_000: 
+                            claim_hidden_title("pepe_all_in", "👑 [유일무이] 상남자특_김효민_믿음")
                         st.rerun()
                     
         with tab_sell:
