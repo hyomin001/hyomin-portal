@@ -648,7 +648,7 @@ def render_board_html(g):
         # 색상 바
         color_bar = ""
         if ct == "prop" and cell.get("color"):
-            color_bar = f"<div class='bm-color-bar' style='background:{cell[\"color\"]};'></div>"
+            color_bar = f"<div class='bm-color-bar' style='background:{cell['color']};'></div>"
         elif ct == "rail":
             color_bar = "<div class='bm-color-bar' style='background:#2c3e50;'></div>"
         elif ct == "util":
@@ -843,13 +843,13 @@ def _render_players_panel(g):
     for i, p in enumerate(g["players"]):
         active_cls = "active-p" if i == g["turn"] and not p["bankrupt"] else ""
         if p["bankrupt"]:
-            html += f"<div class='bm-player-row'><div class='bm-player-dot' style='background:{p[\"color\"]};opacity:0.3'></div><span class='bm-player-bankrupt'>{p['name']}</span></div>"
+            html += f"<div class='bm-player-row'><div class='bm-player-dot' style='background:{p['color']};opacity:0.3'></div><span class='bm-player-bankrupt'>{p['name']}</span></div>"
         else:
             jail_txt = f"<span class='bm-player-jail'>🔒{p['jail_turns']}턴</span>" if p["jail_turns"] > 0 else ""
             bot_txt = " 🤖" if p["is_bot"] else ""
             html += (
                 f"<div class='bm-player-row {active_cls}'>"
-                f"<div class='bm-player-dot' style='background:{p[\"color\"]};'></div>"
+                f"<div class='bm-player-dot' style='background:{p['color']};'></div>"
                 f"<span class='bm-player-name'>{p['token']} {p['name']}{bot_txt}</span>"
                 f"<span class='bm-player-money'>{p['money']:,}</span>"
                 f"{jail_txt}</div>"
@@ -863,7 +863,7 @@ def _render_action_panel(g):
     phase = g["phase"]
 
     st.markdown("<div class='bm-panel'>", unsafe_allow_html=True)
-    st.markdown(f"<div class='bm-turn-label'><span style='color:{p[\"color\"]};font-weight:700;'>{p['token']} {p['name']}</span> 차례</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='bm-turn-label'><span style='color:{p['color']};font-weight:700;'>{p['token']} {p['name']}</span> 차례</div>", unsafe_allow_html=True)
 
     if p["is_bot"]:
         st.markdown("<div class='bm-dice-area'><div class='bm-dice'>⚙️</div></div>", unsafe_allow_html=True)
