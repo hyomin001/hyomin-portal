@@ -1535,6 +1535,9 @@ def render():
 
     if 'terminal_cleared' not in st.session_state:
         st.session_state.terminal_cleared = set()
+    # set 타입 보장 (DB에서 list로 불러온 경우 변환)
+    if not isinstance(st.session_state.terminal_cleared, set):
+        st.session_state.terminal_cleared = set(st.session_state.terminal_cleared)
 
     # ── 스테이지 선택 화면 ───────────────────────────────
     if 'terminal' not in st.session_state or \
@@ -1746,6 +1749,10 @@ def render():
     else:
         # ── 클리어 화면 ─────────────────────────────────
         st.session_state.terminal_cleared.add(stage_num)
+
+        # DB에 클리어 진행상황 영구 저장
+        from utils.core import sync_user_data
+        sync_user_data()
 
         # 풍선은 한 번만
         balloon_key = f"balloon_done_{stage_num}"
