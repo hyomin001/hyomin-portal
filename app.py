@@ -407,7 +407,7 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/admin/panel.py</strong>창조주 통제소 (관리자 전용)</div>
     <div class="module-item"><strong>pages/project_a.py</strong>AI 무한 모의고사</div>
     <div class="module-item"><strong>pages/project_b.py</strong>효민 월드 배틀</div>
-    <div class="module-item"><strong>pages/project_c.py</strong>THE TERMINAL 방탈출</div>
+    <div class="module-item"><strong>pages/project_d.py</strong>부루마블 보드게임</div>
 </div>
         """, unsafe_allow_html=True)
 
@@ -417,7 +417,7 @@ if st.session_state.page_view == "portal":
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("<div class='banner-card'><h2>🌌 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🌌 효민 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
         if st.button("유니버스 입장하기 🚀", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "universe"
@@ -435,8 +435,14 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 D</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
-        st.button("준비 중...", key="b4", disabled=True, use_container_width=True)
+        st.markdown("<div class='banner-card'><h2>🎲 부루마블</h2><p>봇과 함께하는 보드게임 — 집·호텔·저당·무인도</p></div>", unsafe_allow_html=True)
+        if st.button("부루마블 입장 🎲", key="b4", use_container_width=True):
+            if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
+                st.session_state.page_view = "project_d"
+            else:
+                st.warning("⚠️ 해당 서비스를 이용하시려면 먼저 로그인해주세요.")
+                time.sleep(1); st.session_state.page_view = "login"
+            st.rerun()
 
     with col2:
         st.markdown("<div class='banner-card'><h2>🧠 AI 무한 모의고사</h2><p>공부한 내용 복붙하면, AI가 끝없이 문제를 만들어 드립니다.</p></div>", unsafe_allow_html=True)
@@ -732,3 +738,18 @@ elif st.session_state.page_view == "project_c":
 
     from pages import project_c
     project_c.render()
+
+
+# ==============================
+# 9. [View 7] 부루마블
+# ==============================
+elif st.session_state.page_view == "project_d":
+
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"; st.rerun()
+
+    if st.button("🏠 포털 메인으로 나가기", key="back_d"):
+        st.session_state.page_view = "portal"; st.rerun()
+
+    from pages import project_d
+    project_d.render()
