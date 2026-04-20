@@ -417,7 +417,7 @@ if st.session_state.page_view == "portal":
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("<div class='banner-card'><h2>🌌 효민 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🌌 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
         if st.button("유니버스 입장하기 🚀", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "universe"
