@@ -1,38 +1,14 @@
 # pages/home.py
 import streamlit as st
 import time
-from datetime import datetime
-from utils.config import estate_config, stock_config, USERS_FILE
-from utils.core import format_korean_money, get_online_users, KST
-from utils.database import load_stats
+from utils.config import estate_config, stock_config
+from utils.core import format_korean_money
 
 def render(market, nw):
-    # 📊 [통계 대시보드] 데이터 로드 및 집계 (7단계)
-    stats = load_stats()
-    today = datetime.now(KST).strftime("%Y-%m-%d")
-    
-    today_visitors = len(stats.get("daily_visitors", {}).get(today, []))
-    total_signups  = stats.get("total_signups", 0)
-    online_now     = get_online_users()
-    today_volume   = stats.get("daily_volume", {}).get(today, 0)
 
     st.title("🌌 HYOMIN UNIVERSE")
 
-    # 1. 📊 실시간 서버 통계 카드 (신규 추가)
-    st.markdown("#### 📡 시스템 실시간 현황")
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric("🟢 지금 접속", f"{online_now}명")
-    with c2:
-        st.metric("📅 오늘 방문", f"{today_visitors}명")
-    with c3:
-        st.metric("👥 총 가입자", f"{total_signups}명")
-    with c4:
-        st.metric("💹 오늘 거래량", format_korean_money(today_volume))
-    
-    st.write("---")
-    
-    # 2. 게임 캐릭터 프로필 느낌의 UI
+    # 1. 게임 캐릭터 프로필 느낌의 UI
     st.markdown(f"""
     <div style='background: linear-gradient(135deg, #111128, #0a0a20); border: 2px solid #00E5FF; border-radius: 15px; padding: 20px; display: flex; align-items: center; gap: 20px; margin-bottom: 25px; box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);'>
         <div style='font-size: 4rem; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 50%;'>🧑‍🚀</div>
@@ -50,7 +26,7 @@ def render(market, nw):
     </div>
     """, unsafe_allow_html=True)
 
-    # 3. 🗺️ 성장 단계별 맞춤형 퀘스트 보드
+    # 2. 🗺️ 성장 단계별 맞춤형 퀘스트 보드
     st.markdown("### 🗺️ 현재 성장 목표")
     
     if nw < 500_000_000:
@@ -113,7 +89,7 @@ def render(market, nw):
 
     st.write("---")
 
-    # 4. 자산 상태 요약
+    # 3. 자산 상태 요약
     c3, c4 = st.columns(2)
     with c3:
         st.markdown(f"""
@@ -138,7 +114,7 @@ def render(market, nw):
 
     st.write("---")
     
-    # 5. 주식 핫 종목
+    # 4. 주식 핫 종목
     st.markdown("### 📈 실시간 시장 현황")
     top_stocks = sorted(stock_config, key=lambda s: (
         (market['stock_data'][s['id']]['history'][-1] - market['stock_data'][s['id']]['history'][-2])
