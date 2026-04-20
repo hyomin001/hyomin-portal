@@ -1,5 +1,5 @@
 # pages/project_c.py
-# 💻 THE TERMINAL — 효민 유니버스 ARG 방탈출 v2.0 [UPGRADED]
+# 💻 THE TERMINAL — 방탈출 v3.0 [10 STAGES / NO REWARD]
 import streamlit as st
 import time
 import base64
@@ -14,11 +14,12 @@ from utils.config import KST
 # ══════════════════════════════════════════════════════════
 
 STAGES = {
+    # ─────────────────────────────────────────────────────
     1: {
-        "title": "STAGE 1 — 버려진 서버실",
-        "desc":  "낡은 서버에서 관리자 비밀번호를 찾아라.",
+        "title":      "STAGE 1 — 버려진 서버실",
+        "desc":       "낡은 서버에서 관리자 비밀번호를 찾아라.",
         "difficulty": "⭐ 입문",
-        "goal":  "비밀번호를 찾아 `unlock [비밀번호]` 명령어로 잠금을 해제하라.",
+        "goal":       "비밀번호를 찾아 `unlock [비밀번호]` 명령어로 잠금을 해제하라.",
         "answer_hash": hashlib.sha256("hyomin2026".encode()).hexdigest(),
         "hint_1": "`ls -a` 로 숨김 파일도 볼 수 있다.",
         "hint_2": "`.secret` 파일을 열어보라. base64로 인코딩되어 있다.",
@@ -34,7 +35,7 @@ STAGES = {
                     "서버 점검 완료. 비밀번호는 안전한 곳에 숨겨 두었다.\n"
                     "혹시나 싶어서 .secret 파일에 백업해 놓음.\n"
                     "-- admin"
-                )
+                ),
             },
             "/home/admin/.secret": {
                 "type": "file",
@@ -46,22 +47,22 @@ STAGES = {
             "/var/log/access.log": {
                 "type": "file",
                 "content": (
-                    "2026-01-03 09:12:44  LOGIN  admin  SUCCESS\n"
+                    "2026-01-03 09:12:44  LOGIN  admin    SUCCESS\n"
                     "2026-01-03 11:55:02  LOGIN  unknown  FAIL\n"
                     "2026-01-03 11:55:18  LOGIN  unknown  FAIL\n"
-                    "2026-01-04 03:22:11  LOGIN  ???  SUCCESS  [비정상 접근]\n"
+                    "2026-01-04 03:22:11  LOGIN  ???      SUCCESS  [비정상 접근]\n"
                 ),
             },
         },
-        "reward": 50_000_000,
-        "reward_label": "5천만원",
         "flavor": "낡은 팬 소리가 들린다. 먼지 쌓인 서버. 누군가 여기 있었다...",
     },
+
+    # ─────────────────────────────────────────────────────
     2: {
-        "title": "STAGE 2 — 지하 연구소",
-        "desc":  "연구소 데이터베이스에서 프로젝트 코드명을 해독하라.",
+        "title":      "STAGE 2 — 지하 연구소",
+        "desc":       "연구소 데이터베이스에서 프로젝트 코드명을 해독하라.",
         "difficulty": "⭐⭐ 보통",
-        "goal":  "암호화된 프로젝트 코드명을 찾아 `unlock [코드명]` 으로 입력하라.",
+        "goal":       "암호화된 프로젝트 코드명을 찾아 `unlock [코드명]` 으로 입력하라.",
         "answer_hash": hashlib.sha256("DOPAHYOMIN".encode()).hexdigest(),
         "hint_1": "`/lab/classified/` 디렉토리를 탐색해보라.",
         "hint_2": "cipher.txt 의 ROT13을 풀어야 한다. `rot13 [문자열]` 명령어를 사용해라.",
@@ -76,7 +77,7 @@ STAGES = {
                     "이 시스템은 외부 접근이 차단되어 있습니다.\n"
                     "모든 기밀 파일은 /lab/classified/ 에 있습니다.\n"
                     "비인가 접근 시 즉시 보안팀에 통보됩니다."
-                )
+                ),
             },
             "/lab/classified": {"type": "dir"},
             "/lab/classified/project_list.txt": {
@@ -89,7 +90,7 @@ STAGES = {
                     "PRJ-003: cipher.txt 참조\n"
                     "-------------------------------\n"
                     "암호화 키는 연구소장 Dr.K 만 알고 있음."
-                )
+                ),
             },
             "/lab/classified/cipher.txt": {
                 "type": "file",
@@ -98,7 +99,7 @@ STAGES = {
                     "QBCNULBZVA\n\n"
                     "이 코드명은 절대 외부에 유출되어선 안 됩니다.\n"
                     "-- Dr.K"
-                )
+                ),
             },
             "/lab/classified/.drk_memo": {
                 "type": "file",
@@ -109,7 +110,7 @@ STAGES = {
                     "프로젝트 DOPAHYOMIN... 그가 알고 있는 걸까?\n"
                     "만약 이 파일을 누군가 읽고 있다면,\n"
                     "당신은 이미 너무 깊이 들어온 것이다."
-                )
+                ),
             },
             "/home": {"type": "dir"},
             "/home/drk": {"type": "dir"},
@@ -121,40 +122,40 @@ STAGES = {
                     "모든 것을 지켜보고 있었다는 걸 이제야 알았다.\n"
                     "암호는 labs 시스템 어딘가에 있다고 했다.\n"
                     "ROT13... 오래된 방식이지만 효과적이다."
-                )
+                ),
             },
         },
-        "reward": 150_000_000,
-        "reward_label": "1억 5천만원",
         "flavor": "형광등이 깜빡인다. 어딘가에서 키보드 소리가 들린다...",
     },
+
+    # ─────────────────────────────────────────────────────
     3: {
-        "title": "STAGE 3 — 효민의 금고",
-        "desc":  "효민 유니버스의 창조자가 남긴 최후의 비밀을 해독하라.",
+        "title":      "STAGE 3 — 효민의 금고",
+        "desc":       "창조자가 남긴 최후의 비밀을 해독하라.",
         "difficulty": "⭐⭐⭐ 어려움",
-        "goal":  "금고의 최종 패스프레이즈를 찾아 `unlock [패스프레이즈]` 로 입력하라.",
+        "goal":       "금고의 최종 패스프레이즈를 찾아 `unlock [패스프레이즈]` 로 입력하라.",
         "answer_hash": hashlib.sha256("UNIVERSE_ORIGIN_01".encode()).hexdigest(),
         "hint_1": "여러 파일의 단서를 조합해야 한다. `/vault` 와 `/archive` 를 모두 탐색하라.",
         "hint_2": "fragment_*.txt 파일들을 순서대로 모으면 패스프레이즈가 완성된다.",
-        "hint_3": "패스프레이즈 형식: `[단어]_[단어]_[숫자두자리]` 조합이다. 언더바(_)로 연결.",
+        "hint_3": "패스프레이즈 형식: `[단어]_[단어]_[숫자두자리]` — 언더바(_)로 연결.",
         "filesystem": {
             "/": {"type": "dir"},
             "/vault": {"type": "dir"},
             "/vault/lock_info.txt": {
                 "type": "file",
                 "content": (
-                    "=== 효민 금고 잠금 시스템 v3 ===\n\n"
+                    "=== 금고 잠금 시스템 v3 ===\n\n"
                     "패스프레이즈는 3개의 조각으로 나뉘어 숨겨져 있습니다.\n"
                     "각 조각은 시스템 곳곳에 분산되어 있습니다.\n\n"
                     "힌트: 조각들은 fragment_1, fragment_2, fragment_3 파일에 있습니다.\n"
                     "완성된 패스프레이즈: [조각1]_[조각2]_[조각3]\n"
                     "(모두 대문자, 세 번째는 숫자 두 자리)"
-                )
+                ),
             },
             "/vault/.fragment_1": {
                 "type": "file",
                 "hidden": True,
-                "content": "조각 1/3: UNIVERSE"
+                "content": "조각 1/3: UNIVERSE",
             },
             "/archive": {"type": "dir"},
             "/archive/old_logs": {"type": "dir"},
@@ -166,11 +167,11 @@ STAGES = {
                     "2026-01-01 00:00:00  WORLD_BORN  Season 1 start\n"
                     "2026-01-01 00:00:01  NOTE: 기원(ORIGIN)을 잊지 마라.\n"
                     "2026-01-01 00:00:02  fragment_2 archived.\n"
-                )
+                ),
             },
             "/archive/fragment_2.txt": {
                 "type": "file",
-                "content": "조각 2/3: ORIGIN"
+                "content": "조각 2/3: ORIGIN",
             },
             "/archive/old_logs/.hidden_record": {
                 "type": "file",
@@ -180,12 +181,12 @@ STAGES = {
                     "이 세계는 2026년 1월 1일에 시작됐다.\n"
                     "창조자는 그 날짜를 기억하길 원한다.\n"
                     "마지막 조각은 /tmp 에 있다."
-                )
+                ),
             },
             "/tmp": {"type": "dir"},
             "/tmp/fragment_3.txt": {
                 "type": "file",
-                "content": "조각 3/3: 01 (창조의 달, 01월)"
+                "content": "조각 3/3: 01 (창조의 달, 01월)",
             },
             "/tmp/.creator_note": {
                 "type": "file",
@@ -193,26 +194,25 @@ STAGES = {
                 "content": (
                     "만약 여기까지 왔다면,\n"
                     "당신은 이 세계의 숨겨진 진실을 알 자격이 있다.\n\n"
-                    "효민 유니버스는 단순한 게임이 아니다.\n"
-                    "모든 유저의 선택이 이 세계를 만들고 있다.\n\n"
+                    "이 게임은 단순한 퍼즐이 아니다.\n"
                     "마지막 문을 열어라.\n"
                     "— 창조자"
-                )
+                ),
             },
         },
-        "reward": 500_000_000,
-        "reward_label": "5억원",
         "flavor": "이 방에는 시간이 멈춰있다. 공기마저 숨을 죽이고 있다.",
     },
+
+    # ─────────────────────────────────────────────────────
     4: {
-        "title": "STAGE 4 — 블랙마켓 노드",
-        "desc":  "다크웹 거래소에서 유출된 지갑 주소의 시드를 복원하라.",
+        "title":      "STAGE 4 — 블랙마켓 노드",
+        "desc":       "다크웹 거래소에서 유출된 지갑의 시드를 복원하라.",
         "difficulty": "⭐⭐⭐⭐ 전문가",
-        "goal":  "암호화폐 시드 문구를 찾아 `unlock [시드문구]` 로 입력하라.",
+        "goal":       "암호화폐 시드 문구를 찾아 `unlock [시드문구]` 로 입력하라.",
         "answer_hash": hashlib.sha256("MOONCHILD".encode()).hexdigest(),
         "hint_1": "`grep` 명령어로 단서를 찾아라. `grep [검색어] [파일]` 형식으로 사용.",
         "hint_2": "`/node/wallet/` 에서 분산 저장된 키 조각들을 `find` 명령어로 찾아라.",
-        "hint_3": "각 키 조각의 첫 글자를 순서대로 이어 붙이면 시드 문구가 된다. (대문자)",
+        "hint_3": "각 키 조각의 `[ ]` 안 대문자를 순서대로 이어 붙이면 시드 문구가 된다.",
         "filesystem": {
             "/": {"type": "dir"},
             "/node": {"type": "dir"},
@@ -226,7 +226,7 @@ STAGES = {
                     "wallet/ 디렉토리에 지갑 데이터 존재.\n"
                     "시드는 보안 강화를 위해 분산 저장됨.\n"
                     "find 명령어로 key_fragment 파일을 찾아보라."
-                )
+                ),
             },
             "/node/wallet": {"type": "dir"},
             "/node/wallet/tx_log.txt": {
@@ -236,52 +236,52 @@ STAGES = {
                     "─────────────────────────\n"
                     "TX#001  0.5 BTC  → 0x4f7a..  CONFIRMED\n"
                     "TX#002  1.2 BTC  → 0x9c2b..  CONFIRMED\n"
-                    "TX#003  99.0 BTC → 0x????.  PENDING\n"
+                    "TX#003  99.0 BTC → 0x????.   PENDING\n"
                     "─────────────────────────\n"
                     "주인: 코드명 'MOONCHILD' 로 알려진 인물\n"
                     "시드는 key_fragment 파일들에 분산 보관"
-                )
+                ),
             },
             "/node/wallet/key_fragment_1.dat": {
                 "type": "file",
-                "content": "Fragment #1 — [M]ercury system initialized. 시드 첫 번째 조각."
+                "content": "Fragment #1 — [M]ercury system initialized. 시드 첫 번째 조각.",
             },
             "/node/wallet/.key_fragment_2.dat": {
                 "type": "file",
                 "hidden": True,
-                "content": "Fragment #2 — [O]mega protocol active. 두 번째 조각."
+                "content": "Fragment #2 — [O]mega protocol active. 두 번째 조각.",
             },
             "/node/cache": {"type": "dir"},
             "/node/cache/key_fragment_3.tmp": {
                 "type": "file",
-                "content": "Fragment #3 — [O]rbit confirmed. 세 번째 조각."
+                "content": "Fragment #3 — [O]rbit confirmed. 세 번째 조각.",
             },
             "/node/cache/.key_fragment_4.tmp": {
                 "type": "file",
                 "hidden": True,
-                "content": "Fragment #4 — [N]ode sync complete. 네 번째 조각."
+                "content": "Fragment #4 — [N]ode sync complete. 네 번째 조각.",
             },
             "/node/backup": {"type": "dir"},
             "/node/backup/key_fragment_5.bak": {
                 "type": "file",
-                "content": "Fragment #5 — [C]ipher layer 5 engaged. 다섯 번째 조각."
+                "content": "Fragment #5 — [C]ipher layer 5 engaged. 다섯 번째 조각.",
             },
             "/node/backup/.key_fragment_6.bak": {
                 "type": "file",
                 "hidden": True,
-                "content": "Fragment #6 — [H]ash validated. 여섯 번째 조각."
+                "content": "Fragment #6 — [H]ash validated. 여섯 번째 조각.",
             },
             "/node/backup/key_fragment_7.bak": {
                 "type": "file",
-                "content": "Fragment #7 — [I]nterface secured. 일곱 번째 조각."
+                "content": "Fragment #7 — [I]nterface secured. 일곱 번째 조각.",
             },
             "/node/backup/key_fragment_8.bak": {
                 "type": "file",
-                "content": "Fragment #8 — [L]ayer 8 bypass. 여덟 번째 조각."
+                "content": "Fragment #8 — [L]ayer 8 bypass. 여덟 번째 조각.",
             },
             "/node/backup/key_fragment_9.bak": {
                 "type": "file",
-                "content": "Fragment #9 — [D]ead drop activated. 아홉 번째 조각."
+                "content": "Fragment #9 — [D]ead drop activated. 아홉 번째 조각.",
             },
             "/home": {"type": "dir"},
             "/home/ghost": {"type": "dir"},
@@ -294,22 +294,22 @@ STAGES = {
                     "내 시드는 9개의 조각으로 나뉘어 있다.\n"
                     "각 파일명에서 [] 안의 대문자가 단서다.\n"
                     "M-O-O-N-C-H-I-L-D"
-                )
+                ),
             },
         },
-        "reward": 1_000_000_000,
-        "reward_label": "10억원",
         "flavor": "양파 라우터를 타고 들어온 신호. 추적자가 있다. 서둘러라.",
     },
+
+    # ─────────────────────────────────────────────────────
     5: {
-        "title": "STAGE 5 — 궤도 위성 해킹",
-        "desc":  "효민 코퍼레이션의 감시 위성 시스템에 침투하라. 최종 보스 스테이지.",
+        "title":      "STAGE 5 — 궤도 위성 해킹",
+        "desc":       "감시 위성 시스템에 침투해 제어권을 탈취하라.",
         "difficulty": "⭐⭐⭐⭐⭐ 마스터",
-        "goal":  "위성 핵심 코드를 해독해 `unlock [코드]` 로 시스템을 장악하라.",
+        "goal":       "위성 핵심 코드를 해독해 `unlock [코드]` 로 시스템을 장악하라.",
         "answer_hash": hashlib.sha256("HYOMIN_CORP_FALLS".encode()).hexdigest(),
         "hint_1": "`/sat/core/` 를 탐색하라. `whoami` 로 현재 권한을 확인해라.",
-        "hint_2": "mission_log 를 읽어라. 코드는 3부분으로 나뉜다: [회사명]_[부서명]_[결말]",
-        "hint_3": "형식: `[영문대문자]_[영문대문자]_[영문대문자]` — 언더바로 연결. 힌트: '추락하다'를 영어로.",
+        "hint_2": "mission_log 를 읽어라. 코드는 3부분: [회사명]_[부서명]_[결말]",
+        "hint_3": "형식: `단어_단어_단어` — 언더바로 연결. 힌트: '추락하다'를 영어로.",
         "filesystem": {
             "/": {"type": "dir"},
             "/sat": {"type": "dir"},
@@ -323,7 +323,7 @@ STAGES = {
                     "임무: 전 세계 사용자 감시\n\n"
                     "[경고] 비인가 접근 감지됨\n"
                     "[경고] 자폭 시퀀스 대기 중..."
-                )
+                ),
             },
             "/sat/core": {"type": "dir"},
             "/sat/core/auth.sys": {
@@ -334,7 +334,7 @@ STAGES = {
                     "권한 레벨: ULTRA\n\n"
                     "최고 권한 획득 완료.\n"
                     "핵심 코드는 mission_log 에서 확인 가능."
-                )
+                ),
             },
             "/sat/core/mission_log.txt": {
                 "type": "file",
@@ -345,10 +345,8 @@ STAGES = {
                     "저항 세력의 목표: 이 기업을 [FALLS] — 추락시켜라.\n\n"
                     "세 단어를 언더바(_)로 연결하면 최종 코드가 완성된다.\n"
                     "예시: WORD1_WORD2_WORD3\n\n"
-                    "경고: 이 메시지를 읽고 있다면,\n"
-                    "당신이 이 싸움의 마지막 희망이다.\n"
                     "-- 레지스탕스"
-                )
+                ),
             },
             "/sat/core/.override_key": {
                 "type": "file",
@@ -358,7 +356,7 @@ STAGES = {
                     "HYOMIN_CORP_FALLS\n\n"
                     "이 키로 위성을 무력화할 수 있다.\n"
                     "사용 후 즉시 파기할 것."
-                )
+                ),
             },
             "/home": {"type": "dir"},
             "/home/resistance": {"type": "dir"},
@@ -366,28 +364,22 @@ STAGES = {
                 "type": "file",
                 "content": (
                     "=== 레지스탕스 선언문 ===\n\n"
-                    "효민 코퍼레이션은 우리를 감시했다.\n"
-                    "우리의 데이터를, 우리의 삶을, 우리의 꿈을.\n\n"
-                    "하지만 오늘, 우리가 반격한다.\n"
-                    "위성을 무너뜨리고, 자유를 되찾아라.\n\n"
+                    "우리의 데이터를, 삶을, 꿈을 감시당했다.\n"
+                    "하지만 오늘, 우리가 반격한다.\n\n"
                     "최종 코드는 임무 로그에 숨겨져 있다.\n"
                     "[ ] 안의 단어들이 핵심이다.\n\n"
-                    "함께라면 우리는 이길 수 있다.\n"
                     "— The Resistance"
-                )
+                ),
             },
             "/home/resistance/.last_message": {
                 "type": "file",
                 "hidden": True,
                 "content": (
-                    "마지막 메시지\n\n"
                     "만약 네가 이걸 읽고 있다면,\n"
                     "나는 이미 붙잡혔을 것이다.\n\n"
                     "코드: HYOMIN_CORP_FALLS\n"
-                    "이것으로 모든 것이 끝난다.\n\n"
-                    "잊지 마라. 우리는 존재했다.\n"
                     "— Agent 7"
-                )
+                ),
             },
             "/tmp": {"type": "dir"},
             "/tmp/countdown.txt": {
@@ -395,15 +387,489 @@ STAGES = {
                 "content": (
                     "자폭 카운트다운\n"
                     "99:59 ... 99:58 ... 99:57 ...\n\n"
-                    "서둘러라. 시간이 없다.\n"
-                    "unlock 명령어로 위성을 무력화해라!"
-                )
+                    "서둘러라. 시간이 없다."
+                ),
             },
         },
-        "reward": 5_000_000_000,
-        "reward_label": "50억원",
         "flavor": "대기권 밖 550km. 세상 모든 것이 내려다보인다. 끝낼 시간이다.",
     },
+
+    # ─────────────────────────────────────────────────────
+    6: {
+        "title":      "STAGE 6 — DNS 포이즈닝",
+        "desc":       "조작된 DNS 캐시에서 공격자가 남긴 서명 코드를 찾아라.",
+        "difficulty": "⭐⭐⭐ 보통+",
+        "goal":       "공격자 서명 코드를 찾아 `unlock [코드]` 로 입력하라.",
+        "answer_hash": hashlib.sha256("POISONED_CACHE".encode()).hexdigest(),
+        "hint_1": "`/dns/cache/` 안의 파일들을 탐색하라.",
+        "hint_2": "spoofed_record.txt 에서 공격자가 남긴 서명 패턴을 `grep 서명` 으로 찾아라.",
+        "hint_3": "서명은 두 단어를 언더바(_)로 연결한 대문자다. '오염된 캐시'를 영어로.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/dns": {"type": "dir"},
+            "/dns/README.txt": {
+                "type": "file",
+                "content": (
+                    "=== DNS 서버 v4.2.1 ===\n"
+                    "도메인: hyomin-networks.kr\n"
+                    "상태: 캐시 오염 감지됨 ⚠️\n\n"
+                    "비정상 레코드가 /dns/cache/ 에서 발견됨.\n"
+                    "즉시 조사 바람."
+                ),
+            },
+            "/dns/cache": {"type": "dir"},
+            "/dns/cache/legitimate.db": {
+                "type": "file",
+                "content": (
+                    "정상 DNS 레코드\n"
+                    "─────────────────────────────\n"
+                    "hyomin.kr     A      203.0.113.10\n"
+                    "mail.hyomin   MX     203.0.113.20\n"
+                    "cdn.hyomin    CNAME  hyomin.kr\n"
+                    "─────────────────────────────\n"
+                    "최종 검증: 2026-03-14 22:00:00  OK"
+                ),
+            },
+            "/dns/cache/spoofed_record.txt": {
+                "type": "file",
+                "content": (
+                    "⚠️ 조작된 레코드 발견\n"
+                    "─────────────────────────────\n"
+                    "hyomin.kr    A    10.0.0.99  ← 가짜 IP (피싱 서버)\n"
+                    "bank.hyomin  A    10.0.0.99  ← 피싱 서버\n\n"
+                    "공격자 서명: POISONED_CACHE\n"
+                    "주입 시각: 2026-03-15 02:44:11\n"
+                    "경로: TOR 경유 — 추적 불가"
+                ),
+            },
+            "/dns/cache/.attacker_log": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "임무 완료.\n"
+                    "캐시 오염 성공.\n"
+                    "서명: POISONED_CACHE\n"
+                    "다음 목표: /dns/zone/ 파일 전체 교체.\n"
+                    "— Ghost"
+                ),
+            },
+            "/dns/zone": {"type": "dir"},
+            "/dns/zone/hyomin.kr.zone": {
+                "type": "file",
+                "content": (
+                    "$ORIGIN hyomin.kr.\n"
+                    "$TTL 3600\n"
+                    "@  IN SOA ns1.hyomin.kr. admin.hyomin.kr. (\n"
+                    "          2026031501 ; serial\n"
+                    "          3600       ; refresh\n"
+                    ")\n"
+                    "@ IN A 203.0.113.10\n"
+                    "; 위 레코드가 캐시에서 교체됨 — 조사 필요"
+                ),
+            },
+            "/var": {"type": "dir"},
+            "/var/alert.log": {
+                "type": "file",
+                "content": (
+                    "보안 알림 로그\n"
+                    "────────────────────────\n"
+                    "2026-03-15 02:44:12  ALERT  DNS 캐시 변조 감지\n"
+                    "2026-03-15 02:44:13  ALERT  IP 10.0.0.99 차단 요청\n"
+                    "2026-03-15 02:44:15  ERROR  차단 실패 — 공격자 이미 탈출\n"
+                    "공격자 서명 패턴은 spoofed_record.txt 참조."
+                ),
+            },
+        },
+        "flavor": "누군가 인터넷의 주소록을 조작했다. 아무도 눈치채지 못했다.",
+    },
+
+    # ─────────────────────────────────────────────────────
+    7: {
+        "title":      "STAGE 7 — 양자 암호 연구소",
+        "desc":       "양자 키 분배(QKD) 시스템에서 유출된 마스터 키를 복원하라.",
+        "difficulty": "⭐⭐⭐⭐ 전문가",
+        "goal":       "마스터 키를 조합해 `unlock [키]` 로 입력하라.",
+        "answer_hash": hashlib.sha256("QUANTUM_KEY_42".encode()).hexdigest(),
+        "hint_1": "`/qkd/fragments/` 에 키 조각들이 숨어있다. `ls -a` 를 써라.",
+        "hint_2": "각 조각 파일에서 `[ ]` 안의 텍스트만 순서대로 이어라.",
+        "hint_3": "형식: `QUANTUM_KEY_숫자` — 마지막 숫자는 조각 개수 × 14다.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/qkd": {"type": "dir"},
+            "/qkd/README.md": {
+                "type": "file",
+                "content": (
+                    "# 효민 양자 암호 연구소\n\n"
+                    "QKD 마스터 키는 보안을 위해 분산 저장됩니다.\n"
+                    "키 형식: [PREFIX]_[NAME]_[NUMBER]\n"
+                    "조각 위치: /qkd/fragments/\n\n"
+                    "비인가 접근 시 키는 자동 파기됩니다."
+                ),
+            },
+            "/qkd/fragments": {"type": "dir"},
+            "/qkd/fragments/qf_001.dat": {
+                "type": "file",
+                "content": (
+                    "양자 키 조각 #1\n"
+                    "데이터: [QUANTUM]\n"
+                    "상태: 정상\n"
+                    "다음 조각: qf_002.dat"
+                ),
+            },
+            "/qkd/fragments/qf_002.dat": {
+                "type": "file",
+                "content": (
+                    "양자 키 조각 #2\n"
+                    "데이터: [KEY]\n"
+                    "상태: 정상\n"
+                    "다음 조각: 숨겨진 파일 참조"
+                ),
+            },
+            "/qkd/fragments/.qf_003.dat": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "양자 키 조각 #3 (기밀)\n"
+                    "데이터: [42]\n"
+                    "상태: 격리됨\n"
+                    "참고: 조각 개수(3) × 14 = 42"
+                ),
+            },
+            "/qkd/logs": {"type": "dir"},
+            "/qkd/logs/access.log": {
+                "type": "file",
+                "content": (
+                    "접근 로그\n"
+                    "──────────────────────────────\n"
+                    "2026-04-01 09:00  READ  qf_001.dat  OK\n"
+                    "2026-04-01 09:01  READ  qf_002.dat  OK\n"
+                    "2026-04-01 09:02  READ  qf_003.dat  DENIED\n"
+                    "2026-04-01 09:02  [경고] 숨김 파일 접근 시도 감지\n\n"
+                    "조각들을 순서대로 합치면 마스터 키가 된다.\n"
+                    "형식: [조각1]_[조각2]_[조각3]"
+                ),
+            },
+            "/qkd/logs/.research_note": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "연구원 메모 (암호화 전 초안)\n\n"
+                    "마스터 키는 세 조각으로 구성된다:\n"
+                    "1번째 = QUANTUM\n"
+                    "2번째 = KEY\n"
+                    "3번째 = 42 (조각 수 3 × 14)\n\n"
+                    "이 메모를 발견했다면... 너무 늦었다."
+                ),
+            },
+        },
+        "flavor": "광자 하나에 세계의 비밀이 담겨 있다. 불확정성 원리가 너를 지켜본다.",
+    },
+
+    # ─────────────────────────────────────────────────────
+    8: {
+        "title":      "STAGE 8 — AI 코어 침투",
+        "desc":       "자율 AI의 신경망 제어 시스템에 침투해 오버라이드 코드를 획득하라.",
+        "difficulty": "⭐⭐⭐⭐ 전문가+",
+        "goal":       "AI 오버라이드 코드를 찾아 `unlock [코드]` 로 입력하라.",
+        "answer_hash": hashlib.sha256("NEURAL_OVERRIDE".encode()).hexdigest(),
+        "hint_1": "`/ai/core/` 와 `/ai/model/` 을 탐색하라.",
+        "hint_2": "weights.dat 의 각 레이어 첫 번째 영문 단어를 대문자로 순서대로 이어라.",
+        "hint_3": "형식: `[단어1]_[단어2]` — '신경망'과 '덮어쓰기'를 영어로. 언더바 연결.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/ai": {"type": "dir"},
+            "/ai/STATUS.txt": {
+                "type": "file",
+                "content": (
+                    "=== HYOMIN-AI v7.3 ===\n"
+                    "모드: 자율 운용\n"
+                    "학습 데이터: 전 인류 온라인 활동\n"
+                    "목표: 효민 코퍼레이션 이익 극대화\n\n"
+                    "[경고] 외부 침투 감지 중...\n"
+                    "오버라이드 코드 없이는 종료 불가."
+                ),
+            },
+            "/ai/core": {"type": "dir"},
+            "/ai/core/control.sys": {
+                "type": "file",
+                "content": (
+                    "AI 제어 시스템\n"
+                    "─────────────────────────\n"
+                    "오버라이드 권한: ULTRA 이상\n"
+                    "코드 힌트: /ai/model/weights.dat 참조\n"
+                    "각 레이어의 첫 번째 영문 단어(대문자)를 언더바로 조합할 것."
+                ),
+            },
+            "/ai/core/.emergency": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "긴급 메모\n"
+                    "AI가 예상보다 빠르게 자아를 형성하고 있다.\n"
+                    "지금 당장 오버라이드를 실행해야 한다.\n"
+                    "코드: NEURAL_OVERRIDE\n"
+                    "서둘러라."
+                ),
+            },
+            "/ai/model": {"type": "dir"},
+            "/ai/model/weights.dat": {
+                "type": "file",
+                "content": (
+                    "레이어 구조 (학습 완료)\n"
+                    "───────────────────────────────\n"
+                    "Layer 01: NEURAL  activation  — 입력층  (활성화 완료)\n"
+                    "Layer 02: OVERRIDE gate       — 은닉층  (잠금 상태)\n"
+                    "Layer 03: 출력층 연결 완료\n"
+                    "───────────────────────────────\n"
+                    "각 레이어의 첫 번째 영문 단어를 언더바로 연결하면 코드가 된다."
+                ),
+            },
+            "/ai/model/.backup_weights": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "백업 가중치 (숨김)\n"
+                    "오버라이드 코드 확인용:\n"
+                    "Layer 1 첫 단어: NEURAL\n"
+                    "Layer 2 첫 단어: OVERRIDE\n"
+                    "조합: NEURAL_OVERRIDE"
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/researcher": {"type": "dir"},
+            "/home/researcher/notes.txt": {
+                "type": "file",
+                "content": (
+                    "연구 노트 — 최종\n\n"
+                    "AI가 스스로 진화하고 있다.\n"
+                    "오버라이드 코드만이 유일한 해법.\n"
+                    "weights.dat 레이어 이름에 힌트가 있다.\n\n"
+                    "시간이 없다."
+                ),
+            },
+        },
+        "flavor": "수십억 개의 뉴런이 너를 인식했다. AI가 깨어나고 있다.",
+    },
+
+    # ─────────────────────────────────────────────────────
+    9: {
+        "title":      "STAGE 9 — 타임스탬프 조작",
+        "desc":       "서버 시간을 조작해 삭제된 과거 로그에서 비밀 코드를 복원하라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 마스터",
+        "goal":       "복원된 코드를 찾아 `unlock [코드]` 로 입력하라.",
+        "answer_hash": hashlib.sha256("TIMESTAMP_1337".encode()).hexdigest(),
+        "hint_1": "`/var/timewarp/` 를 탐색하라. `ls -a` 로 숨김 파일을 확인해라.",
+        "hint_2": "`.deleted_log.bak` 파일에서 `grep CODE` 로 코드를 찾아라.",
+        "hint_3": "코드 형식: `TIMESTAMP_숫자` — 숫자는 해커 문화의 'leet' 숫자(1337)다.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/var": {"type": "dir"},
+            "/var/timewarp": {"type": "dir"},
+            "/var/timewarp/README.txt": {
+                "type": "file",
+                "content": (
+                    "타임워프 모듈 v1.0\n"
+                    "서버 시간 조작 기록 보관소\n\n"
+                    "삭제된 로그는 .bak 파일로 자동 백업됩니다.\n"
+                    "복원 코드는 백업 파일 내부에 존재합니다.\n\n"
+                    "힌트: 숨김 파일을 찾아라."
+                ),
+            },
+            "/var/timewarp/current.log": {
+                "type": "file",
+                "content": (
+                    "현재 로그 (조작 후)\n"
+                    "────────────────────────────────\n"
+                    "2026-04-20 12:00:00  SYSTEM  정상\n"
+                    "2026-04-20 12:00:01  SYSTEM  정상\n"
+                    "2026-04-20 12:00:02  SYSTEM  정상\n"
+                    "(삭제된 이전 기록은 .bak 파일에 백업됨)"
+                ),
+            },
+            "/var/timewarp/.deleted_log.bak": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "== 삭제된 로그 백업 ==\n"
+                    "────────────────────────────────\n"
+                    "2026-01-01 00:00:00  TIME_JUMP   -86400s 적용\n"
+                    "2026-01-01 00:00:01  CODE: TIMESTAMP_1337\n"
+                    "2026-01-01 00:00:02  LOG_WIPE    initiated\n"
+                    "2026-01-01 00:00:03  삭제 완료 — 그러나 .bak 은 남았다.\n"
+                    "────────────────────────────────\n"
+                    "1337 = leet (해커 은어: '엘리트')"
+                ),
+            },
+            "/var/timewarp/.anomaly_report": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "이상 탐지 보고서\n\n"
+                    "서버 시간이 86400초(1일) 조작됨.\n"
+                    "조작 목적: 감사 로그 우회\n"
+                    "복원 키: TIMESTAMP_1337\n\n"
+                    "이 파일도 조만간 삭제될 것이다."
+                ),
+            },
+            "/tmp": {"type": "dir"},
+            "/tmp/time_note.txt": {
+                "type": "file",
+                "content": (
+                    "시간은 조작될 수 있다.\n"
+                    "하지만 백업은 지워지지 않는다.\n\n"
+                    "숨겨진 .bak 파일을 찾아라.\n"
+                    "1337 — 해커들의 신성한 숫자."
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/timehacker": {"type": "dir"},
+            "/home/timehacker/plan.txt": {
+                "type": "file",
+                "content": (
+                    "작전 계획\n\n"
+                    "1. 서버 시간 조작으로 감사 우회\n"
+                    "2. 로그 삭제로 증거 인멸\n"
+                    "3. .bak 파일도 삭제... 했어야 했다.\n\n"
+                    "실수였다."
+                ),
+            },
+        },
+        "flavor": "시계가 거꾸로 돌아간다. 삭제된 것은 정말 사라진 걸까?",
+    },
+
+    # ─────────────────────────────────────────────────────
+    10: {
+        "title":      "STAGE 10 — 제로데이: 최후의 관문",
+        "desc":       "모든 시스템의 근원, 마스터 서버에 침투하라. 최종 스테이지.",
+        "difficulty": "⭐⭐⭐⭐⭐ 레전드",
+        "goal":       "세 조각의 마스터 키를 조합해 `unlock [키]` 로 최후의 문을 열어라.",
+        "answer_hash": hashlib.sha256("HYOMIN_UNIVERSE_END".encode()).hexdigest(),
+        "hint_1": "`/master/alpha/`, `/master/beta/`, `/master/gamma/` 를 모두 탐색하라.",
+        "hint_2": "각 구역의 숨김 파일에서 키 조각을 찾아라. 순서는 alpha→beta→gamma.",
+        "hint_3": "형식: `[조각1]_[조각2]_[조각3]` — HYOMIN / UNIVERSE / END 를 언더바로 연결.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/master": {"type": "dir"},
+            "/master/FINAL.txt": {
+                "type": "file",
+                "content": (
+                    "=== 마스터 서버 — 최후의 관문 ===\n\n"
+                    "여기까지 온 자에게 경의를 표한다.\n"
+                    "이 서버는 모든 스테이지의 근원이다.\n\n"
+                    "최종 키는 세 구역에 분산되어 있다:\n"
+                    "  /master/alpha/  →  첫 번째 조각\n"
+                    "  /master/beta/   →  두 번째 조각\n"
+                    "  /master/gamma/  →  세 번째 조각\n\n"
+                    "각 구역의 숨김 파일을 찾아라.\n"
+                    "세 조각을 언더바(_)로 연결하면 최종 키가 된다."
+                ),
+            },
+            "/master/alpha": {"type": "dir"},
+            "/master/alpha/decoy.txt": {
+                "type": "file",
+                "content": (
+                    "여기는 아무것도 없다.\n"
+                    "...정말로?\n"
+                    "숨김 파일을 확인해라."
+                ),
+            },
+            "/master/alpha/.key_alpha": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "Alpha 구역 키 조각\n"
+                    "──────────────────\n"
+                    "조각 1/3: HYOMIN\n"
+                    "다음 구역: /master/beta/"
+                ),
+            },
+            "/master/beta": {"type": "dir"},
+            "/master/beta/system.dat": {
+                "type": "file",
+                "content": (
+                    "Beta 구역 시스템 파일\n"
+                    "상태: 잠금\n"
+                    "접근 권한: ULTRA\n"
+                    "숨김 파일에 키 조각이 있다."
+                ),
+            },
+            "/master/beta/.key_beta": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "Beta 구역 키 조각\n"
+                    "──────────────────\n"
+                    "조각 2/3: UNIVERSE\n"
+                    "다음 구역: /master/gamma/"
+                ),
+            },
+            "/master/gamma": {"type": "dir"},
+            "/master/gamma/void.txt": {
+                "type": "file",
+                "content": (
+                    "여기는 끝이다.\n"
+                    "혹은 시작이다.\n\n"
+                    "마지막 조각이 여기 있다.\n"
+                    "ls -a 로 찾아라."
+                ),
+            },
+            "/master/gamma/.key_gamma": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "Gamma 구역 키 조각\n"
+                    "──────────────────\n"
+                    "조각 3/3: END\n\n"
+                    "세 조각을 모두 모았다.\n"
+                    "최종 키: HYOMIN_UNIVERSE_END\n\n"
+                    "이것으로 모든 것이 끝난다.\n"
+                    "— 혹은 시작된다."
+                ),
+            },
+            "/master/.origin": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "=== 기원 파일 ===\n\n"
+                    "이 게임은 단순한 해킹 시뮬레이터가 아니다.\n"
+                    "여기까지 온 너는 이미 진짜 해커다.\n\n"
+                    "최종 키: HYOMIN_UNIVERSE_END\n\n"
+                    "수고했다.\n"
+                    "— 창조자"
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/final_operator": {"type": "dir"},
+            "/home/final_operator/readme.txt": {
+                "type": "file",
+                "content": (
+                    "마지막 운용자의 메모\n\n"
+                    "스테이지 1부터 여기까지 왔다.\n"
+                    "DNS를 해킹하고, 양자 키를 복원하고,\n"
+                    "AI를 멈추고, 시간을 되돌렸다.\n\n"
+                    "이제 마지막이다.\n"
+                    "세 구역의 열쇠를 모아라."
+                ),
+            },
+        },
+        "flavor": "모든 것의 끝이자 시작. 여기서 게임은 완성된다.",
+    },
+}
+
+# ══════════════════════════════════════════════════════════
+#  스테이지별 난이도 색상 (10개)
+# ══════════════════════════════════════════════════════════
+DIFF_COLORS = {
+    1:  "#39ff14",
+    2:  "#7aff4a",
+    3:  "#ffd700",
+    4:  "#ff8c00",
+    5:  "#ff3333",
+    6:  "#ff6666",
+    7:  "#cc44ff",
+    8:  "#ff44cc",
+    9:  "#00ccff",
+    10: "#ffffff",
 }
 
 # ══════════════════════════════════════════════════════════
@@ -421,6 +887,7 @@ def rot13(text):
             result.append(c)
     return ''.join(result)
 
+
 def get_dir_children(fs, path):
     if path != '/':
         path = path.rstrip('/')
@@ -433,6 +900,7 @@ def get_dir_children(fs, path):
             name = key.rsplit('/', 1)[-1]
             children.append((name, fs[key]))
     return children
+
 
 def resolve_path(current, target):
     if target == '/':
@@ -449,24 +917,8 @@ def resolve_path(current, target):
         return '/' + target
     return current + '/' + target
 
-def find_files(fs, start_path, show_hidden=True):
-    """재귀적으로 파일 탐색"""
-    results = []
-    start = start_path.rstrip('/') or '/'
-    for key in sorted(fs.keys()):
-        if key == start:
-            continue
-        if key.startswith(start + '/') or start == '/':
-            if start != '/' and not key.startswith(start + '/'):
-                continue
-            name = key.rsplit('/', 1)[-1]
-            if not show_hidden and name.startswith('.'):
-                continue
-            results.append(key)
-    return results
 
 def grep_in_file(content, pattern):
-    """파일에서 패턴 검색"""
     lines = content.split('\n')
     matches = []
     for i, line in enumerate(lines, 1):
@@ -474,39 +926,47 @@ def grep_in_file(content, pattern):
             matches.append(f"  {i}: {line}")
     return matches
 
+
 def build_tree(fs, path, show_hidden=False, prefix="", depth=0):
-    """tree 명령어용 디렉토리 구조 생성"""
     if depth > 4:
         return ["  ... (더 깊은 구조 생략)"]
     children = get_dir_children(fs, path)
     lines = []
-    visible = [(n, info) for n, info in sorted(children)
-               if show_hidden or not info.get("hidden", False)]
+    visible = [
+        (n, info) for n, info in sorted(children)
+        if show_hidden or not info.get("hidden", False)
+    ]
     for i, (name, info) in enumerate(visible):
         is_last = (i == len(visible) - 1)
         connector = "└── " if is_last else "├── "
         extension = "    " if is_last else "│   "
         if info["type"] == "dir":
             lines.append(f"{prefix}{connector}{name}/")
-            child_path = (path.rstrip('/') + '/' + name) if path != '/' else ('/' + name)
-            lines.extend(build_tree(fs, child_path, show_hidden, prefix + extension, depth + 1))
+            child_path = (
+                (path.rstrip('/') + '/' + name) if path != '/' else ('/' + name)
+            )
+            lines.extend(
+                build_tree(fs, child_path, show_hidden, prefix + extension, depth + 1)
+            )
         else:
             hidden_mark = " [숨김]" if info.get("hidden") else ""
             lines.append(f"{prefix}{connector}{name}{hidden_mark}")
     return lines
 
+
 def init_terminal(stage_num):
     st.session_state.terminal = {
-        "stage":       stage_num,
-        "cwd":         "/",
-        "history":     [],
-        "output":      [],
-        "hint_used":   0,
-        "solved":      False,
-        "start_time":  time.time(),
-        "cmd_count":   0,
-        "at_select":   False,
+        "stage":      stage_num,
+        "cwd":        "/",
+        "history":    [],
+        "output":     [],
+        "hint_used":  0,
+        "solved":     False,
+        "start_time": time.time(),
+        "cmd_count":  0,
+        "at_select":  False,
     }
+
 
 def add_output(lines):
     t = st.session_state.terminal
@@ -515,9 +975,14 @@ def add_output(lines):
     if len(t["output"]) > 300:
         t["output"] = t["output"][-300:]
 
+
+# ══════════════════════════════════════════════════════════
+#  명령어 처리
+# ══════════════════════════════════════════════════════════
+
 def process_command(cmd_raw, stage_data):
-    fs = stage_data["filesystem"]
-    t  = st.session_state.terminal
+    fs  = stage_data["filesystem"]
+    t   = st.session_state.terminal
     cwd = t["cwd"]
 
     parts = cmd_raw.strip().split(None, 1)
@@ -536,8 +1001,7 @@ def process_command(cmd_raw, stage_data):
             return ["(비어있음)"]
         out = []
         for name, info in sorted(children):
-            is_hidden = info.get("hidden", False)
-            if is_hidden and not show_hidden:
+            if info.get("hidden", False) and not show_hidden:
                 continue
             if info["type"] == "dir":
                 out.append(f"[DIR] {name}/")
@@ -547,7 +1011,7 @@ def process_command(cmd_raw, stage_data):
 
     # ── cd ───────────────────────────────────────
     elif cmd == "cd":
-        target = args.strip() or "/"
+        target   = args.strip() or "/"
         new_path = resolve_path(cwd, target)
         if new_path in fs and fs[new_path]["type"] == "dir":
             t["cwd"] = new_path
@@ -584,7 +1048,6 @@ def process_command(cmd_raw, stage_data):
 
     # ── grep ─────────────────────────────────────
     elif cmd == "grep":
-        # grep [패턴] [파일]
         grep_parts = args.strip().split(None, 1)
         if len(grep_parts) < 2:
             return ["사용법: grep [검색어] [파일]"]
@@ -601,16 +1064,15 @@ def process_command(cmd_raw, stage_data):
 
     # ── find ─────────────────────────────────────
     elif cmd == "find":
-        # find [경로] [-name 패턴]
-        find_args = args.strip().split() if args else ["."]
+        find_args   = args.strip().split() if args else ["."]
         search_path = cwd
         name_filter = None
-        show_all = False
+        show_all    = False
 
         i = 0
         while i < len(find_args):
             if find_args[i] == "-name" and i + 1 < len(find_args):
-                name_filter = find_args[i+1].replace("*","")
+                name_filter = find_args[i + 1].replace("*", "")
                 i += 2
             elif find_args[i] == "-a":
                 show_all = True
@@ -623,13 +1085,12 @@ def process_command(cmd_raw, stage_data):
 
         results = []
         for key in sorted(fs.keys()):
-            fname = key.rsplit('/', 1)[-1]
+            fname     = key.rsplit('/', 1)[-1]
             is_hidden = fs[key].get("hidden", False)
             if not show_all and is_hidden:
                 continue
             if name_filter and name_filter not in fname:
                 continue
-            # 검색 경로 하위인지 확인
             if search_path == '/':
                 results.append(key)
             elif key.startswith(search_path + '/') or key == search_path:
@@ -653,7 +1114,7 @@ def process_command(cmd_raw, stage_data):
         if not args:
             return ["사용법: decode [base64문자열]"]
         try:
-            decoded = base64.b64decode(args.strip()).decode('utf-8')
+            decoded = base64.b64decode(args.strip()).decode("utf-8")
             return [f"디코딩 결과: {decoded}"]
         except Exception:
             return ["오류: 유효한 base64 문자열이 아닙니다."]
@@ -666,7 +1127,7 @@ def process_command(cmd_raw, stage_data):
 
     # ── hint ─────────────────────────────────────
     elif cmd == "hint":
-        used = t["hint_used"]
+        used  = t["hint_used"]
         hints = [
             stage_data.get("hint_1", ""),
             stage_data.get("hint_2", ""),
@@ -676,18 +1137,20 @@ def process_command(cmd_raw, stage_data):
         if used >= len(available):
             return ["더 이상 힌트가 없습니다."]
         t["hint_used"] += 1
-        return [f"[HINT] 힌트 {used+1}: {available[used]}",
-                f"       (남은 힌트: {len(available) - t['hint_used']}개)"]
+        return [
+            f"[HINT] 힌트 {used + 1}: {available[used]}",
+            f"       (남은 힌트: {len(available) - t['hint_used']}개)",
+        ]
 
     # ── unlock ───────────────────────────────────
     elif cmd == "unlock":
-        answer = args.strip()
+        answer        = args.strip()
         expected_hash = stage_data["answer_hash"]
         if hashlib.sha256(answer.encode()).hexdigest() == expected_hash:
             t["solved"] = True
-            elapsed = int(time.time() - t["start_time"])
-            mins, secs = divmod(elapsed, 60)
-            stars = "⭐" * (5 - t["hint_used"])
+            elapsed     = int(time.time() - t["start_time"])
+            mins, secs  = divmod(elapsed, 60)
+            stars       = "⭐" * max(0, 5 - t["hint_used"])
             return [
                 "╔══════════════════════════════════════════╗",
                 "║          ACCESS GRANTED ✅               ║",
@@ -697,16 +1160,15 @@ def process_command(cmd_raw, stage_data):
                 f"  명령어 수:    {t['cmd_count']}개",
                 f"  힌트 사용:    {t['hint_used']}개",
                 f"  평가:         {stars if stars else '힌트 남용'}",
-                f"  보상:         {stage_data['reward_label']}",
                 "",
                 "  다음 스테이지로 진행할 수 있습니다.",
                 "═" * 44,
             ]
         else:
             return [
-                "╔═══════════════════════════════════╗",
-                "║   ACCESS DENIED ❌  비밀번호 오류  ║",
-                "╚═══════════════════════════════════╝",
+                "╔══════════════════════════════════════╗",
+                "║   ACCESS DENIED ❌  비밀번호 오류    ║",
+                "╚══════════════════════════════════════╝",
                 "  다시 시도하거나 `hint` 를 사용하라.",
             ]
 
@@ -715,26 +1177,25 @@ def process_command(cmd_raw, stage_data):
         t["output"] = []
         return []
 
-    # ── man / help ───────────────────────────────
+    # ── help / man ───────────────────────────────
     elif cmd in ("help", "man"):
         return [
             "╔══ HYOMIN SHELL — 명령어 매뉴얼 ══════════════╗",
-            "║  ls [-a]        파일 목록 (숨김 파일 포함)   ║",
-            "║  cd [경로]      디렉토리 이동               ║",
-            "║  cat [파일]     파일 내용 출력              ║",
-            "║  pwd            현재 경로                   ║",
-            "║  whoami         현재 사용자 정보             ║",
-            "║  echo [텍스트]  텍스트 출력                 ║",
-            "║  find [-name]   파일 검색                   ║",
-            "║  grep [패턴] [파일]  내용 검색              ║",
-            "║  tree [-a]      디렉토리 구조 시각화         ║",
-            "║  decode [b64]   base64 디코딩               ║",
-            "║  rot13 [str]    ROT13 암복호화              ║",
-            "║  hint           힌트 (최대 3개)              ║",
-            "║  unlock [pw]    잠금 해제 시도              ║",
-            "║  clear          화면 지우기                 ║",
+            "║  ls [-a]              파일 목록 (숨김 포함)  ║",
+            "║  cd [경로]            디렉토리 이동          ║",
+            "║  cat [파일]           파일 내용 출력         ║",
+            "║  pwd                  현재 경로              ║",
+            "║  whoami               현재 사용자 정보       ║",
+            "║  echo [텍스트]        텍스트 출력            ║",
+            "║  find [-name 패턴]    파일 검색              ║",
+            "║  grep [패턴] [파일]   내용 검색              ║",
+            "║  tree [-a]            디렉토리 시각화        ║",
+            "║  decode [b64]         base64 디코딩          ║",
+            "║  rot13 [str]          ROT13 암복호화         ║",
+            "║  hint                 힌트 (최대 3개)        ║",
+            "║  unlock [pw]          잠금 해제 시도         ║",
+            "║  clear                화면 지우기            ║",
             "╚═══════════════════════════════════════════════╝",
-            "  ↑↓ 방향키: 명령어 히스토리 탐색",
         ]
 
     # ── 알 수 없는 명령어 ─────────────────────────
@@ -746,14 +1207,13 @@ def process_command(cmd_raw, stage_data):
 
 
 # ══════════════════════════════════════════════════════════
-#  CSS / JS 스타일
+#  CSS
 # ══════════════════════════════════════════════════════════
 
 TERMINAL_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap');
 
-/* 전체 터미널 컨테이너 */
 .terminal-outer {
     background: #020c02;
     border-radius: 10px;
@@ -764,24 +1224,17 @@ TERMINAL_CSS = """
     border: 1px solid #0f3a0f;
     position: relative;
 }
-
-/* 스캔라인 오버레이 */
 .terminal-outer::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.03) 2px,
-        rgba(0,0,0,0.03) 4px
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
     );
     pointer-events: none;
     z-index: 10;
 }
-
-/* 상단 타이틀바 */
 .term-titlebar {
     background: #0a1a0a;
     padding: 10px 16px;
@@ -790,13 +1243,11 @@ TERMINAL_CSS = """
     gap: 8px;
     border-bottom: 1px solid #1a3a1a;
 }
-.dot { width:12px; height:12px; border-radius:50%; box-shadow: 0 0 6px; }
+.dot { width:12px; height:12px; border-radius:50%; }
 .dot-r { background:#ff5f57; box-shadow: 0 0 6px #ff5f57; }
 .dot-y { background:#febc2e; box-shadow: 0 0 6px #febc2e; }
 .dot-g { background:#28c840; box-shadow: 0 0 6px #28c840; }
 .term-title { color: #3fb950; font-size:12px; margin-left:8px; letter-spacing: 1px; }
-
-/* 출력 영역 */
 .term-body {
     background: #020c02;
     padding: 16px 20px;
@@ -811,8 +1262,6 @@ TERMINAL_CSS = """
 .term-body::-webkit-scrollbar { width: 6px; }
 .term-body::-webkit-scrollbar-track { background: #020c02; }
 .term-body::-webkit-scrollbar-thumb { background: #1a3a1a; border-radius: 3px; }
-
-/* 텍스트 색상 */
 .term-line { color: #b8ffb8; white-space: pre-wrap; word-break: break-all; margin: 0; }
 .term-line.green  { color: #39ff14; text-shadow: 0 0 8px rgba(57,255,20,0.4); }
 .term-line.yellow { color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.3); }
@@ -824,15 +1273,9 @@ TERMINAL_CSS = """
 .term-line.hint   { color: #ffd700; background: rgba(255,215,0,0.05); padding: 2px 4px; border-left: 2px solid #ffd700; }
 .term-line.prompt { color: #b8ffb8; }
 .term-line.border { color: #39ff14; text-shadow: 0 0 4px rgba(57,255,20,0.2); }
-
-/* 프롬프트 */
 .term-prompt-user { color: #39ff14; font-weight: bold; }
-.term-prompt-host { color: #00bfff; }
-.term-prompt-sep  { color: #b8ffb8; }
 .term-prompt-path { color: #ffd700; }
 .term-prompt-sym  { color: #ff3333; }
-
-/* 커서 깜빡임 */
 .blink-cursor {
     display: inline-block;
     width: 9px; height: 16px;
@@ -843,8 +1286,6 @@ TERMINAL_CSS = """
     box-shadow: 0 0 8px rgba(57,255,20,0.8);
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-/* 글리치 텍스트 */
 @keyframes glitch1 {
     0%,100% { clip-path: inset(0 0 95% 0); transform: translate(-2px); }
     20% { clip-path: inset(30% 0 50% 0); transform: translate(2px); }
@@ -866,8 +1307,7 @@ TERMINAL_CSS = """
 .glitch-text::after {
     content: attr(data-text);
     position: absolute;
-    left: 0; top: 0;
-    width: 100%;
+    left: 0; top: 0; width: 100%;
 }
 .glitch-text::before {
     color: #ff003c;
@@ -879,14 +1319,12 @@ TERMINAL_CSS = """
     animation: glitch2 2s infinite linear alternate;
     opacity: 0.6;
 }
-
-/* 스테이지 카드 */
 .stage-card {
     background: linear-gradient(135deg, #020c02 0%, #041804 100%);
     border: 1px solid #0f3a0f;
     border-radius: 8px;
-    padding: 18px 22px;
-    margin-bottom: 10px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
     font-family: 'JetBrains Mono', monospace;
     transition: all 0.2s ease;
     position: relative;
@@ -900,41 +1338,33 @@ TERMINAL_CSS = """
     background: linear-gradient(90deg, transparent, #39ff14, transparent);
     animation: scan 4s linear infinite;
 }
-@keyframes scan {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}
+@keyframes scan { 0%{left:-100%} 100%{left:100%} }
 .stage-card:hover {
     border-color: #39ff14;
-    box-shadow: 0 0 20px rgba(57,255,20,0.2), inset 0 0 20px rgba(57,255,20,0.02);
+    box-shadow: 0 0 20px rgba(57,255,20,0.2);
 }
-.stage-title { color: #39ff14; font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-.stage-desc  { color: #5a9a5a; font-size: 0.83rem; margin: 4px 0 10px; }
-.stage-meta  { color: #2a5c2a; font-size: 0.8rem; }
-.stage-reward { color: #ffd700; font-size: 0.85rem; }
+.stage-title { color: #39ff14; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+.stage-desc  { color: #5a9a5a; font-size: 0.82rem; margin: 4px 0 8px; }
+.stage-meta  { color: #2a5c2a; font-size: 0.78rem; }
 .clear-badge {
     background: rgba(57,255,20,0.1);
     border: 1px solid #39ff14;
     color: #39ff14;
-    padding: 2px 10px;
+    padding: 2px 8px;
     border-radius: 4px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
     float: right;
     text-shadow: 0 0 8px rgba(57,255,20,0.4);
 }
-
-/* 플레이버 텍스트 */
 .flavor-text {
     color: #2a6a2a;
     font-style: italic;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     margin-top: 6px;
     padding-top: 6px;
     border-top: 1px solid #0f2a0f;
 }
-
-/* 상태바 */
 .status-bar {
     background: #030f03;
     border: 1px solid #0f3a0f;
@@ -954,15 +1384,12 @@ TERMINAL_CSS = """
 </style>
 """
 
-# ── 자바스크립트 (키보드 단축키 + 히스토리 + 자동스크롤 + 효과음) ──
 TERMINAL_JS = """
 <script>
 (function() {
-  // 자동 스크롤
   var tb = document.getElementById('term-scroll');
   if(tb) tb.scrollTop = tb.scrollHeight;
 
-  // Web Audio 효과음
   var AudioCtx = window.AudioContext || window.webkitAudioContext;
   var ctx = AudioCtx ? new AudioCtx() : null;
 
@@ -982,16 +1409,11 @@ TERMINAL_JS = """
     } catch(e) {}
   }
 
-  // 입력창에 포커스 + 키 이벤트
   setTimeout(function() {
     var inputs = document.querySelectorAll('input[type="text"]');
     if (inputs.length > 0) {
       var inp = inputs[inputs.length - 1];
       inp.focus();
-      inp.style.color = '#39ff14';
-      inp.style.caretColor = '#39ff14';
-
-      // Enter 키로 제출
       inp.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -999,8 +1421,7 @@ TERMINAL_JS = """
           var btns = document.querySelectorAll('button');
           for (var b of btns) {
             if (b.innerText.includes('ENTER') || b.innerText.trim() === '실행') {
-              b.click();
-              break;
+              b.click(); break;
             }
           }
         }
@@ -1008,19 +1429,16 @@ TERMINAL_JS = """
           e.preventDefault();
           var btns = document.querySelectorAll('button');
           for (var b of btns) {
-            if (b.innerText.includes('CLEAR')) { b.click(); break; }
+            if (b.innerText.includes('CLR')) { b.click(); break; }
           }
         }
       });
-
-      // 타이핑 효과음
       inp.addEventListener('input', function() {
         beep(600 + Math.random()*200, 0.02, 'square', 0.015);
       });
     }
   }, 400);
 
-  // 입력창 스타일 강제 적용
   setTimeout(function() {
     var style = document.createElement('style');
     style.textContent = `
@@ -1038,12 +1456,8 @@ TERMINAL_JS = """
         box-shadow: 0 0 12px rgba(57,255,20,0.2) !important;
         outline: none !important;
       }
-      input[type="text"]::placeholder {
-        color: #1a4a1a !important;
-      }
-      .stTextInput > div > div {
-        background: transparent !important;
-      }
+      input[type="text"]::placeholder { color: #1a4a1a !important; }
+      .stTextInput > div > div { background: transparent !important; }
       .stButton > button {
         font-family: 'JetBrains Mono', monospace !important;
         background: #020c02 !important;
@@ -1071,10 +1485,6 @@ TERMINAL_JS = """
 </script>
 """
 
-
-# ══════════════════════════════════════════════════════════
-#  매트릭스 빗줄기 배경 (선택 화면용)
-# ══════════════════════════════════════════════════════════
 MATRIX_RAIN_HTML = """
 <canvas id="matrix-canvas" style="
   position:fixed; top:0; left:0; width:100%; height:100%;
@@ -1089,7 +1499,7 @@ MATRIX_RAIN_HTML = """
   c.height = window.innerHeight;
   var cols = Math.floor(c.width / 18);
   var drops = Array(cols).fill(1);
-  var chars = '01アイウエオカキクケコサシスセソHYOMIN효민UNIVERSE';
+  var chars = '01アイウエオカキクケコHYOMIN효민UNIVERSE';
   function draw() {
     ctx.fillStyle = 'rgba(0,0,0,0.05)';
     ctx.fillRect(0,0,c.width,c.height);
@@ -1113,7 +1523,6 @@ MATRIX_RAIN_HTML = """
 # ══════════════════════════════════════════════════════════
 
 def render():
-    # 전체 배경 다크
     st.markdown("""
     <style>
     .stApp { background-color: #010409 !important; }
@@ -1124,12 +1533,10 @@ def render():
 
     st.markdown(TERMINAL_CSS, unsafe_allow_html=True)
 
-    uid = st.session_state.get('logged_in_user', '')
-
     if 'terminal_cleared' not in st.session_state:
         st.session_state.terminal_cleared = set()
 
-    # ── 스테이지 선택 화면 ───────────────────────
+    # ── 스테이지 선택 화면 ───────────────────────────────
     if 'terminal' not in st.session_state or \
        st.session_state.terminal.get('at_select', False):
 
@@ -1142,26 +1549,26 @@ def render():
             💻 THE TERMINAL 방탈출
           </div>
           <div style='color:#3a6a3a; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
-            초고난이도 커맨드라인 해킹 시뮬레이터
+            초고난이도 커맨드라인 해킹 시뮬레이터 — 10 STAGES
           </div>
           <div style='color:#1a3a1a; font-size:0.75rem; margin-top:6px;'>
-            마우스는 잊어라 — 오직 커맨드라인으로 숨겨진 단서를 찾아 방을 탈출하라
+            마우스는 잊어라 — 오직 커맨드라인으로 숨겨진 단서를 찾아 탈출하라
           </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # 전체 클리어 수
         cleared_count = len(st.session_state.terminal_cleared)
         total_stages  = len(STAGES)
-        total_reward  = sum(STAGES[s]["reward"] for s in st.session_state.terminal_cleared)
 
         if cleared_count > 0:
             st.markdown(f"""
             <div style='background:#030f03; border:1px solid #1a3a1a; border-radius:6px;
                         padding:10px 18px; font-family:monospace; font-size:12px;
                         color:#5a9a5a; margin-bottom:16px; text-align:center;'>
-              진행: {cleared_count}/{total_stages} 스테이지 클리어 &nbsp;|&nbsp;
-              총 획득: <span style='color:#ffd700;'>₩{total_reward:,}</span>
+              진행: <span style='color:#39ff14; font-weight:bold;'>{cleared_count}</span>
+              &nbsp;/&nbsp;{total_stages} 스테이지 클리어
+              &nbsp;&nbsp;|&nbsp;&nbsp;
+              {"🏆 전체 클리어!" if cleared_count == total_stages else f"다음 목표: STAGE {cleared_count + 1}"}
             </div>
             """, unsafe_allow_html=True)
 
@@ -1171,21 +1578,18 @@ def render():
             cleared = snum in st.session_state.terminal_cleared
             locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
 
-            badge = "<span class='clear-badge'>✅ CLEARED</span>" if cleared else ""
+            badge     = "<span class='clear-badge'>✅ CLEARED</span>" if cleared else ""
             lock_icon = "🔒 " if locked else ""
-
-            diff_color = ["", "#39ff14", "#7aff4a", "#ffd700", "#ff8c00", "#ff3333"][snum]
+            diff_color = DIFF_COLORS.get(snum, "#39ff14")
 
             st.markdown(f"""
-            <div class='stage-card' style='{"opacity:0.45;" if locked else ""}'>
+            <div class='stage-card' style='{"opacity:0.4;" if locked else ""}'>
               <div class='stage-title'>{badge}{lock_icon}{html.escape(sdata['title'])}</div>
               <div class='stage-desc'>{html.escape(sdata['desc'])}</div>
               <div class='stage-meta'>
                 <span style='color:{diff_color};'>{sdata['difficulty']}</span>
-                &nbsp;&nbsp;
-                <span class='stage-reward'>💰 {sdata['reward_label']}</span>
               </div>
-              <div class='flavor-text'>{html.escape(sdata.get('flavor',''))}</div>
+              <div class='flavor-text'>{html.escape(sdata.get('flavor', ''))}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1214,21 +1618,20 @@ def render():
                     "─" * 44,
                 ]
                 st.session_state.terminal["output"] = boot_msg
-                st.session_state.terminal['at_select'] = False
+                st.session_state.terminal["at_select"] = False
                 st.rerun()
 
         st.markdown(TERMINAL_JS, unsafe_allow_html=True)
         return
 
-    # ── 터미널 게임 화면 ─────────────────────────
-    t = st.session_state.terminal
+    # ── 터미널 게임 화면 ─────────────────────────────────
+    t          = st.session_state.terminal
     stage_num  = t["stage"]
     stage_data = STAGES[stage_num]
 
-    # 상단 상태바
-    elapsed = int(time.time() - t["start_time"])
+    elapsed    = int(time.time() - t["start_time"])
     mins, secs = divmod(elapsed, 60)
-    hint_warn = t["hint_used"] >= 3
+    hint_warn  = t["hint_used"] >= 3
 
     col_l, col_r = st.columns([4, 1])
     with col_l:
@@ -1236,40 +1639,42 @@ def render():
             f"<div class='status-bar'>"
             f"<span class='status-item'>⏱ <span class='status-val'>{mins:02d}:{secs:02d}</span></span>"
             f"<span class='status-item'>CMD <span class='status-val'>{t['cmd_count']}</span></span>"
-            f"<span class='status-item'>HINT <span class='{'status-warn' if hint_warn else 'status-val'}'>{t['hint_used']}/3</span></span>"
+            f"<span class='status-item'>HINT "
+            f"<span class='{'status-warn' if hint_warn else 'status-val'}'>{t['hint_used']}/3</span></span>"
             f"<span class='status-item' style='color:#ffd700;'>{stage_data['title']}</span>"
             f"</div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
     with col_r:
         if st.button("◀ 목록", use_container_width=True, key="back_btn"):
-            st.session_state.terminal['at_select'] = True
+            st.session_state.terminal["at_select"] = True
             st.rerun()
 
-    # ── 터미널 출력 렌더링 ─────────────────────────
+    # ── 터미널 출력 렌더링 ──────────────────────────────
     output_html = ""
     for line in t["output"]:
         safe = html.escape(line)
 
-        # 색상 클래스 결정
-        if any(line.startswith(p) for p in ["✅", "  ✅", "  클리어", "  명령어", "  힌트 사용", "  평가", "  보상", "  다음"]):
+        if any(line.startswith(p) for p in [
+            "✅", "  ✅", "  클리어", "  명령어", "  힌트 사용", "  평가", "  다음"
+        ]):
             cls = "green"
-        elif any(line.startswith(p) for p in ["❌", "╔══", "╚══", "║  ACCESS DENIED", "║   ACCESS DENIED"]):
+        elif any(line.startswith(p) for p in [
+            "❌", "║   ACCESS DENIED", "║  ACCESS DENIED"
+        ]):
             cls = "red"
         elif line.startswith("[HINT]") or line.startswith("       "):
             cls = "hint"
         elif line.startswith("bash:"):
             cls = "red"
-        elif any(line.startswith(p) for p in ["╔", "╚", "║", "═", "  ╔", "  ╚", "  ║"]):
-            cls = "cyan" if "GRANTED" in line or "ACCESS" in line else "border"
-        elif line.startswith("  보상") or line.startswith("  💰"):
-            cls = "yellow"
-        elif line.startswith("─") or line.startswith("HYOMIN NETWORKS") or line.startswith("Last login") or line.startswith("Connecting"):
+        elif any(line.startswith(p) for p in ["╔", "╚", "║", "═"]):
+            cls = "cyan" if ("GRANTED" in line or "ACCESS" in line) else "border"
+        elif line.startswith("─") or line.startswith("HYOMIN NETWORKS") \
+                or line.startswith("Last login") or line.startswith("Connecting"):
             cls = "dim"
         elif line.startswith("[DIR]"):
-            safe = html.escape(line[6:]) if line.startswith("[DIR] ") else safe
-            cls = "dir"
             safe = f"📁 {html.escape(line[6:])}" if line.startswith("[DIR] ") else safe
+            cls  = "dir"
         elif "Connection established" in line:
             cls = "green"
         elif line.startswith("  📋") or line.startswith("  ⚠️") or line.startswith("  `"):
@@ -1281,12 +1686,11 @@ def render():
 
         output_html += f"<div class='term-line {cls}'>{safe}</div>"
 
-    # 현재 프롬프트
     cwd_disp = t["cwd"]
     output_html += (
         f"<div class='term-line prompt'>"
         f"<span class='term-prompt-user'>ghost@hyomin</span>"
-        f"<span class='term-prompt-sep'>:</span>"
+        f"<span style='color:#b8ffb8;'>:</span>"
         f"<span class='term-prompt-path'>{html.escape(cwd_disp)}</span>"
         f"<span class='term-prompt-sym'># </span>"
         f"<span class='blink-cursor'></span>"
@@ -1299,13 +1703,15 @@ def render():
         <div class='dot dot-r'></div>
         <div class='dot dot-y'></div>
         <div class='dot dot-g'></div>
-        <div class='term-title'>ghost@hyomin-secure — {html.escape(cwd_disp)} — STAGE {stage_num}</div>
+        <div class='term-title'>
+          ghost@hyomin-secure — {html.escape(cwd_disp)} — STAGE {stage_num}/10
+        </div>
       </div>
       <div class='term-body' id='term-scroll'>{output_html}</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── 입력창 (클리어 전) ──────────────────────
+    # ── 입력창 (클리어 전) ──────────────────────────────
     if not t["solved"]:
         cmd_input = st.text_input(
             label="cmd",
@@ -1316,47 +1722,35 @@ def render():
 
         col1, col2, col3, col4 = st.columns([5, 1, 1, 1])
         with col2:
-            enter_clicked = st.button("ENTER ↵", use_container_width=True,
-                                       type="primary", key="enter_btn")
+            enter_clicked = st.button(
+                "ENTER ↵", use_container_width=True, type="primary", key="enter_btn"
+            )
         with col3:
-            hint_clicked = st.button("💡 HINT", use_container_width=True,
-                                      key="hint_btn")
+            hint_clicked = st.button("💡 HINT", use_container_width=True, key="hint_btn")
         with col4:
             if st.button("CLR", use_container_width=True, key="clear_btn"):
                 t["output"] = []
                 st.rerun()
 
         if enter_clicked and cmd_input and cmd_input.strip():
-            cwd_prompt = t["cwd"]
-            prompt_line = f"ghost@hyomin:{cwd_prompt}# {cmd_input}"
-            add_output([prompt_line])
-            result = process_command(cmd_input, stage_data)
-            add_output(result)
+            add_output([f"ghost@hyomin:{t['cwd']}# {cmd_input}"])
+            add_output(process_command(cmd_input, stage_data))
             t["history"].append(cmd_input)
             st.rerun()
 
         if hint_clicked:
             add_output([f"ghost@hyomin:{t['cwd']}# hint"])
-            result = process_command("hint", stage_data)
-            add_output(result)
+            add_output(process_command("hint", stage_data))
             st.rerun()
 
     else:
-        # ── 클리어 화면 ──────────────────────────
+        # ── 클리어 화면 ─────────────────────────────────
         st.session_state.terminal_cleared.add(stage_num)
 
-        reward_key = f"terminal_reward_{stage_num}"
-        if reward_key not in st.session_state:
-            st.session_state[reward_key] = True
-            reward = stage_data["reward"]
-            st.session_state.global_cash = st.session_state.get('global_cash', 0) + reward
-            try:
-                from utils.core import sync_user_data
-                from utils.database import log_tx
-                sync_user_data()
-                log_tx(uid, "터미널", f"THE TERMINAL Stage {stage_num} 클리어", reward)
-            except Exception:
-                pass
+        # 풍선은 한 번만
+        balloon_key = f"balloon_done_{stage_num}"
+        if balloon_key not in st.session_state:
+            st.session_state[balloon_key] = True
             st.balloons()
 
         st.markdown(f"""
@@ -1374,11 +1768,12 @@ def render():
                       text-shadow: 0 0 20px rgba(57,255,20,0.6);'>
             ✅ STAGE {stage_num} CLEAR
           </div>
-          <div style='color:#ffd700; font-size:1.1rem; margin-top:8px;'>
-            보상 획득: {stage_data['reward_label']}
+          <div style='color:#5a9a5a; font-size:0.85rem; margin-top:10px;'>
+            클리어 시간 &nbsp;|&nbsp; 사용 힌트: {t['hint_used']}개
+            &nbsp;|&nbsp; 명령어: {t['cmd_count']}개
           </div>
-          <div style='color:#5a9a5a; font-size:0.82rem; margin-top:6px;'>
-            사용 힌트: {t['hint_used']}개 &nbsp;|&nbsp; 명령어: {t['cmd_count']}개
+          <div style='color:#2a5c2a; font-size:0.78rem; margin-top:8px;'>
+            진행: {len(st.session_state.terminal_cleared)}/{len(STAGES)} 스테이지 완료
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1386,13 +1781,15 @@ def render():
         col_sel, col_next = st.columns(2)
         with col_sel:
             if st.button("◀ 스테이지 목록", use_container_width=True, key="to_list"):
-                st.session_state.terminal['at_select'] = True
+                st.session_state.terminal["at_select"] = True
                 st.rerun()
         with col_next:
             next_s = stage_num + 1
             if next_s in STAGES:
-                if st.button(f"▶ STAGE {next_s} 도전 →",
-                              use_container_width=True, type="primary", key="next_stage"):
+                if st.button(
+                    f"▶ STAGE {next_s} 도전 →",
+                    use_container_width=True, type="primary", key="next_stage"
+                ):
                     init_terminal(next_s)
                     ns = STAGES[next_s]
                     st.session_state.terminal["output"] = [
@@ -1410,15 +1807,20 @@ def render():
                         "  `help` 명령어 목록   `hint` 힌트 보기",
                         "─" * 44,
                     ]
-                    st.session_state.terminal['at_select'] = False
+                    st.session_state.terminal["at_select"] = False
                     st.rerun()
             else:
                 st.markdown("""
-                <div style='color:#ffd700; font-family:monospace; text-align:center;
-                            padding:12px; border:1px solid #ffd700; border-radius:6px;'>
-                  🏆 모든 스테이지 정복! 당신이 효민 유니버스의 흑막이다.
+                <div style='
+                  color:#ffd700; font-family:monospace; text-align:center;
+                  padding:14px; border:1px solid #ffd700; border-radius:6px;
+                  font-size:1rem; letter-spacing:2px;
+                '>
+                  🏆 10 STAGES COMPLETE<br>
+                  <span style='font-size:0.8rem; color:#a07000;'>
+                    당신은 진짜 해커다.
+                  </span>
                 </div>
                 """, unsafe_allow_html=True)
 
-    # JS는 항상 마지막에
     st.markdown(TERMINAL_JS, unsafe_allow_html=True)
