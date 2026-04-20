@@ -71,6 +71,7 @@ def sync_user_data():
         'bulk_trade_date': st.session_state.get('bulk_trade_date', ''),
         'bulk_trade_count': st.session_state.get('bulk_trade_count', 0),
         'last_estate_reset': st.session_state.get('last_estate_reset', 0),
+        'terminal_cleared': list(st.session_state.get('terminal_cleared', set())),
     })
     save_db(USERS_FILE, users)
 
@@ -102,6 +103,7 @@ def pull_user_data():
         st.session_state.bulk_trade_date = u.get('bulk_trade_date', '')
         st.session_state.bulk_trade_count = u.get('bulk_trade_count', 0)
         st.session_state.last_estate_reset = u.get('last_estate_reset', 0)
+        st.session_state.terminal_cleared = set(u.get('terminal_cleared', []))
 
 def get_market():
     def init_m():
