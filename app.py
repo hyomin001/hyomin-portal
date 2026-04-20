@@ -706,8 +706,6 @@ elif st.session_state.page_view == "project_b":
     if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
         st.session_state.page_view = "login"; st.rerun()
 
-    st.markdown(PORTAL_LIGHT_CSS, unsafe_allow_html=True)
-
     if st.button("🏠 포털 메인으로 나가기", key="back_b"):
         st.session_state.page_view = "portal"; st.rerun()
 
