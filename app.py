@@ -435,7 +435,7 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("<div class='banner-card'><h2>🎲 🎲 인베스트 마블</h2><p>봇과 함께하는 보드게임 — 집·호텔·저당·무인도</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🎲 🎲 인베스트 마블--기능추가및점검중입니다.</h2><p>봇과 함께하는 보드게임 — 집·호텔·저당·무인도</p></div>", unsafe_allow_html=True)
         if st.button("🎲 인베스트 마블 입장 🎲", key="b4", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_d"
