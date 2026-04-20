@@ -19,6 +19,12 @@ from utils.css import GLOBAL_CSS
 # ==============================
 st.set_page_config(page_title="HYOMIN PORTAL", page_icon="🌐", layout="wide", initial_sidebar_state="collapsed")
 
+# ── Google AdSense 소유권 확인 + 광고 코드 ──────────────────
+st.markdown("""
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7480320301712613"
+     crossorigin="anonymous"></script>
+""", unsafe_allow_html=True)
+
 pull_user_data()
 
 # last_seen — 60초에 한 번만 DB 쓰기
