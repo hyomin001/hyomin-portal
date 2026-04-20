@@ -353,6 +353,36 @@ div[data-testid="stVerticalBlock"] { gap: 0 !important; }
   box-shadow: 0 0 0 3px rgba(61,142,240,0.15) !important;
 }
 label[data-testid="stWidgetLabel"] { color: var(--text-dim) !important; font-size: 0.82rem !important; }
+
+/* ── 관리자 패널 텍스트 가시성 ──────────── */
+div[data-testid="stExpander"] {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+}
+div[data-testid="stExpander"] summary {
+  color: var(--text) !important;
+}
+div[data-testid="stExpander"] summary p,
+div[data-testid="stExpander"] summary span {
+  color: var(--text) !important;
+}
+div[data-testid="stExpander"] p,
+div[data-testid="stExpander"] span,
+div[data-testid="stExpander"] label,
+div[data-testid="stExpander"] div {
+  color: var(--text) !important;
+}
+div[data-testid="stExpander"] .stMarkdown p {
+  color: var(--text) !important;
+}
+div[data-testid="stExpander"] [data-testid="stText"],
+div[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+  color: var(--text) !important;
+}
+.stApp h4 { color: var(--text) !important; }
+hr { border-color: var(--border) !important; }
+div[data-testid="stExpander"] [data-testid="stSlider"] p { color: var(--text-dim) !important; }
 </style>
 """
 
