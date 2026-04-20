@@ -273,7 +273,7 @@ if st.session_state.page_view == "portal":
     <p>
         모든 유저 자산 및 시장 데이터는 <b>MongoDB Atlas 클라우드</b>에 실시간 저장됩니다.
         로컬 JSON 파일 의존을 완전히 탈피하여, 서버 재시작과 무관하게 데이터가 영구 보존됩니다.
-        비밀번호는 <b>SHA-256 단방향 해시</b>로 암호화되어 원문 복원이 불가능합니다.
+        비밀번호는 <b>SHA-256 단방향 해시</b>로 암호화되어 원문 복원이 불가능합니다. 
     </p>
     <div style="margin-top:10px;">
         <span class="arch-badge">MongoDB Atlas</span>
