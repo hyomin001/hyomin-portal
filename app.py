@@ -406,8 +406,8 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/sports/garage.py</strong>커스텀 튜닝 차고지</div>
     <div class="module-item"><strong>pages/admin/panel.py</strong>창조주 통제소 (관리자 전용)</div>
     <div class="module-item"><strong>pages/project_a.py</strong>AI 무한 모의고사</div>
-    <div class="module-item"><strong>pages/project_b.py</strong>효민 월드 배틀</div>
-    <div class="module-item"><strong>pages/project_d.py</strong>부루마블 보드게임</div>
+    <div class="module-item"><strong>pages/project_b.py</strong>월드 배틀</div>
+    <div class="module-item"><strong>pages/project_d.py</strong>🎲 인베스트 마블 보드게임</div>
 </div>
         """, unsafe_allow_html=True)
 
@@ -417,7 +417,7 @@ if st.session_state.page_view == "portal":
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("<div class='banner-card'><h2>🌌 효민 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🌌 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
         if st.button("유니버스 입장하기 🚀", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "universe"
@@ -435,8 +435,8 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("<div class='banner-card'><h2>🎲 부루마블</h2><p>봇과 함께하는 보드게임 — 집·호텔·저당·무인도</p></div>", unsafe_allow_html=True)
-        if st.button("부루마블 입장 🎲", key="b4", use_container_width=True):
+        st.markdown("<div class='banner-card'><h2>🎲 🎲 인베스트 마블</h2><p>봇과 함께하는 보드게임 — 집·호텔·저당·무인도</p></div>", unsafe_allow_html=True)
+        if st.button("🎲 인베스트 마블 입장 🎲", key="b4", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_d"
             else:
@@ -741,7 +741,7 @@ elif st.session_state.page_view == "project_c":
 
 
 # ==============================
-# 9. [View 7] 부루마블
+# 9. [View 7] 🎲 인베스트 마블
 # ==============================
 elif st.session_state.page_view == "project_d":
 
