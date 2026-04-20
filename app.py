@@ -117,6 +117,33 @@ h1, h2, h3, h4, p, span, div { color: #0F172A; }
 .stat-card.online .stat-value { color:#16A34A !important; }
 .stat-card.volume  .stat-value { color:#7C3AED !important; }
 .stat-section-title { font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#94A3B8 !important; margin-bottom:4px; }
+/* 아키텍처 섹션 스타일 */
+.arch-card {
+    background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
+    padding: 22px 24px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.07);
+}
+.arch-card h4 { color: #1E40AF !important; margin: 0 0 8px 0; font-size: 1.05rem; }
+.arch-card p  { color: #475569 !important; margin: 0; font-size: 0.92rem; line-height: 1.6; }
+.arch-badge {
+    display: inline-block; background: #EFF6FF; color: #2563EB !important;
+    border: 1px solid #BFDBFE; border-radius: 6px; font-size: 0.75rem;
+    font-weight: 700; padding: 2px 9px; margin: 3px 3px 0 0;
+}
+.arch-highlight {
+    background: linear-gradient(90deg, #EFF6FF, #F0FDF4);
+    border-left: 4px solid #2563EB; border-radius: 0 10px 10px 0;
+    padding: 14px 18px; margin-bottom: 18px;
+}
+.arch-highlight p { color: #1E293B !important; font-weight: 600; font-size: 0.95rem; margin: 0; }
+.arch-highlight p.sub { font-weight: 400; color: #475569 !important; font-size: 0.88rem; margin-top: 6px; }
+.module-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.module-item {
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
+    padding: 10px 14px; flex: 1; min-width: 180px;
+    font-size: 0.85rem; color: #334155 !important;
+}
+.module-item strong { color: #1E40AF !important; display: block; margin-bottom: 2px; }
 </style>
 """
 
@@ -203,6 +230,180 @@ if st.session_state.page_view == "portal":
         </div>""", unsafe_allow_html=True)
     except Exception:
         pass
+
+    st.write("---")
+
+    # ── 시스템 공지 & 아키텍처 섹션 ───────────────────────
+    with st.expander("📋 시스템 공지 & 전체 아키텍처 구조 보기", expanded=False):
+
+        # 공지 카드
+        st.markdown("""
+<div class="arch-highlight">
+    <p>🔧 시스템 대공사 및 재시작 안내</p>
+    <p class="sub">
+        데이터베이스를 외부 클라우드(MongoDB Atlas)로 완벽 분리하고,
+        <b>37개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다.
+        유저 자산은 이제 영구히 안전합니다.
+    </p>
+</div>
+<div class="arch-highlight" style="border-left-color:#16A34A; background: linear-gradient(90deg, #F0FDF4, #EFF6FF);">
+    <p style="color:#15803D !important;">🌟 정규 시즌 1 공식 개막</p>
+    <p class="sub">
+        <b>[시즌 기간]</b> 2026년 4월 15일 ~ 5월 15일<br>
+        새로운 시즌의 시작을 기념하여 모든 시민께 <b>초기 정착금 5억 원</b>을 즉시 지급합니다!
+    </p>
+</div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("### 🏗️ SYSTEM ARCHITECTURE & MODULES")
+        st.markdown("---")
+
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            st.markdown("""
+<div class="arch-card">
+    <h4>🗄️ 데이터베이스 — MongoDB Atlas</h4>
+    <p>
+        모든 유저 자산 및 시장 데이터는 <b>MongoDB Atlas 클라우드</b>에 실시간 저장됩니다.
+        로컬 JSON 파일 의존을 완전히 탈피하여, 서버 재시작과 무관하게 데이터가 영구 보존됩니다.
+        비밀번호는 <b>SHA-256 단방향 해시</b>로 암호화되어 원문 복원이 불가능합니다.
+    </p>
+    <div style="margin-top:10px;">
+        <span class="arch-badge">MongoDB Atlas</span>
+        <span class="arch-badge">SHA-256 암호화</span>
+        <span class="arch-badge">실시간 백업</span>
+        <span class="arch-badge">utils/database.py</span>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card">
+    <h4>🧩 37개 독립 모듈 구조</h4>
+    <p>
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>37개의 독립 모듈</b>로 구성됩니다.
+        각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
+        한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
+        유지보수 및 신규 기능 추가가 용이한 구조입니다.
+    </p>
+    <div style="margin-top:10px;">
+        <span class="arch-badge">app.py (진입점)</span>
+        <span class="arch-badge">pages/ (26개 페이지)</span>
+        <span class="arch-badge">utils/ (5개 유틸)</span>
+        <span class="arch-badge">독립 렌더링</span>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card">
+    <h4>🔐 보안 & 접근 제어</h4>
+    <p>
+        로그인 5회 실패 시 30초 잠금이 적용되는 <b>Brute-force 방어</b> 시스템을 내장합니다.
+        관리자 계정은 별도의 <b>하드코딩 해시</b>로 보호되며, DB에 평문이 저장되지 않습니다.
+        VIP 라운지는 순자산 1,000억 이상 또는 관리자만 접근 가능한 권한 제어가 적용됩니다.
+    </p>
+    <div style="margin-top:10px;">
+        <span class="arch-badge">Brute-force 방어</span>
+        <span class="arch-badge">관리자 분리</span>
+        <span class="arch-badge">VIP 권한 제어</span>
+        <span class="arch-badge">utils/core.py</span>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+        with col_b:
+            st.markdown("""
+<div class="arch-card">
+    <h4>⏱️ 자동 시장 동기화 — Market Sync</h4>
+    <p>
+        유저가 접속하지 않는 동안에도 <b>시간 슬롯 기반 자동 계산</b>이 작동합니다.
+        주가 변동, 은행 이자, 부동산 임대료가 실시간으로 누적됩니다.
+        접속 시 경과 시간만큼의 모든 변화가 한 번에 정확하게 반영됩니다.
+    </p>
+    <div style="margin-top:10px;">
+        <span class="arch-badge">utils/market_sync.py</span>
+        <span class="arch-badge">주가 자동변동</span>
+        <span class="arch-badge">이자 자동계산</span>
+        <span class="arch-badge">임대료 자동누적</span>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card">
+    <h4>🌐 멀티 서비스 포털 구조</h4>
+    <p>
+        <b>HYOMIN PORTAL</b>은 단일 앱 안에서 여러 독립 서비스를 라우팅하는 구조입니다.
+        효민 유니버스(경제 시뮬레이션), AI 아카데미(모의고사), 월드 배틀(투표),
+        THE TERMINAL(방탈출) 등 각 서비스가 하나의 계정으로 통합 이용 가능합니다.
+    </p>
+    <div style="margin-top:10px;">
+        <span class="arch-badge">단일 계정 통합</span>
+        <span class="arch-badge">뷰 기반 라우팅</span>
+        <span class="arch-badge">세션 상태 공유</span>
+        <span class="arch-badge">app.py</span>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card">
+    <h4>📊 실시간 통계 & 온라인 감지</h4>
+    <p>
+        접속자 수는 <b>last_seen 타임스탬프</b> 기반으로 5분 이내 활성 유저를 집계합니다.
+        일별 방문자, 누적 가입자, 거래량 통계는 MongoDB stats 컬렉션에 별도 저장됩니다.
+        포털 메인 화면에서 실시간으로 서버 현황을 확인할 수 있습니다.
+    </p>
+    <div style="margin-top:10px;">
+        <span class="arch-badge">last_seen 감지</span>
+        <span class="arch-badge">일별 방문자 집계</span>
+        <span class="arch-badge">거래량 추적</span>
+        <span class="arch-badge">utils/core.py</span>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("#### 📦 전체 모듈 목록")
+        st.markdown("""
+<div class="module-grid">
+    <div class="module-item"><strong>app.py</strong>진입점·라우터·로그인·뷰 전환</div>
+    <div class="module-item"><strong>utils/database.py</strong>MongoDB 연결·CRUD·stats 관리</div>
+    <div class="module-item"><strong>utils/core.py</strong>해시·포맷·순자산·세션 동기화</div>
+    <div class="module-item"><strong>utils/market_sync.py</strong>주가·코인·이자·임대료 자동동기화</div>
+    <div class="module-item"><strong>utils/config.py</strong>종목·부동산·강화 설정 상수</div>
+    <div class="module-item"><strong>utils/css.py</strong>유니버스 글로벌 다크 테마 CSS</div>
+    <div class="module-item"><strong>pages/home.py</strong>홈 광장·튜토리얼·성장 목표</div>
+    <div class="module-item"><strong>pages/stock.py</strong>주식 트레이딩·차트·매수매도</div>
+    <div class="module-item"><strong>pages/crypto.py</strong>코인 거래소·실시간 시세</div>
+    <div class="module-item"><strong>pages/real_estate.py</strong>부동산 매입·임대료 수익</div>
+    <div class="module-item"><strong>pages/bank.py</strong>대출·송금·이자 계산</div>
+    <div class="module-item"><strong>pages/txlog.py</strong>개인 거래 내역 조회</div>
+    <div class="module-item"><strong>pages/ranking.py</strong>시즌1 랭킹·게시판</div>
+    <div class="module-item"><strong>pages/clan.py</strong>길드·클랜 시스템</div>
+    <div class="module-item"><strong>pages/dm.py</strong>개인 쪽지·읽음 표시</div>
+    <div class="module-item"><strong>pages/quest.py</strong>일일 퀘스트·보상</div>
+    <div class="module-item"><strong>pages/title_shop.py</strong>칭호 상점·장착</div>
+    <div class="module-item"><strong>pages/vip.py</strong>VIP 전용 라운지</div>
+    <div class="module-item"><strong>pages/games/slot.py</strong>럭키 슬롯머신</div>
+    <div class="module-item"><strong>pages/games/blackjack.py</strong>블랙잭 카지노</div>
+    <div class="module-item"><strong>pages/games/holdem.py</strong>텍사스 홀덤</div>
+    <div class="module-item"><strong>pages/games/mine.py</strong>광산 노가다</div>
+    <div class="module-item"><strong>pages/games/quiz.py</strong>정처기 CBT 퀴즈</div>
+    <div class="module-item"><strong>pages/games/lotto.py</strong>글로벌 로또</div>
+    <div class="module-item"><strong>pages/games/forge.py</strong>전설의 명검 강화</div>
+    <div class="module-item"><strong>pages/games/gacha.py</strong>가챠 뽑기</div>
+    <div class="module-item"><strong>pages/sports/soccer_sim.py</strong>구단주 시뮬레이터</div>
+    <div class="module-item"><strong>pages/sports/penalty.py</strong>조기축구 승부차기</div>
+    <div class="module-item"><strong>pages/sports/racing.py</strong>하이퍼카 레이싱</div>
+    <div class="module-item"><strong>pages/sports/garage.py</strong>커스텀 튜닝 차고지</div>
+    <div class="module-item"><strong>pages/admin/panel.py</strong>창조주 통제소 (관리자 전용)</div>
+    <div class="module-item"><strong>pages/project_a.py</strong>AI 무한 모의고사</div>
+    <div class="module-item"><strong>pages/project_b.py</strong>효민 월드 배틀</div>
+    <div class="module-item"><strong>pages/project_c.py</strong>THE TERMINAL 방탈출</div>
+</div>
+        """, unsafe_allow_html=True)
 
     st.write("---")
 
@@ -498,7 +699,7 @@ elif st.session_state.page_view == "project_a":
 
 
 # ==============================
-# 7. [View 5] 효민 월드 배틀  ← 복원
+# 7. [View 5] 효민 월드 배틀
 # ==============================
 elif st.session_state.page_view == "project_b":
 
@@ -515,7 +716,7 @@ elif st.session_state.page_view == "project_b":
 
 
 # ==============================
-# 8. [View 6] THE TERMINAL  ← 복원
+# 8. [View 6] THE TERMINAL
 # ==============================
 elif st.session_state.page_view == "project_c":
 
