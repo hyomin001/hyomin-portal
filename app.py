@@ -248,7 +248,7 @@ if st.session_state.page_view == "portal":
     <p>🔧 시스템 대공사 및 재시작 안내</p>
     <p class="sub">
         데이터베이스를 외부 클라우드(MongoDB Atlas)로 완벽 분리하고,
-        <b>37개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다.
+        <b>38개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다.
         유저 자산은 이제 영구히 안전합니다.
     </p>
 </div>
@@ -288,14 +288,14 @@ if st.session_state.page_view == "portal":
 <div class="arch-card">
     <h4>🧩 37개 독립 모듈 구조</h4>
     <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>37개의 독립 모듈</b>로 구성됩니다.
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>38개의 독립 모듈</b>로 구성됩니다.
         각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
         한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
         유지보수 및 신규 기능 추가가 용이한 구조입니다.
     </p>
     <div style="margin-top:10px;">
         <span class="arch-badge">app.py (진입점)</span>
-        <span class="arch-badge">pages/ (26개 페이지)</span>
+        <span class="arch-badge">pages/ (27개 페이지)</span>
         <span class="arch-badge">utils/ (5개 유틸)</span>
         <span class="arch-badge">독립 렌더링</span>
     </div>
@@ -408,6 +408,7 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/project_a.py</strong>AI 무한 모의고사</div>
     <div class="module-item"><strong>pages/project_b.py</strong>월드 배틀</div>
     <div class="module-item"><strong>pages/project_d.py</strong>🎲 인베스트 마블 보드게임</div>
+    <div class="module-item"><strong>pages/project_e.py</strong>⚔️ 로그라이크 던전 게임</div>
 </div>
         """, unsafe_allow_html=True)
 
@@ -570,14 +571,31 @@ if st.session_state.page_view == "portal":
             """, unsafe_allow_html=True)
 
             st.markdown("""
-<div class="arch-card" style="border-left: 3px solid #CBD5E1;">
-    <h4 style="color:#64748B !important;">🛠️ 비밀 프로젝트 E — Coming Soon</h4>
-    <p style="color:#94A3B8 !important;">
-        현재 개발 중인 신규 서비스입니다. 공개 예정일 및 세부 내용은 추후 시스템 공지를 통해 안내드립니다.
-        기대해 주세요!
+<div class="arch-card" style="border-left: 3px solid #7C3AED;">
+    <h4 style="color:#7C3AED !important;">⚔️ 로그라이크 던전 — ROGUELIKE DUNGEON</h4>
+    <p>
+        방향키로 캐릭터를 이동시키며 <b>랜덤 생성된 던전</b>을 탐험하는 로그라이크 게임입니다.
+        몬스터를 처치하고 아이템을 모아 보스를 격파하세요.
+        <b style="color:#EF4444;">죽으면 처음부터 — 매 판이 다른 경험.</b><br>
+        <b>워리어·메이지·로그·팔라딘</b> 4개 클래스, 10층 던전, 20종 몬스터, 30종+ 아이템, 3종 보스.
+        FOG OF WAR(시야각), 턴제 전투, 스킬 포인트 배분, 15종 업적 시스템을 갖춘 풀 스케일 로그라이크.
     </p>
-    <div style="margin-top:10px;">
-        <span class="arch-badge" style="background:#F1F5F9;color:#94A3B8 !important;border-color:#E2E8F0;">🔒 준비 중</span>
+    <div style="margin-top:12px;">
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🗺️ 랜덤 맵 생성</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">⚡ 턴제 전투</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🎒 아이템 30종+</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">👹 몬스터 20종</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">📊 성장 시스템</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🏆 업적 15종</span>
+    </div>
+    <div style="margin-top:10px;background:#F5F3FF;border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:#7C3AED !important;font-weight:700;">💡 컨트롤</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
+            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">↑↓←→</code> 이동/공격 &nbsp;
+            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">Space</code> 대기/계단이동 &nbsp;
+            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">I</code> 인벤토리 &nbsp;
+            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">.</code> 계단 자동이동
+        </p>
     </div>
 </div>
             """, unsafe_allow_html=True)
@@ -634,8 +652,14 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("<div class='banner-card'><h2>🛠️ 비밀 프로젝트 E</h2><p>Coming Soon...</p></div>", unsafe_allow_html=True)
-        st.button("준비 중...", key="b5", disabled=True, use_container_width=True)
+        st.markdown("<div class='banner-card'><h2>⚔️ 로그라이크 던전</h2><p>방향키로 완전 지배 — 랜덤 던전 탐험·몬스터 처치·보스 격파</p></div>", unsafe_allow_html=True)
+        if st.button("던전 입장 ⚔️", key="b5", use_container_width=True):
+            if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
+                st.session_state.page_view = "project_e"
+            else:
+                st.warning("⚠️ 해당 서비스를 이용하시려면 먼저 로그인해주세요.")
+                time.sleep(1); st.session_state.page_view = "login"
+            st.rerun()
 
     st.markdown("<div style='text-align:center;padding:40px 0;color:#94A3B8;font-size:0.8rem;'><p>ⓒ 2026 HYOMIN PORTAL INC. All rights reserved.</p></div>", unsafe_allow_html=True)
     st.stop()
@@ -924,3 +948,18 @@ elif st.session_state.page_view == "project_d":
 
     from pages import project_d
     project_d.render()
+
+
+# ==============================
+# 10. [View 8] ⚔️ 로그라이크 던전
+# ==============================
+elif st.session_state.page_view == "project_e":
+
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"; st.rerun()
+
+    if st.button("🏠 포털 메인으로 나가기", key="back_e"):
+        st.session_state.page_view = "portal"; st.rerun()
+
+    from pages import project_e
+    project_e.render()
