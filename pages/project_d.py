@@ -2630,13 +2630,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 </html>
 """
 
-def main():
-    st.set_page_config(
-        page_title="모두의마블 REMASTERED 🌍",
-        page_icon="🌍",
-        layout="wide",
-        initial_sidebar_bar="collapsed"
-    )
+def render():
     st.markdown("""
     <style>
     #MainMenu{visibility:hidden;}
@@ -2649,4 +2643,4 @@ def main():
     components.html(GAME_HTML, height=830, scrolling=False)
 
 if __name__ == "__main__":
-    main()
+    render()
