@@ -134,7 +134,8 @@ def render(market=None, nw=None):
 
     # 초기화
     if st.button("🧹 초기화"):
-        st.session_state.clear()
+        for k in ["quiz", "answers", "wrong"]:
+            st.session_state.pop(k, None)
         st.rerun()
 
     # ==============================
@@ -153,8 +154,8 @@ def render(market=None, nw=None):
                 file_text = uploaded_file.read().decode("utf-8")
 
             elif uploaded_file.name.endswith(".pdf"):
-                import PyPDF2
-                reader = PyPDF2.PdfReader(uploaded_file)
+                import pypdf
+                reader = pypdf.PdfReader(uploaded_file)
 
                 for page in reader.pages:
                     txt = page.extract_text()
