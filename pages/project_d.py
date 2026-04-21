@@ -6,7 +6,7 @@ GAME_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>모두의마블 REMASTERED 🌍</title>
+<title>인베스트마블 REMASTERED 🌍</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Black+Han+Sans&family=Fredoka+One&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -852,7 +852,7 @@ html,body{
 <!-- CHARACTER SELECT -->
 <div id="char-select">
   <div class="char-header">
-    <div class="char-title-main">🌍 모두의마블</div>
+    <div class="char-title-main">🌍 인베스트마블</div>
     <div class="char-title-sub">WORLD MARBLE · REMASTERED</div>
   </div>
   <div class="char-prompt">캐릭터를 선택하세요</div>
@@ -863,7 +863,7 @@ html,body{
 <!-- SETUP -->
 <div id="setup">
   <div class="setup-card">
-    <div class="setup-logo">🌍 모두의마블</div>
+    <div class="setup-logo">🌍 인베스트마블</div>
     <div class="setup-sub">WORLD MARBLE · REMASTERED</div>
     <div class="setup-char-preview" id="setup-preview">
       <div class="setup-char-avatar" id="preview-avatar"></div>
@@ -2212,7 +2212,7 @@ function buildBoard() {
   center.style.cssText=`left:${C}px;top:${C}px;width:${S-2*C}px;height:${S-2*C}px;`;
   const logoFs=Math.round(S/13),dieSize=Math.round(S/11),diceFs=Math.round(dieSize*0.55);
   center.innerHTML=`
-    <div class="board-logo" style="font-size:${logoFs}px;">🌍<br>모두의마블</div>
+    <div class="board-logo" style="font-size:${logoFs}px;">🌍<br>인베스트마블</div>
     <div class="board-sub" style="font-size:${Math.round(S/92)}px;margin-bottom:12px;">REMASTERED</div>
     <div class="dice-center">
       <div class="die-face" id="die1" style="width:${dieSize}px;height:${dieSize}px;font-size:${diceFs}px;">⚀</div>
@@ -2551,7 +2551,7 @@ function startGame(){
     const bw=document.querySelector('.board-wrap');
     if(bw){const avail=Math.min(bw.offsetWidth-20,bw.offsetHeight-20);boardSize=Math.max(340,Math.min(680,avail));}
     buildBoard();
-    log('🌍 모두의마블 REMASTERED 시작!','important');
+    log('🌍 인베스트마블 REMASTERED 시작!','important');
     log('🔨 경매 시스템 활성화 · 🤝 협상 시스템 활성화');
     log('✨ 캐릭터 능력과 협상으로 세계를 정복하세요!');
     renderAll();
