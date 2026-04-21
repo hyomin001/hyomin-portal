@@ -415,7 +415,7 @@ if st.session_state.page_view == "portal":
     st.write("---")
 
     # ── 서비스 가이드 섹션 ─────────────────────────────────
-    with st.expander("📖 5대 서비스 완전 가이드 보기", expanded=False):
+    with st.expander("📖 6대 서비스 완전 가이드 보기", expanded=False):
 
         st.markdown("### 🗺️ HYOMIN PORTAL — 서비스 소개")
         st.markdown("---")
