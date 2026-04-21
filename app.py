@@ -413,6 +413,177 @@ if st.session_state.page_view == "portal":
 
     st.write("---")
 
+    # ── 서비스 가이드 섹션 ─────────────────────────────────
+    with st.expander("📖 5대 서비스 완전 가이드 보기", expanded=False):
+
+        st.markdown("### 🗺️ HYOMIN PORTAL — 서비스 소개")
+        st.markdown("---")
+
+        col_g1, col_g2 = st.columns(2)
+
+        with col_g1:
+            st.markdown("""
+<div class="arch-card">
+    <h4>🌌 유니버스 — 자본주의 생존 시뮬레이션</h4>
+    <p>
+        효민 유니버스는 <b>현실과 동일한 자본주의 경제 시스템</b>을 체험하는 경제 시뮬레이션입니다.
+        가입 즉시 <b>초기 정착금 5억 원</b>이 지급되며, 주식·코인·부동산·은행 등
+        다양한 금융 수단으로 자산을 불려 나갈 수 있습니다.
+        랭킹 시스템, 클랜, 일일 퀘스트, 미니게임, VIP 라운지까지 갖춘 풀 스케일 경제 세계입니다.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge">📈 주식 트레이딩</span>
+        <span class="arch-badge">₿ 코인 거래소</span>
+        <span class="arch-badge">🏠 부동산 임대</span>
+        <span class="arch-badge">🏦 대출·이자</span>
+        <span class="arch-badge">🏆 시즌 랭킹</span>
+        <span class="arch-badge">⚔️ 클랜 시스템</span>
+        <span class="arch-badge">🎰 미니게임 8종</span>
+        <span class="arch-badge">🚀 시즌 1 진행 중</span>
+    </div>
+    <div style="margin-top:10px;background:#EFF6FF;border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:#1E40AF !important;font-weight:700;">💡 입문 가이드</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
+            ① 로그인 후 유니버스 입장 → ② 홈 광장에서 튜토리얼 확인 → ③ 주식/코인 소액 매수로 시작
+            → ④ 일일 퀘스트 완료로 보너스 획득 → ⑤ 부동산 매입으로 패시브 수익 확보
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card">
+    <h4>🧠 AI 무한 모의고사 — AI 아카데미</h4>
+    <p>
+        공부한 내용을 붙여넣기하거나 PDF/TXT 파일을 업로드하면,
+        <b>Gemini AI</b>가 실제 시험 스타일의 문제를 무한으로 생성해 드립니다.
+        문제 수(5~20개), 난이도(쉬움/보통/어려움), 문제 유형(4지선다/단답형/O×)을 자유롭게 설정할 수 있으며,
+        채점 후 <b>오답 자동 분석 및 재출제</b> 기능을 제공합니다.
+        정처기, 수능, 자격증 등 모든 분야에 활용 가능합니다.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge">🤖 Gemini 2.5 Flash</span>
+        <span class="arch-badge">📄 PDF/TXT 업로드</span>
+        <span class="arch-badge">🎚️ 난이도 3단계</span>
+        <span class="arch-badge">✏️ 3가지 문제 유형</span>
+        <span class="arch-badge">📊 오답 분석</span>
+        <span class="arch-badge">🔁 오답 재출제</span>
+    </div>
+    <div style="margin-top:10px;background:#F0FDF4;border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:#15803D !important;font-weight:700;">💡 사용법</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
+            ① AI 아카데미 입장 → ② 학습 내용 직접 입력 또는 파일 업로드 → ③ 문제 수·난이도·유형 설정
+            → ④ 문제 생성 → ⑤ 풀기 → ⑥ 채점 및 오답 확인 → ⑦ 오답만 재출제
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card">
+    <h4>🎲 인베스트 마블 — 보드게임</h4>
+    <p>
+        모노폴리에서 영감을 받은 <b>투자형 보드게임</b>입니다.
+        AI 봇과 함께 주사위를 굴리며 전 세계 랜드마크 부지를 매입하고,
+        <b>집→호텔</b>을 건설해 임대료 수익을 올립니다.
+        저당 설정으로 급전을 마련하거나, 무인도에 갇혀 탈출을 시도하는 등
+        다이나믹한 경제 전략이 필요한 게임입니다.
+        화려한 3D 스타일 UI와 애니메이션이 적용된 풀 HTML 게임입니다.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge">🗺️ 세계 랜드마크 보드</span>
+        <span class="arch-badge">🤖 AI 봇 대전</span>
+        <span class="arch-badge">🏠 집·호텔 건설</span>
+        <span class="arch-badge">⛓️ 저당·경매</span>
+        <span class="arch-badge">🏝️ 무인도 탈출</span>
+        <span class="arch-badge">🎴 이벤트 카드</span>
+    </div>
+    <div style="margin-top:10px;background:#FFF7ED;border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:#C2410C !important;font-weight:700;">💡 전략 팁</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
+            같은 색 부지 독점 시 임대료 2배. 무인도 탈출은 주사위 더블 or 탈출 카드 사용.
+            현금이 부족할 땐 호텔을 팔거나 저당을 설정해 버텨라.
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+        with col_g2:
+            st.markdown("""
+<div class="arch-card">
+    <h4>🗳️ 월드 배틀 — 실시간 진영 투표</h4>
+    <p>
+        매일 새로운 <b>오늘의 질문</b>이 올라오면, A 진영 또는 B 진영 중 하나를 선택해 투표합니다.
+        실시간으로 전체 투표 현황과 진영별 비율이 배틀 바를 통해 시각화되며,
+        투표 후 다른 시민들의 댓글도 확인할 수 있습니다.
+        관리자가 주제·기간·진영 이름을 자유롭게 설정하고, 종료된 투표는 히스토리로 보존됩니다.
+        완전 익명으로 진행되며 계정당 1표만 허용됩니다.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge">🔵🔴 2진영 배틀</span>
+        <span class="arch-badge">📊 실시간 비율 바</span>
+        <span class="arch-badge">💬 투표 후 댓글</span>
+        <span class="arch-badge">🕵️ 완전 익명</span>
+        <span class="arch-badge">⏱️ 마감 카운트다운</span>
+        <span class="arch-badge">📜 히스토리 보존</span>
+    </div>
+    <div style="margin-top:10px;background:#EFF6FF;border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:#1E40AF !important;font-weight:700;">💡 참여 방법</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
+            ① 로그인 후 월드 배틀 입장 → ② 오늘의 질문 확인 → ③ 원하는 진영 버튼 클릭
+            → ④ 투표 완료 후 비율 확인 → ⑤ 댓글로 의견 남기기 (마감 후 결과 공개)
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card">
+    <h4>💻 THE TERMINAL — 방탈출</h4>
+    <p>
+        오직 <b>커맨드라인 명령어</b>만으로 단서를 추적해 방을 탈출하는 해킹 어드벤처 게임입니다.
+        총 <b>10개의 스테이지</b>로 구성되며, 각 스테이지마다 독립된 가상 파일시스템이 펼쳐집니다.
+        <code>ls</code>, <code>cat</code>, <code>cd</code>, <code>decode</code>, <code>rot13</code> 등
+        실제 터미널 명령어와 유사한 커맨드를 입력해 숨겨진 비밀번호를 찾아야 합니다.
+        단계별 3개의 힌트가 제공되며, 스테이지 난이도는 입문부터 전문가 수준까지 점진적으로 상승합니다.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge">🖥️ 10 STAGES</span>
+        <span class="arch-badge">📁 가상 파일시스템</span>
+        <span class="arch-badge">⌨️ 실제 CLI 명령어</span>
+        <span class="arch-badge">🔐 SHA-256 정답 검증</span>
+        <span class="arch-badge">💡 단계별 3힌트</span>
+        <span class="arch-badge">⭐~⭐⭐⭐⭐⭐ 난이도</span>
+    </div>
+    <div style="margin-top:10px;background:#FDF4FF;border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:#7E22CE !important;font-weight:700;">💡 기본 명령어</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
+            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">ls</code> 파일 목록 &nbsp;
+            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">ls -a</code> 숨김파일 포함 &nbsp;
+            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">cat [파일]</code> 내용 보기 &nbsp;
+            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">cd [경로]</code> 디렉토리 이동 &nbsp;
+            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">decode [문자열]</code> base64 해독 &nbsp;
+            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">unlock [정답]</code> 잠금 해제
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card" style="border-left: 3px solid #CBD5E1;">
+    <h4 style="color:#64748B !important;">🛠️ 비밀 프로젝트 E — Coming Soon</h4>
+    <p style="color:#94A3B8 !important;">
+        현재 개발 중인 신규 서비스입니다. 공개 예정일 및 세부 내용은 추후 시스템 공지를 통해 안내드립니다.
+        기대해 주세요!
+    </p>
+    <div style="margin-top:10px;">
+        <span class="arch-badge" style="background:#F1F5F9;color:#94A3B8 !important;border-color:#E2E8F0;">🔒 준비 중</span>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+    st.write("---")
+
     # ── 배너 섹션 ──────────────────────────────────────────
     col1, col2 = st.columns(2)
 
