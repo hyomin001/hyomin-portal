@@ -2034,15 +2034,15 @@ window.UI=UI;
 </html>
 """
 
-st.set_page_config(page_title="던전 크러셔", layout="wide")
-st.markdown("""
-<style>
-.block-container{padding:0!important;max-width:100%!important;}
-section[data-testid="stSidebar"]{display:none!important;}
-header{display:none!important;}
-footer{display:none!important;}
-iframe{border:none!important;background:#06040e;}
-body{background:#06040e;}
-</style>
-""", unsafe_allow_html=True)
-components.html(GAME_HTML, height=640, scrolling=False)
+def render():
+    st.markdown("""
+    <style>
+    .block-container{padding:0!important;max-width:100%!important;}
+    section[data-testid="stSidebar"]{display:none!important;}
+    header{display:none!important;}
+    footer{display:none!important;}
+    iframe{border:none!important;background:#06040e;}
+    body{background:#06040e;}
+    </style>
+    """, unsafe_allow_html=True)
+    components.html(GAME_HTML, height=640, scrolling=False)
