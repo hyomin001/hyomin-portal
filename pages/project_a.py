@@ -38,6 +38,10 @@ def repair_json(text):
     except:
         return None
 
+# ==========================================
+# ✅ 완화된 validate_quiz (핵심 수정)
+# answer == options 완벽 일치 검증 제거
+# ==========================================
 def validate_quiz(quiz):
     if not isinstance(quiz, list) or len(quiz) == 0:
         return False
@@ -46,8 +50,7 @@ def validate_quiz(quiz):
             return False
         if not all(k in q for k in ["question", "options", "answer", "explanation"]):
             return False
-        # 정답이 보기에 포함되어 있는지 검증
-        if q.get("answer") not in q.get("options", []):
+        if not isinstance(q.get("options"), list) or len(q.get("options")) < 2:
             return False
     return True
 
@@ -90,10 +93,9 @@ def call_gemini(prompt, timeout=90):
     return None
 
 # ==========================================
-# 🧠 핵심 개선: 긴 텍스트 → 청킹 요약 압축
+# 🧠 긴 텍스트 청킹 요약
 # ==========================================
 def summarize_chunk(chunk, chunk_idx, total_chunks, status):
-    """긴 문서를 청크별로 핵심 개념만 추출"""
     prompt = f"""다음 텍스트(총 {total_chunks}개 중 {chunk_idx+1}번째 파트)에서 시험 문제 출제에 필요한 핵심 개념, 사실, 중요 용어, 수치, 정의만 간결하게 추출하세요.
 불필요한 서론/인사/예의 표현은 제외하고 오직 학습 내용의 핵심만 bullet point 형태로 정리하세요.
 
@@ -101,27 +103,23 @@ def summarize_chunk(chunk, chunk_idx, total_chunks, status):
 {chunk}
 
 핵심 내용만 bullet point로 출력:"""
-    
     res = call_gemini(prompt, timeout=60)
     if res:
         status.write(f"  ✅ 파트 {chunk_idx+1}/{total_chunks} 요약 완료")
     return res or ""
 
 def compress_long_text(text, status):
-    """5000자 이상의 텍스트를 청킹 후 요약하여 압축"""
-    MAX_DIRECT = 8000   # 이 이하면 직접 사용
-    CHUNK_SIZE = 6000   # 청크 크기
+    MAX_DIRECT = 8000
+    CHUNK_SIZE = 6000
 
     if len(text) <= MAX_DIRECT:
         return text
 
     status.write(f"📄 긴 문서 감지 ({len(text):,}자) → 청킹 분석 시작...")
-    
-    # 텍스트를 문단 단위로 청크 분할
+
     chunks = []
     remaining = text
     while len(remaining) > CHUNK_SIZE:
-        # 자연스러운 끊김점 찾기 (문장 끝)
         cut = CHUNK_SIZE
         for boundary in ['. ', '.\n', '\n\n', '\n']:
             pos = remaining.rfind(boundary, CHUNK_SIZE // 2, CHUNK_SIZE)
@@ -134,12 +132,12 @@ def compress_long_text(text, status):
         chunks.append(remaining)
 
     status.write(f"  총 {len(chunks)}개 파트로 분할 → 각 파트 핵심 추출 중...")
-    
+
     summaries = []
     for i, chunk in enumerate(chunks):
         summary = summarize_chunk(chunk, i, len(chunks), status)
         summaries.append(summary)
-        time.sleep(0.3)  # API 레이트 리밋 방지
+        time.sleep(0.3)
 
     compressed = "\n\n".join(summaries)
     status.write(f"  📦 압축 완료: {len(text):,}자 → {len(compressed):,}자 ({len(compressed)*100//len(text)}%)")
@@ -162,13 +160,11 @@ def fallback_quiz(count):
     return dummy
 
 # ==========================================
-# 🔥 문제 생성 (개선된 버전)
+# 🔥 문제 생성
 # ==========================================
 def generate_quiz(text, count, difficulty, q_type, status):
-    # 긴 텍스트면 먼저 압축
     processed_text = compress_long_text(text, status)
 
-    # 프롬프트: 매우 명확하게 구조화
     prompt = f"""당신은 전문 시험 출제 AI입니다. 아래 학습 내용을 바탕으로 정확히 {count}개의 4지선다 문제를 출제하세요.
 
 ⚠️ 출력 규칙 (반드시 준수):
@@ -208,11 +204,10 @@ def generate_quiz(text, count, difficulty, q_type, status):
         res = call_gemini(prompt, timeout=90)
 
         if not res:
-            status.write(f"⚠️ 응답 없음, 재시도 중...")
+            status.write("⚠️ 응답 없음, 재시도 중...")
             time.sleep(2)
             continue
 
-        # JSON 추출 시도
         quiz = extract_json(res)
         if validate_quiz(quiz):
             if len(quiz) < count:
@@ -221,7 +216,6 @@ def generate_quiz(text, count, difficulty, q_type, status):
             status.update(label="✨ 출제 완료!", state="complete")
             return quiz[:count]
 
-        # 복구 시도
         quiz = repair_json(res)
         if validate_quiz(quiz):
             status.write("🛠️ JSON 자동 복구 성공!")
@@ -230,9 +224,9 @@ def generate_quiz(text, count, difficulty, q_type, status):
             status.update(label="✨ 출제 완료!", state="complete")
             return quiz[:count]
 
-        # 부분 성공: 일부 문제라도 유효하면 사용
+        # 부분 성공
         if isinstance(quiz, list) and len(quiz) >= max(1, count // 2):
-            valid = [q for q in quiz if isinstance(q, dict) and all(k in q for k in ["question","options","answer","explanation"])]
+            valid = [q for q in quiz if isinstance(q, dict) and all(k in q for k in ["question", "options", "answer", "explanation"])]
             if len(valid) >= max(1, count // 2):
                 status.write(f"⚠️ 일부만 유효 ({len(valid)}개), 사용 중...")
                 status.update(label=f"✨ 부분 출제 완료 ({len(valid)}개)", state="complete")
@@ -319,7 +313,7 @@ def inject_custom_css():
     """, unsafe_allow_html=True)
 
 # ==========================================
-# UI
+# 🎯 UI
 # ==========================================
 def render(market=None, nw=None):
 
@@ -371,7 +365,6 @@ def render(market=None, nw=None):
         q, p = analyze_text_quality(text)
         st.info(f"텍스트 분석: {q} / 출제 성공 확률: {p}%")
 
-        # 긴 텍스트일 때 처리 방식 안내
         if char_count > 8000:
             st.markdown(f"""
             <div class="chunk-info">
@@ -431,8 +424,9 @@ def render(market=None, nw=None):
                 with st.spinner("📊 채점 중..."):
                     time.sleep(0.8)
                     for i, q in enumerate(ss.quiz):
-                        user = ss.answers.get(i)
-                        answer = q.get("answer")
+                        # ✅ 핵심 수정: strip()으로 공백 차이 무시하고 채점
+                        user = (ss.answers.get(i) or "").strip()
+                        answer = (q.get("answer") or "").strip()
                         is_wrong = (user != answer)
 
                         card_class = "quiz-card-wrong" if is_wrong else "quiz-card-correct"
@@ -480,9 +474,9 @@ def render(market=None, nw=None):
                 if st.button("🚨 틀린 내용으로만 지옥 난이도 재도전"):
                     with st.status("🔥 오답 분석 중...", expanded=True) as status:
                         txt = " ".join([
-                            q.get("question","") + " " +
-                            q.get("study_note","") + " " +
-                            q.get("explanation","")
+                            q.get("question", "") + " " +
+                            q.get("study_note", "") + " " +
+                            q.get("explanation", "")
                             for q in ss.wrong
                         ])
                         ss.quiz = generate_quiz(
