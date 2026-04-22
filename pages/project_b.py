@@ -445,14 +445,22 @@ def confetti_js(color_a="#3D8EF0", color_b="#F04F3D"):
 
 AUTO_REFRESH_JS = """
 <script>
-// 30초마다 자동 새로고침 (투표 수 실시간 반영)
-if (!window._voteRefreshTimer) {
+// Streamlit 실시간 자동 새로고침 (30초마다)
+(function() {
+  if (window._voteRefreshTimer) return;
   window._voteRefreshTimer = setInterval(function() {
-    // Streamlit rerun trigger — 버튼 클릭 시뮬레이션 없이 조용히
-    var ev = new Event('streamlit:formsSubmitted', {bubbles: true});
-    window.dispatchEvent(ev);
+    // Streamlit의 실제 rerun 트리거 방식
+    var btns = window.parent.document.querySelectorAll('button[kind="secondary"]');
+    // 숨겨진 새로고침 트리거: URL 파라미터 변경으로 rerun 유도
+    var url = new URL(window.parent.location.href);
+    url.searchParams.set('_ts', Date.now());
+    window.parent.history.replaceState(null, '', url.toString());
+    // Streamlit iframe 내부에서 rerun 시도
+    try {
+      window.parent.postMessage({type: 'streamlit:rerun'}, '*');
+    } catch(e) {}
   }, 30000);
-}
+})();
 </script>
 """
 
@@ -691,12 +699,24 @@ def render():
         )
         st.html(status_html)
 
-        if st.button("🔄  선택 취소하기", use_container_width=True, key="cancel_vote"):
-            vdb2 = load_vote_db()
-            vdb2["current"]["votes_a"] = [v for v in vdb2["current"]["votes_a"] if v != uid]
-            vdb2["current"]["votes_b"] = [v for v in vdb2["current"]["votes_b"] if v != uid]
-            save_vote_db(vdb2)
-            st.rerun()
+        col_cancel, col_share = st.columns(2)
+        with col_cancel:
+            if st.button("🔄  선택 취소하기", use_container_width=True, key="cancel_vote"):
+                vdb2 = load_vote_db()
+                vdb2["current"]["votes_a"] = [v for v in vdb2["current"]["votes_a"] if v != uid]
+                vdb2["current"]["votes_b"] = [v for v in vdb2["current"]["votes_b"] if v != uid]
+                save_vote_db(vdb2)
+                st.rerun()
+        with col_share:
+            share_text = f"[효민 월드 배틀] {cur['topic']} — {name_picked if user_voted else ''} 진영 선택! 총 {total}명 참여 중. 지금 투표하러 가세요!"
+            st.download_button(
+                "📤 결과 공유용 텍스트",
+                data=share_text,
+                file_name="vote_result.txt",
+                mime="text/plain",
+                use_container_width=True,
+                key="share_btn"
+            )
 
     else:
         # 투표 버튼
