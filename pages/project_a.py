@@ -353,6 +353,9 @@ def analyze_text_quality(text):
 # ==========================================
 # 🎨 CSS
 # ==========================================
+# ==========================================
+# 🎨 CSS
+# ==========================================
 def inject_css():
     st.markdown("""
 <style>
@@ -386,10 +389,6 @@ div.stButton>button:first-child:hover{transform:scale(1.04) translateY(-2px)!imp
   border:1px solid #e9ecef;border-bottom:none;transition:.3s;}
 .stTabs [aria-selected="true"]{background:white!important;border-top:3px solid #667eea!important;
   font-weight:700!important;color:#764ba2!important;}
-[data-testid="stExpanderToggleIcon"] svg { display:block!important; }
-[data-testid="stExpanderToggleIcon"] { font-size:0!important; color:transparent!important; }
-.streamlit-expanderHeader p { display:inline!important; }
-details summary span[aria-hidden] { display:none!important; }
 </style>""", unsafe_allow_html=True)
 
 # ==========================================
