@@ -353,9 +353,6 @@ def analyze_text_quality(text):
 # ==========================================
 # 🎨 CSS
 # ==========================================
-# ==========================================
-# 🎨 CSS
-# ==========================================
 def inject_css():
     st.markdown("""
 <style>
@@ -389,6 +386,10 @@ div.stButton>button:first-child:hover{transform:scale(1.04) translateY(-2px)!imp
   border:1px solid #e9ecef;border-bottom:none;transition:.3s;}
 .stTabs [aria-selected="true"]{background:white!important;border-top:3px solid #667eea!important;
   font-weight:700!important;color:#764ba2!important;}
+
+/* 🔥 st.expander 우측 화살표 완전 제거 (글자 겹침 해결) */
+[data-testid="stExpanderToggleIcon"] { display: none !important; }
+details summary svg { display: none !important; }
 </style>""", unsafe_allow_html=True)
 
 # ==========================================
