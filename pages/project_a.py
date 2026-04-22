@@ -353,89 +353,64 @@ def analyze_text_quality(text):
 # ==========================================
 # 🎨 CSS
 # ==========================================
+# ==========================================
+# 🎨 CSS
+# ==========================================
 def inject_css():
     st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 *,html,body{font-family:'Noto Sans KR',sans-serif!important;}
-
 .quiz-card{background:linear-gradient(145deg,#fff,#f5f7fa);border-radius:20px;padding:28px;
   margin-bottom:22px;box-shadow:8px 8px 24px #e0e3e8,-4px -4px 12px #fff;
   border:1px solid rgba(255,255,255,.9);transition:transform .25s ease,box-shadow .25s ease;}
 .quiz-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(0,0,0,.09);}
-
 .quiz-card-correct{background:linear-gradient(135deg,#f0fff4,#e6ffe6)!important;border:2px solid #48bb78!important;}
 .quiz-card-wrong{background:linear-gradient(135deg,#fff5f5,#ffe6e6)!important;border:2px solid #f56565!important;}
-
 .study-note{background:linear-gradient(135deg,#fffcf0,#fff3cd);border-left:5px solid #f59e0b;
   padding:16px 20px;margin-top:16px;border-radius:12px;color:#92400e;font-weight:500;line-height:1.7;}
-
 .report-box{background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border-left:5px solid #4361ee;
   padding:20px 24px;margin-top:16px;border-radius:12px;color:#1a237e;line-height:1.8;}
-
 .streak-badge{display:inline-block;background:linear-gradient(135deg,#f72585,#b5179e);
   color:white;padding:4px 14px;border-radius:50px;font-weight:700;font-size:.9em;
   margin-left:10px;box-shadow:0 3px 10px rgba(247,37,133,.4);}
-
 .chunk-info{background:linear-gradient(135deg,#e8f4fd,#d1ecf1);border-left:4px solid #17a2b8;
   padding:12px 16px;border-radius:8px;font-size:.9em;color:#0c5460;margin:8px 0;}
-
 .subject-badge{display:inline-block;background:linear-gradient(135deg,#667eea,#764ba2);
   color:white;padding:3px 14px;border-radius:50px;font-size:.85em;font-weight:700;margin-left:8px;}
-
-div.stButton>button:first-child{
-  background:linear-gradient(135deg,#667eea,#764ba2)!important;
-  color:white!important;border:none!important;border-radius:50px!important;
-  padding:12px 28px!important;font-weight:700!important;font-size:1.05em!important;
-  transition:all .3s ease!important;
-  box-shadow:0 6px 18px rgba(118,75,162,.4)!important;
-}
-div.stButton>button:first-child:hover{
-  transform:scale(1.04) translateY(-2px)!important;
-  box-shadow:0 10px 24px rgba(118,75,162,.6)!important;
-}
-
+div.stButton>button:first-child{background:linear-gradient(135deg,#667eea,#764ba2)!important;
+  color:white!important;border:none!important;border-radius:50px!important;padding:12px 28px!important;
+  font-weight:700!important;font-size:1.05em!important;transition:all .3s ease!important;
+  box-shadow:0 6px 18px rgba(118,75,162,.4)!important;}
+div.stButton>button:first-child:hover{transform:scale(1.04) translateY(-2px)!important;
+  box-shadow:0 10px 24px rgba(118,75,162,.6)!important;}
 .stTabs [data-baseweb="tab-list"]{gap:12px;background:transparent;}
-.stTabs [data-baseweb="tab"]{
-  background:#f8f9fa;border-radius:10px 10px 0 0;padding:10px 18px;
-  border:1px solid #e9ecef;border-bottom:none;transition:.3s;
-}
-.stTabs [aria-selected="true"]{
-  background:white!important;border-top:3px solid #667eea!important;
-  font-weight:700!important;color:#764ba2!important;
-}
+.stTabs [data-baseweb="tab"]{background:#f8f9fa;border-radius:10px 10px 0 0;padding:10px 18px;
+  border:1px solid #e9ecef;border-bottom:none;transition:.3s;}
+.stTabs [aria-selected="true"]{background:white!important;border-top:3px solid #667eea!important;
+  font-weight:700!important;color:#764ba2!important;}
 
-/* 🔥 expander 완전 정리 (겹침 해결 핵심) */
-details summary {
-  list-style: none !important;
-  display: block !important;
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-}
-
-details summary::-webkit-details-marker {
-  display: none !important;
-}
-
-details summary svg {
-  display: none !important;
-}
-
+/* 🔥 st.expander 텍스트 겹침 완벽 차단 (글자 자체를 증발시킴) */
 [data-testid="stExpanderToggleIcon"] {
-  display: none !important;
+    display: none !important;
+    font-size: 0px !important;
+    color: transparent !important;
+    opacity: 0 !important;
+    width: 0px !important;
+    height: 0px !important;
+    overflow: hidden !important;
+    position: absolute !important;
 }
-
-details summary span {
-  margin-left: 0 !important;
-  padding-left: 0 !important;
+details summary svg, 
+details summary span.material-symbols-rounded {
+    display: none !important;
+    font-size: 0px !important;
 }
-
-details summary:hover {
-  background: transparent !important;
+details summary p {
+    display: inline-block !important;
+    margin-left: 0 !important;
 }
-
-</style>
-""", unsafe_allow_html=True)
+</style>""", unsafe_allow_html=True)
 # ==========================================
 # 🎯 MAIN UI
 # ==========================================
