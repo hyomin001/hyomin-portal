@@ -116,14 +116,16 @@ def call_gemini(prompt, timeout=90, max_tokens=8192):
 # ==========================================
 def detect_subject(text):
     prompt = f"""다음 텍스트의 주제/분야를 한 단어로만 답하세요.
-예: 역사, 과학, 수학, 법학, 경영, 의학, IT, 언어, 문학, 기타
+예: 역사, 과학, 수학, 법학, 경영, 의학, IT/프로그래밍, 언어, 문학, 기타
+
+코드(Python, JavaScript 등)가 포함되어 있으면 반드시 "IT/프로그래밍"으로 답하세요.
 
 텍스트:
 {text[:500]}
 
-주제:"""
+주제(한 단어):"""
     res = call_gemini(prompt, timeout=30, max_tokens=20)
-    return res.strip()[:10] if res else "일반"
+    return res.strip()[:15] if res else "일반"
 
 # ==========================================
 # 🧠 2단계 압축
@@ -384,6 +386,10 @@ div.stButton>button:first-child:hover{transform:scale(1.04) translateY(-2px)!imp
   border:1px solid #e9ecef;border-bottom:none;transition:.3s;}
 .stTabs [aria-selected="true"]{background:white!important;border-top:3px solid #667eea!important;
   font-weight:700!important;color:#764ba2!important;}
+[data-testid="stExpanderToggleIcon"] svg { display:block!important; }
+[data-testid="stExpanderToggleIcon"] { font-size:0!important; color:transparent!important; }
+.streamlit-expanderHeader p { display:inline!important; }
+details summary span[aria-hidden] { display:none!important; }
 </style>""", unsafe_allow_html=True)
 
 # ==========================================
@@ -441,11 +447,14 @@ def render(market=None, nw=None):
 
         if char_count > 8000:
             est_parts = max(2, char_count // 5000)
-            lo = max(2, char_count // 8000 * 2)
-            hi = max(3, char_count // 8000 * 3 + 2)
+            est_sec_lo = est_parts * 5 + 30
+            est_sec_hi = est_parts * 10 + 60
+            lo_m = max(1, est_sec_lo // 60)
+            hi_m = max(2, est_sec_hi // 60)
+            time_str = f"약 {lo_m}~{hi_m}분" if hi_m >= 2 else "약 1~2분"
             st.markdown(f"""<div class="chunk-info">
 ℹ️ <b>2단계 압축 모드:</b> {char_count:,}자 → {est_parts}개 파트 핵심 추출 → 최종 재압축 → 출제<br>
-예상 처리 시간: 약 {lo}~{hi}분
+예상 처리 시간: {time_str}
 </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
