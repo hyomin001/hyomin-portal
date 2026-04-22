@@ -144,7 +144,7 @@ def generate_quiz(text, count, difficulty, q_type):
 # ==========================================
 def render():
 
-    st.title("🔥 AI 모의고사 (풀버전)")
+    st.title("🔥 AI 모의고사 ")
     st.caption("시험모드 + 자동난이도 + 안정화 완료")
 
     # 상태
