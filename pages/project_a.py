@@ -171,44 +171,95 @@ def analyze_text_quality(text):
         return "✅ 좋음", 90
 
 # ==========================================
-# 🎨 UI CSS 주입 함수 (웹 서비스급 스타일링)
+# 🎨 UI CSS 주입 함수 (프리미엄, 화려한 디자인)
 # ==========================================
 def inject_custom_css():
     st.markdown("""
     <style>
-    /* 기본 문제 카드 둥글고 예쁘게 */
+    /* Google Font 적용 (Noto Sans KR) */
+    @import url('[https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap](https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap)');
+    html, body, [class*="css"] {
+        font-family: 'Noto Sans KR', sans-serif !important;
+    }
+
+    /* 기본 문제 카드 (Neumorphism & Glassmorphism 혼합 럭셔리 스타일) */
     .quiz-card {
-        background-color: #ffffff;
-        border-radius: 15px;
-        padding: 25px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        border: 1px solid #e0e0e0;
-        transition: transform 0.2s ease-in-out;
+        background: linear-gradient(145deg, #ffffff, #f5f7fa);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 10px 10px 30px #e6e6e6, -10px -10px 30px #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
     }
     .quiz-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.08);
     }
-    /* 정답/오답 카드 강조 */
+
+    /* 정답/오답 카드 (화려한 빛 반사 및 네온 스타일 테두리) */
     .quiz-card-correct {
-        border-left: 6px solid #4CAF50 !important;
-        background-color: #f2fdf4;
+        background: linear-gradient(135deg, #f0fff4 0%, #e6ffe6 100%);
+        border: 2px solid #48bb78;
+        box-shadow: 0 0 15px rgba(72, 187, 120, 0.3);
     }
     .quiz-card-wrong {
-        border-left: 6px solid #F44336 !important;
-        background-color: #fff5f5;
+        background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+        border: 2px solid #f56565;
+        box-shadow: 0 0 15px rgba(245, 101, 101, 0.3);
     }
-    /* 1타 강사 노트 (노란색 포스트잇 느낌) */
+
+    /* 1타 강사 노트 (프리미엄 골드 포인트) */
     .study-note {
-        background-color: #fff8e1;
-        border-left: 5px solid #ffc107;
-        padding: 15px;
-        margin-top: 15px;
-        border-radius: 8px;
-        color: #856404;
-        font-size: 0.95em;
-        line-height: 1.5;
+        background: linear-gradient(135deg, #fffcf0 0%, #fff3cd 100%);
+        border-left: 6px solid #f59e0b;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 12px;
+        color: #92400e;
+        font-size: 1.05em;
+        font-weight: 500;
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.1);
+        line-height: 1.6;
+    }
+
+    /* Streamlit 기본 버튼 오버라이딩 (그라데이션 버튼) */
+    div.stButton > button:first-child {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 12px 28px !important;
+        font-weight: 700 !important;
+        font-size: 1.1em !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 8px 20px rgba(118, 75, 162, 0.4) !important;
+    }
+    div.stButton > button:first-child:hover {
+        transform: scale(1.05) translateY(-2px) !important;
+        box-shadow: 0 12px 25px rgba(118, 75, 162, 0.6) !important;
+    }
+
+    /* 초기화 버튼 같이 덜 중요한 버튼은 별도 처리 가능하지만 일단 통일감 유지 */
+    
+    /* 탭 메뉴 스타일링 */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 15px;
+        background-color: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #f8f9fa;
+        border-radius: 10px 10px 0 0;
+        padding: 10px 20px;
+        border: 1px solid #e9ecef;
+        border-bottom: none;
+        transition: 0.3s;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #ffffff !important;
+        border-top: 3px solid #667eea !important;
+        font-weight: 700 !important;
+        color: #764ba2 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -218,7 +269,7 @@ def inject_custom_css():
 # ==========================================
 def render(market=None, nw=None):
 
-    st.title("🔥 AI 모의고사 (완전 안정화)")
+    st.title("🔥 AI 모의고사 (Premium Edition)")
 
     # 상태 초기화
     ss = st.session_state
@@ -260,14 +311,17 @@ def render(market=None, nw=None):
             if not text.strip():
                 st.warning("입력 필요")
             else:
-                quiz = generate_quiz(text, count, difficulty, q_type)
+                # 🚀 피드백 반영: 로딩 스피너 추가
+                with st.spinner("✨ AI가 입력하신 내용을 분석하여 고퀄리티 모의고사를 출제하고 있습니다. 잠시만 기다려주세요..."):
+                    quiz = generate_quiz(text, count, difficulty, q_type)
 
-                ss.quiz = quiz
-                ss.answers = {}
-                ss.wrong = []
-                ss.last_quiz_text = text
-                
-                st.toast("🚀 출제 완료! [응시 화면] 탭으로 이동하세요.", icon="✅")
+                    ss.quiz = quiz
+                    ss.answers = {}
+                    ss.wrong = []
+                    ss.last_quiz_text = text
+                    
+                    st.success("✅ 출제 완료!")
+                    st.toast("🚀 출제 완료! [응시 화면] 탭으로 이동하세요.", icon="✅")
 
     # 문제 로직
     if ss.quiz:
@@ -307,56 +361,60 @@ def render(market=None, nw=None):
 
         with tab3:
             # 채점
-            if st.button("💯 채점"):
+            if st.button("💯 채점 및 결과 확인"):
 
                 correct = 0
                 wrong = []
 
-                for i, q in enumerate(ss.quiz):
+                # 채점 중 연출을 위한 짧은 스피너
+                with st.spinner("📊 OMR 카드를 채점하고 있습니다..."):
+                    time.sleep(1) # 극적인 효과를 위해 1초 대기
 
-                    user = ss.answers.get(i)
-                    answer = q.get("answer")
-                    is_wrong = (user != answer)
+                    for i, q in enumerate(ss.quiz):
 
-                    # 맞힌 문제/틀린 문제 시각적 분리
-                    card_class = "quiz-card-wrong" if is_wrong else "quiz-card-correct"
-                    st.markdown(f'<div class="quiz-card {card_class}">', unsafe_allow_html=True)
-                    
-                    if is_wrong:
-                        wrong.append(q)
-                        st.error(f"🔴 Q{i+1}. 오답입니다. (내 답: {user} / 정답: {answer})")
-                    else:
-                        correct += 1
-                        st.success(f"🟢 Q{i+1}. 정답입니다!")
+                        user = ss.answers.get(i)
+                        answer = q.get("answer")
+                        is_wrong = (user != answer)
+
+                        # 맞힌 문제/틀린 문제 시각적 분리
+                        card_class = "quiz-card-wrong" if is_wrong else "quiz-card-correct"
+                        st.markdown(f'<div class="quiz-card {card_class}">', unsafe_allow_html=True)
                         
-                    st.markdown(f"**문제:** {q.get('question','')}")
+                        if is_wrong:
+                            wrong.append(q)
+                            st.error(f"🔴 Q{i+1}. 오답입니다. (내 답: {user} / 정답: {answer})")
+                        else:
+                            correct += 1
+                            st.success(f"🟢 Q{i+1}. 정답입니다!")
+                            
+                        st.markdown(f"**문제:** {q.get('question','')}")
+                        
+                        # 1타 강사 오답 밀착 마크: 틀린 문제는 자동으로 expander가 열림
+                        with st.expander(f"📖 {i+1}번 해설 및 1타 강사의 꿀팁 보기", expanded=is_wrong):
+                            st.write(f"**해설:** {q.get('explanation','없음')}")
+                            if "study_note" in q and q["study_note"]:
+                                st.markdown(f'<div class="study-note">👨‍🏫 <b>1타 강사 Note:</b><br>{q.get("study_note")}</div>', unsafe_allow_html=True)
+                        
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                    # 안전 점수 계산 및 애니메이션 피드백
+                    if total > 0:
+                        score = int(correct / total * 100)
+                    else:
+                        score = 0
+
+                    st.metric("최종 점수", f"{score} 점")
                     
-                    # 1타 강사 오답 밀착 마크: 틀린 문제는 자동으로 expander가 열림
-                    with st.expander(f"📖 {i+1}번 해설 및 강사의 꿀팁 보기", expanded=is_wrong):
-                        st.write(f"**해설:** {q.get('explanation','없음')}")
-                        if "study_note" in q and q["study_note"]:
-                            st.markdown(f'<div class="study-note">👨‍🏫 <b>1타 강사 Note:</b><br>{q.get("study_note")}</div>', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    if score == 100:
+                        st.balloons()
+                        st.toast("완벽합니다! 100점 만점! 🎉", icon="🏆")
+                    elif score >= 70:
+                        st.toast("수고하셨습니다! 좋은 점수네요. 👍", icon="🌟")
+                    else:
+                        st.toast("조금만 더 복습해볼까요? 오답 노트를 확인하세요! 💪", icon="🔥")
 
-                # 안전 점수 계산 및 애니메이션 피드백
-                if total > 0:
-                    score = int(correct / total * 100)
-                else:
-                    score = 0
-
-                st.metric("최종 점수", f"{score} 점")
-                
-                if score == 100:
-                    st.balloons()
-                    st.toast("완벽합니다! 100점 만점! 🎉", icon="🏆")
-                elif score >= 70:
-                    st.toast("수고하셨습니다! 좋은 점수네요. 👍", icon="🌟")
-                else:
-                    st.toast("조금만 더 복습해볼까요? 오답 노트를 확인하세요! 💪", icon="🔥")
-
-                ss.history.append(score)
-                ss.wrong = wrong
+                    ss.history.append(score)
+                    ss.wrong = wrong
 
             # 평균
             if ss.history:
@@ -367,17 +425,19 @@ def render(market=None, nw=None):
             if ss.wrong:
                 st.markdown("---")
                 st.subheader("🔥 하드코어 오답 복수전")
-                if st.button("🚨 틀린 문제로만 최상 난이도 재도전"):
+                if st.button("🚨 틀린 문제로만 지옥 난이도 재도전"):
+                    
+                    # 🚀 피드백 반영: 오답 재도전 시에도 스피너 추가
+                    with st.spinner("🔥 오답을 철저히 분석하여 가장 어려운 난이도로 재출제 중입니다..."):
+                        txt = " ".join([q.get("question","") + " " + q.get("study_note", "") for q in ss.wrong])
 
-                    txt = " ".join([q.get("question","") + " " + q.get("study_note", "") for q in ss.wrong])
-                    st.toast("오답 분석 및 하드코어 모의고사 출제 중...", icon="⏳")
-
-                    ss.quiz = generate_quiz(
-                        txt,
-                        len(ss.wrong),
-                        "어려움",
-                        "함정"
-                    )
-                    ss.answers = {}
-                    ss.wrong = []
+                        ss.quiz = generate_quiz(
+                            txt,
+                            len(ss.wrong),
+                            "어려움",
+                            "함정"
+                        )
+                        ss.answers = {}
+                        ss.wrong = []
+                    
                     st.rerun()
