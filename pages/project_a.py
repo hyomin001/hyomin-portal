@@ -4,6 +4,7 @@ import json
 import re
 import time
 import random
+from datetime import datetime
 
 # ==========================================
 # 🔐 API KEY
@@ -282,6 +283,10 @@ def render(market=None, nw=None):
     ss.setdefault("wrong", [])
     ss.setdefault("history", [])
     ss.setdefault("last_quiz_text", "")
+    ss.setdefault("quiz_start_time", None)
+    ss.setdefault("quiz_submitted", False)
+    ss.setdefault("last_score", None)
+    ss.setdefault("last_elapsed", 0)
 
     # 초기화 버튼
     if st.button("🧹 전체 초기화"):
@@ -319,6 +324,9 @@ def render(market=None, nw=None):
                 ss.answers = {}
                 ss.wrong = []
                 ss.last_quiz_text = text
+                ss.quiz_start_time = time.time()
+                ss.quiz_submitted = False
+                ss.last_score = None
                 
                 st.toast("🚀 출제 완료! [응시 화면] 탭으로 이동해서 문제를 풀어보세요.", icon="✅")
 
@@ -329,6 +337,16 @@ def render(market=None, nw=None):
         prog = max(0.0, min(1.0, answered / total)) if total > 0 else 0.0
 
         with tab2:
+            # 타이머 표시
+            if ss.quiz_start_time and not ss.quiz_submitted:
+                elapsed = int(time.time() - ss.quiz_start_time)
+                mins, secs = divmod(elapsed, 60)
+                st.markdown(
+                    f"<div style='text-align:right; font-size:0.85rem; color:#764ba2; "
+                    f"font-weight:700; margin-bottom:8px;'>⏱️ 경과 시간: {mins:02d}:{secs:02d}</div>",
+                    unsafe_allow_html=True
+                )
+
             st.progress(prog, text=f"진행률: {answered} / {total} 문항")
 
             for i, q in enumerate(ss.quiz):
@@ -350,6 +368,7 @@ def render(market=None, nw=None):
             if st.button("💯 OMR 제출 및 채점하기"):
                 correct = 0
                 wrong = []
+                elapsed_time = int(time.time() - ss.quiz_start_time) if ss.quiz_start_time else 0
 
                 with st.spinner("📊 제출하신 답안을 채점하고 있습니다..."):
                     time.sleep(1) 
@@ -379,7 +398,31 @@ def render(market=None, nw=None):
                         st.markdown('</div>', unsafe_allow_html=True)
 
                     score = int(correct / total * 100) if total > 0 else 0
-                    st.metric("최종 점수", f"{score} 점")
+                    mins_e, secs_e = divmod(elapsed_time, 60)
+                    
+                    # 결과 요약 카드
+                    col_s1, col_s2, col_s3 = st.columns(3)
+                    col_s1.metric("최종 점수", f"{score} 점")
+                    col_s2.metric("정답/오답", f"{correct}✅ / {len(wrong)}❌")
+                    col_s3.metric("소요 시간", f"{mins_e:02d}:{secs_e:02d}")
+                    
+                    # 결과 텍스트 다운로드
+                    now_str = datetime.now().strftime("%Y%m%d_%H%M")
+                    result_lines = [f"[AI 모의고사 결과 — {now_str}]", f"점수: {score}점 ({correct}/{total})", f"소요시간: {mins_e:02d}분 {secs_e:02d}초", ""]
+                    for i, q in enumerate(ss.quiz):
+                        user = ss.answers.get(i, "미응답")
+                        answer = q.get("answer")
+                        mark = "✅" if user == answer else "❌"
+                        result_lines.append(f"Q{i+1}. {mark} {q.get('question','')}")
+                        result_lines.append(f"   내 답: {user}  정답: {answer}")
+                        result_lines.append(f"   해설: {q.get('explanation','')}")
+                        result_lines.append("")
+                    st.download_button(
+                        "📥 결과 텍스트로 저장",
+                        data="\n".join(result_lines),
+                        file_name=f"quiz_result_{now_str}.txt",
+                        mime="text/plain"
+                    )
                     
                     if score == 100:
                         st.balloons()
@@ -391,6 +434,8 @@ def render(market=None, nw=None):
 
                     ss.history.append(score)
                     ss.wrong = wrong
+                    ss.quiz_submitted = True
+                    ss.last_elapsed = elapsed_time
 
             if ss.history:
                 avg = int(sum(ss.history)/len(ss.history))
