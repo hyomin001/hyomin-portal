@@ -10,18 +10,18 @@ import time
 GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", "").strip()
 
 if not GOOGLE_API_KEY:
-    st.error("❌ API KEY 없음")
+    st.error("❌ GOOGLE_API_KEY 없음")
     st.stop()
 
 
 # ==========================================
-# 🔥 JSON 복구 엔진
+# 🔥 JSON 추출
 # ==========================================
 def extract_json(text):
     try:
         text = text.replace("```json", "").replace("```", "").strip()
 
-        match = re.search(r"\[.*\]", text, re.DOTALL)
+        match = re.search(r"\[\s*{.*?}\s*\]", text, re.DOTALL)
         if match:
             return json.loads(match.group())
 
@@ -30,8 +30,10 @@ def extract_json(text):
         return None
 
 
-def force_json_repair(text):
-    """깨진 JSON 강제 복구"""
+# ==========================================
+# 🔥 JSON 복구
+# ==========================================
+def repair_json(text):
     try:
         text = text.replace("'", '"')
         text = re.sub(r",\s*}", "}", text)
@@ -46,7 +48,7 @@ def force_json_repair(text):
 
 
 # ==========================================
-# 🔥 Gemini 안정 호출
+# 🔥 Gemini 호출 (503 대응)
 # ==========================================
 def call_gemini(prompt):
 
@@ -82,18 +84,16 @@ def call_gemini(prompt):
 
                 elif res.status_code in [429, 503]:
                     wait = (2 ** attempt) + 1
-                    st.warning(f"{model} 과부하 → {wait}s")
                     time.sleep(wait)
 
-            except Exception as e:
-                st.warning(f"{model} 오류: {e}")
+            except:
                 time.sleep(1)
 
-    raise Exception("모든 모델 실패")
+    raise Exception("❌ 모든 모델 실패")
 
 
 # ==========================================
-# 🔥 문제 생성 (초강화)
+# 🔥 문제 생성
 # ==========================================
 def generate_quiz(text, count, difficulty, q_type):
 
@@ -103,7 +103,6 @@ def generate_quiz(text, count, difficulty, q_type):
 절대 규칙:
 - JSON 외 출력 금지
 - 반드시 [ 로 시작, ] 로 끝
-- 설명 금지
 
 [
   {{
@@ -118,11 +117,10 @@ def generate_quiz(text, count, difficulty, q_type):
 난이도: {difficulty}
 스타일: {q_type}
 
-자료:
 {text[:4000]}
 """
 
-    for i in range(5):
+    for _ in range(5):
         res = call_gemini(prompt)
 
         quiz = extract_json(res)
@@ -130,22 +128,20 @@ def generate_quiz(text, count, difficulty, q_type):
             return quiz
 
         # 🔥 복구 시도
-        quiz = force_json_repair(res)
+        quiz = repair_json(res)
         if quiz:
             return quiz
-
-        st.warning(f"재시도 {i+1}/5")
 
     return None
 
 
 # ==========================================
-# 🎯 UI
+# 🎯 메인 UI (기존 구조 유지)
 # ==========================================
-def render():
+def render(market=None, nw=None):
 
-    st.title("🔥 AI 모의고사 ")
-    st.caption("시험모드 + 자동난이도 + 안정화 완료")
+    st.title("🔥 AI 모의고사 시스템 (완전 안정화)")
+    st.caption("503 대응 + JSON 복구 + 자동 난이도")
 
     # 상태
     if "quiz" not in st.session_state:
@@ -158,8 +154,6 @@ def render():
         st.session_state.history = []
     if "difficulty" not in st.session_state:
         st.session_state.difficulty = "보통"
-    if "start_time" not in st.session_state:
-        st.session_state.start_time = None
 
     # 초기화
     if st.button("🧹 초기화"):
@@ -169,87 +163,78 @@ def render():
     # 입력
     text = st.text_area("📚 학습 내용", height=200)
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     count = col1.slider("문제 수", 3, 10, 5)
-    q_type = col2.selectbox("스타일", ["개념", "응용", "함정"])
-
-    # 시험 모드
-    exam_mode = st.checkbox("⏱️ 시험 모드 (60초)")
+    difficulty = col2.selectbox("난이도", ["쉬움", "보통", "어려움"], index=1)
+    q_type = col3.selectbox("스타일", ["개념", "응용", "함정"])
 
     # 생성
-    if st.button("🚀 문제 생성"):
+    if st.button("🚀 문제 생성", use_container_width=True):
 
         if not text.strip():
-            st.warning("내용 입력")
+            st.warning("내용 입력하세요")
             return
 
-        with st.spinner("AI 생성 중..."):
+        with st.spinner("문제 생성 중..."):
             quiz = generate_quiz(
                 text,
                 count,
-                st.session_state.difficulty,
+                difficulty,
                 q_type
             )
 
             if not quiz:
-                st.error("❌ 생성 실패")
+                st.error("❌ 생성 실패 (서버 과부하 or JSON 오류)")
                 return
 
             st.session_state.quiz = quiz
             st.session_state.answers = {}
             st.session_state.wrong = []
 
-            if exam_mode:
-                st.session_state.start_time = time.time()
-
-            st.success("✅ 완료")
+            st.success("✅ 생성 완료")
 
     # 문제
     if st.session_state.quiz:
-
-        # 타이머
-        if st.session_state.start_time:
-            elapsed = time.time() - st.session_state.start_time
-            remain = max(0, 60 - int(elapsed))
-            st.metric("⏱️ 남은 시간", f"{remain}s")
-
-            if remain == 0:
-                st.warning("시간 종료!")
-                st.session_state.start_time = None
-
-        st.progress(len(st.session_state.answers) / len(st.session_state.quiz))
+        st.write("---")
 
         for i, q in enumerate(st.session_state.quiz):
             st.markdown(f"### Q{i+1}. {q['question']}")
 
             ans = st.radio(
-                "선택",
+                "정답 선택",
                 ["선택 안함"] + q['options'],
                 key=f"q{i}"
             )
 
-            if ans != "선택 안함":
-                st.session_state.answers[i] = ans
+            if ans == "선택 안함":
+                ans = None
+
+            st.session_state.answers[i] = ans
 
         # 채점
-        if st.button("💯 채점"):
+        if st.button("💯 채점", use_container_width=True):
 
             correct = 0
-            wrong = []
+            wrong_list = []
 
             for i, q in enumerate(st.session_state.quiz):
                 user = st.session_state.answers.get(i)
 
                 if user == q['answer']:
                     correct += 1
+                    st.success(f"{i+1}번 정답")
                 else:
-                    wrong.append(q)
+                    st.error(f"{i+1}번 오답 (정답: {q['answer']})")
+                    wrong_list.append(q)
+
+                with st.expander("해설"):
+                    st.write(q['explanation'])
 
             score = int(correct / len(st.session_state.quiz) * 100)
-            st.metric("점수", f"{score}점")
+            st.metric("🎯 점수", f"{score}점")
 
             st.session_state.history.append(score)
-            st.session_state.wrong = wrong
+            st.session_state.wrong = wrong_list
 
             # 🔥 난이도 자동 조절
             if score < 40:
@@ -257,27 +242,28 @@ def render():
             elif score > 80:
                 st.session_state.difficulty = "어려움"
 
-        # 통계
+        # 평균 점수
         if st.session_state.history:
             avg = sum(st.session_state.history) / len(st.session_state.history)
             st.metric("📊 평균 점수", f"{int(avg)}점")
 
         # 재출제
         if st.session_state.wrong:
-            if st.button("🔥 오답 다시"):
+            if st.button("🔥 틀린 문제 다시 풀기"):
 
                 wrong_text = "\n".join([
-                    f"{q['question']} {q['explanation']}"
+                    f"문제:{q['question']} 정답:{q['answer']} 해설:{q['explanation']}"
                     for q in st.session_state.wrong
                 ])
 
-                quiz = generate_quiz(
-                    wrong_text,
-                    len(st.session_state.wrong),
-                    "어려움",
-                    "함정"
-                )
+                with st.spinner("재출제 중..."):
+                    quiz = generate_quiz(
+                        wrong_text,
+                        len(st.session_state.wrong),
+                        "어려움",
+                        "함정"
+                    )
 
-                if quiz:
-                    st.session_state.quiz = quiz
-                    st.success("재출제 완료")
+                    if quiz:
+                        st.session_state.quiz = quiz
+                        st.success("재출제 완료!")
