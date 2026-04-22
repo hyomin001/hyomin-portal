@@ -2699,6 +2699,79 @@ buildTitle();
 titleRaf=requestAnimationFrame(titleIdle);
 RAF=requestAnimationFrame(loop);
 </script>
+
+<!-- 📱 모바일 가상 D-패드 -->
+<style>
+#mobile-dpad{
+  display:none;position:fixed;bottom:70px;left:12px;z-index:9999;
+  width:130px;height:130px;pointer-events:auto;
+}
+#mobile-skills{
+  display:none;position:fixed;bottom:70px;right:12px;z-index:9999;
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;pointer-events:auto;
+}
+.dpad-btn{
+  position:absolute;width:40px;height:40px;
+  background:rgba(245,200,66,0.15);border:1px solid rgba(245,200,66,0.4);
+  border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;color:rgba(245,200,66,0.8);cursor:pointer;
+  user-select:none;-webkit-user-select:none;
+  transition:background 0.1s;
+}
+.dpad-btn:active{background:rgba(245,200,66,0.4);}
+#dpad-up   {top:0;   left:45px;}
+#dpad-down {bottom:0;left:45px;}
+#dpad-left {top:45px;left:0;}
+#dpad-right{top:45px;right:0;}
+.sk-touch-btn{
+  width:52px;height:52px;border-radius:8px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(245,200,66,0.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;cursor:pointer;user-select:none;-webkit-user-select:none;
+  transition:background 0.1s;
+}
+.sk-touch-btn:active{background:rgba(245,200,66,0.3);}
+@media (pointer: coarse) {
+  #mobile-dpad, #mobile-skills { display:block !important; }
+  #mobile-skills { display:grid !important; }
+}
+</style>
+<div id="mobile-dpad">
+  <div class="dpad-btn" id="dpad-up">▲</div>
+  <div class="dpad-btn" id="dpad-left">◀</div>
+  <div class="dpad-btn" id="dpad-right">▶</div>
+  <div class="dpad-btn" id="dpad-down">▼</div>
+</div>
+<div id="mobile-skills">
+  <div class="sk-touch-btn" data-key="z">Z</div>
+  <div class="sk-touch-btn" data-key="x">X</div>
+  <div class="sk-touch-btn" data-key="c">C</div>
+  <div class="sk-touch-btn" data-key="v">V</div>
+</div>
+<script>
+(function(){
+  var map={
+    'dpad-up':'ArrowUp','dpad-down':'ArrowDown',
+    'dpad-left':'ArrowLeft','dpad-right':'ArrowRight'
+  };
+  Object.keys(map).forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var k=map[id];
+    el.addEventListener('touchstart',function(e){e.preventDefault();KEY[k]=true;},  {passive:false});
+    el.addEventListener('touchend',  function(e){e.preventDefault();KEY[k]=false;}, {passive:false});
+    el.addEventListener('mousedown', function(){KEY[k]=true;});
+    el.addEventListener('mouseup',   function(){KEY[k]=false;});
+  });
+  document.querySelectorAll('.sk-touch-btn').forEach(function(el){
+    var k=el.dataset.key;
+    el.addEventListener('touchstart',function(e){
+      e.preventDefault();
+      document.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true}));
+    },{passive:false});
+  });
+})();
+</script>
 </body>
 </html>
 """
@@ -2713,4 +2786,6 @@ footer{display:none!important;}
 iframe{border:none!important;}
 </style>
 """, unsafe_allow_html=True)
-    components.html(GAME_HTML, height=760, scrolling=False)
+
+    st.caption("🎮 키보드: WASD 또는 방향키 이동 | Z·X·C·V 스킬 | 📱 모바일: 화면 내 버튼 사용")
+    components.html(GAME_HTML, height=820, scrolling=True)
