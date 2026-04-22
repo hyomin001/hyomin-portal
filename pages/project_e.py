@@ -1,13 +1,17 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 스트림릿 페이지 설정 (선택 사항)
-st.set_page_config(layout="wide")
-st.title("던전파이터 REBORN ⚔️")
+def render():
+    # 💡 주의: app.py 메인 파일에서 이미 st.set_page_config()를 설정했다면 
+    # 에러가 날 수 있으니 아래 줄은 주석 처리하거나 지워주세요!
+    # st.set_page_config(layout="wide")
+    
+    st.title("던전파이터 REBORN ⚔️")
 
-# 1. HTML 코드를 삼중 따옴표(""")로 묶어서 문자열 변수에 저장합니다.
-game_html_code = """
-<!DOCTYPE html>
+    # 1. HTML 코드를 삼중 따옴표(""")로 묶어서 문자열 변수에 저장합니다.
+    game_html_code = """
+    
+    <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -1878,8 +1882,6 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
-"""
-
-# 2. components.html을 사용해 화면에 렌더링합니다.
-# 캔버스 크기에 맞춰 height 값을 넉넉하게 주세요.
-components.html(game_html_code, height=800, scrolling=False)
+ 
+    """
+    components.html(game_html_code, height=800, scrolling=False)
