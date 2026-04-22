@@ -1,4 +1,3 @@
-pages/project_a.py
 import streamlit as st
 import requests
 import json
