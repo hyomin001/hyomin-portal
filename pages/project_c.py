@@ -1562,16 +1562,26 @@ def render():
 
         cleared_count = len(st.session_state.terminal_cleared)
         total_stages  = len(STAGES)
+        progress_pct  = int(cleared_count / total_stages * 100)
 
         if cleared_count > 0:
+            bar_filled = int(progress_pct / 10)  # 10칸 기준
+            bar_empty  = 10 - bar_filled
+            bar_str    = "█" * bar_filled + "░" * bar_empty
             st.markdown(f"""
             <div style='background:#030f03; border:1px solid #1a3a1a; border-radius:6px;
-                        padding:10px 18px; font-family:monospace; font-size:12px;
-                        color:#5a9a5a; margin-bottom:16px; text-align:center;'>
-              진행: <span style='color:#39ff14; font-weight:bold;'>{cleared_count}</span>
-              &nbsp;/&nbsp;{total_stages} 스테이지 클리어
-              &nbsp;&nbsp;|&nbsp;&nbsp;
-              {"🏆 전체 클리어!" if cleared_count == total_stages else f"다음 목표: STAGE {cleared_count + 1}"}
+                        padding:12px 18px; font-family:monospace; font-size:12px;
+                        color:#5a9a5a; margin-bottom:16px;'>
+              <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
+                <span>진행 현황</span>
+                <span style='color:#39ff14;font-weight:bold;'>{cleared_count} / {total_stages} CLEARED</span>
+              </div>
+              <div style='letter-spacing:2px;color:#39ff14;font-size:14px;'>
+                [{bar_str}] <span style='font-size:11px;color:#5a9a5a;'>{progress_pct}%</span>
+              </div>
+              <div style='margin-top:6px;color:#2a5c2a;font-size:11px;'>
+                {"🏆 전체 클리어! 당신은 진정한 해커입니다!" if cleared_count == total_stages else f"다음 목표: STAGE {cleared_count + 1} — {STAGES[cleared_count+1]['title'] if cleared_count+1 in STAGES else ''}"}
+              </div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1776,14 +1786,34 @@ def render():
             ✅ STAGE {stage_num} CLEAR
           </div>
           <div style='color:#5a9a5a; font-size:0.85rem; margin-top:10px;'>
-            클리어 시간 &nbsp;|&nbsp; 사용 힌트: {t['hint_used']}개
+            클리어 시간: <span style='color:#39ff14;font-weight:700;'>{int((time.time() - t["start_time"])//60):02d}:{int((time.time() - t["start_time"])%60):02d}</span>
+            &nbsp;|&nbsp; 사용 힌트: {t['hint_used']}개
             &nbsp;|&nbsp; 명령어: {t['cmd_count']}개
           </div>
           <div style='color:#2a5c2a; font-size:0.78rem; margin-top:8px;'>
             진행: {len(st.session_state.terminal_cleared)}/{len(STAGES)} 스테이지 완료
           </div>
+          {'<div style="color:#ffd700; font-size:1rem; margin-top:12px; letter-spacing:2px; text-shadow:0 0 15px rgba(255,215,0,0.6);">🏆 힌트 미사용 클리어! PERFECT HACK!</div>' if t["hint_used"] == 0 else ''}
         </div>
         """, unsafe_allow_html=True)
+
+        # 전체 클리어 체크
+        if len(st.session_state.terminal_cleared) == len(STAGES):
+            st.balloons()
+            st.markdown("""
+            <div style='background:linear-gradient(135deg,#1a1000,#2a1800);border:2px solid #ffd700;
+                        border-radius:10px;padding:20px;text-align:center;margin-bottom:14px;
+                        box-shadow:0 0 40px rgba(255,215,0,0.3);font-family:monospace;'>
+              <div style='color:#ffd700;font-size:1.4rem;font-weight:900;letter-spacing:4px;
+                          text-shadow:0 0 20px rgba(255,215,0,0.8);'>
+                🏆 ALL STAGES CLEARED 🏆
+              </div>
+              <div style='color:#b8860b;font-size:0.85rem;margin-top:10px;'>
+                당신은 효민 네트웍스의 모든 비밀을 해독했습니다.<br>
+                진정한 해커 — 창조자에게 도달했습니다.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         col_sel, col_next = st.columns(2)
         with col_sel:
