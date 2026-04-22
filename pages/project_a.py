@@ -158,8 +158,8 @@ def generate_quiz(text, count, difficulty, q_type):
 # ==========================================
 def render(market=None, nw=None):
 
-    st.title("🔥 AI 모의고사 시스템 (완전 안정화)")
-    st.caption("실패 대응 + 자동 복구 + 학습 가이드 포함")
+    st.title("🔥 AI 모의고사 시스템 ")
+    st.caption("2026/04/22업데이트 완료!")
 
     # 상태
     if "quiz" not in st.session_state:
