@@ -113,19 +113,21 @@ def fallback_quiz(count):
     return dummy
 
 # ==========================================
-# 🔥 문제 생성
+# 🔥 문제 생성 (방탄 로직 & 1타 강사 프롬프트 추가)
 # ==========================================
 def generate_quiz(text, count, difficulty, q_type):
 
     prompt = f"""
-JSON만 출력
+무조건 JSON 배열 형식으로만 출력하세요. 마크다운(` ```json ` 등)이나 일반 텍스트는 절대 포함하지 마세요.
+🚨 절대 규칙: 정답(answer)은 반드시 options 배열에 제공된 4개의 보기 중 하나와 100% 일치해야 합니다.
 
 [
   {{
     "question": "문제",
     "options": ["1","2","3","4"],
     "answer": "정답",
-    "explanation": "해설"
+    "explanation": "해설",
+    "study_note": "👩‍🏫 1타 강사의 꿀팁, 함정 피하는 법 또는 암기법"
   }}
 ]
 
@@ -133,6 +135,7 @@ JSON만 출력
 난이도: {difficulty}
 스타일: {q_type}
 
+학습 내용:
 {text[:2000]}
 """
 
@@ -168,7 +171,50 @@ def analyze_text_quality(text):
         return "✅ 좋음", 90
 
 # ==========================================
-# 🎯 UI
+# 🎨 UI CSS 주입 함수 (웹 서비스급 스타일링)
+# ==========================================
+def inject_custom_css():
+    st.markdown("""
+    <style>
+    /* 기본 문제 카드 둥글고 예쁘게 */
+    .quiz-card {
+        background-color: #ffffff;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        border: 1px solid #e0e0e0;
+        transition: transform 0.2s ease-in-out;
+    }
+    .quiz-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+    /* 정답/오답 카드 강조 */
+    .quiz-card-correct {
+        border-left: 6px solid #4CAF50 !important;
+        background-color: #f2fdf4;
+    }
+    .quiz-card-wrong {
+        border-left: 6px solid #F44336 !important;
+        background-color: #fff5f5;
+    }
+    /* 1타 강사 노트 (노란색 포스트잇 느낌) */
+    .study-note {
+        background-color: #fff8e1;
+        border-left: 5px solid #ffc107;
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 8px;
+        color: #856404;
+        font-size: 0.95em;
+        line-height: 1.5;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# ==========================================
+# 🎯 UI (렌더링)
 # ==========================================
 def render(market=None, nw=None):
 
@@ -189,33 +235,41 @@ def render(market=None, nw=None):
         st.session_state.clear()
         st.rerun()
 
-    # 입력
-    text = st.text_area("📚 학습 내용", height=200)
-    st.caption(f"글자수: {len(text)}")
+    # 예쁜 CSS 적용
+    inject_custom_css() 
 
-    q, p = analyze_text_quality(text)
-    st.info(f"{q} / 성공확률 {p}%")
+    # 탭 구조 분할
+    tab1, tab2, tab3 = st.tabs(["📝 출제 설정", "🎯 응시 화면", "📊 성적표 및 복습"])
 
-    col1, col2, col3 = st.columns(3)
-    count = col1.slider("문제 수", 3, 10, 5)
-    difficulty = col2.selectbox("난이도", ["쉬움","보통","어려움"])
-    q_type = col3.selectbox("스타일", ["개념","응용","함정"])
+    with tab1:
+        # 입력
+        text = st.text_area("📚 학습 내용", height=200)
+        st.caption(f"글자수: {len(text)}")
 
-    # 생성
-    if st.button("🚀 문제 생성"):
+        q, p = analyze_text_quality(text)
+        st.info(f"{q} / 성공확률 {p}%")
 
-        if not text.strip():
-            st.warning("입력 필요")
-            return
+        col1, col2, col3 = st.columns(3)
+        count = col1.slider("문제 수", 3, 10, 5)
+        difficulty = col2.selectbox("난이도", ["쉬움","보통","어려움"])
+        q_type = col3.selectbox("스타일", ["개념","응용","함정"])
 
-        quiz = generate_quiz(text, count, difficulty, q_type)
+        # 생성
+        if st.button("🚀 문제 생성"):
 
-        ss.quiz = quiz
-        ss.answers = {}
-        ss.wrong = []
-        ss.last_quiz_text = text
+            if not text.strip():
+                st.warning("입력 필요")
+            else:
+                quiz = generate_quiz(text, count, difficulty, q_type)
 
-    # 문제
+                ss.quiz = quiz
+                ss.answers = {}
+                ss.wrong = []
+                ss.last_quiz_text = text
+                
+                st.toast("🚀 출제 완료! [응시 화면] 탭으로 이동하세요.", icon="✅")
+
+    # 문제 로직
     if ss.quiz:
 
         total = len(ss.quiz) if ss.quiz else 0
@@ -228,67 +282,102 @@ def render(market=None, nw=None):
         else:
             prog = 0.0
 
-        st.progress(prog)
-
-        for i, q in enumerate(ss.quiz):
-
-            st.markdown(f"### Q{i+1}. {q.get('question','문제 오류')}")
-
-            options = q.get("options", ["1","2","3","4"])
-
-            ans = st.radio(
-                "선택",
-                ["선택 안함"] + options,
-                key=f"q_{i}"
-            )
-
-            if ans != "선택 안함":
-                ss.answers[i] = ans
-
-        # 채점
-        if st.button("💯 채점"):
-
-            correct = 0
-            wrong = []
+        with tab2:
+            st.progress(prog)
 
             for i, q in enumerate(ss.quiz):
 
-                user = ss.answers.get(i)
-                answer = q.get("answer")
+                st.markdown('<div class="quiz-card">', unsafe_allow_html=True) # 카드 시작
+                st.markdown(f"### Q{i+1}. {q.get('question','문제 오류')}")
 
-                if user == answer:
-                    correct += 1
-                else:
-                    wrong.append(q)
+                options = q.get("options", ["1","2","3","4"])
 
-                with st.expander(f"{i+1} 해설"):
-                    st.write(q.get("explanation","없음"))
-
-            # 안전 점수 계산
-            if total > 0:
-                score = int(correct / total * 100)
-            else:
-                score = 0
-
-            st.metric("점수", f"{score}")
-
-            ss.history.append(score)
-            ss.wrong = wrong
-
-        # 평균
-        if ss.history:
-            avg = int(sum(ss.history)/len(ss.history))
-            st.metric("평균", avg)
-
-        # 재출제
-        if ss.wrong:
-            if st.button("🔥 오답 재도전"):
-
-                txt = " ".join([q.get("question","") for q in ss.wrong])
-
-                ss.quiz = generate_quiz(
-                    txt,
-                    len(ss.wrong),
-                    "어려움",
-                    "함정"
+                ans = st.radio(
+                    "선택",
+                    ["선택 안함"] + options,
+                    key=f"q_{i}"
                 )
+
+                if ans != "선택 안함":
+                    if ss.answers.get(i) != ans: # 새로 마킹했을 때만 알림
+                        st.toast(f"{i+1}번 마킹 완료!", icon="✏️")
+                    ss.answers[i] = ans
+                
+                st.markdown('</div>', unsafe_allow_html=True) # 카드 끝
+
+        with tab3:
+            # 채점
+            if st.button("💯 채점"):
+
+                correct = 0
+                wrong = []
+
+                for i, q in enumerate(ss.quiz):
+
+                    user = ss.answers.get(i)
+                    answer = q.get("answer")
+                    is_wrong = (user != answer)
+
+                    # 맞힌 문제/틀린 문제 시각적 분리
+                    card_class = "quiz-card-wrong" if is_wrong else "quiz-card-correct"
+                    st.markdown(f'<div class="quiz-card {card_class}">', unsafe_allow_html=True)
+                    
+                    if is_wrong:
+                        wrong.append(q)
+                        st.error(f"🔴 Q{i+1}. 오답입니다. (내 답: {user} / 정답: {answer})")
+                    else:
+                        correct += 1
+                        st.success(f"🟢 Q{i+1}. 정답입니다!")
+                        
+                    st.markdown(f"**문제:** {q.get('question','')}")
+                    
+                    # 1타 강사 오답 밀착 마크: 틀린 문제는 자동으로 expander가 열림
+                    with st.expander(f"📖 {i+1}번 해설 및 강사의 꿀팁 보기", expanded=is_wrong):
+                        st.write(f"**해설:** {q.get('explanation','없음')}")
+                        if "study_note" in q and q["study_note"]:
+                            st.markdown(f'<div class="study-note">👨‍🏫 <b>1타 강사 Note:</b><br>{q.get("study_note")}</div>', unsafe_allow_html=True)
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                # 안전 점수 계산 및 애니메이션 피드백
+                if total > 0:
+                    score = int(correct / total * 100)
+                else:
+                    score = 0
+
+                st.metric("최종 점수", f"{score} 점")
+                
+                if score == 100:
+                    st.balloons()
+                    st.toast("완벽합니다! 100점 만점! 🎉", icon="🏆")
+                elif score >= 70:
+                    st.toast("수고하셨습니다! 좋은 점수네요. 👍", icon="🌟")
+                else:
+                    st.toast("조금만 더 복습해볼까요? 오답 노트를 확인하세요! 💪", icon="🔥")
+
+                ss.history.append(score)
+                ss.wrong = wrong
+
+            # 평균
+            if ss.history:
+                avg = int(sum(ss.history)/len(ss.history))
+                st.metric("나의 평균", avg)
+
+            # 재출제 (하드코어 오답 복수전)
+            if ss.wrong:
+                st.markdown("---")
+                st.subheader("🔥 하드코어 오답 복수전")
+                if st.button("🚨 틀린 문제로만 최상 난이도 재도전"):
+
+                    txt = " ".join([q.get("question","") + " " + q.get("study_note", "") for q in ss.wrong])
+                    st.toast("오답 분석 및 하드코어 모의고사 출제 중...", icon="⏳")
+
+                    ss.quiz = generate_quiz(
+                        txt,
+                        len(ss.wrong),
+                        "어려움",
+                        "함정"
+                    )
+                    ss.answers = {}
+                    ss.wrong = []
+                    st.rerun()
