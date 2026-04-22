@@ -172,7 +172,7 @@ def analyze_text_quality(text):
 # ==========================================
 def render(market=None, nw=None):
 
-    st.title("🔥 AI 모의고사 (완전 안정화)")
+    st.title("🔥 AI 모의고사")
 
     # 상태 초기화
     ss = st.session_state
