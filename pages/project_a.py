@@ -113,9 +113,9 @@ def fallback_quiz(count):
     return dummy
 
 # ==========================================
-# 🔥 문제 생성 (방탄 로직 & 1타 강사 프롬프트 추가)
+# 🔥 문제 생성 (실시간 상태 중계 및 방탄 로직)
 # ==========================================
-def generate_quiz(text, count, difficulty, q_type):
+def generate_quiz(text, count, difficulty, q_type, status):
 
     prompt = f"""
 무조건 JSON 배열 형식으로만 출력하세요. 마크다운(` ```json ` 등)이나 일반 텍스트는 절대 포함하지 마세요.
@@ -139,23 +139,37 @@ def generate_quiz(text, count, difficulty, q_type):
 {text[:2000]}
 """
 
-    for _ in range(5):
+    for attempt in range(5):
+        # UI에 현재 진행 상태 실시간 업데이트
+        status.update(label=f"⏳ AI 모의고사 출제 중... (시도 {attempt + 1}/5)", state="running")
+        status.write(f"🤖 딥러닝 모델 호출 중... (데이터가 길면 최대 30초 이상 소요될 수 있습니다.)")
+        
         res = call_gemini(prompt)
 
         if not res:
+            status.write(f"⚠️ {attempt + 1}차 시도 응답 없음. 다시 시도합니다.")
             continue
 
+        status.write("🔍 AI 응답 완료! 데이터 형식(JSON) 검증 중...")
         quiz = extract_json(res)
+        
         if validate_quiz(quiz):
+            status.write("✅ 완벽한 JSON 데이터 확인 완료!")
+            status.update(label="✨ 출제 완료!", state="complete")
             return quiz
 
+        status.write("🔧 형식이 조금 어긋났습니다. 자동 복구를 시도합니다...")
         quiz = repair_json(res)
+        
         if validate_quiz(quiz):
+            status.write("🛠️ 데이터 복구 성공!")
+            status.update(label="✨ 출제 완료!", state="complete")
             return quiz
 
+        status.write(f"❌ {attempt + 1}차 시도 실패. AI를 다시 호출합니다...")
         time.sleep(1)
 
-    st.warning("⚠️ AI 실패 → 기본 문제")
+    status.update(label="🚨 AI 출제 최종 실패 (기본 문제로 대체됩니다)", state="error")
     return fallback_quiz(count)
 
 # ==========================================
@@ -239,8 +253,6 @@ def inject_custom_css():
         transform: scale(1.05) translateY(-2px) !important;
         box-shadow: 0 12px 25px rgba(118, 75, 162, 0.6) !important;
     }
-
-    /* 초기화 버튼 같이 덜 중요한 버튼은 별도 처리 가능하지만 일단 통일감 유지 */
     
     /* 탭 메뉴 스타일링 */
     .stTabs [data-baseweb="tab-list"] {
@@ -311,17 +323,16 @@ def render(market=None, nw=None):
             if not text.strip():
                 st.warning("입력 필요")
             else:
-                # 🚀 피드백 반영: 로딩 스피너 추가
-                with st.spinner("✨ AI가 입력하신 내용을 분석하여 고퀄리티 모의고사를 출제하고 있습니다. 잠시만 기다려주세요..."):
-                    quiz = generate_quiz(text, count, difficulty, q_type)
+                # 🚀 스피너 대신 확장형 상태창(status) 사용
+                with st.status("🚀 AI 엔진 가동 중...", expanded=True) as status:
+                    quiz = generate_quiz(text, count, difficulty, q_type, status)
 
-                    ss.quiz = quiz
-                    ss.answers = {}
-                    ss.wrong = []
-                    ss.last_quiz_text = text
-                    
-                    st.success("✅ 출제 완료!")
-                    st.toast("🚀 출제 완료! [응시 화면] 탭으로 이동하세요.", icon="✅")
+                ss.quiz = quiz
+                ss.answers = {}
+                ss.wrong = []
+                ss.last_quiz_text = text
+                
+                st.toast("🚀 출제 완료! [응시 화면] 탭으로 이동하세요.", icon="✅")
 
     # 문제 로직
     if ss.quiz:
@@ -427,15 +438,16 @@ def render(market=None, nw=None):
                 st.subheader("🔥 하드코어 오답 복수전")
                 if st.button("🚨 틀린 문제로만 지옥 난이도 재도전"):
                     
-                    # 🚀 피드백 반영: 오답 재도전 시에도 스피너 추가
-                    with st.spinner("🔥 오답을 철저히 분석하여 가장 어려운 난이도로 재출제 중입니다..."):
+                    # 🚀 재도전 시에도 상태창 적용
+                    with st.status("🔥 오답 분석 및 지옥 난이도 재출제 중...", expanded=True) as status:
                         txt = " ".join([q.get("question","") + " " + q.get("study_note", "") for q in ss.wrong])
 
                         ss.quiz = generate_quiz(
                             txt,
                             len(ss.wrong),
                             "어려움",
-                            "함정"
+                            "함정",
+                            status # status 객체 전달
                         )
                         ss.answers = {}
                         ss.wrong = []
