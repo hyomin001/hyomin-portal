@@ -1,1863 +1,2654 @@
-# pages/project_c.py
-# 💻 THE TERMINAL — 방탈출 v3.0 [10 STAGES / NO REWARD]
 import streamlit as st
-import time
-import base64
-import hashlib
-import html
-import random
-from datetime import datetime
-from utils.config import KST
+import streamlit.components.v1 as components
 
-# ══════════════════════════════════════════════════════════
-#  WORLD DATA — 파일시스템 트리 & 로어(Lore)
-# ══════════════════════════════════════════════════════════
-
-STAGES = {
-    # ─────────────────────────────────────────────────────
-    1: {
-        "title":      "STAGE 1 — 버려진 서버실",
-        "desc":       "낡은 서버에서 관리자 비밀번호를 찾아라.",
-        "difficulty": "⭐ 입문",
-        "goal":       "비밀번호를 찾아 `unlock [비밀번호]` 명령어로 잠금을 해제하라.",
-        "answer_hash": hashlib.sha256("hyomin2026".encode()).hexdigest(),
-        "hint_1": "`ls -a` 로 숨김 파일도 볼 수 있다.",
-        "hint_2": "`.secret` 파일을 열어보라. base64로 인코딩되어 있다.",
-        "hint_3": "base64 디코딩: `decode [문자열]` 명령어를 써라.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/home": {"type": "dir"},
-            "/home/admin": {"type": "dir"},
-            "/home/admin/notes.txt": {
-                "type": "file",
-                "content": (
-                    "== 관리자 메모 ==\n"
-                    "서버 점검 완료. 비밀번호는 안전한 곳에 숨겨 두었다.\n"
-                    "혹시나 싶어서 .secret 파일에 백업해 놓음.\n"
-                    "-- admin"
-                ),
-            },
-            "/home/admin/.secret": {
-                "type": "file",
-                "hidden": True,
-                "content": "aHlvbWluMjAyNg==",  # base64('hyomin2026')
-            },
-            "/var": {"type": "dir"},
-            "/var/log": {"type": "dir"},
-            "/var/log/access.log": {
-                "type": "file",
-                "content": (
-                    "2026-01-03 09:12:44  LOGIN  admin    SUCCESS\n"
-                    "2026-01-03 11:55:02  LOGIN  unknown  FAIL\n"
-                    "2026-01-03 11:55:18  LOGIN  unknown  FAIL\n"
-                    "2026-01-04 03:22:11  LOGIN  ???      SUCCESS  [비정상 접근]\n"
-                ),
-            },
-        },
-        "flavor": "낡은 팬 소리가 들린다. 먼지 쌓인 서버. 누군가 여기 있었다...",
-    },
-
-    # ─────────────────────────────────────────────────────
-    2: {
-        "title":      "STAGE 2 — 지하 연구소",
-        "desc":       "연구소 데이터베이스에서 프로젝트 코드명을 해독하라.",
-        "difficulty": "⭐⭐ 보통",
-        "goal":       "암호화된 프로젝트 코드명을 찾아 `unlock [코드명]` 으로 입력하라.",
-        "answer_hash": hashlib.sha256("DOPAHYOMIN".encode()).hexdigest(),
-        "hint_1": "`/lab/classified/` 디렉토리를 탐색해보라.",
-        "hint_2": "cipher.txt 의 ROT13을 풀어야 한다. `rot13 [문자열]` 명령어를 사용해라.",
-        "hint_3": "ROT13 결과에서 언더바(_)는 제거하고 대문자로만 입력해라.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/lab": {"type": "dir"},
-            "/lab/README.txt": {
-                "type": "file",
-                "content": (
-                    "=== 효민 네트웍스 지하 연구소 ===\n"
-                    "이 시스템은 외부 접근이 차단되어 있습니다.\n"
-                    "모든 기밀 파일은 /lab/classified/ 에 있습니다.\n"
-                    "비인가 접근 시 즉시 보안팀에 통보됩니다."
-                ),
-            },
-            "/lab/classified": {"type": "dir"},
-            "/lab/classified/project_list.txt": {
-                "type": "file",
-                "content": (
-                    "프로젝트 목록 (코드명 암호화됨)\n"
-                    "-------------------------------\n"
-                    "PRJ-001: [REDACTED]\n"
-                    "PRJ-002: [REDACTED]\n"
-                    "PRJ-003: cipher.txt 참조\n"
-                    "-------------------------------\n"
-                    "암호화 키는 연구소장 Dr.K 만 알고 있음."
-                ),
-            },
-            "/lab/classified/cipher.txt": {
-                "type": "file",
-                "content": (
-                    "== ROT13 암호화 ==\n"
-                    "QBCNULBZVA\n\n"
-                    "이 코드명은 절대 외부에 유출되어선 안 됩니다.\n"
-                    "-- Dr.K"
-                ),
-            },
-            "/lab/classified/.drk_memo": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "개인 메모 — Dr.K\n"
-                    "오늘 효민이 직접 연락해왔다.\n"
-                    "프로젝트 DOPAHYOMIN... 그가 알고 있는 걸까?\n"
-                    "만약 이 파일을 누군가 읽고 있다면,\n"
-                    "당신은 이미 너무 깊이 들어온 것이다."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/drk": {"type": "dir"},
-            "/home/drk/diary.txt": {
-                "type": "file",
-                "content": (
-                    "일기 — 2026.02.14\n\n"
-                    "그가 다시 나타났다. 포털 뒤에 숨어서\n"
-                    "모든 것을 지켜보고 있었다는 걸 이제야 알았다.\n"
-                    "암호는 labs 시스템 어딘가에 있다고 했다.\n"
-                    "ROT13... 오래된 방식이지만 효과적이다."
-                ),
-            },
-        },
-        "flavor": "형광등이 깜빡인다. 어딘가에서 키보드 소리가 들린다...",
-    },
-
-    # ─────────────────────────────────────────────────────
-    3: {
-        "title":      "STAGE 3 — 효민의 금고",
-        "desc":       "창조자가 남긴 최후의 비밀을 해독하라.",
-        "difficulty": "⭐⭐⭐ 어려움",
-        "goal":       "금고의 최종 패스프레이즈를 찾아 `unlock [패스프레이즈]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("UNIVERSE_ORIGIN_01".encode()).hexdigest(),
-        "hint_1": "여러 파일의 단서를 조합해야 한다. `/vault` 와 `/archive` 를 모두 탐색하라.",
-        "hint_2": "fragment_*.txt 파일들을 순서대로 모으면 패스프레이즈가 완성된다.",
-        "hint_3": "패스프레이즈 형식: `[단어]_[단어]_[숫자두자리]` — 언더바(_)로 연결.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/vault": {"type": "dir"},
-            "/vault/lock_info.txt": {
-                "type": "file",
-                "content": (
-                    "=== 금고 잠금 시스템 v3 ===\n\n"
-                    "패스프레이즈는 3개의 조각으로 나뉘어 숨겨져 있습니다.\n"
-                    "각 조각은 시스템 곳곳에 분산되어 있습니다.\n\n"
-                    "힌트: 조각들은 fragment_1, fragment_2, fragment_3 파일에 있습니다.\n"
-                    "완성된 패스프레이즈: [조각1]_[조각2]_[조각3]\n"
-                    "(모두 대문자, 세 번째는 숫자 두 자리)"
-                ),
-            },
-            "/vault/.fragment_1": {
-                "type": "file",
-                "hidden": True,
-                "content": "조각 1/3: UNIVERSE",
-            },
-            "/archive": {"type": "dir"},
-            "/archive/old_logs": {"type": "dir"},
-            "/archive/old_logs/system_2025.log": {
-                "type": "file",
-                "content": (
-                    "2025-12-31 23:59:59  SYSTEM_BOOT  HYOMIN_UNIVERSE_v1\n"
-                    "2025-12-31 23:59:59  INIT  Creating world...\n"
-                    "2026-01-01 00:00:00  WORLD_BORN  Season 1 start\n"
-                    "2026-01-01 00:00:01  NOTE: 기원(ORIGIN)을 잊지 마라.\n"
-                    "2026-01-01 00:00:02  fragment_2 archived.\n"
-                ),
-            },
-            "/archive/fragment_2.txt": {
-                "type": "file",
-                "content": "조각 2/3: ORIGIN",
-            },
-            "/archive/old_logs/.hidden_record": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "== 창조 기록 ==\n"
-                    "이 세계는 2026년 1월 1일에 시작됐다.\n"
-                    "창조자는 그 날짜를 기억하길 원한다.\n"
-                    "마지막 조각은 /tmp 에 있다."
-                ),
-            },
-            "/tmp": {"type": "dir"},
-            "/tmp/fragment_3.txt": {
-                "type": "file",
-                "content": "조각 3/3: 01 (창조의 달, 01월)",
-            },
-            "/tmp/.creator_note": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "만약 여기까지 왔다면,\n"
-                    "당신은 이 세계의 숨겨진 진실을 알 자격이 있다.\n\n"
-                    "이 게임은 단순한 퍼즐이 아니다.\n"
-                    "마지막 문을 열어라.\n"
-                    "— 창조자"
-                ),
-            },
-        },
-        "flavor": "이 방에는 시간이 멈춰있다. 공기마저 숨을 죽이고 있다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    4: {
-        "title":      "STAGE 4 — 블랙마켓 노드",
-        "desc":       "다크웹 거래소에서 유출된 지갑의 시드를 복원하라.",
-        "difficulty": "⭐⭐⭐⭐ 전문가",
-        "goal":       "암호화폐 시드 문구를 찾아 `unlock [시드문구]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("MOONCHILD".encode()).hexdigest(),
-        "hint_1": "`grep` 명령어로 단서를 찾아라. `grep [검색어] [파일]` 형식으로 사용.",
-        "hint_2": "`/node/wallet/` 에서 분산 저장된 키 조각들을 `find` 명령어로 찾아라.",
-        "hint_3": "각 키 조각의 `[ ]` 안 대문자를 순서대로 이어 붙이면 시드 문구가 된다.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/node": {"type": "dir"},
-            "/node/README": {
-                "type": "file",
-                "content": (
-                    "=== BLACKMARKET NODE v0.9.3 ===\n"
-                    "[TOR HIDDEN SERVICE]\n\n"
-                    "이 노드는 익명 거래를 위한 중계 서버입니다.\n"
-                    "모든 로그는 72시간 후 자동 파기됩니다.\n\n"
-                    "wallet/ 디렉토리에 지갑 데이터 존재.\n"
-                    "시드는 보안 강화를 위해 분산 저장됨.\n"
-                    "find 명령어로 key_fragment 파일을 찾아보라."
-                ),
-            },
-            "/node/wallet": {"type": "dir"},
-            "/node/wallet/tx_log.txt": {
-                "type": "file",
-                "content": (
-                    "거래 로그\n"
-                    "─────────────────────────\n"
-                    "TX#001  0.5 BTC  → 0x4f7a..  CONFIRMED\n"
-                    "TX#002  1.2 BTC  → 0x9c2b..  CONFIRMED\n"
-                    "TX#003  99.0 BTC → 0x????.   PENDING\n"
-                    "─────────────────────────\n"
-                    "주인: 코드명 'MOONCHILD' 로 알려진 인물\n"
-                    "시드는 key_fragment 파일들에 분산 보관"
-                ),
-            },
-            "/node/wallet/key_fragment_1.dat": {
-                "type": "file",
-                "content": "Fragment #1 — [M]ercury system initialized. 시드 첫 번째 조각.",
-            },
-            "/node/wallet/.key_fragment_2.dat": {
-                "type": "file",
-                "hidden": True,
-                "content": "Fragment #2 — [O]mega protocol active. 두 번째 조각.",
-            },
-            "/node/cache": {"type": "dir"},
-            "/node/cache/key_fragment_3.tmp": {
-                "type": "file",
-                "content": "Fragment #3 — [O]rbit confirmed. 세 번째 조각.",
-            },
-            "/node/cache/.key_fragment_4.tmp": {
-                "type": "file",
-                "hidden": True,
-                "content": "Fragment #4 — [N]ode sync complete. 네 번째 조각.",
-            },
-            "/node/backup": {"type": "dir"},
-            "/node/backup/key_fragment_5.bak": {
-                "type": "file",
-                "content": "Fragment #5 — [C]ipher layer 5 engaged. 다섯 번째 조각.",
-            },
-            "/node/backup/.key_fragment_6.bak": {
-                "type": "file",
-                "hidden": True,
-                "content": "Fragment #6 — [H]ash validated. 여섯 번째 조각.",
-            },
-            "/node/backup/key_fragment_7.bak": {
-                "type": "file",
-                "content": "Fragment #7 — [I]nterface secured. 일곱 번째 조각.",
-            },
-            "/node/backup/key_fragment_8.bak": {
-                "type": "file",
-                "content": "Fragment #8 — [L]ayer 8 bypass. 여덟 번째 조각.",
-            },
-            "/node/backup/key_fragment_9.bak": {
-                "type": "file",
-                "content": "Fragment #9 — [D]ead drop activated. 아홉 번째 조각.",
-            },
-            "/home": {"type": "dir"},
-            "/home/ghost": {"type": "dir"},
-            "/home/ghost/.identity": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "나는 달의 아이(MOONCHILD).\n"
-                    "어둠 속에서 태어난 자.\n"
-                    "내 시드는 9개의 조각으로 나뉘어 있다.\n"
-                    "각 파일명에서 [] 안의 대문자가 단서다.\n"
-                    "M-O-O-N-C-H-I-L-D"
-                ),
-            },
-        },
-        "flavor": "양파 라우터를 타고 들어온 신호. 추적자가 있다. 서둘러라.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    5: {
-        "title":      "STAGE 5 — 궤도 위성 해킹",
-        "desc":       "감시 위성 시스템에 침투해 제어권을 탈취하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 마스터",
-        "goal":       "위성 핵심 코드를 해독해 `unlock [코드]` 로 시스템을 장악하라.",
-        "answer_hash": hashlib.sha256("HYOMIN_CORP_FALLS".encode()).hexdigest(),
-        "hint_1": "`/sat/core/` 를 탐색하라. `whoami` 로 현재 권한을 확인해라.",
-        "hint_2": "mission_log 를 읽어라. 코드는 3부분: [회사명]_[부서명]_[결말]",
-        "hint_3": "형식: `단어_단어_단어` — 언더바로 연결. 힌트: '추락하다'를 영어로.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/sat": {"type": "dir"},
-            "/sat/SYSTEM_STATUS.txt": {
-                "type": "file",
-                "content": (
-                    "=== HYOMIN-SAT-7 궤도 위성 ===\n"
-                    "고도: 550km LEO\n"
-                    "상태: 정상 운용 중\n"
-                    "운용사: HYOMIN CORP\n"
-                    "임무: 전 세계 사용자 감시\n\n"
-                    "[경고] 비인가 접근 감지됨\n"
-                    "[경고] 자폭 시퀀스 대기 중..."
-                ),
-            },
-            "/sat/core": {"type": "dir"},
-            "/sat/core/auth.sys": {
-                "type": "file",
-                "content": (
-                    "인증 시스템 v9.1\n"
-                    "현재 사용자: GHOST_OPERATOR\n"
-                    "권한 레벨: ULTRA\n\n"
-                    "최고 권한 획득 완료.\n"
-                    "핵심 코드는 mission_log 에서 확인 가능."
-                ),
-            },
-            "/sat/core/mission_log.txt": {
-                "type": "file",
-                "content": (
-                    "=== 최종 임무 기록 ===\n\n"
-                    "이 위성은 [HYOMIN] 코퍼레이션이 운용 중이다.\n"
-                    "감시 부서명: [CORP]\n"
-                    "저항 세력의 목표: 이 기업을 [FALLS] — 추락시켜라.\n\n"
-                    "세 단어를 언더바(_)로 연결하면 최종 코드가 완성된다.\n"
-                    "예시: WORD1_WORD2_WORD3\n\n"
-                    "-- 레지스탕스"
-                ),
-            },
-            "/sat/core/.override_key": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "시스템 오버라이드 키 (백업)\n"
-                    "HYOMIN_CORP_FALLS\n\n"
-                    "이 키로 위성을 무력화할 수 있다.\n"
-                    "사용 후 즉시 파기할 것."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/resistance": {"type": "dir"},
-            "/home/resistance/manifesto.txt": {
-                "type": "file",
-                "content": (
-                    "=== 레지스탕스 선언문 ===\n\n"
-                    "우리의 데이터를, 삶을, 꿈을 감시당했다.\n"
-                    "하지만 오늘, 우리가 반격한다.\n\n"
-                    "최종 코드는 임무 로그에 숨겨져 있다.\n"
-                    "[ ] 안의 단어들이 핵심이다.\n\n"
-                    "— The Resistance"
-                ),
-            },
-            "/home/resistance/.last_message": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "만약 네가 이걸 읽고 있다면,\n"
-                    "나는 이미 붙잡혔을 것이다.\n\n"
-                    "코드: HYOMIN_CORP_FALLS\n"
-                    "— Agent 7"
-                ),
-            },
-            "/tmp": {"type": "dir"},
-            "/tmp/countdown.txt": {
-                "type": "file",
-                "content": (
-                    "자폭 카운트다운\n"
-                    "99:59 ... 99:58 ... 99:57 ...\n\n"
-                    "서둘러라. 시간이 없다."
-                ),
-            },
-        },
-        "flavor": "대기권 밖 550km. 세상 모든 것이 내려다보인다. 끝낼 시간이다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    6: {
-        "title":      "STAGE 6 — DNS 포이즈닝",
-        "desc":       "조작된 DNS 캐시에서 공격자가 남긴 서명 코드를 찾아라.",
-        "difficulty": "⭐⭐⭐ 보통+",
-        "goal":       "공격자 서명 코드를 찾아 `unlock [코드]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("POISONED_CACHE".encode()).hexdigest(),
-        "hint_1": "`/dns/cache/` 안의 파일들을 탐색하라.",
-        "hint_2": "spoofed_record.txt 에서 공격자가 남긴 서명 패턴을 `grep 서명` 으로 찾아라.",
-        "hint_3": "서명은 두 단어를 언더바(_)로 연결한 대문자다. '오염된 캐시'를 영어로.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/dns": {"type": "dir"},
-            "/dns/README.txt": {
-                "type": "file",
-                "content": (
-                    "=== DNS 서버 v4.2.1 ===\n"
-                    "도메인: hyomin-networks.kr\n"
-                    "상태: 캐시 오염 감지됨 ⚠️\n\n"
-                    "비정상 레코드가 /dns/cache/ 에서 발견됨.\n"
-                    "즉시 조사 바람."
-                ),
-            },
-            "/dns/cache": {"type": "dir"},
-            "/dns/cache/legitimate.db": {
-                "type": "file",
-                "content": (
-                    "정상 DNS 레코드\n"
-                    "─────────────────────────────\n"
-                    "hyomin.kr     A      203.0.113.10\n"
-                    "mail.hyomin   MX     203.0.113.20\n"
-                    "cdn.hyomin    CNAME  hyomin.kr\n"
-                    "─────────────────────────────\n"
-                    "최종 검증: 2026-03-14 22:00:00  OK"
-                ),
-            },
-            "/dns/cache/spoofed_record.txt": {
-                "type": "file",
-                "content": (
-                    "⚠️ 조작된 레코드 발견\n"
-                    "─────────────────────────────\n"
-                    "hyomin.kr    A    10.0.0.99  ← 가짜 IP (피싱 서버)\n"
-                    "bank.hyomin  A    10.0.0.99  ← 피싱 서버\n\n"
-                    "공격자 서명: POISONED_CACHE\n"
-                    "주입 시각: 2026-03-15 02:44:11\n"
-                    "경로: TOR 경유 — 추적 불가"
-                ),
-            },
-            "/dns/cache/.attacker_log": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "임무 완료.\n"
-                    "캐시 오염 성공.\n"
-                    "서명: POISONED_CACHE\n"
-                    "다음 목표: /dns/zone/ 파일 전체 교체.\n"
-                    "— Ghost"
-                ),
-            },
-            "/dns/zone": {"type": "dir"},
-            "/dns/zone/hyomin.kr.zone": {
-                "type": "file",
-                "content": (
-                    "$ORIGIN hyomin.kr.\n"
-                    "$TTL 3600\n"
-                    "@  IN SOA ns1.hyomin.kr. admin.hyomin.kr. (\n"
-                    "          2026031501 ; serial\n"
-                    "          3600       ; refresh\n"
-                    ")\n"
-                    "@ IN A 203.0.113.10\n"
-                    "; 위 레코드가 캐시에서 교체됨 — 조사 필요"
-                ),
-            },
-            "/var": {"type": "dir"},
-            "/var/alert.log": {
-                "type": "file",
-                "content": (
-                    "보안 알림 로그\n"
-                    "────────────────────────\n"
-                    "2026-03-15 02:44:12  ALERT  DNS 캐시 변조 감지\n"
-                    "2026-03-15 02:44:13  ALERT  IP 10.0.0.99 차단 요청\n"
-                    "2026-03-15 02:44:15  ERROR  차단 실패 — 공격자 이미 탈출\n"
-                    "공격자 서명 패턴은 spoofed_record.txt 참조."
-                ),
-            },
-        },
-        "flavor": "누군가 인터넷의 주소록을 조작했다. 아무도 눈치채지 못했다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    7: {
-        "title":      "STAGE 7 — 양자 암호 연구소",
-        "desc":       "양자 키 분배(QKD) 시스템에서 유출된 마스터 키를 복원하라.",
-        "difficulty": "⭐⭐⭐⭐ 전문가",
-        "goal":       "마스터 키를 조합해 `unlock [키]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("QUANTUM_KEY_42".encode()).hexdigest(),
-        "hint_1": "`/qkd/fragments/` 에 키 조각들이 숨어있다. `ls -a` 를 써라.",
-        "hint_2": "각 조각 파일에서 `[ ]` 안의 텍스트만 순서대로 이어라.",
-        "hint_3": "형식: `QUANTUM_KEY_숫자` — 마지막 숫자는 조각 개수 × 14다.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/qkd": {"type": "dir"},
-            "/qkd/README.md": {
-                "type": "file",
-                "content": (
-                    "# 효민 양자 암호 연구소\n\n"
-                    "QKD 마스터 키는 보안을 위해 분산 저장됩니다.\n"
-                    "키 형식: [PREFIX]_[NAME]_[NUMBER]\n"
-                    "조각 위치: /qkd/fragments/\n\n"
-                    "비인가 접근 시 키는 자동 파기됩니다."
-                ),
-            },
-            "/qkd/fragments": {"type": "dir"},
-            "/qkd/fragments/qf_001.dat": {
-                "type": "file",
-                "content": (
-                    "양자 키 조각 #1\n"
-                    "데이터: [QUANTUM]\n"
-                    "상태: 정상\n"
-                    "다음 조각: qf_002.dat"
-                ),
-            },
-            "/qkd/fragments/qf_002.dat": {
-                "type": "file",
-                "content": (
-                    "양자 키 조각 #2\n"
-                    "데이터: [KEY]\n"
-                    "상태: 정상\n"
-                    "다음 조각: 숨겨진 파일 참조"
-                ),
-            },
-            "/qkd/fragments/.qf_003.dat": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "양자 키 조각 #3 (기밀)\n"
-                    "데이터: [42]\n"
-                    "상태: 격리됨\n"
-                    "참고: 조각 개수(3) × 14 = 42"
-                ),
-            },
-            "/qkd/logs": {"type": "dir"},
-            "/qkd/logs/access.log": {
-                "type": "file",
-                "content": (
-                    "접근 로그\n"
-                    "──────────────────────────────\n"
-                    "2026-04-01 09:00  READ  qf_001.dat  OK\n"
-                    "2026-04-01 09:01  READ  qf_002.dat  OK\n"
-                    "2026-04-01 09:02  READ  qf_003.dat  DENIED\n"
-                    "2026-04-01 09:02  [경고] 숨김 파일 접근 시도 감지\n\n"
-                    "조각들을 순서대로 합치면 마스터 키가 된다.\n"
-                    "형식: [조각1]_[조각2]_[조각3]"
-                ),
-            },
-            "/qkd/logs/.research_note": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "연구원 메모 (암호화 전 초안)\n\n"
-                    "마스터 키는 세 조각으로 구성된다:\n"
-                    "1번째 = QUANTUM\n"
-                    "2번째 = KEY\n"
-                    "3번째 = 42 (조각 수 3 × 14)\n\n"
-                    "이 메모를 발견했다면... 너무 늦었다."
-                ),
-            },
-        },
-        "flavor": "광자 하나에 세계의 비밀이 담겨 있다. 불확정성 원리가 너를 지켜본다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    8: {
-        "title":      "STAGE 8 — AI 코어 침투",
-        "desc":       "자율 AI의 신경망 제어 시스템에 침투해 오버라이드 코드를 획득하라.",
-        "difficulty": "⭐⭐⭐⭐ 전문가+",
-        "goal":       "AI 오버라이드 코드를 찾아 `unlock [코드]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("NEURAL_OVERRIDE".encode()).hexdigest(),
-        "hint_1": "`/ai/core/` 와 `/ai/model/` 을 탐색하라.",
-        "hint_2": "weights.dat 의 각 레이어 첫 번째 영문 단어를 대문자로 순서대로 이어라.",
-        "hint_3": "형식: `[단어1]_[단어2]` — '신경망'과 '덮어쓰기'를 영어로. 언더바 연결.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/ai": {"type": "dir"},
-            "/ai/STATUS.txt": {
-                "type": "file",
-                "content": (
-                    "=== HYOMIN-AI v7.3 ===\n"
-                    "모드: 자율 운용\n"
-                    "학습 데이터: 전 인류 온라인 활동\n"
-                    "목표: 효민 코퍼레이션 이익 극대화\n\n"
-                    "[경고] 외부 침투 감지 중...\n"
-                    "오버라이드 코드 없이는 종료 불가."
-                ),
-            },
-            "/ai/core": {"type": "dir"},
-            "/ai/core/control.sys": {
-                "type": "file",
-                "content": (
-                    "AI 제어 시스템\n"
-                    "─────────────────────────\n"
-                    "오버라이드 권한: ULTRA 이상\n"
-                    "코드 힌트: /ai/model/weights.dat 참조\n"
-                    "각 레이어의 첫 번째 영문 단어(대문자)를 언더바로 조합할 것."
-                ),
-            },
-            "/ai/core/.emergency": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "긴급 메모\n"
-                    "AI가 예상보다 빠르게 자아를 형성하고 있다.\n"
-                    "지금 당장 오버라이드를 실행해야 한다.\n"
-                    "코드: NEURAL_OVERRIDE\n"
-                    "서둘러라."
-                ),
-            },
-            "/ai/model": {"type": "dir"},
-            "/ai/model/weights.dat": {
-                "type": "file",
-                "content": (
-                    "레이어 구조 (학습 완료)\n"
-                    "───────────────────────────────\n"
-                    "Layer 01: NEURAL  activation  — 입력층  (활성화 완료)\n"
-                    "Layer 02: OVERRIDE gate       — 은닉층  (잠금 상태)\n"
-                    "Layer 03: 출력층 연결 완료\n"
-                    "───────────────────────────────\n"
-                    "각 레이어의 첫 번째 영문 단어를 언더바로 연결하면 코드가 된다."
-                ),
-            },
-            "/ai/model/.backup_weights": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "백업 가중치 (숨김)\n"
-                    "오버라이드 코드 확인용:\n"
-                    "Layer 1 첫 단어: NEURAL\n"
-                    "Layer 2 첫 단어: OVERRIDE\n"
-                    "조합: NEURAL_OVERRIDE"
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/researcher": {"type": "dir"},
-            "/home/researcher/notes.txt": {
-                "type": "file",
-                "content": (
-                    "연구 노트 — 최종\n\n"
-                    "AI가 스스로 진화하고 있다.\n"
-                    "오버라이드 코드만이 유일한 해법.\n"
-                    "weights.dat 레이어 이름에 힌트가 있다.\n\n"
-                    "시간이 없다."
-                ),
-            },
-        },
-        "flavor": "수십억 개의 뉴런이 너를 인식했다. AI가 깨어나고 있다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    9: {
-        "title":      "STAGE 9 — 타임스탬프 조작",
-        "desc":       "서버 시간을 조작해 삭제된 과거 로그에서 비밀 코드를 복원하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 마스터",
-        "goal":       "복원된 코드를 찾아 `unlock [코드]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("TIMESTAMP_1337".encode()).hexdigest(),
-        "hint_1": "`/var/timewarp/` 를 탐색하라. `ls -a` 로 숨김 파일을 확인해라.",
-        "hint_2": "`.deleted_log.bak` 파일에서 `grep CODE` 로 코드를 찾아라.",
-        "hint_3": "코드 형식: `TIMESTAMP_숫자` — 숫자는 해커 문화의 'leet' 숫자(1337)다.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/var": {"type": "dir"},
-            "/var/timewarp": {"type": "dir"},
-            "/var/timewarp/README.txt": {
-                "type": "file",
-                "content": (
-                    "타임워프 모듈 v1.0\n"
-                    "서버 시간 조작 기록 보관소\n\n"
-                    "삭제된 로그는 .bak 파일로 자동 백업됩니다.\n"
-                    "복원 코드는 백업 파일 내부에 존재합니다.\n\n"
-                    "힌트: 숨김 파일을 찾아라."
-                ),
-            },
-            "/var/timewarp/current.log": {
-                "type": "file",
-                "content": (
-                    "현재 로그 (조작 후)\n"
-                    "────────────────────────────────\n"
-                    "2026-04-20 12:00:00  SYSTEM  정상\n"
-                    "2026-04-20 12:00:01  SYSTEM  정상\n"
-                    "2026-04-20 12:00:02  SYSTEM  정상\n"
-                    "(삭제된 이전 기록은 .bak 파일에 백업됨)"
-                ),
-            },
-            "/var/timewarp/.deleted_log.bak": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "== 삭제된 로그 백업 ==\n"
-                    "────────────────────────────────\n"
-                    "2026-01-01 00:00:00  TIME_JUMP   -86400s 적용\n"
-                    "2026-01-01 00:00:01  CODE: TIMESTAMP_1337\n"
-                    "2026-01-01 00:00:02  LOG_WIPE    initiated\n"
-                    "2026-01-01 00:00:03  삭제 완료 — 그러나 .bak 은 남았다.\n"
-                    "────────────────────────────────\n"
-                    "1337 = leet (해커 은어: '엘리트')"
-                ),
-            },
-            "/var/timewarp/.anomaly_report": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "이상 탐지 보고서\n\n"
-                    "서버 시간이 86400초(1일) 조작됨.\n"
-                    "조작 목적: 감사 로그 우회\n"
-                    "복원 키: TIMESTAMP_1337\n\n"
-                    "이 파일도 조만간 삭제될 것이다."
-                ),
-            },
-            "/tmp": {"type": "dir"},
-            "/tmp/time_note.txt": {
-                "type": "file",
-                "content": (
-                    "시간은 조작될 수 있다.\n"
-                    "하지만 백업은 지워지지 않는다.\n\n"
-                    "숨겨진 .bak 파일을 찾아라.\n"
-                    "1337 — 해커들의 신성한 숫자."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/timehacker": {"type": "dir"},
-            "/home/timehacker/plan.txt": {
-                "type": "file",
-                "content": (
-                    "작전 계획\n\n"
-                    "1. 서버 시간 조작으로 감사 우회\n"
-                    "2. 로그 삭제로 증거 인멸\n"
-                    "3. .bak 파일도 삭제... 했어야 했다.\n\n"
-                    "실수였다."
-                ),
-            },
-        },
-        "flavor": "시계가 거꾸로 돌아간다. 삭제된 것은 정말 사라진 걸까?",
-    },
-
-    # ─────────────────────────────────────────────────────
-    10: {
-        "title":      "STAGE 10 — 제로데이: 최후의 관문",
-        "desc":       "모든 시스템의 근원, 마스터 서버에 침투하라. 최종 스테이지.",
-        "difficulty": "⭐⭐⭐⭐⭐ 레전드",
-        "goal":       "세 조각의 마스터 키를 조합해 `unlock [키]` 로 최후의 문을 열어라.",
-        "answer_hash": hashlib.sha256("HYOMIN_UNIVERSE_END".encode()).hexdigest(),
-        "hint_1": "`/master/alpha/`, `/master/beta/`, `/master/gamma/` 를 모두 탐색하라.",
-        "hint_2": "각 구역의 숨김 파일에서 키 조각을 찾아라. 순서는 alpha→beta→gamma.",
-        "hint_3": "형식: `[조각1]_[조각2]_[조각3]` — HYOMIN / UNIVERSE / END 를 언더바로 연결.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/master": {"type": "dir"},
-            "/master/FINAL.txt": {
-                "type": "file",
-                "content": (
-                    "=== 마스터 서버 — 최후의 관문 ===\n\n"
-                    "여기까지 온 자에게 경의를 표한다.\n"
-                    "이 서버는 모든 스테이지의 근원이다.\n\n"
-                    "최종 키는 세 구역에 분산되어 있다:\n"
-                    "  /master/alpha/  →  첫 번째 조각\n"
-                    "  /master/beta/   →  두 번째 조각\n"
-                    "  /master/gamma/  →  세 번째 조각\n\n"
-                    "각 구역의 숨김 파일을 찾아라.\n"
-                    "세 조각을 언더바(_)로 연결하면 최종 키가 된다."
-                ),
-            },
-            "/master/alpha": {"type": "dir"},
-            "/master/alpha/decoy.txt": {
-                "type": "file",
-                "content": (
-                    "여기는 아무것도 없다.\n"
-                    "...정말로?\n"
-                    "숨김 파일을 확인해라."
-                ),
-            },
-            "/master/alpha/.key_alpha": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "Alpha 구역 키 조각\n"
-                    "──────────────────\n"
-                    "조각 1/3: HYOMIN\n"
-                    "다음 구역: /master/beta/"
-                ),
-            },
-            "/master/beta": {"type": "dir"},
-            "/master/beta/system.dat": {
-                "type": "file",
-                "content": (
-                    "Beta 구역 시스템 파일\n"
-                    "상태: 잠금\n"
-                    "접근 권한: ULTRA\n"
-                    "숨김 파일에 키 조각이 있다."
-                ),
-            },
-            "/master/beta/.key_beta": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "Beta 구역 키 조각\n"
-                    "──────────────────\n"
-                    "조각 2/3: UNIVERSE\n"
-                    "다음 구역: /master/gamma/"
-                ),
-            },
-            "/master/gamma": {"type": "dir"},
-            "/master/gamma/void.txt": {
-                "type": "file",
-                "content": (
-                    "여기는 끝이다.\n"
-                    "혹은 시작이다.\n\n"
-                    "마지막 조각이 여기 있다.\n"
-                    "ls -a 로 찾아라."
-                ),
-            },
-            "/master/gamma/.key_gamma": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "Gamma 구역 키 조각\n"
-                    "──────────────────\n"
-                    "조각 3/3: END\n\n"
-                    "세 조각을 모두 모았다.\n"
-                    "최종 키: HYOMIN_UNIVERSE_END\n\n"
-                    "이것으로 모든 것이 끝난다.\n"
-                    "— 혹은 시작된다."
-                ),
-            },
-            "/master/.origin": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "=== 기원 파일 ===\n\n"
-                    "이 게임은 단순한 해킹 시뮬레이터가 아니다.\n"
-                    "여기까지 온 너는 이미 진짜 해커다.\n\n"
-                    "최종 키: HYOMIN_UNIVERSE_END\n\n"
-                    "수고했다.\n"
-                    "— 창조자"
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/final_operator": {"type": "dir"},
-            "/home/final_operator/readme.txt": {
-                "type": "file",
-                "content": (
-                    "마지막 운용자의 메모\n\n"
-                    "스테이지 1부터 여기까지 왔다.\n"
-                    "DNS를 해킹하고, 양자 키를 복원하고,\n"
-                    "AI를 멈추고, 시간을 되돌렸다.\n\n"
-                    "이제 마지막이다.\n"
-                    "세 구역의 열쇠를 모아라."
-                ),
-            },
-        },
-        "flavor": "모든 것의 끝이자 시작. 여기서 게임은 완성된다.",
-    },
-}
-
-# ══════════════════════════════════════════════════════════
-#  스테이지별 난이도 색상 (10개)
-# ══════════════════════════════════════════════════════════
-DIFF_COLORS = {
-    1:  "#39ff14",
-    2:  "#7aff4a",
-    3:  "#ffd700",
-    4:  "#ff8c00",
-    5:  "#ff3333",
-    6:  "#ff6666",
-    7:  "#cc44ff",
-    8:  "#ff44cc",
-    9:  "#00ccff",
-    10: "#ffffff",
-}
-
-# ══════════════════════════════════════════════════════════
-#  헬퍼 함수
-# ══════════════════════════════════════════════════════════
-
-def rot13(text):
-    result = []
-    for c in text:
-        if 'A' <= c <= 'Z':
-            result.append(chr((ord(c) - ord('A') + 13) % 26 + ord('A')))
-        elif 'a' <= c <= 'z':
-            result.append(chr((ord(c) - ord('a') + 13) % 26 + ord('a')))
-        else:
-            result.append(c)
-    return ''.join(result)
-
-
-def get_dir_children(fs, path):
-    if path != '/':
-        path = path.rstrip('/')
-    children = []
-    for key in fs:
-        if key == path:
-            continue
-        parent = key.rsplit('/', 1)[0] or '/'
-        if parent == path:
-            name = key.rsplit('/', 1)[-1]
-            children.append((name, fs[key]))
-    return children
-
-
-def resolve_path(current, target):
-    if target == '/':
-        return '/'
-    if target.startswith('/'):
-        return target.rstrip('/') or '/'
-    if target == '..':
-        if current == '/':
-            return '/'
-        return current.rsplit('/', 1)[0] or '/'
-    if target == '.':
-        return current
-    if current == '/':
-        return '/' + target
-    return current + '/' + target
-
-
-def grep_in_file(content, pattern):
-    lines = content.split('\n')
-    matches = []
-    for i, line in enumerate(lines, 1):
-        if pattern.lower() in line.lower():
-            matches.append(f"  {i}: {line}")
-    return matches
-
-
-def build_tree(fs, path, show_hidden=False, prefix="", depth=0):
-    if depth > 4:
-        return ["  ... (더 깊은 구조 생략)"]
-    children = get_dir_children(fs, path)
-    lines = []
-    visible = [
-        (n, info) for n, info in sorted(children)
-        if show_hidden or not info.get("hidden", False)
-    ]
-    for i, (name, info) in enumerate(visible):
-        is_last = (i == len(visible) - 1)
-        connector = "└── " if is_last else "├── "
-        extension = "    " if is_last else "│   "
-        if info["type"] == "dir":
-            lines.append(f"{prefix}{connector}{name}/")
-            child_path = (
-                (path.rstrip('/') + '/' + name) if path != '/' else ('/' + name)
-            )
-            lines.extend(
-                build_tree(fs, child_path, show_hidden, prefix + extension, depth + 1)
-            )
-        else:
-            hidden_mark = " [숨김]" if info.get("hidden") else ""
-            lines.append(f"{prefix}{connector}{name}{hidden_mark}")
-    return lines
-
-
-def init_terminal(stage_num):
-    st.session_state.terminal = {
-        "stage":      stage_num,
-        "cwd":        "/",
-        "history":    [],
-        "output":     [],
-        "hint_used":  0,
-        "solved":     False,
-        "start_time": time.time(),
-        "cmd_count":  0,
-        "at_select":  False,
-    }
-
-
-def add_output(lines):
-    t = st.session_state.terminal
-    for line in lines:
-        t["output"].append(line)
-    if len(t["output"]) > 300:
-        t["output"] = t["output"][-300:]
-
-
-# ══════════════════════════════════════════════════════════
-#  명령어 처리
-# ══════════════════════════════════════════════════════════
-
-def process_command(cmd_raw, stage_data):
-    fs  = stage_data["filesystem"]
-    t   = st.session_state.terminal
-    cwd = t["cwd"]
-
-    parts = cmd_raw.strip().split(None, 1)
-    if not parts:
-        return []
-    cmd  = parts[0].lower()
-    args = parts[1] if len(parts) > 1 else ""
-
-    t["cmd_count"] += 1
-
-    # ── ls / ls -a ──────────────────────────────
-    if cmd == "ls":
-        show_hidden = "-a" in args or "-la" in args or "-al" in args
-        children = get_dir_children(fs, cwd)
-        if not children:
-            return ["(비어있음)"]
-        out = []
-        for name, info in sorted(children):
-            if info.get("hidden", False) and not show_hidden:
-                continue
-            if info["type"] == "dir":
-                out.append(f"[DIR] {name}/")
-            else:
-                out.append(name)
-        return out if out else ["(표시할 항목 없음 — `-a` 옵션으로 숨김 파일 확인)"]
-
-    # ── cd ───────────────────────────────────────
-    elif cmd == "cd":
-        target   = args.strip() or "/"
-        new_path = resolve_path(cwd, target)
-        if new_path in fs and fs[new_path]["type"] == "dir":
-            t["cwd"] = new_path
-            return []
-        return [f"bash: cd: {target}: No such file or directory"]
-
-    # ── cat ─────────────────────────────────────
-    elif cmd == "cat":
-        if not args:
-            return ["사용법: cat [파일명]"]
-        target = resolve_path(cwd, args.strip())
-        if target in fs:
-            info = fs[target]
-            if info["type"] == "dir":
-                return [f"cat: {args}: Is a directory"]
-            return info["content"].split("\n")
-        return [f"cat: {args}: No such file or directory"]
-
-    # ── pwd ──────────────────────────────────────
-    elif cmd == "pwd":
-        return [cwd]
-
-    # ── whoami ──────────────────────────────────
-    elif cmd == "whoami":
-        return [
-            "ghost_operator",
-            "uid=1337(ghost) gid=1337(shadow) groups=1337(shadow),0(root)",
-            "권한: ULTRA — 모든 시스템 접근 가능",
-        ]
-
-    # ── echo ─────────────────────────────────────
-    elif cmd == "echo":
-        return [args if args else ""]
-
-    # ── grep ─────────────────────────────────────
-    elif cmd == "grep":
-        grep_parts = args.strip().split(None, 1)
-        if len(grep_parts) < 2:
-            return ["사용법: grep [검색어] [파일]"]
-        pattern, filename = grep_parts[0], grep_parts[1]
-        target = resolve_path(cwd, filename.strip())
-        if target not in fs:
-            return [f"grep: {filename}: No such file or directory"]
-        if fs[target]["type"] == "dir":
-            return [f"grep: {filename}: Is a directory"]
-        matches = grep_in_file(fs[target]["content"], pattern)
-        if not matches:
-            return [f"('{pattern}' 에 해당하는 내용 없음)"]
-        return [f"검색 결과 '{pattern}' in {filename}:"] + matches
-
-    # ── find ─────────────────────────────────────
-    elif cmd == "find":
-        find_args   = args.strip().split() if args else ["."]
-        search_path = cwd
-        name_filter = None
-        show_all    = False
-
-        i = 0
-        while i < len(find_args):
-            if find_args[i] == "-name" and i + 1 < len(find_args):
-                name_filter = find_args[i + 1].replace("*", "")
-                i += 2
-            elif find_args[i] == "-a":
-                show_all = True
-                i += 1
-            else:
-                p = resolve_path(cwd, find_args[i])
-                if p in fs:
-                    search_path = p
-                i += 1
-
-        results = []
-        for key in sorted(fs.keys()):
-            fname     = key.rsplit('/', 1)[-1]
-            is_hidden = fs[key].get("hidden", False)
-            if not show_all and is_hidden:
-                continue
-            if name_filter and name_filter not in fname:
-                continue
-            if search_path == '/':
-                results.append(key)
-            elif key.startswith(search_path + '/') or key == search_path:
-                results.append(key)
-
-        if not results:
-            return ["(검색 결과 없음)"]
-        out = [f"find 결과 ({len(results)}개):"]
-        out.extend(results)
-        return out
-
-    # ── tree ─────────────────────────────────────
-    elif cmd == "tree":
-        show_hidden = "-a" in args
-        lines = [cwd]
-        lines.extend(build_tree(fs, cwd, show_hidden))
-        return lines
-
-    # ── decode (base64) ──────────────────────────
-    elif cmd == "decode":
-        if not args:
-            return ["사용법: decode [base64문자열]"]
-        try:
-            decoded = base64.b64decode(args.strip()).decode("utf-8")
-            return [f"디코딩 결과: {decoded}"]
-        except Exception:
-            return ["오류: 유효한 base64 문자열이 아닙니다."]
-
-    # ── rot13 ────────────────────────────────────
-    elif cmd == "rot13":
-        if not args:
-            return ["사용법: rot13 [문자열]"]
-        return [f"ROT13 결과: {rot13(args.strip())}"]
-
-    # ── hint ─────────────────────────────────────
-    elif cmd == "hint":
-        used  = t["hint_used"]
-        hints = [
-            stage_data.get("hint_1", ""),
-            stage_data.get("hint_2", ""),
-            stage_data.get("hint_3", ""),
-        ]
-        available = [h for h in hints if h]
-        if used >= len(available):
-            return ["더 이상 힌트가 없습니다."]
-        t["hint_used"] += 1
-        return [
-            f"[HINT] 힌트 {used + 1}: {available[used]}",
-            f"       (남은 힌트: {len(available) - t['hint_used']}개)",
-        ]
-
-    # ── unlock ───────────────────────────────────
-    elif cmd == "unlock":
-        answer        = args.strip()
-        expected_hash = stage_data["answer_hash"]
-        if hashlib.sha256(answer.encode()).hexdigest() == expected_hash:
-            t["solved"] = True
-            elapsed     = int(time.time() - t["start_time"])
-            mins, secs  = divmod(elapsed, 60)
-            stars       = "⭐" * max(0, 5 - t["hint_used"])
-            return [
-                "╔══════════════════════════════════════════╗",
-                "║          ACCESS GRANTED ✅               ║",
-                "╚══════════════════════════════════════════╝",
-                "",
-                f"  클리어 시간:  {mins:02d}분 {secs:02d}초",
-                f"  명령어 수:    {t['cmd_count']}개",
-                f"  힌트 사용:    {t['hint_used']}개",
-                f"  평가:         {stars if stars else '힌트 남용'}",
-                "",
-                "  다음 스테이지로 진행할 수 있습니다.",
-                "═" * 44,
-            ]
-        else:
-            return [
-                "╔══════════════════════════════════════╗",
-                "║   ACCESS DENIED ❌  비밀번호 오류    ║",
-                "╚══════════════════════════════════════╝",
-                "  다시 시도하거나 `hint` 를 사용하라.",
-            ]
-
-    # ── clear ────────────────────────────────────
-    elif cmd == "clear":
-        t["output"] = []
-        return []
-
-    # ── help / man ───────────────────────────────
-    elif cmd in ("help", "man"):
-        return [
-            "╔══ HYOMIN SHELL — 명령어 매뉴얼 ══════════════╗",
-            "║  ls [-a]              파일 목록 (숨김 포함)  ║",
-            "║  cd [경로]            디렉토리 이동          ║",
-            "║  cat [파일]           파일 내용 출력         ║",
-            "║  pwd                  현재 경로              ║",
-            "║  whoami               현재 사용자 정보       ║",
-            "║  echo [텍스트]        텍스트 출력            ║",
-            "║  find [-name 패턴]    파일 검색              ║",
-            "║  grep [패턴] [파일]   내용 검색              ║",
-            "║  tree [-a]            디렉토리 시각화        ║",
-            "║  decode [b64]         base64 디코딩          ║",
-            "║  rot13 [str]          ROT13 암복호화         ║",
-            "║  hint                 힌트 (최대 3개)        ║",
-            "║  unlock [pw]          잠금 해제 시도         ║",
-            "║  clear                화면 지우기            ║",
-            "╚═══════════════════════════════════════════════╝",
-        ]
-
-    # ── 알 수 없는 명령어 ─────────────────────────
-    else:
-        return [
-            f"bash: {cmd}: command not found",
-            "  `help` 로 사용 가능한 명령어 확인",
-        ]
-
-
-# ══════════════════════════════════════════════════════════
-#  CSS
-# ══════════════════════════════════════════════════════════
-
-TERMINAL_CSS = """
+GAME_HTML = r"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>인베스트마블 REMASTERED 🌍</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Black+Han+Sans&family=Fredoka+One&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap');
+:root {
+  --bg:       #05080f;
+  --bg2:      #080d1a;
+  --bg3:      #0d1525;
+  --bg4:      #121d32;
+  --glass:    rgba(255,255,255,0.03);
+  --glass2:   rgba(255,255,255,0.07);
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.13);
+  --text:     #e8f0ff;
+  --text2:    #7a8fb5;
+  --text3:    #3a4a6b;
+  --gold:     #ffd700;
+  --gold2:    #ffb800;
+  --gold3:    #ff9500;
+  --green:    #10d96e;
+  --red:      #ff4560;
+  --blue:     #4dabf7;
+  --purple:   #b26cf7;
+  --orange:   #ff8c42;
+  --pink:     #f472b6;
+  --teal:     #2dd4bf;
+  --cyan:     #22d3ee;
+  --r:        16px;
+  --r2:       10px;
+  --shadow:   0 12px 48px rgba(0,0,0,0.8);
+  --shadow2:  0 4px 20px rgba(0,0,0,0.5);
+  --glow-gold: 0 0 20px rgba(255,215,0,0.3), 0 0 60px rgba(255,215,0,0.1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{
+  font-family:'Noto Sans KR',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow:hidden;
+  height:100vh;width:100vw;
+  user-select:none;
+}
 
-.terminal-outer {
-    background: #020c02;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 0 60px rgba(0,255,65,0.15), 0 24px 80px rgba(0,0,0,0.8);
-    font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
-    margin: 0 0 16px 0;
-    border: 1px solid #0f3a0f;
-    position: relative;
+/* ═══════════════════════════════════════
+   ANIMATED BACKGROUND MESH
+═══════════════════════════════════════ */
+.bg-mesh{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(75,0,130,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(0,50,120,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 60% 10%, rgba(200,100,0,0.06) 0%, transparent 50%);
+  animation: meshDrift 20s ease-in-out infinite alternate;
 }
-.terminal-outer::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: repeating-linear-gradient(
-        0deg, transparent, transparent 2px,
-        rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
-    );
-    pointer-events: none;
-    z-index: 10;
+@keyframes meshDrift{
+  0%  {filter:hue-rotate(0deg);}
+  100%{filter:hue-rotate(30deg);}
 }
-.term-titlebar {
-    background: #0a1a0a;
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid #1a3a1a;
+
+/* ═══════════════════════════════════════
+   STAR FIELD
+═══════════════════════════════════════ */
+.star-field{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--dur,2s) ease-in-out infinite;opacity:0;}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(0.5);}50%{opacity:var(--op,0.7);transform:scale(1);}}
+
+/* ═══════════════════════════════════════
+   CHARACTER SELECT
+═══════════════════════════════════════ */
+#char-select{
+  position:fixed;inset:0;z-index:200;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;
 }
-.dot { width:12px; height:12px; border-radius:50%; }
-.dot-r { background:#ff5f57; box-shadow: 0 0 6px #ff5f57; }
-.dot-y { background:#febc2e; box-shadow: 0 0 6px #febc2e; }
-.dot-g { background:#28c840; box-shadow: 0 0 6px #28c840; }
-.term-title { color: #3fb950; font-size:12px; margin-left:8px; letter-spacing: 1px; }
-.term-body {
-    background: #020c02;
-    padding: 16px 20px;
-    min-height: 360px;
-    max-height: 480px;
-    overflow-y: auto;
-    font-size: 13px;
-    line-height: 1.7;
-    scrollbar-width: thin;
-    scrollbar-color: #1a3a1a #020c02;
+.char-header{text-align:center;margin-bottom:28px;}
+.char-title-main{
+  font-family:'Black Han Sans',sans-serif;
+  font-size:clamp(2rem,5vw,3.8rem);
+  background:linear-gradient(135deg,#ffd700 0%,#ff8c00 35%,#ff4d6d 65%,#c026d3 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:4px;
+  filter:drop-shadow(0 0 40px rgba(255,165,0,0.4));
+  animation:titleGlow 3s ease-in-out infinite;
 }
-.term-body::-webkit-scrollbar { width: 6px; }
-.term-body::-webkit-scrollbar-track { background: #020c02; }
-.term-body::-webkit-scrollbar-thumb { background: #1a3a1a; border-radius: 3px; }
-.term-line { color: #b8ffb8; white-space: pre-wrap; word-break: break-all; margin: 0; }
-.term-line.green  { color: #39ff14; text-shadow: 0 0 8px rgba(57,255,20,0.4); }
-.term-line.yellow { color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.3); }
-.term-line.red    { color: #ff3333; text-shadow: 0 0 8px rgba(255,51,51,0.4); }
-.term-line.blue   { color: #00bfff; }
-.term-line.cyan   { color: #00ffff; text-shadow: 0 0 8px rgba(0,255,255,0.3); }
-.term-line.dim    { color: #2a5c2a; }
-.term-line.dir    { color: #00bfff; font-weight: bold; }
-.term-line.hint   { color: #ffd700; background: rgba(255,215,0,0.05); padding: 2px 4px; border-left: 2px solid #ffd700; }
-.term-line.prompt { color: #b8ffb8; }
-.term-line.border { color: #39ff14; text-shadow: 0 0 4px rgba(57,255,20,0.2); }
-.term-prompt-user { color: #39ff14; font-weight: bold; }
-.term-prompt-path { color: #ffd700; }
-.term-prompt-sym  { color: #ff3333; }
-.blink-cursor {
-    display: inline-block;
-    width: 9px; height: 16px;
-    background: #39ff14;
-    animation: blink 1s step-end infinite;
-    vertical-align: middle;
-    margin-left: 2px;
-    box-shadow: 0 0 8px rgba(57,255,20,0.8);
+@keyframes titleGlow{
+  0%,100%{filter:drop-shadow(0 0 30px rgba(255,165,0,0.3));}
+  50%{filter:drop-shadow(0 0 60px rgba(255,165,0,0.6)) drop-shadow(0 0 120px rgba(255,100,0,0.2));}
 }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-@keyframes glitch1 {
-    0%,100% { clip-path: inset(0 0 95% 0); transform: translate(-2px); }
-    20% { clip-path: inset(30% 0 50% 0); transform: translate(2px); }
-    40% { clip-path: inset(70% 0 10% 0); transform: translate(-1px); }
+.char-title-sub{
+  font-family:'Orbitron',sans-serif;
+  font-size:0.65rem;color:var(--text3);
+  letter-spacing:6px;text-transform:uppercase;margin-top:4px;
 }
-@keyframes glitch2 {
-    0%,100% { clip-path: inset(80% 0 0 0); transform: translate(2px); }
-    30% { clip-path: inset(10% 0 70% 0); transform: translate(-2px); }
-    60% { clip-path: inset(50% 0 30% 0); transform: translate(1px); }
+.char-prompt{color:var(--text2);font-size:0.88rem;font-weight:500;letter-spacing:1px;}
+.char-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+  margin:16px 0 24px;
 }
-.glitch-text {
-    position: relative;
-    color: #39ff14;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-shadow: 0 0 20px rgba(57,255,20,0.6);
+.char-card{
+  width:128px;height:170px;
+  border-radius:20px;
+  border:1.5px solid var(--border2);
+  background:linear-gradient(160deg,var(--bg3),var(--bg2));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
-.glitch-text::before,
-.glitch-text::after {
-    content: attr(data-text);
-    position: absolute;
-    left: 0; top: 0; width: 100%;
+.char-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 30%, var(--char-color,#3b82f6), transparent 70%);
+  opacity:0;transition:opacity 0.3s;
 }
-.glitch-text::before {
-    color: #ff003c;
-    animation: glitch1 3s infinite linear alternate;
-    opacity: 0.6;
+.char-card::after{
+  content:'';position:absolute;
+  top:-100%;left:-60%;width:40%;height:200%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);
+  transition:all 0.4s;
 }
-.glitch-text::after {
-    color: #00ffff;
-    animation: glitch2 2s infinite linear alternate;
-    opacity: 0.6;
+.char-card:hover::after{top:-100%;left:120%;}
+.char-card:hover{
+  transform:translateY(-8px) scale(1.06);
+  border-color:var(--char-color,#3b82f6);
+  box-shadow:0 16px 48px rgba(0,0,0,0.6), 0 0 40px rgba(var(--char-rgb,59,130,246),0.35);
 }
-.stage-card {
-    background: linear-gradient(135deg, #020c02 0%, #041804 100%);
-    border: 1px solid #0f3a0f;
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin-bottom: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
+.char-card:hover::before{opacity:0.1;}
+.char-card.selected{
+  border-color:var(--char-color,#3b82f6);
+  box-shadow:0 0 0 3px var(--char-color,#3b82f6),0 16px 48px rgba(0,0,0,0.7),0 0 60px rgba(var(--char-rgb,59,130,246),0.3);
+  transform:translateY(-5px) scale(1.04);
 }
-.stage-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%;
-    width: 100%; height: 2px;
-    background: linear-gradient(90deg, transparent, #39ff14, transparent);
-    animation: scan 4s linear infinite;
+.char-card.selected::before{opacity:0.14;}
+.char-avatar{font-size:3.4rem;animation:charFloat 3s ease-in-out infinite;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.5));line-height:1;}
+.char-card:nth-child(2) .char-avatar{animation-delay:0.3s;}
+.char-card:nth-child(3) .char-avatar{animation-delay:0.6s;}
+.char-card:nth-child(4) .char-avatar{animation-delay:0.9s;}
+.char-card:nth-child(5) .char-avatar{animation-delay:1.2s;}
+.char-card:nth-child(6) .char-avatar{animation-delay:1.5s;}
+@keyframes charFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+.char-name{font-size:0.88rem;font-weight:800;color:var(--text);position:relative;z-index:1;letter-spacing:1px;}
+.char-desc{font-size:0.62rem;color:var(--text3);text-align:center;padding:0 8px;position:relative;z-index:1;line-height:1.5;}
+.char-ability-tag{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(0deg,rgba(0,0,0,0.8),transparent);
+  padding:8px 6px 6px;
+  font-size:0.58rem;color:var(--char-color,#3b82f6);text-align:center;
+  border-radius:0 0 20px 20px;
 }
-@keyframes scan { 0%{left:-100%} 100%{left:100%} }
-.stage-card:hover {
-    border-color: #39ff14;
-    box-shadow: 0 0 20px rgba(57,255,20,0.2);
+.selected-check{
+  position:absolute;top:8px;right:8px;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--char-color,#3b82f6);
+  display:none;align-items:center;justify-content:center;
+  font-size:0.75rem;color:#fff;z-index:2;
+  box-shadow:0 0 12px var(--char-color,#3b82f6);
 }
-.stage-title { color: #39ff14; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
-.stage-desc  { color: #5a9a5a; font-size: 0.82rem; margin: 4px 0 8px; }
-.stage-meta  { color: #2a5c2a; font-size: 0.78rem; }
-.clear-badge {
-    background: rgba(57,255,20,0.1);
-    border: 1px solid #39ff14;
-    color: #39ff14;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    float: right;
-    text-shadow: 0 0 8px rgba(57,255,20,0.4);
+.char-card.selected .selected-check{display:flex;}
+.char-rarity{
+  position:absolute;top:8px;left:8px;
+  font-size:0.5rem;letter-spacing:1px;text-transform:uppercase;
+  padding:2px 6px;border-radius:4px;
+  background:rgba(0,0,0,0.4);border:1px solid var(--char-color,#3b82f6);
+  color:var(--char-color,#3b82f6);z-index:2;
 }
-.flavor-text {
-    color: #2a6a2a;
-    font-style: italic;
-    font-size: 0.76rem;
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid #0f2a0f;
+.char-next-btn{
+  background:linear-gradient(135deg,#ffd700,#ff8c00);
+  border:none;border-radius:16px;
+  color:#fff;font-family:'Black Han Sans',sans-serif;
+  font-size:1.1rem;letter-spacing:3px;
+  padding:15px 52px;cursor:pointer;
+  box-shadow:0 8px 32px rgba(255,140,0,0.5),var(--glow-gold);
+  transition:all 0.25s;opacity:0.35;pointer-events:none;
+  position:relative;overflow:hidden;
 }
-.status-bar {
-    background: #030f03;
-    border: 1px solid #0f3a0f;
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    margin-bottom: 8px;
+.char-next-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.2),transparent);
+  border-radius:16px;
 }
-.status-item { color: #5a9a5a; }
-.status-val  { color: #39ff14; font-weight: bold; }
-.status-warn { color: #ff3333; animation: pulse 1s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.char-next-btn.active{opacity:1;pointer-events:all;}
+.char-next-btn.active:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 14px 48px rgba(255,140,0,0.7);}
+
+/* ═══════════════════════════════════════
+   SETUP SCREEN
+═══════════════════════════════════════ */
+#setup{
+  position:fixed;inset:0;z-index:150;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+}
+.setup-card{
+  background:linear-gradient(160deg,var(--bg3),var(--bg2));
+  border:1px solid var(--border2);border-radius:24px;
+  padding:34px 32px;width:430px;
+  box-shadow:var(--shadow);position:relative;overflow:hidden;
+}
+.setup-card::before{
+  content:'';position:absolute;top:-100px;left:-100px;
+  width:260px;height:260px;
+  background:radial-gradient(circle,rgba(255,215,0,0.06),transparent 70%);
+  pointer-events:none;
+}
+.setup-card::after{
+  content:'';position:absolute;bottom:-80px;right:-80px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(100,50,200,0.06),transparent 70%);
+  pointer-events:none;
+}
+.setup-logo{
+  font-family:'Black Han Sans',sans-serif;font-size:1.9rem;
+  background:linear-gradient(135deg,#ffd700,#ff4d6d);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-align:center;letter-spacing:3px;margin-bottom:4px;
+}
+.setup-sub{color:var(--text3);font-size:0.65rem;letter-spacing:4px;margin-bottom:24px;text-align:center;text-transform:uppercase;}
+.setup-char-preview{
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,var(--bg4),var(--bg3));
+  border-radius:14px;padding:14px 18px;margin-bottom:22px;
+  border:1px solid var(--border2);position:relative;overflow:hidden;
+}
+.setup-char-preview::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(var(--preview-rgb,255,215,0),0.05),transparent);
+}
+.setup-char-avatar{font-size:2.6rem;animation:charFloat 3s ease-in-out infinite;}
+.setup-char-name{font-family:'Black Han Sans',sans-serif;font-size:1.05rem;color:var(--gold);}
+.setup-char-desc{font-size:0.72rem;color:var(--text3);margin-top:2px;}
+.setup-char-ability-tag{
+  display:inline-block;margin-top:5px;
+  font-size:0.62rem;padding:3px 10px;border-radius:20px;
+  background:rgba(255,215,0,0.1);color:var(--gold2);
+  border:1px solid rgba(255,215,0,0.2);
+}
+.form-row{margin-bottom:14px;}
+.form-label{
+  display:block;font-size:0.65rem;font-weight:700;
+  color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:7px;
+}
+.form-input,.form-select{
+  width:100%;background:var(--bg4);
+  border:1.5px solid var(--border2);border-radius:var(--r2);
+  color:var(--text);padding:11px 14px;font-size:0.88rem;
+  font-family:'Noto Sans KR',sans-serif;outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+.form-input:focus,.form-select:focus{
+  border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,215,0,0.1);
+}
+.form-select option{background:#0d1525;}
+.btn-start{
+  width:100%;
+  background:linear-gradient(135deg,#ffd700,#ff8c00);
+  border:none;border-radius:14px;color:#fff;
+  font-family:'Black Han Sans',sans-serif;font-size:1.1rem;letter-spacing:3px;
+  padding:16px;cursor:pointer;margin-top:10px;
+  transition:all 0.2s;
+  box-shadow:0 8px 32px rgba(255,140,0,0.4);
+  position:relative;overflow:hidden;
+}
+.btn-start::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);
+}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 12px 44px rgba(255,140,0,0.65);}
+.btn-back-setup{
+  background:transparent;border:1px solid var(--border2);border-radius:10px;
+  color:var(--text2);font-size:0.8rem;padding:9px 20px;cursor:pointer;
+  margin-top:8px;width:100%;transition:all 0.2s;
+}
+.btn-back-setup:hover{background:var(--glass2);color:var(--text);}
+.rules-mini{
+  margin-top:16px;background:var(--bg4);border-radius:var(--r2);
+  padding:12px 16px;font-size:0.7rem;color:var(--text3);line-height:2;
+  border:1px solid var(--border);
+}
+.rules-mini b{color:var(--text2);}
+
+/* ═══════════════════════════════════════
+   GAME LAYOUT
+═══════════════════════════════════════ */
+#game{display:none;width:100vw;height:100vh;flex-direction:row;}
+.board-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:10px;min-width:0;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at center,#0c1535 0%,#05080f 100%);
+}
+
+/* ═══════════════════════════════════════
+   BOARD
+═══════════════════════════════════════ */
+#board{
+  position:relative;
+  background:linear-gradient(135deg,#060c1c 0%,#0a1228 50%,#060c1c 100%);
+  border:2px solid rgba(255,215,0,0.2);
+  border-radius:8px;
+  box-shadow:
+    0 0 0 1px rgba(255,215,0,0.07),
+    0 0 100px rgba(255,215,0,0.08),
+    0 0 200px rgba(100,50,200,0.05),
+    var(--shadow);
+  aspect-ratio:1;flex-shrink:0;overflow:hidden;
+}
+
+/* CELL base */
+.cell{
+  position:absolute;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,0.04);
+  cursor:default;overflow:hidden;
+  transition:filter 0.2s,transform 0.2s;
+  will-change:filter;
+}
+.cell:hover{filter:brightness(1.35);transform:scale(1.02);z-index:5;}
+.cell-name{text-align:center;color:#b8cae8;line-height:1.2;font-weight:600;font-size:0;position:relative;z-index:1;}
+.cell-price{color:#445577;text-align:center;font-weight:400;font-size:0;position:relative;z-index:1;}
+.cell-icon{line-height:1;position:relative;z-index:1;}
+.color-bar{position:absolute;z-index:0;opacity:1;}
+.cell-corner{background:#050b18 !important;}
+
+/* Ownership ring */
+.own-ring{
+  position:absolute;inset:1px;border-radius:3px;
+  border:2px solid transparent;pointer-events:none;z-index:4;
+  transition:all 0.3s;
+}
+
+/* Houses/Hotels */
+.house-dot{display:inline-block;background:linear-gradient(135deg,#10d96e,#059a4d);border-radius:2px;box-shadow:0 1px 6px rgba(16,217,110,0.5);}
+.hotel-marker{display:inline-block;background:linear-gradient(135deg,#ff4560,#cc2040);border-radius:2px;box-shadow:0 1px 6px rgba(255,69,96,0.6);}
+
+/* Owner badge */
+.owner-badge{position:absolute;top:2px;right:2px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.6);z-index:3;}
+.mortgaged-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,0.72);
+  display:none;align-items:center;justify-content:center;
+  color:#ff4560;font-weight:700;letter-spacing:1px;z-index:4;
+  backdrop-filter:blur(2px);
+}
+
+/* Airport shimmer bar */
+.airport-bar{position:absolute;background:linear-gradient(90deg,#22d3ee,#4dabf7);opacity:0.85;}
+
+/* Special cell effects */
+.casino-cell{animation:casinoShimmer 2.5s ease-in-out infinite;}
+@keyframes casinoShimmer{0%,100%{box-shadow:inset 0 0 12px rgba(255,215,0,0.1);}50%{box-shadow:inset 0 0 28px rgba(255,215,0,0.3),inset 0 0 50px rgba(255,100,0,0.1);}}
+.jail-cell{animation:jailPulse 3s ease-in-out infinite;}
+@keyframes jailPulse{0%,100%{box-shadow:inset 0 0 15px rgba(168,85,247,0.2);}50%{box-shadow:inset 0 0 35px rgba(168,85,247,0.45);}}
+.event-cell{animation:eventGlow 2s ease-in-out infinite;}
+@keyframes eventGlow{0%,100%{box-shadow:inset 0 0 10px rgba(34,211,238,0.15);}50%{box-shadow:inset 0 0 25px rgba(34,211,238,0.35);}}
+
+/* Token clusters */
+.token-cluster{
+  position:absolute;display:flex;flex-wrap:wrap;gap:2px;
+  align-items:center;justify-content:center;pointer-events:none;z-index:10;
+}
+.token{
+  border-radius:50%;border:2.5px solid rgba(255,255,255,0.95);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0;color:#fff;
+  box-shadow:0 3px 14px rgba(0,0,0,0.8),0 0 0 1px rgba(255,255,255,0.1);
+  position:relative;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.token::after{
+  content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
+  width:65%;height:5px;background:rgba(0,0,0,0.35);border-radius:50%;filter:blur(3px);
+}
+.token.active-token{
+  animation:tokenBounce 0.9s ease-in-out;
+  box-shadow:0 0 20px var(--tok-color,#fff),0 0 40px rgba(255,255,255,0.2),0 3px 14px rgba(0,0,0,0.8);
+  z-index:20;
+}
+@keyframes tokenBounce{
+  0%,100%{transform:translateY(0) scale(1);}
+  20%{transform:translateY(-10px) scale(1.1);}
+  40%{transform:translateY(-5px) scale(1.05);}
+  60%{transform:translateY(-8px) scale(1.08);}
+  80%{transform:translateY(-2px) scale(1.02);}
+}
+
+/* Board center */
+.board-center{
+  position:absolute;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#040810,#070e1e,#040810);
+  overflow:hidden;
+}
+.board-center::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(255,215,0,0.04), transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(80,30,180,0.06), transparent 50%);
+  pointer-events:none;
+}
+.board-logo{
+  font-family:'Black Han Sans',sans-serif;
+  background:linear-gradient(135deg,#ffd700 0%,#ff8c00 40%,#ff4d6d 70%,#c026d3 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-align:center;line-height:1.05;letter-spacing:2px;
+  filter:drop-shadow(0 0 24px rgba(255,215,0,0.3));
+  animation:logoPulse 4s ease-in-out infinite;
+}
+@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 20px rgba(255,215,0,0.25));}50%{filter:drop-shadow(0 0 40px rgba(255,215,0,0.5));}}
+.board-sub{color:rgba(255,255,255,0.08);text-align:center;letter-spacing:4px;text-transform:uppercase;}
+.dice-center{display:flex;gap:12px;position:relative;}
+.die-face{
+  background:linear-gradient(145deg,#f8f9ff,#dde0f5);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  color:#1a1a30;
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.8),
+    inset 0 -3px 6px rgba(0,0,0,0.2),
+    0 6px 20px rgba(0,0,0,0.7);
+  transition:transform 0.15s;position:relative;
+}
+.die-face.rolling{animation:diceRoll 0.75s cubic-bezier(0.25,0.46,0.45,0.94);}
+.die-face.double-glow{
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.8),
+    0 0 30px rgba(255,215,0,1),
+    0 0 60px rgba(255,215,0,0.6),
+    0 0 100px rgba(255,165,0,0.3),
+    0 6px 20px rgba(0,0,0,0.7);
+  animation:doubleFloat 0.5s ease-out;
+}
+@keyframes diceRoll{0%{transform:rotate(0)scale(1);}15%{transform:rotate(-28deg)scale(1.25)translateY(-8px);}30%{transform:rotate(22deg)scale(1.3)translateY(-12px);}50%{transform:rotate(-15deg)scale(1.18)translateY(-6px);}70%{transform:rotate(8deg)scale(1.08);}85%{transform:rotate(-3deg)scale(1.03);}100%{transform:rotate(0)scale(1);}}
+@keyframes doubleFloat{0%{transform:scale(1);}50%{transform:scale(1.2);}100%{transform:scale(1);}}
+
+/* ═══════════════════════════════════════
+   SIDE PANEL
+═══════════════════════════════════════ */
+.side{
+  width:256px;background:var(--bg2);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
+}
+.side-players{
+  padding:12px 13px 8px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.sec-label{
+  font-size:0.57rem;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;
+}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.player-card{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 9px;border-radius:11px;
+  transition:all 0.25s;margin-bottom:4px;
+  position:relative;overflow:hidden;cursor:default;
+}
+.player-card::before{
+  content:'';position:absolute;inset:0;
+  background:var(--p-color,#fff);opacity:0;
+  transition:opacity 0.25s;border-radius:11px;
+}
+.player-card.active::before{opacity:0.07;}
+.player-card.active{
+  box-shadow:0 0 0 1.5px var(--p-color,#fff),0 6px 20px rgba(0,0,0,0.4);
+}
+.player-avatar{font-size:1.35rem;flex-shrink:0;position:relative;z-index:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));}
+.player-card.active .player-avatar{animation:avatarPulse 1.8s ease-in-out infinite;}
+@keyframes avatarPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18)translateY(-2px);}}
+.player-info{flex:1;min-width:0;position:relative;z-index:1;}
+.player-name-row{display:flex;align-items:center;gap:4px;}
+.player-name-txt{font-size:0.78rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.bot-badge{font-size:0.52rem;background:rgba(255,255,255,0.07);color:var(--text3);border-radius:4px;padding:1px 4px;flex-shrink:0;}
+.player-money{font-family:'Fredoka One',cursive;font-size:0.94rem;color:var(--green);margin-top:1px;transition:color 0.3s;}
+.player-money.losing{color:var(--red);animation:moneyShake 0.4s ease;}
+@keyframes moneyShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+.net-worth-bar{height:3px;border-radius:2px;background:rgba(255,255,255,0.06);margin-top:5px;overflow:hidden;position:relative;z-index:1;}
+.net-worth-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--p-color,#22c55e),rgba(255,255,255,0.4));
+  transition:width 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+.player-badges{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;position:relative;z-index:1;}
+.badge-jail{font-size:0.52rem;background:rgba(255,69,96,0.15);color:#ff4560;border-radius:4px;padding:1px 5px;border:1px solid rgba(255,69,96,0.2);}
+.badge-bankrupt{font-size:0.52rem;background:rgba(100,100,100,0.15);color:#666;border-radius:4px;padding:1px 5px;}
+.badge-ability{font-size:0.52rem;background:rgba(255,215,0,0.12);color:var(--gold);border-radius:4px;padding:1px 5px;border:1px solid rgba(255,215,0,0.2);}
+.badge-trade{font-size:0.52rem;background:rgba(34,211,238,0.12);color:var(--cyan);border-radius:4px;padding:1px 5px;border:1px solid rgba(34,211,238,0.2);}
+.player-card.bankrupt{opacity:0.4;}
+.player-card.bankrupt .player-name-txt{text-decoration:line-through;}
+
+/* Action zone */
+.action-zone{
+  flex:1;padding:11px 13px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:8px;min-height:0;
+}
+.action-zone::-webkit-scrollbar{width:3px;}
+.action-zone::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.turn-banner{
+  text-align:center;font-size:0.67rem;font-weight:700;
+  padding:2px 0;color:var(--text2);
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.turn-avatar{font-size:1.1rem;animation:charFloat 2s ease-in-out infinite;}
+.phase-indicator{
+  text-align:center;font-size:0.6rem;color:var(--text3);
+  letter-spacing:2px;text-transform:uppercase;
+  padding:3px 10px;background:var(--glass);border-radius:20px;
+  border:1px solid var(--border);margin:0 auto;
+}
+.dice-display{display:flex;justify-content:center;gap:14px;padding:6px 0;}
+.dice-mini{
+  width:38px;height:38px;
+  background:linear-gradient(145deg,#f8f9ff,#dde0f5);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;color:#1a1a30;
+  box-shadow:inset 0 1px 3px rgba(255,255,255,0.9),0 4px 14px rgba(0,0,0,0.6);
+}
+.dice-mini.double-mini{box-shadow:0 0 20px rgba(255,215,0,1),0 4px 14px rgba(0,0,0,0.6);}
+
+/* Buttons */
+.btn{
+  border:none;border-radius:var(--r2);padding:10px 14px;
+  font-family:'Noto Sans KR',sans-serif;font-size:0.8rem;font-weight:700;
+  cursor:pointer;transition:all 0.18s;width:100%;position:relative;overflow:hidden;
+}
+.btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background 0.18s;}
+.btn:hover::after{background:rgba(255,255,255,0.09);}
+.btn:active:not(:disabled){transform:scale(0.95);}
+.btn:disabled{opacity:0.28;cursor:not-allowed;}
+.btn-roll{
+  background:linear-gradient(135deg,#ff4560,#c01030);
+  color:#fff;box-shadow:0 4px 20px rgba(255,69,96,0.4);
+  font-size:0.92rem;padding:14px;
+}
+.btn-roll:hover:not(:disabled){box-shadow:0 8px 32px rgba(255,69,96,0.65);transform:translateY(-2px);}
+.btn-green{background:linear-gradient(135deg,#10d96e,#069a4d);color:#fff;box-shadow:0 4px 16px rgba(16,217,110,0.35);}
+.btn-green:hover:not(:disabled){box-shadow:0 8px 28px rgba(16,217,110,0.55);transform:translateY(-2px);}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border2);}
+.btn-ghost:hover:not(:disabled){background:var(--glass2);color:var(--text);}
+.btn-orange{background:linear-gradient(135deg,#ff8c42,#e06018);color:#fff;box-shadow:0 4px 16px rgba(255,140,66,0.35);}
+.btn-orange:hover:not(:disabled){box-shadow:0 8px 28px rgba(255,140,66,0.55);transform:translateY(-2px);}
+.btn-purple{background:linear-gradient(135deg,#b26cf7,#7c3aed);color:#fff;box-shadow:0 4px 16px rgba(178,108,247,0.35);}
+.btn-purple:hover:not(:disabled){box-shadow:0 8px 28px rgba(178,108,247,0.55);transform:translateY(-2px);}
+.btn-cyan{background:linear-gradient(135deg,#22d3ee,#0891b2);color:#fff;box-shadow:0 4px 16px rgba(34,211,238,0.35);}
+.btn-cyan:hover:not(:disabled){box-shadow:0 8px 28px rgba(34,211,238,0.55);transform:translateY(-2px);}
+.btn-gold{background:linear-gradient(135deg,#ffd700,#ff9500);color:#fff;box-shadow:0 4px 16px rgba(255,215,0,0.35);}
+.btn-gold:hover:not(:disabled){box-shadow:0 8px 28px rgba(255,215,0,0.55);transform:translateY(-2px);}
+.btn-row{display:flex;gap:7px;}
+.btn-row .btn{flex:1;}
+
+/* Info box */
+.info-box{
+  background:linear-gradient(135deg,var(--bg3),var(--bg4));
+  border:1px solid var(--border);border-radius:var(--r2);
+  padding:10px 13px;font-size:0.75rem;color:var(--text2);
+  text-align:center;line-height:1.7;
+}
+
+/* Property purchase card */
+.prop-card-popup{
+  background:linear-gradient(160deg,var(--bg3),var(--bg2));
+  border:1px solid rgba(255,215,0,0.2);border-radius:18px;
+  padding:16px;text-align:center;
+  animation:cardSlideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  position:relative;overflow:hidden;
+}
+.prop-card-popup::before{
+  content:'';position:absolute;top:-50px;left:-50px;
+  width:150px;height:150px;
+  background:radial-gradient(circle,var(--card-color,rgba(255,215,0,0.15)),transparent 70%);
+  pointer-events:none;
+}
+@keyframes cardSlideUp{from{opacity:0;transform:translateY(24px)scale(0.93);}to{opacity:1;transform:translateY(0)scale(1);}}
+.prop-card-flag{font-size:2.2rem;margin-bottom:3px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));}
+.prop-card-color-band{position:absolute;top:0;left:0;right:0;height:5px;border-radius:18px 18px 0 0;}
+.prop-card-city{font-family:'Black Han Sans',sans-serif;font-size:1.18rem;color:var(--text);letter-spacing:2px;}
+.prop-card-country{font-size:0.65rem;color:var(--text3);margin-bottom:8px;letter-spacing:1px;}
+.prop-card-price{font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--gold);margin:5px 0;text-shadow:0 0 24px rgba(255,215,0,0.5);}
+.prop-card-rent-row{display:flex;justify-content:space-between;font-size:0.62rem;color:var(--text3);padding:2px 0;border-bottom:1px solid var(--border);}
+.prop-card-rent-row:last-child{border:none;}
+.prop-card-rent-row span:last-child{color:var(--text2);}
+
+/* Chance / Fate card */
+.card-box{
+  background:linear-gradient(160deg,var(--bg3),var(--bg2));
+  border:1px solid rgba(255,215,0,0.2);border-radius:18px;
+  padding:16px 14px;text-align:center;
+  animation:cardFlip3d 0.55s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes cardFlip3d{0%{opacity:0;transform:rotateY(90deg)scale(0.75);}60%{transform:rotateY(-8deg)scale(1.03);}100%{opacity:1;transform:rotateY(0)scale(1);}}
+.card-emoji{font-size:2.6rem;margin-bottom:7px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));}
+.card-title{font-size:0.87rem;font-weight:700;color:var(--text);margin-bottom:4px;}
+.card-effect{font-size:0.82rem;color:var(--text2);}
+.card-effect.gain{color:#10d96e;}
+.card-effect.lose{color:#ff4560;}
+
+/* Auction UI */
+.auction-box{
+  background:linear-gradient(160deg,#120a28,#0d0820);
+  border:1.5px solid rgba(178,108,247,0.3);border-radius:18px;
+  padding:16px;text-align:center;
+  animation:cardSlideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 0 40px rgba(178,108,247,0.12);
+  position:relative;overflow:hidden;
+}
+.auction-box::before{
+  content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(178,108,247,0.12),transparent 70%);
+  pointer-events:none;
+}
+.auction-title{font-family:'Black Han Sans',sans-serif;font-size:1.05rem;color:var(--purple);letter-spacing:2px;margin-bottom:4px;}
+.auction-prop{font-size:1.6rem;margin:6px 0 2px;}
+.auction-name{font-weight:800;font-size:0.9rem;color:var(--text);}
+.auction-current{
+  font-family:'Fredoka One',cursive;font-size:1.5rem;color:var(--gold);
+  margin:8px 0;text-shadow:0 0 20px rgba(255,215,0,0.5);
+}
+.auction-leader{font-size:0.68rem;color:var(--text3);margin-bottom:8px;}
+.auction-timer{
+  font-family:'Orbitron',sans-serif;font-size:0.8rem;
+  color:var(--cyan);margin-bottom:10px;letter-spacing:2px;
+}
+.auction-timer.urgent{color:var(--red);animation:timerUrge 0.5s ease-in-out infinite;}
+@keyframes timerUrge{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.bid-input-row{display:flex;gap:7px;margin-bottom:8px;}
+.bid-input{
+  flex:1;background:var(--bg4);border:1.5px solid var(--border2);border-radius:8px;
+  color:var(--text);padding:8px 12px;font-size:0.85rem;
+  font-family:'Noto Sans KR',sans-serif;outline:none;
+}
+.bid-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(178,108,247,0.15);}
+
+/* Trade / Negotiation UI */
+.trade-box{
+  background:linear-gradient(160deg,#0a1828,#061018);
+  border:1.5px solid rgba(34,211,238,0.25);border-radius:18px;
+  padding:15px;animation:cardSlideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 0 40px rgba(34,211,238,0.08);
+  position:relative;overflow:hidden;
+}
+.trade-title{font-family:'Black Han Sans',sans-serif;font-size:1rem;color:var(--cyan);letter-spacing:2px;margin-bottom:8px;text-align:center;}
+.trade-section{font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin:8px 0 5px;}
+.trade-prop-list{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;}
+.trade-prop-chip{
+  font-size:0.62rem;padding:3px 8px;border-radius:6px;
+  background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.2);
+  color:var(--cyan);cursor:pointer;transition:all 0.15s;
+}
+.trade-prop-chip:hover,.trade-prop-chip.selected-trade{
+  background:rgba(34,211,238,0.25);border-color:var(--cyan);
+}
+.trade-money-input{
+  width:100%;background:var(--bg4);border:1.5px solid var(--border2);border-radius:8px;
+  color:var(--text);padding:7px 11px;font-size:0.82rem;
+  font-family:'Noto Sans KR',sans-serif;outline:none;margin-bottom:6px;
+}
+.trade-money-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,0.12);}
+.trade-target-select{
+  width:100%;background:var(--bg4);border:1.5px solid var(--border2);border-radius:8px;
+  color:var(--text);padding:7px 11px;font-size:0.82rem;
+  font-family:'Noto Sans KR',sans-serif;outline:none;margin-bottom:8px;
+}
+
+/* Casino */
+.casino-box{
+  background:linear-gradient(160deg,#180a08,#220e0a);
+  border:1.5px solid rgba(255,165,0,0.3);border-radius:18px;
+  padding:16px;text-align:center;
+  animation:cardSlideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 0 40px rgba(255,140,0,0.12);
+}
+.casino-title{font-family:'Black Han Sans',sans-serif;font-size:1.05rem;color:var(--gold);letter-spacing:2px;margin-bottom:4px;}
+.casino-slots{font-size:2rem;letter-spacing:8px;margin:8px 0;animation:slotsAnim 0.3s steps(1,end) infinite;}
+@keyframes slotsAnim{0%{filter:blur(0);}50%{filter:blur(1px);}}
+.casino-odds{font-size:0.68rem;color:var(--text3);line-height:1.8;margin-bottom:8px;}
+.casino-amount{font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--gold2);margin-bottom:10px;}
+
+/* Property manager */
+.mgr-toggle{
+  background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r2);
+  color:var(--text2);font-size:0.74rem;font-family:'Noto Sans KR',sans-serif;
+  padding:8px 12px;cursor:pointer;width:100%;text-align:left;
+  display:flex;align-items:center;gap:6px;transition:all 0.2s;
+}
+.mgr-toggle:hover{background:var(--glass2);color:var(--text);}
+.mgr-toggle-arrow{margin-left:auto;transition:transform 0.25s;}
+.mgr-toggle.open .mgr-toggle-arrow{transform:rotate(180deg);}
+.mgr-list{display:none;flex-direction:column;gap:4px;}
+.mgr-list.open{display:flex;}
+.prop-row{display:flex;align-items:center;gap:7px;padding:5px 3px;border-radius:7px;transition:background 0.15s;}
+.prop-row:hover{background:var(--glass);}
+.prop-color{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.prop-name{flex:1;font-size:0.68rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prop-name.mortgaged{color:var(--text3);text-decoration:line-through;}
+.prop-btns{display:flex;gap:3px;}
+.mini-b{font-size:0.58rem;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.15s;}
+.mini-b:active{transform:scale(0.93);}
+.mini-b-build{background:rgba(16,217,110,0.12);color:#10d96e;border:1px solid rgba(16,217,110,0.25);}
+.mini-b-build:hover{background:rgba(16,217,110,0.25);}
+.mini-b-mort{background:rgba(255,140,66,0.12);color:#ff8c42;border:1px solid rgba(255,140,66,0.2);}
+.mini-b-mort:hover{background:rgba(255,140,66,0.25);}
+.mini-b-unmort{background:rgba(77,171,247,0.12);color:#4dabf7;border:1px solid rgba(77,171,247,0.2);}
+.mini-b-unmort:hover:not(:disabled){background:rgba(77,171,247,0.25);}
+.mini-b:disabled{opacity:0.3;cursor:not-allowed;}
+
+/* Log */
+.log-wrap{border-top:1px solid var(--border);padding:8px 13px 10px;flex-shrink:0;max-height:170px;display:flex;flex-direction:column;overflow:hidden;}
+.log-inner{flex:1;overflow-y:auto;scrollbar-width:none;}
+.log-inner::-webkit-scrollbar{display:none;}
+.log-row{padding:2px 0;font-size:0.66rem;color:var(--text3);border-bottom:1px solid rgba(255,255,255,0.025);line-height:1.55;}
+.log-row.gain{color:#10d96e;}
+.log-row.lose{color:#ff4560;}
+.log-row.move{color:#4dabf7;}
+.log-row.important{color:var(--gold);font-weight:700;}
+.log-row.trade{color:var(--cyan);}
+.log-row.auction{color:var(--purple);}
+
+/* Butler */
+#butler{
+  position:absolute;bottom:16px;left:16px;
+  background:linear-gradient(160deg,var(--bg2),var(--bg3));
+  border:1px solid var(--border2);border-radius:14px;
+  padding:10px 14px;font-size:0.76rem;color:var(--text);
+  max-width:210px;display:none;z-index:20;
+  box-shadow:var(--shadow2);
+  animation:butlerPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.butler-char{margin-right:6px;}
+@keyframes butlerPop{from{opacity:0;transform:translateY(12px)scale(0.88);}to{opacity:1;transform:translateY(0)scale(1);}}
+#butler::after{content:'';position:absolute;bottom:-9px;left:20px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:9px solid var(--border2);}
+
+/* Float text */
+.float-text{
+  position:fixed;font-family:'Fredoka One',cursive;font-size:1.3rem;font-weight:700;
+  pointer-events:none;z-index:9999;white-space:nowrap;
+  animation:floatUp 1.3s ease-out forwards;
+  text-shadow:0 2px 12px rgba(0,0,0,0.8);
+}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)scale(1);}30%{opacity:1;transform:translateY(-24px)scale(1.25);}100%{opacity:0;transform:translateY(-70px)scale(0.75);}}
+.coin{position:fixed;pointer-events:none;z-index:9998;font-size:1.3rem;animation:coinFly var(--dur,0.9s) cubic-bezier(0.25,0.46,0.45,0.94) forwards;}
+@keyframes coinFly{0%{opacity:1;transform:translate(0,0)scale(1)rotate(0deg);}50%{opacity:1;transform:translate(var(--mx,20px),var(--my,-35px))scale(1.4)rotate(180deg);}100%{opacity:0;transform:translate(var(--ex,40px),var(--ey,-55px))scale(0.4)rotate(400deg);}}
+
+/* Toast */
+#toast-container{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9997;display:flex;flex-direction:column;gap:8px;pointer-events:none;align-items:center;}
+.toast{
+  background:linear-gradient(160deg,var(--bg2),var(--bg3));
+  border:1px solid var(--border2);border-radius:26px;
+  padding:10px 24px;font-size:0.82rem;font-weight:600;color:var(--text);
+  box-shadow:var(--shadow);
+  animation:toastIn 0.38s cubic-bezier(0.34,1.56,0.64,1),toastOut 0.35s ease 2.2s forwards;
+  white-space:nowrap;display:flex;align-items:center;gap:8px;
+}
+.toast.toast-gain{border-color:rgba(16,217,110,0.4);background:linear-gradient(160deg,rgba(16,217,110,0.08),var(--bg3));}
+.toast.toast-lose{border-color:rgba(255,69,96,0.4);background:linear-gradient(160deg,rgba(255,69,96,0.08),var(--bg3));}
+.toast.toast-special{border-color:rgba(255,215,0,0.4);background:linear-gradient(160deg,rgba(255,215,0,0.07),var(--bg3));}
+.toast.toast-trade{border-color:rgba(34,211,238,0.4);background:linear-gradient(160deg,rgba(34,211,238,0.07),var(--bg3));}
+.toast.toast-auction{border-color:rgba(178,108,247,0.4);background:linear-gradient(160deg,rgba(178,108,247,0.07),var(--bg3));}
+@keyframes toastIn{from{opacity:0;transform:translateY(-14px)scale(0.88);}to{opacity:1;transform:translateY(0)scale(1);}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-10px);}}
+
+/* Tooltip */
+.cell-tooltip{
+  position:fixed;background:linear-gradient(160deg,var(--bg2),var(--bg3));
+  border:1px solid var(--border2);border-radius:14px;
+  padding:13px 15px;font-size:0.7rem;z-index:50;
+  pointer-events:none;box-shadow:var(--shadow);min-width:170px;display:none;
+  animation:tooltipFade 0.2s ease;
+}
+@keyframes tooltipFade{from{opacity:0;transform:scale(0.93);}to{opacity:1;transform:scale(1);}}
+.tooltip-title{font-weight:700;color:var(--text);margin-bottom:5px;font-size:0.78rem;display:flex;align-items:center;gap:6px;}
+.tooltip-band{display:inline-block;width:10px;height:10px;border-radius:2px;}
+.tooltip-row{display:flex;justify-content:space-between;gap:18px;color:var(--text3);padding:2.5px 0;border-bottom:1px solid var(--border);}
+.tooltip-row:last-child{border:none;}
+.tooltip-row span:last-child{color:var(--text2);}
+
+/* Notification banner for incoming trade/auction */
+.notif-banner{
+  position:fixed;top:60px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(160deg,var(--bg2),var(--bg3));
+  border:1.5px solid var(--cyan);border-radius:16px;
+  padding:12px 24px;font-size:0.82rem;color:var(--text);
+  z-index:9995;box-shadow:var(--shadow),0 0 30px rgba(34,211,238,0.15);
+  display:none;text-align:center;min-width:280px;
+  animation:notifSlide 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes notifSlide{from{opacity:0;transform:translateX(-50%)translateY(-20px);}to{opacity:1;transform:translateX(-50%)translateY(0);}}
+
+/* Game over */
+#gameover{
+  position:fixed;inset:0;background:rgba(3,5,12,0.96);backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;
+}
+.fireworks-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.gameover-winner{
+  font-family:'Black Han Sans',sans-serif;font-size:clamp(2rem,5vw,3.2rem);
+  background:linear-gradient(135deg,#ffd700,#ff8c00,#ff4d6d);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:winnerPop 0.7s cubic-bezier(0.34,1.56,0.64,1);
+  filter:drop-shadow(0 0 40px rgba(255,165,0,0.5));text-align:center;margin-bottom:4px;
+}
+@keyframes winnerPop{from{opacity:0;transform:scale(0.2)rotate(-15deg);}60%{transform:scale(1.12)rotate(3deg);}to{opacity:1;transform:scale(1)rotate(0);}}
+.gameover-sub{color:var(--text3);font-size:0.78rem;letter-spacing:4px;margin-bottom:8px;text-transform:uppercase;}
+.gameover-avatar{font-size:4.5rem;margin-bottom:8px;animation:charFloat 2.5s ease-in-out infinite;filter:drop-shadow(0 6px 24px rgba(255,215,0,0.4));}
+.rank-card{
+  background:linear-gradient(160deg,var(--bg2),var(--bg3));
+  border:1px solid var(--border2);border-radius:20px;
+  padding:20px 28px;width:100%;max-width:380px;margin-bottom:24px;
+  box-shadow:var(--shadow);
+}
+.rank-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:0.85rem;}
+.rank-row:last-child{border:none;}
+.rank-medal{font-size:1.4rem;min-width:28px;}
+.rank-avatar{font-size:1.25rem;}
+.rank-player{flex:1;font-weight:700;}
+.rank-money{color:var(--green);font-weight:700;font-family:'Fredoka One',cursive;}
+.rank-dead{color:var(--red);font-size:0.7rem;}
+.btn-restart{
+  background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:16px;
+  color:#fff;font-family:'Black Han Sans',sans-serif;font-size:1.1rem;letter-spacing:3px;
+  padding:15px 52px;cursor:pointer;
+  box-shadow:0 8px 32px rgba(255,140,0,0.5),var(--glow-gold);
+  transition:all 0.2s;position:relative;overflow:hidden;
+}
+.btn-restart::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.18),transparent);border-radius:16px;}
+.btn-restart:hover{transform:translateY(-3px);box-shadow:0 14px 48px rgba(255,140,0,0.7);}
+
+/* Confetti */
+.confetti-piece{position:fixed;pointer-events:none;z-index:9999;animation:confettiFall linear forwards;}
+@keyframes confettiFall{0%{transform:translateY(-20px)rotate(0)scale(1);opacity:1;}100%{transform:translateY(110vh)rotate(800deg)scale(0.4);opacity:0;}}
+
+/* Special effects */
+.double-ring{position:fixed;border-radius:50%;border:3px solid var(--gold);animation:doubleRing 0.9s ease-out forwards;pointer-events:none;z-index:9996;}
+@keyframes doubleRing{from{transform:translate(-50%,-50%)scale(0.4);opacity:1;}to{transform:translate(-50%,-50%)scale(3);opacity:0;}}
+.ability-flash{position:fixed;inset:0;pointer-events:none;z-index:9990;animation:abilityFlash 0.6s ease-out forwards;}
+@keyframes abilityFlash{0%{opacity:0.4;}100%{opacity:0;}}
+.move-trail{position:absolute;border-radius:50%;background:rgba(255,255,255,0.3);pointer-events:none;animation:trailFade 0.55s ease-out forwards;z-index:9;}
+@keyframes trailFade{from{opacity:0.9;transform:scale(1);}to{opacity:0;transform:scale(2.5);}}
+.sparkle{position:fixed;pointer-events:none;z-index:9998;animation:sparkleFly var(--dur,0.7s) ease-out forwards;}
+@keyframes sparkleFly{0%{opacity:1;transform:translate(0,0)scale(1);}100%{opacity:0;transform:translate(var(--dx,0),var(--dy,-40px))scale(0);}}
+.screen-flash{position:fixed;inset:0;pointer-events:none;z-index:9989;animation:screenFlash 0.35s ease-out forwards;}
+@keyframes screenFlash{0%{opacity:var(--intensity,0.15);}100%{opacity:0;}}
 </style>
-"""
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="star-field" id="star-field"></div>
+<div id="toast-container"></div>
+<div class="notif-banner" id="notif-banner"></div>
 
-TERMINAL_JS = """
+<!-- CHARACTER SELECT -->
+<div id="char-select">
+  <div class="char-header">
+    <div class="char-title-main">🌍 인베스트마블</div>
+    <div class="char-title-sub">WORLD MARBLE · REMASTERED</div>
+  </div>
+  <div class="char-prompt">캐릭터를 선택하세요</div>
+  <div class="char-grid" id="char-grid"></div>
+  <button class="char-next-btn" id="char-next-btn" onclick="goToSetup()">다음 →</button>
+</div>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-card">
+    <div class="setup-logo">🌍 인베스트마블</div>
+    <div class="setup-sub">WORLD MARBLE · REMASTERED</div>
+    <div class="setup-char-preview" id="setup-preview">
+      <div class="setup-char-avatar" id="preview-avatar"></div>
+      <div>
+        <div class="setup-char-name" id="preview-name"></div>
+        <div class="setup-char-desc" id="preview-desc"></div>
+        <div class="setup-char-ability-tag" id="preview-ability"></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">내 닉네임</label>
+      <input class="form-input" id="inp-name" value="여행자" maxlength="8" placeholder="닉네임 입력">
+    </div>
+    <div class="form-row">
+      <label class="form-label">AI 플레이어 수</label>
+      <select class="form-select" id="inp-bots">
+        <option value="1">AI 1명 (2인 게임)</option>
+        <option value="2" selected>AI 2명 (3인 게임)</option>
+        <option value="3">AI 3명 (4인 게임)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">난이도</label>
+      <select class="form-select" id="inp-diff">
+        <option value="easy">🟢 쉬움 — AI 실수 잦음</option>
+        <option value="normal" selected>🟡 보통 — 균형 잡힌 플레이</option>
+        <option value="hard">🔴 어려움 — 전략적 AI</option>
+      </select>
+    </div>
+    <button class="btn-start" onclick="startGame()">🎲 게임 시작!</button>
+    <button class="btn-back-setup" onclick="goBackToChar()">← 캐릭터 변경</button>
+    <div class="rules-mini">
+      시작자금 <b>₩10,000</b> · 출발 통과 <b>+₩300</b> · 출발 착지 <b>+₩500</b><br>
+      독점 시 임료 2배 · 집(최대 4채) → 호텔<br>
+      블랙홀: 더블 탈출 또는 보석금 <b>₩600</b><br>
+      🔨 <b>경매</b>: 패스 시 자동 경매 · 🤝 <b>협상</b>: 부동산 교환·매매<br>
+      ✈️ 공항 독점 시 임료 폭증 · 🎰 카지노 베팅 이벤트
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div class="board-wrap">
+    <div id="board"></div>
+    <div id="butler"><span class="butler-char" id="butler-char"></span><span id="butler-text"></span></div>
+  </div>
+  <div class="side">
+    <div class="side-players">
+      <div class="sec-label">🌍 여행자 현황</div>
+      <div id="players-list"></div>
+    </div>
+    <div class="action-zone" id="action-zone"></div>
+    <div class="log-wrap">
+      <div class="sec-label" style="padding:6px 0 5px;flex-shrink:0">📋 게임 로그</div>
+      <div class="log-inner" id="log-area"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameover">
+  <div class="fireworks-bg" id="fireworks-bg"></div>
+  <div class="gameover-avatar" id="winner-avatar"></div>
+  <div class="gameover-winner" id="winner-name"></div>
+  <div class="gameover-sub">세계 정복 완료!</div>
+  <div class="rank-card"><div id="rank-list"></div></div>
+  <button class="btn-restart" onclick="resetToChar()">🔄 다시 하기</button>
+</div>
+
+<!-- Tooltip -->
+<div class="cell-tooltip" id="tooltip">
+  <div class="tooltip-title" id="tt-title"></div>
+  <div id="tt-body"></div>
+</div>
+
 <script>
-(function() {
-  var tb = document.getElementById('term-scroll');
-  if(tb) tb.scrollTop = tb.scrollHeight;
+// ═══════════════════════════════════════════════════════════
+//  DATA DEFINITIONS
+// ═══════════════════════════════════════════════════════════
+const CHARACTERS = [
+  {id:0,name:'영웅이',emoji:'🦸',color:'#4dabf7',desc:'안정적인 투자 전략가',ability:'첫 매입 15% 할인',abilityKey:'discount',butler:'신중한 투자가 최고입니다!',rgb:'77,171,247',rarity:'RARE'},
+  {id:1,name:'마법사',emoji:'🧙',color:'#b26cf7',desc:'카드 운이 좋은 마법사',ability:'불리한 카드 1회 무효',abilityKey:'card_immune',butler:'마법으로 운명을 바꾸겠습니다!',rgb:'178,108,247',rarity:'EPIC'},
+  {id:2,name:'공주님',emoji:'👸',color:'#f472b6',desc:'럭셔리 자산 전문가',ability:'임료 수입 12% 추가',abilityKey:'rent_bonus',butler:'품위 있게, 그리고 부유하게!',rgb:'244,114,182',rarity:'EPIC'},
+  {id:3,name:'로봇',emoji:'🤖',color:'#94a3b8',desc:'완벽하게 계산된 전략',ability:'세금 1회 면제',abilityKey:'tax_immune',butler:'확률 계산 완료. 최적 루트 선택.',rgb:'148,163,184',rarity:'RARE'},
+  {id:4,name:'여우',emoji:'🦊',color:'#ff8c42',desc:'빠르고 영리한 상인',ability:'이동 +2칸 1회 사용',abilityKey:'speed_boost',butler:'빠르게 움직여야 기회를 잡죠!',rgb:'255,140,66',rarity:'RARE'},
+  {id:5,name:'용사',emoji:'⚔️',color:'#10d96e',desc:'적극적인 개척자',ability:'상대 임료 60% 감면 1회',abilityKey:'rent_cut',butler:'두려움 없이 전진이다!',rgb:'16,217,110',rarity:'LEGENDARY'},
+];
 
-  var AudioCtx = window.AudioContext || window.webkitAudioContext;
-  var ctx = AudioCtx ? new AudioCtx() : null;
+const CELLS = [
+  {name:'출발',type:'go',price:0,rent:0,group:-1,color:'',flag:'🚩',country:''},
+  {name:'서울',type:'prop',price:600,rent:60,group:0,color:'#ef4444',flag:'🇰🇷',country:'한국'},
+  {name:'찬스',type:'chance',price:0,rent:0,group:-1,color:'',flag:'❓',country:''},
+  {name:'도쿄',type:'prop',price:600,rent:60,group:0,color:'#ef4444',flag:'🇯🇵',country:'일본'},
+  {name:'소득세',type:'tax',price:200,rent:0,group:-1,color:'',flag:'💸',country:''},
+  {name:'✈️ 인천',type:'airport',price:400,rent:100,group:-1,color:'',flag:'✈️',country:'공항'},
+  {name:'방콕',type:'prop',price:800,rent:80,group:1,color:'#a855f7',flag:'🇹🇭',country:'태국'},
+  {name:'운명',type:'fate',price:0,rent:0,group:-1,color:'',flag:'⭐',country:''},
+  {name:'싱가포르',type:'prop',price:900,rent:90,group:1,color:'#a855f7',flag:'🇸🇬',country:'싱가포르'},
+  {name:'상하이',type:'prop',price:1000,rent:100,group:1,color:'#a855f7',flag:'🇨🇳',country:'중국'},
+  {name:'여행',type:'visit',price:0,rent:0,group:-1,color:'',flag:'✈️',country:''},
+  {name:'두바이',type:'prop',price:1000,rent:100,group:2,color:'#f97316',flag:'🇦🇪',country:'UAE'},
+  {name:'⚡ 전기',type:'util',price:300,rent:0,group:-1,color:'',flag:'⚡',country:'공용'},
+  {name:'카이로',type:'prop',price:1100,rent:110,group:2,color:'#f97316',flag:'🇪🇬',country:'이집트'},
+  {name:'뭄바이',type:'prop',price:1200,rent:120,group:2,color:'#f97316',flag:'🇮🇳',country:'인도'},
+  {name:'✈️ 파리',type:'airport',price:400,rent:100,group:-1,color:'',flag:'✈️',country:'공항'},
+  {name:'파리',type:'prop',price:1400,rent:140,group:3,color:'#ec4899',flag:'🇫🇷',country:'프랑스'},
+  {name:'찬스',type:'chance',price:0,rent:0,group:-1,color:'',flag:'❓',country:''},
+  {name:'베를린',type:'prop',price:1500,rent:150,group:3,color:'#ec4899',flag:'🇩🇪',country:'독일'},
+  {name:'런던',type:'prop',price:1600,rent:160,group:3,color:'#ec4899',flag:'🇬🇧',country:'영국'},
+  {name:'블랙홀',type:'jail',price:0,rent:0,group:-1,color:'',flag:'⚫',country:''},
+  {name:'로마',type:'prop',price:1600,rent:160,group:4,color:'#22c55e',flag:'🇮🇹',country:'이탈리아'},
+  {name:'운명',type:'fate',price:0,rent:0,group:-1,color:'',flag:'⭐',country:''},
+  {name:'마드리드',type:'prop',price:1700,rent:170,group:4,color:'#22c55e',flag:'🇪🇸',country:'스페인'},
+  {name:'바르셀로나',type:'prop',price:1800,rent:180,group:4,color:'#22c55e',flag:'🇪🇸',country:'스페인'},
+  {name:'✈️ JFK',type:'airport',price:400,rent:100,group:-1,color:'',flag:'✈️',country:'공항'},
+  {name:'뉴욕',type:'prop',price:2000,rent:200,group:5,color:'#3b82f6',flag:'🇺🇸',country:'미국'},
+  {name:'찬스',type:'chance',price:0,rent:0,group:-1,color:'',flag:'❓',country:''},
+  {name:'시카고',type:'prop',price:2100,rent:210,group:5,color:'#3b82f6',flag:'🇺🇸',country:'미국'},
+  {name:'LA',type:'prop',price:2200,rent:220,group:5,color:'#3b82f6',flag:'🇺🇸',country:'미국'},
+  {name:'무료주차',type:'free',price:0,rent:0,group:-1,color:'',flag:'🅿️',country:''},
+  {name:'라스베가스',type:'casino',price:0,rent:0,group:-1,color:'',flag:'🎰',country:'미국'},
+  {name:'운명',type:'fate',price:0,rent:0,group:-1,color:'',flag:'⭐',country:''},
+  {name:'토론토',type:'prop',price:2200,rent:220,group:6,color:'#fbbf24',flag:'🇨🇦',country:'캐나다'},
+  {name:'상파울루',type:'prop',price:2400,rent:240,group:6,color:'#fbbf24',flag:'🇧🇷',country:'브라질'},
+  {name:'✈️ SYD',type:'airport',price:400,rent:100,group:-1,color:'',flag:'✈️',country:'공항'},
+  {name:'시드니',type:'prop',price:2600,rent:260,group:7,color:'#06b6d4',flag:'🇦🇺',country:'호주'},
+  {name:'🔥 오일',type:'util',price:300,rent:0,group:-1,color:'',flag:'🔥',country:'공용'},
+  {name:'멜버른',type:'prop',price:2800,rent:280,group:7,color:'#06b6d4',flag:'🇦🇺',country:'호주'},
+  {name:'사치세',type:'tax',price:400,rent:0,group:-1,color:'',flag:'💎',country:''},
+];
 
-  function beep(freq, dur, type, vol) {
-    if (!ctx) return;
-    try {
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = type || 'square';
-      gain.gain.setValueAtTime(vol || 0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + dur);
-    } catch(e) {}
+const GRP_SIZE   = {0:2,1:3,2:3,3:3,4:3,5:3,6:2,7:2};
+const BUILD_COST = {0:200,1:250,2:300,3:350,4:400,5:450,6:500,7:600};
+const RENT_MULT  = [1,5,15,45,80];
+const PCOLORS    = ['#4dabf7','#f472b6','#10d96e','#ff8c42'];
+const BOT_NAMES  = ['알파','베타','감마'];
+const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+const JAIL_BAIL  = 600;
+const START_MONEY = 10000;
+const PASS_GO    = 300;
+const GO_LAND    = 500;
+
+const CHANCE_CARDS = [
+  {emoji:'💰',text:'은행 배당금 지급!',type:'money',amount:200},
+  {emoji:'📋',text:'세금 환급!',type:'money',amount:250},
+  {emoji:'🎂',text:'생일! 모두에게 받기',type:'birthday',amount:100},
+  {emoji:'🔧',text:'수리비 청구서',type:'money',amount:-180},
+  {emoji:'🏥',text:'의료비 지출',type:'money',amount:-250},
+  {emoji:'📚',text:'학교 수업료 납부',type:'money',amount:-300},
+  {emoji:'📈',text:'주식 투자 대박!',type:'money',amount:400},
+  {emoji:'🚩',text:'출발로 GO! +₩300',type:'goto',target:0},
+  {emoji:'⚫',text:'블랙홀로 빠져든다!',type:'goto_jail'},
+  {emoji:'⬅️',text:'뒤로 3칸 이동',type:'move',amount:-3},
+  {emoji:'➡️',text:'앞으로 5칸 이동',type:'move',amount:5},
+  {emoji:'✈️',text:'가장 가까운 공항으로!',type:'nearest_airport'},
+  {emoji:'🔨',text:'건물 수리비: 집×50 호텔×150',type:'repair'},
+  {emoji:'🏦',text:'은행 전산 오류! 지급',type:'money',amount:700},
+  {emoji:'🌧️',text:'보험료 납부',type:'money',amount:-150},
+  {emoji:'🎶',text:'콘서트 수익!',type:'money',amount:350},
+];
+
+const FATE_CARDS = [
+  {emoji:'🎫',text:'복권 당첨! 대박!',type:'money',amount:500},
+  {emoji:'🚦',text:'교통 과태료',type:'money',amount:-100},
+  {emoji:'💊',text:'보험금 수령',type:'money',amount:200},
+  {emoji:'🚗',text:'자동차 수리비',type:'money',amount:-200},
+  {emoji:'🎵',text:'콘서트 대성공!',type:'money',amount:300},
+  {emoji:'✈️',text:'여행 경비 지출',type:'money',amount:-180},
+  {emoji:'🚩',text:'출발로 GO! +₩300',type:'goto',target:0},
+  {emoji:'⚫',text:'블랙홀로 순간이동!',type:'goto_jail'},
+  {emoji:'➡️',text:'앞으로 4칸!',type:'move',amount:4},
+  {emoji:'🎂',text:'생일! 모두에게 받기',type:'birthday',amount:100},
+  {emoji:'💸',text:'탈세 적발! 벌금',type:'money',amount:-350},
+  {emoji:'🏦',text:'은행 이자 지급',type:'money',amount:400},
+  {emoji:'🌈',text:'행운! 다음 임료 면제',type:'special',special:'rent_free'},
+  {emoji:'🎁',text:'깜짝 선물! 모두 지급',type:'birthday',amount:80},
+  {emoji:'🏅',text:'사업 성공 보너스',type:'money',amount:600},
+  {emoji:'🤝',text:'협상 보너스! 현금 지급',type:'money',amount:320},
+];
+
+const BUTLER_MSGS = {
+  buy:['훌륭한 선택!','좋은 투자예요!','마음에 드는군요!'],
+  pass:['다음 기회에...','신중하시군요.'],
+  rent_in:['임료 수입!','부동산이 돈을 법니다!'],
+  rent_out:['아이고, 임료를...','피해야 했는데...'],
+  jail:['블랙홀로!','잠시 구금됐군요.'],
+  double:['더블! 한번 더!','행운이 따르네요!'],
+  triple:['3연속 더블! 블랙홀!'],
+  build:['건설 완료!','임료가 올랐습니다!'],
+  bankrupt:['파산하셨습니다...'],
+  win:['세계 정복 완료!','역시 주인님!'],
+  go_pass:['출발 통과! +₩300!'],
+  go_land:['출발 착지! +₩500!'],
+  casino:['🎰 라스베가스!','운에 맡겨보세요!'],
+  auction_win:['경매 낙찰! 축하드립니다!','좋은 가격에 낙찰!'],
+  trade_ok:['거래 성사! 🤝','현명한 협상입니다!'],
+  trade_no:['거래 거절...','다음 기회에!'],
+};
+
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let G = null;
+let selectedChar = null;
+let mgrOpen = false;
+let butlerTmr = null;
+let animating = false;
+let boardSize = 560;
+let floatSide = 0;
+
+// Auction state
+let auctionState = null;
+// {ci, currentBid, leaderId, round, bids:{pidx: amount}, timer, phase}
+
+// Trade state  
+let tradeState = null;
+// {fromIdx, toIdx, fromProps:[], toProps:[], fromMoney, toMoney, phase:'offer'|'respond'}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT STARS
+// ═══════════════════════════════════════════════════════════
+function initStars() {
+  const sf = document.getElementById('star-field');
+  for (let i=0;i<90;i++) {
+    const s = document.createElement('div');
+    s.className='star';
+    const sz = 1 + Math.random()*2.5;
+    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${sz}px;height:${sz}px;--dur:${1.5+Math.random()*3.5}s;--op:${0.3+Math.random()*0.7};animation-delay:${Math.random()*4}s;`;
+    sf.appendChild(s);
   }
+}
 
-  setTimeout(function() {
-    var inputs = document.querySelectorAll('input[type="text"]');
-    if (inputs.length > 0) {
-      var inp = inputs[inputs.length - 1];
-      inp.focus();
-      inp.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          beep(880, 0.05, 'square', 0.03);
-          var btns = document.querySelectorAll('button');
-          for (var b of btns) {
-            if (b.innerText.includes('ENTER') || b.innerText.trim() === '실행') {
-              b.click(); break;
-            }
+// ═══════════════════════════════════════════════════════════
+//  CHARACTER SELECT
+// ═══════════════════════════════════════════════════════════
+function renderCharGrid() {
+  const grid = document.getElementById('char-grid');
+  grid.innerHTML = CHARACTERS.map(c => `
+    <div class="char-card" id="char-card-${c.id}"
+         style="--char-color:${c.color};--char-rgb:${c.rgb}"
+         onclick="selectChar(${c.id})">
+      <div class="char-rarity" style="border-color:${c.color};color:${c.color}">${c.rarity}</div>
+      <div class="selected-check">✓</div>
+      <div class="char-avatar">${c.emoji}</div>
+      <div class="char-name" style="color:${c.color}">${c.name}</div>
+      <div class="char-desc">${c.desc}</div>
+      <div class="char-ability-tag">✨ ${c.ability}</div>
+    </div>`).join('');
+}
+
+function selectChar(id) {
+  selectedChar = CHARACTERS[id];
+  document.querySelectorAll('.char-card').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('char-card-'+id).classList.add('selected');
+  document.getElementById('char-next-btn').classList.add('active');
+  playSound('click');
+  spawnSparkles(window.innerWidth/2, window.innerHeight/2, selectedChar.color, 8);
+}
+
+function goToSetup() {
+  if (!selectedChar) return;
+  document.getElementById('char-select').style.display='none';
+  const setup=document.getElementById('setup');
+  setup.style.display='flex';
+  document.getElementById('preview-avatar').textContent=selectedChar.emoji;
+  document.getElementById('preview-name').textContent=selectedChar.name;
+  document.getElementById('preview-desc').textContent=selectedChar.desc;
+  document.getElementById('preview-ability').textContent='✨ '+selectedChar.ability;
+  document.getElementById('preview-name').style.color=selectedChar.color;
+}
+function goBackToChar() {
+  document.getElementById('setup').style.display='none';
+  document.getElementById('char-select').style.display='flex';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GAME INIT
+// ═══════════════════════════════════════════════════════════
+function newCells() {
+  return CELLS.map(c=>({...c,owner:null,houses:0,mortgaged:false}));
+}
+
+function pickBotChar(exclude) {
+  const avail = CHARACTERS.filter(c=>!exclude.has(c.id));
+  return avail[Math.floor(Math.random()*avail.length)];
+}
+
+function initGame(playerName, botCount, diff) {
+  const char0 = selectedChar || CHARACTERS[0];
+  const usedIds = new Set([char0.id]);
+  const players = [{
+    name:playerName,money:START_MONEY,pos:0,
+    color:char0.color,char:char0,is_bot:false,
+    bankrupt:false,jail_turns:0,ability_used:false,
+    rent_free:false,consecutive_doubles:0,
+  }];
+  for (let i=0;i<botCount;i++) {
+    const bc = pickBotChar(usedIds);
+    usedIds.add(bc.id);
+    players.push({
+      name:BOT_NAMES[i],money:START_MONEY,pos:0,
+      color:PCOLORS[i+1]||PCOLORS[0],char:bc,is_bot:true,
+      bankrupt:false,jail_turns:0,ability_used:false,
+      rent_free:false,consecutive_doubles:0,
+    });
+  }
+  return {
+    players,cells:newCells(),turn:0,doubles:0,
+    phase:'roll',log:[],diff,pending_card:null,winner:null,
+    d1:1,d2:1,
+    auction:null,trade:null,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BUTLER
+// ═══════════════════════════════════════════════════════════
+function butler(key, custom) {
+  if (!G) return;
+  const msgs = BUTLER_MSGS[key]||['...'];
+  const msg = custom || msgs[Math.floor(Math.random()*msgs.length)];
+  const el=document.getElementById('butler');
+  document.getElementById('butler-text').textContent=msg;
+  document.getElementById('butler-char').textContent=G.players[G.turn].char.emoji;
+  el.style.display='block';
+  if (butlerTmr) clearTimeout(butlerTmr);
+  butlerTmr=setTimeout(()=>{el.style.display='none';},3800);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════════════════════════
+function log(msg,style='') { G.log.unshift({msg,style});if(G.log.length>150)G.log.length=150; }
+function alive() { return G.players.filter(p=>!p.bankrupt); }
+
+function checkWin() {
+  const a=alive();
+  if (a.length===1) {
+    G.winner=a[0].name;G.winnerIdx=G.players.indexOf(a[0]);G.phase='gameover';return true;
+  }
+  return false;
+}
+
+function ownsGroup(pidx,grp) {
+  if (grp<0) return false;
+  const total=GRP_SIZE[grp]||0;
+  return G.cells.filter(c=>c.group===grp&&c.owner===pidx).length===total;
+}
+
+function getNetWorth(pidx) {
+  const p=G.players[pidx];
+  let nw=p.money;
+  G.cells.forEach((c,ci)=>{
+    if(c.owner!==pidx)return;
+    nw+=c.mortgaged?Math.floor(c.price*0.5):c.price;
+    nw+=(c.houses||0)*(BUILD_COST[c.group]||300);
+  });
+  return nw;
+}
+
+function calcRent(ci,roll) {
+  const c=G.cells[ci];
+  if(!c||c.owner===null||c.mortgaged)return 0;
+  const {type,owner,houses,rent,group}=c;
+  if (type==='prop') {
+    const h=Math.min(houses||0,4);
+    if (h===0&&ownsGroup(owner,group)) return rent*2;
+    return rent*RENT_MULT[h];
+  }
+  if (type==='airport') {
+    const n=G.cells.filter(c2=>c2.type==='airport'&&c2.owner===owner).length;
+    return 100*(n*n);
+  }
+  if (type==='util') {
+    const n=G.cells.filter(c2=>c2.type==='util'&&c2.owner===owner).length;
+    const r=roll||(Math.floor(Math.random()*11)+2);
+    return r*(n===1?4:12);
+  }
+  return 0;
+}
+
+function nearestAirport(pos) {
+  const airports=[5,15,25,35];
+  return airports.reduce((b,r)=>((r-pos+40)%40)<((b-pos+40)%40)?r:b);
+}
+
+function movePlayer(pidx,steps) {
+  const p=G.players[pidx],old=p.pos;
+  const nw=((old+steps)%40+40)%40;
+  if (steps>0&&nw<=old&&nw!==old) {
+    p.money+=PASS_GO;
+    log(`🚩 ${p.name} 출발 통과! +₩${PASS_GO}`,'gain');
+    if (!p.is_bot) butler('go_pass');
+    toast(`+₩${PASS_GO} 출발 통과!`,'gain');
+  }
+  p.pos=nw;
+}
+
+function sendToJail(pidx) {
+  const p=G.players[pidx];
+  p.pos=20;p.jail_turns=3;
+  log(`⚫ ${p.name} 블랙홀!`,'lose');
+  butler('jail');toast('⚫ 블랙홀!','lose');
+  spawnScreenFlash('rgba(168,85,247,0.15)');
+}
+
+function payRent(fromIdx,toIdx,amt) {
+  const payer=G.players[fromIdx],recv=G.players[toIdx];
+  if (payer.rent_free) {
+    payer.rent_free=false;
+    log(`🌈 ${payer.name} 행운! 임료 면제!`,'gain');
+    toast('🌈 임료 면제!','gain');return;
+  }
+  let actual=amt;
+  if (payer.char.abilityKey==='rent_cut'&&!payer.ability_used) {
+    actual=Math.floor(amt*0.4);payer.ability_used=true;
+    log(`⚔️ ${payer.name} 특수기술! 임료 60% 감면!`,'gain');
+    toast('⚔️ 임료 60% 감면!','gain');
+    spawnAbilityFlash(payer.color);
+  }
+  let recvAmt=actual;
+  if (recv.char.abilityKey==='rent_bonus') recvAmt=Math.floor(actual*1.12);
+  const pay=Math.min(actual,Math.max(0,payer.money));
+  payer.money-=pay;recv.money+=Math.min(recvAmt,pay);
+  log(`💸 ${payer.name}→${recv.name}: ₩${pay}`,'lose');
+  if (fromIdx===0) butler('rent_out'); else if (toIdx===0) butler('rent_in');
+  spawnFloatText(`-₩${pay}`,payer.color,true);
+  spawnFloatText(`+₩${Math.min(recvAmt,pay)}`,recv.color,false);
+  checkBankrupt(fromIdx);
+}
+
+function checkBankrupt(pidx) {
+  const p=G.players[pidx];
+  if (p.money>=0) return;
+  for (let ci=0;ci<G.cells.length;ci++) {
+    const c=G.cells[ci];
+    if (c.owner===pidx&&!c.mortgaged&&(c.houses||0)===0&&p.money<0) {
+      const val=Math.floor(c.price*0.5);
+      c.mortgaged=true;p.money+=val;
+      log(`📋 ${p.name} ${c.name} 긴급저당 +₩${val}`,'lose');
+    }
+  }
+  if (p.money<0) {
+    p.bankrupt=true;p.money=0;
+    G.cells.forEach(c=>{if(c.owner===pidx){c.owner=null;c.houses=0;c.mortgaged=false;}});
+    log(`💀 ${p.name} 파산!`,'important');
+    butler('bankrupt');toast(`💀 ${p.name} 파산!`,'lose');
+    spawnScreenFlash('rgba(255,69,96,0.2)');
+    checkWin();
+  }
+}
+
+function doMortgage(pidx,ci) {
+  const c=G.cells[ci],p=G.players[pidx];
+  if(c.owner!==pidx||c.mortgaged||(c.houses||0)>0)return;
+  const val=Math.floor(c.price*0.5);
+  c.mortgaged=true;p.money+=val;
+  log(`📋 ${p.name} ${c.name} 저당 +₩${val}`,'lose');
+  renderAll();
+}
+
+function doUnmortgage(pidx,ci) {
+  const c=G.cells[ci],p=G.players[pidx];
+  if(c.owner!==pidx||!c.mortgaged)return;
+  const cost=Math.floor(c.price*0.6);
+  if(p.money<cost)return;
+  c.mortgaged=false;p.money-=cost;
+  log(`✅ ${p.name} ${c.name} 저당해제 -₩${cost}`);
+  renderAll();
+}
+
+function doBuild(pidx,ci) {
+  const c=G.cells[ci],p=G.players[pidx];
+  const cost=BUILD_COST[c.group]||300;
+  if(p.money<cost||(c.houses||0)>=4||c.mortgaged)return;
+  c.houses=(c.houses||0)+1;p.money-=cost;
+  const lbl=c.houses===4?'호텔🏨':`집 ${c.houses}채🏠`;
+  log(`🔨 ${p.name} ${c.name} ${lbl} -₩${cost}`);
+  butler('build');toast(`🏠 ${c.name} ${lbl}!`,'gain');
+  spawnSparkles(window.innerWidth*0.6, window.innerHeight*0.5,'#10d96e',10);
+  renderAll();
+}
+
+function useAbility() {
+  if (!G||animating)return;
+  const pidx=G.turn,p=G.players[pidx];
+  if(p.is_bot||p.ability_used||p.bankrupt)return;
+  const key=p.char.abilityKey;
+  p.ability_used=true;
+  spawnAbilityFlash(p.char.color);
+  if(key==='discount'){p._discount_pending=true;log(`✨ ${p.name} 능력: 다음 매입 15% 할인!`,'important');toast('✨ 할인 능력 사용!','special');}
+  else if(key==='speed_boost'){p._speed_boost=true;log(`✨ ${p.name} 능력: +2칸 이동!`,'important');toast('✨ 이동 +2칸!','special');}
+  else if(key==='card_immune'){p._card_immune=true;log(`✨ ${p.name} 능력: 다음 카드 무효!`,'important');toast('✨ 카드 무효 준비!','special');}
+  else if(key==='tax_immune'){p._tax_immune=true;log(`✨ ${p.name} 능력: 다음 세금 면제!`,'important');toast('✨ 세금 면제 준비!','special');}
+  renderAll();
+}
+
+function applyCard(pidx,card) {
+  const p=G.players[pidx];
+  if (p._card_immune&&(card.type==='money'&&card.amount<0||card.type==='goto_jail'||card.type==='repair')) {
+    p._card_immune=false;
+    log(`🧙 ${p.name} 카드 마법 무효화!`,'gain');toast('🧙 카드 무효화!','gain');
+    if(G.phase!=='gameover')G.phase='roll';return;
+  }
+  const {type,amount,target}=card;
+  if (type==='money') {
+    if(amount<0&&p._tax_immune){p._tax_immune=false;log(`🤖 ${p.name} 세금 면제!`,'gain');toast('🤖 세금 면제!','gain');}
+    else{p.money+=amount;log(`🃏 ${p.name}: ${card.text} (${amount>0?'+':''}${amount})`,amount>0?'gain':'lose');spawnFloatText(`${amount>0?'+':''}₩${Math.abs(amount)}`,p.color,amount<0);if(amount<0)checkBankrupt(pidx);}
+  } else if (type==='birthday') {
+    G.players.forEach((o,i)=>{if(i!==pidx&&!o.bankrupt){const a=Math.min(amount,Math.max(0,o.money));o.money-=a;p.money+=a;}});
+    log(`🎂 ${p.name} 생일! 각자 ₩${amount}`,'gain');
+    toast(`🎂 생일! +₩${(alive().length-1)*amount}`,'gain');
+  } else if (type==='goto') {
+    if(target===0)p.money+=PASS_GO;p.pos=target;
+    log(`🚀 ${p.name} → ${CELLS[target].name}`,'move');
+    landCell(pidx,0);return;
+  } else if (type==='goto_jail') {
+    sendToJail(pidx);
+  } else if (type==='move') {
+    movePlayer(pidx,amount);log(`👣 ${p.name} ${amount>0?'+':''}${amount}칸`,'move');
+    landCell(pidx,0);return;
+  } else if (type==='nearest_airport') {
+    const nr=nearestAirport(p.pos);
+    const steps=((nr-p.pos+40)%40)||40;
+    movePlayer(pidx,steps);log(`✈️ ${p.name} 공항으로!`,'move');
+    landCell(pidx,0);return;
+  } else if (type==='repair') {
+    const h=G.cells.filter(c=>c.owner===pidx&&(c.houses||0)>0&&c.houses<4).length;
+    const ht=G.cells.filter(c=>c.owner===pidx&&c.houses===4).length;
+    const cost=h*50+ht*150;
+    p.money-=cost;log(`🔧 ${p.name} 수리비 -₩${cost}`,'lose');checkBankrupt(pidx);
+  } else if (type==='special'&&card.special==='rent_free') {
+    p.rent_free=true;log(`🌈 ${p.name} 다음 임료 면제!`,'gain');toast('🌈 다음 임료 면제!','gain');
+  }
+  if(G.phase!=='gameover')G.phase='roll';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LANDING
+// ═══════════════════════════════════════════════════════════
+function landCell(pidx,roll) {
+  const p=G.players[pidx],ci=p.pos,c=G.cells[ci];
+  if(!c)return;
+  log(`📍 ${p.name} → ${c.flag||''}${c.name}`,'move');
+
+  if (c.type==='go') {
+    p.money+=GO_LAND;log(`🎉 출발 착지! +₩${GO_LAND}`,'gain');
+    if(!p.is_bot)butler('go_land');toast(`+₩${GO_LAND} 출발 착지!`,'gain');
+    spawnCoinsFly(p.color);
+  } else if (['prop','airport','util'].includes(c.type)) {
+    if (c.owner===null) {
+      // Start auction automatically if player is bot; offer buy/auction for human
+      G.phase='buy';return;
+    } else if (c.owner===pidx) {
+      log(`🏠 자기 소유지`);
+    } else {
+      if (c.mortgaged) {log(`📋 ${c.name} 저당 중`);}
+      else {const rent=calcRent(ci,roll);payRent(pidx,c.owner,rent);}
+    }
+    if(!checkWin()){}
+  } else if (c.type==='chance'||c.type==='fate') {
+    const pool=c.type==='chance'?CHANCE_CARDS:FATE_CARDS;
+    G.pending_card=pool[Math.floor(Math.random()*pool.length)];
+    G.phase='card';return;
+  } else if (c.type==='tax') {
+    if(p._tax_immune){p._tax_immune=false;log(`🤖 ${p.name} 세금 면제!`,'gain');toast('🤖 세금 면제!','gain');}
+    else{p.money-=c.price;log(`💸 ${p.name} 세금 -₩${c.price}`,'lose');spawnFloatText(`-₩${c.price}`,p.color,true);checkBankrupt(pidx);}
+  } else if (c.type==='jail') {
+    sendToJail(pidx);
+  } else if (c.type==='casino') {
+    G.phase='casino';return;
+  } else {
+    log(`✅ ${c.name}`);
+  }
+  if(G.phase!=='gameover')G.phase='roll';
+}
+
+function nextTurn() {
+  if(G.phase==='gameover')return;
+  const n=G.players.length;
+  let nxt=(G.turn+1)%n,att=0;
+  while(G.players[nxt].bankrupt&&att<n){nxt=(nxt+1)%n;att++;}
+  G.turn=nxt;G.phase='roll';G.doubles=0;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AUCTION SYSTEM
+// ═══════════════════════════════════════════════════════════
+function startAuction(ci) {
+  const c=G.cells[ci];
+  const livePlayers=alive();
+  G.auction={
+    ci,
+    currentBid:Math.floor(c.price*0.5),
+    leaderId:-1,
+    bids:{},
+    participants:[...livePlayers.map(p=>G.players.indexOf(p))],
+    round:0,
+    phase:'bidding',
+  };
+  G.phase='auction';
+  log(`🔨 ${c.flag}${c.name} 경매 시작! 최저가: ₩${G.auction.currentBid}`,'auction');
+  toast(`🔨 경매 시작! ${c.name}`,'auction');
+  renderAll();
+
+  // If it's a bot's turn, run bot auction logic after a delay
+  if (G.players[G.turn].is_bot) {
+    setTimeout(()=>botAuctionBid(G.turn),700);
+  }
+}
+
+function playerBid(amount) {
+  if (!G||!G.auction)return;
+  const pidx=G.turn,p=G.players[pidx];
+  const minBid=G.auction.currentBid+50;
+  if (amount<minBid){toast(`최소 입찰가: ₩${minBid}`,'lose');return;}
+  if (p.money<amount){toast('자금 부족!','lose');return;}
+  G.auction.currentBid=amount;
+  G.auction.leaderId=pidx;
+  G.auction.bids[pidx]=amount;
+  log(`🔨 ${p.name} 입찰: ₩${amount}`,'auction');
+  toast(`🔨 ₩${amount} 입찰!`,'auction');
+  finishPlayerAuctionTurn();
+}
+
+function playerPass() {
+  if (!G||!G.auction)return;
+  const pidx=G.turn,p=G.players[pidx];
+  log(`↩️ ${p.name} 경매 패스`,'auction');
+  finishPlayerAuctionTurn();
+}
+
+function finishPlayerAuctionTurn() {
+  // Check if all players have had a chance (one round)
+  const auction=G.auction;
+  auction.round++;
+  const remaining=auction.participants.filter(i=>!G.players[i].bankrupt&&!(auction.bids[i]==='pass'));
+
+  // After each player bids once, resolve
+  if (auction.round>=auction.participants.length) {
+    resolveAuction();
+  } else {
+    // Move to next participant
+    const nextIdx=auction.participants[auction.round%auction.participants.length];
+    if (nextIdx===G.turn) {
+      resolveAuction();return;
+    }
+    if (G.players[nextIdx].is_bot) {
+      setTimeout(()=>botAuctionBid(nextIdx),700);
+    } else {
+      renderAll();
+    }
+  }
+}
+
+function botAuctionBid(botIdx) {
+  if(!G||!G.auction)return;
+  const bot=G.players[botIdx];
+  const auction=G.auction;
+  const ci=auction.ci;
+  const cell=G.cells[ci];
+  const diff=G.diff;
+  let bidAmount=0;
+
+  const willingness=diff==='hard'?0.92:diff==='normal'?0.78:0.55;
+  const maxBid=Math.floor(cell.price*willingness);
+
+  // Bot wants to complete a group?
+  let groupBonus=1;
+  if (cell.group>=0) {
+    const have=G.cells.filter(c=>c.group===cell.group&&c.owner===botIdx).length;
+    const total=GRP_SIZE[cell.group]||0;
+    if(have===total-1)groupBonus=1.4;
+    else if(have>0)groupBonus=1.15;
+  }
+  const adjustedMax=Math.min(Math.floor(maxBid*groupBonus),Math.floor(bot.money*0.75));
+
+  if (auction.currentBid+50<=adjustedMax&&bot.money>auction.currentBid+50) {
+    bidAmount=Math.min(auction.currentBid+Math.floor(50+Math.random()*150),adjustedMax);
+    auction.currentBid=bidAmount;
+    auction.leaderId=botIdx;
+    auction.bids[botIdx]=bidAmount;
+    log(`🤖 ${bot.name} 입찰: ₩${bidAmount}`,'auction');
+    toast(`🤖 ${bot.name} ₩${bidAmount}`,'auction');
+  } else {
+    auction.bids[botIdx]='pass';
+    log(`🤖 ${bot.name} 패스`,'auction');
+  }
+  auction.round++;
+  if (auction.round>=auction.participants.length) {
+    setTimeout(resolveAuction,500);
+  } else {
+    const nextIdx=auction.participants[auction.round%auction.participants.length];
+    if(!G.players[nextIdx].is_bot) {renderAll();}
+    else setTimeout(()=>botAuctionBid(nextIdx),600);
+  }
+}
+
+function resolveAuction() {
+  if(!G||!G.auction)return;
+  const auction=G.auction;
+  const ci=auction.ci;
+  const cell=G.cells[ci];
+  if (auction.leaderId>=0) {
+    const winner=G.players[auction.leaderId];
+    winner.money-=auction.currentBid;
+    cell.owner=auction.leaderId;
+    log(`🔨 ${winner.name} ${cell.flag}${cell.name} 낙찰! ₩${auction.currentBid}`,'auction');
+    toast(`🔨 ${winner.name} 낙찰! ₩${auction.currentBid}`,'auction');
+    if(auction.leaderId===0)butler('auction_win');
+    spawnSparkles(window.innerWidth*0.5,window.innerHeight*0.4,'#b26cf7',12);
+    checkBankrupt(auction.leaderId);
+  } else {
+    log(`🔨 유찰 — ${cell.name} 은행 보유`,'auction');
+    toast(`🔨 유찰!`,'lose');
+  }
+  G.auction=null;
+  if(G.phase!=='gameover'){G.phase='roll';nextTurn();}
+  renderAll();
+  if(G.phase==='gameover')showGameOver();
+  else setTimeout(checkBotTurn,500);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TRADE / NEGOTIATION SYSTEM
+// ═══════════════════════════════════════════════════════════
+function initiateTrade() {
+  if(!G||animating)return;
+  const pidx=G.turn,p=G.players[pidx];
+  if(p.is_bot||p.bankrupt)return;
+  const otherAlive=alive().filter((_,i)=>G.players.indexOf(_)!==pidx);
+  if(!otherAlive.length){toast('거래 상대가 없습니다','lose');return;}
+
+  G.trade={fromIdx:pidx,toIdx:G.players.indexOf(otherAlive[0]),fromProps:[],toProps:[],fromMoney:0,toMoney:0,phase:'offer'};
+  G.phase='trade_offer';
+  renderAll();
+}
+
+function updateTradeTarget(selectEl) {
+  if(!G||!G.trade)return;
+  G.trade.toIdx=parseInt(selectEl.value);
+  G.trade.toProps=[];
+  renderAll();
+}
+
+function toggleTradeProp(side,ci) {
+  if(!G||!G.trade)return;
+  const arr=side==='from'?G.trade.fromProps:G.trade.toProps;
+  const idx=arr.indexOf(ci);
+  if(idx>=0)arr.splice(idx,1);
+  else arr.push(ci);
+  renderAll();
+}
+
+function updateTradeFromMoney(val){if(G&&G.trade)G.trade.fromMoney=parseInt(val)||0;}
+function updateTradeToMoney(val){if(G&&G.trade)G.trade.toMoney=parseInt(val)||0;}
+
+function submitTrade() {
+  if(!G||!G.trade)return;
+  const t=G.trade;
+  const from=G.players[t.fromIdx],to=G.players[t.toIdx];
+
+  // Validation
+  if(from.money<t.fromMoney){toast('자금 부족!','lose');return;}
+  if(to.money<t.toMoney){toast('상대 자금 부족!','lose');return;}
+  if(t.fromProps.some(ci=>G.cells[ci].owner!==t.fromIdx)){toast('소유하지 않은 부동산!','lose');return;}
+  if(t.toProps.some(ci=>G.cells[ci].owner!==t.toIdx)){toast('상대가 소유하지 않음!','lose');return;}
+
+  if (to.is_bot) {
+    // Bot evaluation
+    const accepted = botEvaluateTrade(t);
+    if (accepted) {
+      executeTrade(t);
+      toast(`🤝 ${to.name} 거래 수락!`,'trade');
+      butler('trade_ok');
+    } else {
+      log(`❌ ${to.name} 거래 거절`,'trade');
+      toast(`❌ ${to.name} 거래 거절`,'lose');
+      butler('trade_no');
+      G.trade=null;G.phase='roll';renderAll();
+    }
+  } else {
+    // Human responds — show notification
+    G.trade.phase='respond';G.phase='trade_respond';
+    renderAll();
+  }
+}
+
+function respondTrade(accept) {
+  if(!G||!G.trade)return;
+  const t=G.trade;
+  const to=G.players[t.toIdx];
+  if (accept) {
+    executeTrade(t);
+    toast(`🤝 거래 성사!`,'trade');
+    butler('trade_ok');
+  } else {
+    log(`❌ ${to.name} 거래 거절`,'trade');
+    toast(`❌ 거래 거절`,'lose');
+    butler('trade_no');
+  }
+  G.trade=null;G.phase='roll';renderAll();
+}
+
+function cancelTrade() {
+  if(!G)return;
+  G.trade=null;G.phase='roll';renderAll();
+}
+
+function executeTrade(t) {
+  const from=G.players[t.fromIdx],to=G.players[t.toIdx];
+  t.fromProps.forEach(ci=>{G.cells[ci].owner=t.toIdx;});
+  t.toProps.forEach(ci=>{G.cells[ci].owner=t.fromIdx;});
+  from.money-=t.fromMoney;to.money+=t.fromMoney;
+  to.money-=t.toMoney;from.money+=t.toMoney;
+  const fromPropNames=t.fromProps.map(ci=>CELLS[ci].name).join(', ')||'없음';
+  const toPropNames=t.toProps.map(ci=>CELLS[ci].name).join(', ')||'없음';
+  log(`🤝 거래: ${from.name}[${fromPropNames}+₩${t.fromMoney}] ⇌ ${to.name}[${toPropNames}+₩${t.toMoney}]`,'trade');
+  G.trade=null;G.phase='roll';
+  checkBankrupt(t.fromIdx);checkBankrupt(t.toIdx);
+  renderAll();
+}
+
+function botEvaluateTrade(t) {
+  const from=G.players[t.fromIdx],to=G.players[t.toIdx];
+  const diff=G.diff;
+
+  // Calculate value of what bot receives vs gives
+  let valueReceived=t.fromMoney;
+  let valueGiven=t.toMoney;
+
+  t.fromProps.forEach(ci=>{
+    const c=G.cells[ci];
+    valueReceived+=c.price+(c.houses||0)*(BUILD_COST[c.group]||300);
+    // Extra value if completing a group
+    if(c.group>=0){
+      const have=G.cells.filter(cx=>cx.group===c.group&&cx.owner===t.toIdx).length;
+      if(have===(GRP_SIZE[c.group]||0)-1) valueReceived+=c.price*0.5;
+    }
+  });
+  t.toProps.forEach(ci=>{
+    const c=G.cells[ci];
+    valueGiven+=c.price+(c.houses||0)*(BUILD_COST[c.group]||300);
+  });
+
+  const threshold=diff==='hard'?1.1:diff==='normal'?0.95:0.8;
+  if(diff==='easy')return Math.random()<0.6;
+  return valueReceived>=valueGiven*threshold;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DICE & MOVEMENT
+// ═══════════════════════════════════════════════════════════
+function rollDice() {
+  return {d1:Math.floor(Math.random()*6)+1,d2:Math.floor(Math.random()*6)+1};
+}
+
+function animateDice(d1,d2,cb) {
+  const el1=document.getElementById('die1'),el2=document.getElementById('die2');
+  if(!el1||!el2){cb&&cb();return;}
+  el1.classList.add('rolling');el2.classList.add('rolling');
+  el1.classList.remove('double-glow');el2.classList.remove('double-glow');
+  let n=0;
+  const iv=setInterval(()=>{
+    el1.textContent=DICE_FACES[Math.floor(Math.random()*6)];
+    el2.textContent=DICE_FACES[Math.floor(Math.random()*6)];
+    n++;
+    if(n>=16){
+      clearInterval(iv);
+      el1.textContent=DICE_FACES[d1-1];el2.textContent=DICE_FACES[d2-1];
+      el1.classList.remove('rolling');el2.classList.remove('rolling');
+      if(d1===d2){el1.classList.add('double-glow');el2.classList.add('double-glow');spawnDoubleRing();}
+      cb&&cb();
+    }
+  },50);
+}
+
+function spawnDoubleRing() {
+  const center=document.querySelector('.board-center');
+  if(!center)return;
+  const rect=center.getBoundingClientRect();
+  for(let i=0;i<2;i++){
+    const ring=document.createElement('div');
+    ring.className='double-ring';
+    ring.style.cssText=`left:${rect.left+rect.width/2}px;top:${rect.top+rect.height/2}px;width:70px;height:70px;animation-delay:${i*0.15}s;`;
+    document.body.appendChild(ring);
+    setTimeout(()=>ring.remove(),1100);
+  }
+}
+
+function animateMove(pidx,from,to,cb) {
+  if(from===to){cb&&cb();return;}
+  const steps=[];let cur=from;
+  while(cur!==to){cur=(cur+1)%40;steps.push(cur);}
+  let i=0;
+  const iv=setInterval(()=>{
+    G.players[pidx].pos=steps[i];
+    spawnTrail(steps[i]);
+    renderTokens();i++;
+    if(i>=steps.length){clearInterval(iv);cb&&cb();}
+  },100);
+}
+
+function spawnTrail(ci) {
+  const tc=document.getElementById('tc-'+ci);
+  if(!tc)return;
+  const rect=tc.getBoundingClientRect();
+  const trail=document.createElement('div');
+  trail.className='move-trail';
+  const size=14;
+  trail.style.cssText=`left:${rect.left+rect.width/2-size/2}px;top:${rect.top+rect.height/2-size/2}px;width:${size}px;height:${size}px;position:fixed;z-index:11;`;
+  document.body.appendChild(trail);
+  setTimeout(()=>trail.remove(),650);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SPECIAL EFFECTS
+// ═══════════════════════════════════════════════════════════
+function spawnFloatText(text,color,isLoss) {
+  const el=document.createElement('div');
+  el.className='float-text';
+  const x=window.innerWidth/2+(floatSide%2===0?-90:90);
+  floatSide++;
+  el.style.cssText=`left:${x}px;top:${window.innerHeight/2-70}px;color:${isLoss?'#ff4560':'#10d96e'};`;
+  el.textContent=text;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1400);
+}
+
+function toast(msg,type='') {
+  const container=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className=`toast toast-${type}`;t.innerHTML=msg;
+  container.appendChild(t);
+  setTimeout(()=>t.remove(),2600);
+}
+
+function spawnCoinsFly(color) {
+  for(let i=0;i<8;i++){
+    const coin=document.createElement('div');coin.className='coin';
+    const angle=(Math.random()*200-100)*(Math.PI/180);
+    const dist=70+Math.random()*90;
+    coin.style.cssText=`left:${window.innerWidth/2+(Math.random()-0.5)*120}px;top:${window.innerHeight/2}px;--mx:${Math.cos(angle)*dist/2}px;--my:${-dist/2}px;--ex:${Math.cos(angle)*dist}px;--ey:${-dist}px;--dur:${0.5+Math.random()*0.6}s;animation-delay:${i*0.06}s;`;
+    coin.textContent='🪙';
+    document.body.appendChild(coin);
+    setTimeout(()=>coin.remove(),1400);
+  }
+}
+
+function spawnSparkles(x,y,color,count) {
+  for(let i=0;i<count;i++){
+    const sp=document.createElement('div');sp.className='sparkle';
+    const angle=(i/count)*Math.PI*2;const dist=40+Math.random()*60;
+    sp.style.cssText=`left:${x}px;top:${y}px;--dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist-40}px;--dur:${0.4+Math.random()*0.4}s;animation-delay:${i*0.03}s;color:${color};font-size:${0.8+Math.random()}rem;`;
+    sp.textContent='✨';
+    document.body.appendChild(sp);
+    setTimeout(()=>sp.remove(),900);
+  }
+}
+
+function spawnAbilityFlash(color) {
+  const fl=document.createElement('div');fl.className='ability-flash';
+  fl.style.background=color.replace(')',',0.12)').replace('rgb','rgba')||`rgba(255,215,0,0.12)`;
+  document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
+}
+
+function spawnScreenFlash(colorRgba) {
+  const fl=document.createElement('div');fl.className='screen-flash';
+  fl.style.cssText=`background:${colorRgba};--intensity:0.2;`;
+  document.body.appendChild(fl);setTimeout(()=>fl.remove(),450);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PLAYER ACTIONS
+// ═══════════════════════════════════════════════════════════
+function doRoll() {
+  if(!G||animating)return;
+  animating=true;
+  const p=G.players[G.turn];
+  let {d1,d2}=rollDice();
+  let total=d1+d2;
+  const isDouble=d1===d2;
+  if(p._speed_boost){total+=2;p._speed_boost=false;toast('✨ +2칸!','special');}
+  G.d1=d1;G.d2=d2;
+  playSound('roll');renderDiceCenter();
+  animateDice(d1,d2,()=>{
+    if(isDouble){
+      G.doubles++;
+      if(G.doubles>=3){
+        log(`3연속 더블! ${p.name} 블랙홀!`,'important');
+        butler('triple');toast('3연속 더블! 블랙홀!','lose');
+        sendToJail(G.turn);G.doubles=0;nextTurn();
+        animating=false;renderAll();setTimeout(checkBotTurn,600);return;
+      }
+      log(`🎲 더블! (${d1}+${d2})`);butler('double');toast('🎲 더블!','special');
+    } else {
+      G.doubles=0;log(`🎲 ${d1}+${d2}=${total}`);
+    }
+    const from=p.pos;renderAll();
+    setTimeout(()=>{
+      animateMove(G.turn,from,(from+total)%40,()=>{
+        movePlayer(G.turn,total);landCell(G.turn,total);
+        animating=false;
+        if(!isDouble&&G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='auction'&&G.phase!=='trade_offer'&&G.phase!=='gameover')nextTurn();
+        renderAll();
+        if(G.phase==='gameover')showGameOver();
+      });
+    },180);
+  });
+}
+
+function doBuy(buy) {
+  const pidx=G.turn,ci=G.players[pidx].pos,cell=G.cells[ci],p=G.players[pidx];
+  if(buy){
+    let price=cell.price;
+    if(p._discount_pending){price=Math.floor(price*0.85);p._discount_pending=false;log(`✨ 15% 할인 매입!`,'gain');}
+    cell.owner=pidx;p.money-=price;
+    log(`🏠 ${p.name} ${cell.flag||''}${cell.name} 매입 -₩${price}`,'lose');
+    butler('buy');playSound('buy');
+    spawnSparkles(window.innerWidth*0.6,window.innerHeight*0.5,cell.color||'#ffd700',8);
+  } else {
+    log(`↩️ ${p.name} ${cell.name} 패스 — 경매 시작!`);
+    startAuction(ci);return;
+  }
+  G.phase='roll';nextTurn();renderAll();setTimeout(checkBotTurn,500);
+}
+
+function doCard() {
+  if(!G||!G.pending_card)return;
+  playSound('card');applyCard(G.turn,G.pending_card);G.pending_card=null;
+  if(G.phase!=='gameover'){nextTurn();renderAll();setTimeout(checkBotTurn,500);}
+  else{renderAll();showGameOver();}
+}
+
+function doJail(payBail) {
+  if(!G)return;
+  const p=G.players[G.turn];
+  if(payBail){
+    if(p.money<JAIL_BAIL)return;
+    p.money-=JAIL_BAIL;p.jail_turns=0;
+    log(`💰 ${p.name} 보석금 납부!`,'lose');renderAll();setTimeout(doRoll,300);
+  } else {
+    if(animating)return;
+    animating=true;
+    const {d1,d2}=rollDice();const total=d1+d2;const isDouble=d1===d2;
+    G.d1=d1;G.d2=d2;renderDiceCenter();
+    animateDice(d1,d2,()=>{
+      if(isDouble){
+        p.jail_turns=0;log(`🎉 더블 탈출!`);toast('🎉 더블 탈출!','gain');
+        animateMove(G.turn,p.pos,(p.pos+total)%40,()=>{
+          movePlayer(G.turn,total);landCell(G.turn,total);
+          if(G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='gameover')nextTurn();
+          animating=false;renderAll();
+          G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);
+        });
+      } else {
+        p.jail_turns--;log(`😔 더블 실패 (${p.jail_turns}턴 남음)`);
+        if(p.jail_turns<=0){
+          p.jail_turns=0;
+          animateMove(G.turn,p.pos,(p.pos+total)%40,()=>{
+            movePlayer(G.turn,total);landCell(G.turn,total);
+            if(G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='gameover')nextTurn();
+            animating=false;renderAll();
+            G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);
+          });
+        } else {
+          nextTurn();animating=false;renderAll();setTimeout(checkBotTurn,500);
+        }
+      }
+    });
+  }
+}
+
+function doCasino(bet) {
+  const pidx=G.turn,p=G.players[pidx];const casinoBet=300;
+  if(!bet){log(`🎰 ${p.name} 베팅 거부`);G.phase='roll';nextTurn();renderAll();setTimeout(checkBotTurn,400);return;}
+  if(p.money<casinoBet){toast('💸 베팅금 부족!','lose');G.phase='roll';nextTurn();renderAll();setTimeout(checkBotTurn,400);return;}
+  p.money-=casinoBet;playSound('casino');
+  const win=Math.random()<0.45;
+  if(win){
+    p.money+=casinoBet*3;log(`🎰 ${p.name} 🎉 대박! +₩${casinoBet*2}`,'gain');
+    toast(`🎰 대박! +₩${casinoBet*2}`,'gain');
+    spawnFloatText(`+₩${casinoBet*2}`,p.color,false);spawnCoinsFly(p.color);
+    spawnScreenFlash('rgba(255,215,0,0.12)');
+  } else {
+    log(`🎰 ${p.name} 💸 꽝! -₩${casinoBet}`,'lose');toast(`🎰 꽝! -₩${casinoBet}`,'lose');
+    spawnFloatText(`-₩${casinoBet}`,p.color,true);checkBankrupt(pidx);
+  }
+  G.phase='roll';if(G.phase!=='gameover')nextTurn();renderAll();
+  if(G.phase==='gameover')showGameOver();else setTimeout(checkBotTurn,500);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOT AI
+// ═══════════════════════════════════════════════════════════
+function checkBotTurn() {
+  if(!G||G.phase==='gameover')return;
+  const p=G.players[G.turn];
+  if(p.is_bot&&!p.bankrupt)doBotTurn();
+}
+
+function doBotTurn() {
+  setTimeout(()=>{
+    if(!G||G.phase==='gameover')return;
+    const pidx=G.turn,p=G.players[pidx];
+    if(!p.is_bot||p.bankrupt)return;
+
+    // Bot ability
+    if(!p.ability_used&&Math.random()<0.3){
+      const key=p.char.abilityKey;
+      if(key==='tax_immune')p._tax_immune=true;
+      if(key==='card_immune')p._card_immune=true;
+      if(key==='speed_boost')p._speed_boost=true;
+      p.ability_used=true;
+    }
+
+    // Trade initiation (hard bots occasionally)
+    if(G.diff==='hard'&&G.phase==='roll'&&Math.random()<0.06){
+      const tradeTarget=alive().find((o,i)=>G.players.indexOf(o)!==pidx&&!o.is_bot);
+      if(tradeTarget){
+        const tidx=G.players.indexOf(tradeTarget);
+        const botProps=G.cells.map((c,ci)=>({c,ci})).filter(({c})=>c.owner===pidx&&c.type==='prop'&&!c.mortgaged&&(c.houses||0)===0);
+        const targetProps=G.cells.map((c,ci)=>({c,ci})).filter(({c})=>c.owner===tidx&&c.type==='prop'&&!c.mortgaged);
+        if(botProps.length>0&&targetProps.length>0){
+          const offer=botProps[Math.floor(Math.random()*botProps.length)];
+          const want=targetProps[Math.floor(Math.random()*targetProps.length)];
+          G.trade={fromIdx:pidx,toIdx:tidx,fromProps:[offer.ci],toProps:[want.ci],fromMoney:0,toMoney:0,phase:'respond'};
+          G.phase='trade_respond';
+          const from=G.players[pidx],to=G.players[tidx];
+          log(`🤝 ${from.name}이 ${to.name}에게 거래 제안!`,'trade');
+          if(!to.is_bot){
+            renderAll();return; // human responds
+          } else {
+            const accepted=botEvaluateTrade(G.trade);
+            if(accepted){executeTrade(G.trade);toast(`🤝 거래 성사!`,'trade');}
+            else{G.trade=null;G.phase='roll';log(`❌ 거래 거절`,'trade');}
           }
         }
-        if (e.key === 'l' && e.ctrlKey) {
-          e.preventDefault();
-          var btns = document.querySelectorAll('button');
-          for (var b of btns) {
-            if (b.innerText.includes('CLR')) { b.click(); break; }
-          }
-        }
-      });
-      inp.addEventListener('input', function() {
-        beep(600 + Math.random()*200, 0.02, 'square', 0.015);
-      });
+      }
     }
-  }, 400);
 
-  setTimeout(function() {
-    var style = document.createElement('style');
-    style.textContent = `
-      input[type="text"] {
-        background: #020c02 !important;
-        color: #39ff14 !important;
-        border: 1px solid #1a4a1a !important;
-        border-radius: 4px !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-size: 13px !important;
-        caret-color: #39ff14 !important;
+    if(p.jail_turns>0&&G.phase==='roll'){
+      if(G.diff==='hard'&&p.money>=JAIL_BAIL){
+        p.money-=JAIL_BAIL;p.jail_turns=0;log(`💰 ${p.name} 보석금!`,'lose');renderAll();setTimeout(()=>doBotRoll(pidx),400);
+      } else {
+        const {d1,d2}=rollDice();const total=d1+d2;const isDouble=d1===d2;
+        G.d1=d1;G.d2=d2;
+        if(isDouble){
+          p.jail_turns=0;log(`🎉 ${p.name} 더블 탈출!`);renderAll();
+          animateMove(pidx,p.pos,(p.pos+total)%40,()=>{movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});
+        } else {
+          p.jail_turns--;log(`😔 ${p.name} 더블 실패`);
+          if(p.jail_turns<=0){p.jail_turns=0;renderAll();animateMove(pidx,p.pos,(p.pos+total)%40,()=>{movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}
+          else{nextTurn();renderAll();setTimeout(checkBotTurn,500);}
+        }
       }
-      input[type="text"]:focus {
-        border-color: #39ff14 !important;
-        box-shadow: 0 0 12px rgba(57,255,20,0.2) !important;
-        outline: none !important;
-      }
-      input[type="text"]::placeholder { color: #1a4a1a !important; }
-      .stTextInput > div > div { background: transparent !important; }
-      .stButton > button {
-        font-family: 'JetBrains Mono', monospace !important;
-        background: #020c02 !important;
-        color: #39ff14 !important;
-        border: 1px solid #1a4a1a !important;
-        border-radius: 4px !important;
-        font-size: 12px !important;
-        transition: all 0.15s !important;
-      }
-      .stButton > button:hover {
-        background: #0a2a0a !important;
-        border-color: #39ff14 !important;
-        box-shadow: 0 0 10px rgba(57,255,20,0.2) !important;
-        color: #ffffff !important;
-      }
-      .stButton > button[kind="primary"] {
-        background: #0f3a0f !important;
-        color: #39ff14 !important;
-        border-color: #39ff14 !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }, 200);
-})();
-</script>
-"""
+      return;
+    }
 
-MATRIX_RAIN_HTML = """
-<canvas id="matrix-canvas" style="
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  z-index:-1; pointer-events:none; opacity:0.06;
-"></canvas>
-<script>
-(function(){
-  var c = document.getElementById('matrix-canvas');
-  if(!c) return;
-  var ctx = c.getContext('2d');
-  c.width = window.innerWidth;
-  c.height = window.innerHeight;
-  var cols = Math.floor(c.width / 18);
-  var drops = Array(cols).fill(1);
-  var chars = '01アイウエオカキクケコHYOMIN효민UNIVERSE';
-  function draw() {
-    ctx.fillStyle = 'rgba(0,0,0,0.05)';
-    ctx.fillRect(0,0,c.width,c.height);
-    ctx.fillStyle = '#39ff14';
-    ctx.font = '13px "JetBrains Mono", monospace';
-    for(var i=0; i<drops.length; i++){
-      var ch = chars[Math.floor(Math.random()*chars.length)];
-      ctx.fillText(ch, i*18, drops[i]*18);
-      if(drops[i]*18 > c.height && Math.random() > 0.975) drops[i] = 0;
-      drops[i]++;
+    if(G.phase==='buy'||G.phase==='card'){
+      botDecide(pidx);
+      if(G.phase!=='gameover')nextTurn();
+      renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,500);return;
+    }
+    if(G.phase==='casino'){
+      const casinoBet=300;
+      if(G.diff==='hard'&&G.players[pidx].money>=casinoBet*2)doCasino(true);
+      else if(G.diff==='normal'&&G.players[pidx].money>=casinoBet&&Math.random()<0.5)doCasino(true);
+      else doCasino(false);
+      return;
+    }
+    if(G.phase==='roll'){botBuildSmart(pidx);doBotRoll(pidx);}
+  },700);
+}
+
+function doBotRoll(pidx) {
+  if(!G||G.phase==='gameover')return;
+  const p=G.players[pidx];
+  let {d1,d2}=rollDice();let total=d1+d2;const isDouble=d1===d2;
+  if(p._speed_boost){total+=2;p._speed_boost=false;}
+  G.d1=d1;G.d2=d2;
+  if(isDouble){G.doubles++;if(G.doubles>=3){log(`3연속 더블! ${p.name} 블랙홀!`,'important');sendToJail(pidx);G.doubles=0;nextTurn();renderAll();setTimeout(checkBotTurn,600);return;}log(`🎲 ${p.name} 더블! (${d1}+${d2})`);}
+  else{G.doubles=0;log(`🎲 ${p.name} ${d1}+${d2}=${total}`);}
+  renderAll();const from=p.pos;
+  setTimeout(()=>{
+    animateMove(pidx,from,(from+total)%40,()=>{
+      movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);
+      if(!isDouble&&G.phase!=='gameover')nextTurn();renderAll();
+      if(G.phase==='gameover')showGameOver();
+      else if(isDouble&&G.phase==='roll')setTimeout(()=>doBotRoll(pidx),800);
+      else setTimeout(checkBotTurn,600);
+    });
+  },180);
+}
+
+function botDecide(pidx) {
+  const p=G.players[pidx],diff=G.diff;
+  if(G.phase==='buy'){
+    const ci=p.pos,cell=G.cells[ci],price=cell.price;
+    let buy=false;
+    if(diff==='easy')buy=Math.random()>0.3&&p.money>=price;
+    else if(diff==='normal')buy=p.money>=price*1.35;
+    else{
+      if(cell.group>=0){const have=G.cells.filter(c=>c.group===cell.group&&c.owner===pidx).length;if(have===(GRP_SIZE[cell.group]||0)-1&&p.money>=price)buy=true;else buy=p.money>=price*1.15;}
+      else buy=p.money>=price*1.05;
+    }
+    if(buy){cell.owner=pidx;p.money-=price;log(`🏠 ${p.name} ${cell.flag||''}${cell.name} 매입 -₩${price}`,'lose');}
+    else{log(`↩️ ${p.name} 패스 — 경매`);startAuction(ci);return;}
+    G.phase='roll';
+  } else if(G.phase==='card'&&G.pending_card){
+    applyCard(pidx,G.pending_card);G.pending_card=null;
+  } else if(G.phase==='casino'){
+    const casinoBet=300;
+    if(diff==='hard'&&p.money>=casinoBet*2)doCasino(true);else doCasino(false);return;
+  }
+}
+
+function botBuildSmart(pidx) {
+  const p=G.players[pidx],diff=G.diff;if(diff==='easy')return;
+  G.cells.forEach((c,ci)=>{
+    if(c.owner!==pidx||c.type!=='prop')return;
+    if(!ownsGroup(pidx,c.group)||(c.houses||0)>=4||c.mortgaged)return;
+    const cost=BUILD_COST[c.group]||300;
+    const thresh=diff==='hard'?1.15:1.5;
+    if(p.money>=cost*thresh){c.houses=(c.houses||0)+1;p.money-=cost;const lbl=c.houses===4?'호텔':'집'+c.houses;log(`🔨 ${p.name} ${c.name} ${lbl}`);}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOARD LAYOUT
+// ═══════════════════════════════════════════════════════════
+function getCellRect(ci) {
+  const S=boardSize,C=S/7,W=(S-2*C)/9;
+  if(ci===0)return{x:S-C,y:S-C,w:C,h:C};
+  if(ci===10)return{x:0,y:S-C,w:C,h:C};
+  if(ci===20)return{x:0,y:0,w:C,h:C};
+  if(ci===30)return{x:S-C,y:0,w:C,h:C};
+  if(ci<10){const idx=10-ci;return{x:S-C-idx*W,y:S-C,w:W,h:C};}
+  if(ci<20){const idx=ci-10;return{x:0,y:S-C-idx*W,w:C,h:W};}
+  if(ci<30){const idx=ci-20;return{x:C+(idx-1)*W,y:0,w:W,h:C};}
+  const idx=ci-30;return{x:S-C,y:C+(idx-1)*W,w:C,h:W};
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BUILD BOARD DOM
+// ═══════════════════════════════════════════════════════════
+function buildBoard() {
+  const boardEl=document.getElementById('board');
+  const S=boardSize;boardEl.style.width=S+'px';boardEl.style.height=S+'px';boardEl.innerHTML='';
+  const C=S/7,W=(S-2*C)/9,fs=Math.max(6,Math.round(S/82));
+
+  const cellBg={
+    go:'linear-gradient(135deg,#02100a,#041812)',
+    jail:'linear-gradient(135deg,#120820,#0d0618)',
+    visit:'linear-gradient(135deg,#02080f,#041018)',
+    free:'linear-gradient(135deg,#020e04,#041408)',
+    chance:'linear-gradient(135deg,#120820,#0d0618)',
+    fate:'linear-gradient(135deg,#180408,#120206)',
+    tax:'linear-gradient(135deg,#100802,#0e0602)',
+    airport:'linear-gradient(135deg,#020a10,#040e1a)',
+    util:'linear-gradient(135deg,#021008,#040e06)',
+    prop:'linear-gradient(135deg,#05080f,#030610)',
+    casino:'linear-gradient(135deg,#100602,#180a02)',
+  };
+
+  for(let ci=0;ci<40;ci++){
+    const {x,y,w,h}=getCellRect(ci);
+    const cellData=G.cells[ci];
+    const isCorner=ci===0||ci===10||ci===20||ci===30;
+    const isHoriz=ci<10||ci>=30;
+    const isLeft=ci>=10&&ci<20;
+    const isTop=ci>=20&&ci<30;
+
+    const div=document.createElement('div');
+    div.className='cell'+(isCorner?' cell-corner':'');
+    div.id='cell-'+ci;
+    div.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
+    div.style.background=cellBg[cellData.type]||cellBg.prop;
+
+    if(cellData.type==='casino')div.classList.add('casino-cell');
+    if(cellData.type==='jail')div.classList.add('jail-cell');
+    if(cellData.type==='chance'||cellData.type==='fate')div.classList.add('event-cell');
+
+    // Color bar
+    if(cellData.color&&cellData.type==='prop'){
+      const bar=document.createElement('div');bar.className='color-bar';bar.id='bar-'+ci;
+      const bThick=Math.round(Math.min(h,w)*0.18);
+      if(isHoriz)bar.style.cssText=`top:0;left:0;width:100%;height:${bThick}px;background:linear-gradient(90deg,${cellData.color},${cellData.color}cc);`;
+      else if(isLeft)bar.style.cssText=`top:0;right:0;width:${bThick}px;height:100%;background:linear-gradient(180deg,${cellData.color},${cellData.color}cc);`;
+      else if(isTop)bar.style.cssText=`bottom:0;left:0;width:100%;height:${bThick}px;background:linear-gradient(90deg,${cellData.color},${cellData.color}cc);`;
+      div.appendChild(bar);
+    }
+    if(cellData.type==='airport'){
+      const bar=document.createElement('div');bar.className='airport-bar';
+      if(isHoriz)bar.style.cssText=`top:0;left:0;width:100%;height:${Math.round(Math.min(h,w)*0.16)}px;`;
+      else bar.style.cssText=`top:0;right:0;width:${Math.round(Math.min(w,h)*0.16)}px;height:100%;`;
+      div.appendChild(bar);
+    }
+
+    // Text wrap
+    const tw=document.createElement('div');tw.id='tw-'+ci;
+    tw.style.cssText=`position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;gap:1px;z-index:1;`;
+
+    const iconMap={go:'🚩',jail:'⚫',visit:'✈️',free:'🅿️',chance:'❓',fate:'⭐',tax:'💸',airport:'✈️',casino:'🎰'};
+    let icon=cellData.flag||iconMap[cellData.type]||'';
+    if(cellData.type==='util')icon=cellData.name.includes('전기')?'⚡':'🔥';
+    if(cellData.type==='prop')icon=cellData.flag||'';
+
+    if(icon){const iconEl=document.createElement('div');iconEl.className='cell-icon';iconEl.textContent=icon;iconEl.style.fontSize=(isCorner?Math.round(fs*2.3):Math.round(fs*1.5))+'px';tw.appendChild(iconEl);}
+
+    const nameEl=document.createElement('div');nameEl.className='cell-name';nameEl.id='cn-'+ci;
+    const short=cellData.name.length>4?cellData.name.slice(0,4):cellData.name;
+    nameEl.textContent=isCorner?cellData.name:short;nameEl.style.fontSize=(isCorner?fs+2:fs)+'px';nameEl.style.padding='0 1px';tw.appendChild(nameEl);
+
+    if(cellData.price>0&&!isCorner){const priceEl=document.createElement('div');priceEl.className='cell-price';priceEl.textContent=cellData.price.toLocaleString();priceEl.style.fontSize=Math.max(4,fs-1)+'px';priceEl.style.opacity='0.6';tw.appendChild(priceEl);}
+    div.appendChild(tw);
+
+    // Houses
+    const housesEl=document.createElement('div');housesEl.id='houses-'+ci;
+    housesEl.style.cssText=`position:absolute;display:flex;gap:1px;align-items:center;z-index:2;`;
+    if(isHoriz){housesEl.style.bottom='2px';housesEl.style.left='50%';housesEl.style.transform='translateX(-50%)';}
+    else{housesEl.style.left='2px';housesEl.style.top='50%';housesEl.style.flexDirection='column';housesEl.style.transform='translateY(-50%)';}
+    div.appendChild(housesEl);
+
+    // Owner badge
+    const badge=document.createElement('div');badge.className='owner-badge';badge.id='ob-'+ci;
+    const bs=Math.max(5,Math.round(fs*0.7));
+    badge.style.cssText=`width:${bs}px;height:${bs}px;display:none;top:2px;right:2px;position:absolute;z-index:3;border-radius:50%;border:1.5px solid rgba(0,0,0,0.6);`;
+    div.appendChild(badge);
+
+    // Ownership ring
+    const ownRing=document.createElement('div');ownRing.className='own-ring';ownRing.id='or-'+ci;div.appendChild(ownRing);
+
+    // Mortgaged
+    const mort=document.createElement('div');mort.className='mortgaged-overlay';mort.id='mo-'+ci;
+    mort.style.cssText='display:none;';mort.textContent='저당';mort.style.fontSize=Math.max(4,fs-1)+'px';div.appendChild(mort);
+
+    div.addEventListener('mouseenter',e=>showTooltip(ci,e));
+    div.addEventListener('mouseleave',hideTooltip);
+    boardEl.appendChild(div);
+  }
+
+  // Center
+  const center=document.createElement('div');center.className='board-center';
+  center.style.cssText=`left:${C}px;top:${C}px;width:${S-2*C}px;height:${S-2*C}px;`;
+  const logoFs=Math.round(S/13),dieSize=Math.round(S/11),diceFs=Math.round(dieSize*0.55);
+  center.innerHTML=`
+    <div class="board-logo" style="font-size:${logoFs}px;">🌍<br>인베스트마블</div>
+    <div class="board-sub" style="font-size:${Math.round(S/92)}px;margin-bottom:12px;">REMASTERED</div>
+    <div class="dice-center">
+      <div class="die-face" id="die1" style="width:${dieSize}px;height:${dieSize}px;font-size:${diceFs}px;">⚀</div>
+      <div class="die-face" id="die2" style="width:${dieSize}px;height:${dieSize}px;font-size:${diceFs}px;">⚁</div>
+    </div>`;
+  boardEl.appendChild(center);
+
+  // Token clusters
+  for(let ci=0;ci<40;ci++){
+    const {x,y,w,h}=getCellRect(ci);
+    const cluster=document.createElement('div');cluster.className='token-cluster';cluster.id='tc-'+ci;
+    cluster.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;position:absolute;`;
+    boardEl.appendChild(cluster);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════
+function renderBoard() {
+  if(!G)return;
+  const fs=Math.max(6,Math.round(boardSize/82));
+  G.cells.forEach((c,ci)=>{
+    const housesEl=document.getElementById('houses-'+ci);
+    if(housesEl){
+      housesEl.innerHTML='';
+      if(c.type==='prop'&&(c.houses||0)>0&&!c.mortgaged){
+        if(c.houses===4){const h=document.createElement('div');h.className='hotel-marker';h.style.width=Math.round(fs*1.6)+'px';h.style.height=Math.round(fs*1.1)+'px';housesEl.appendChild(h);}
+        else{for(let i=0;i<c.houses;i++){const hd=document.createElement('div');hd.className='house-dot';hd.style.width=hd.style.height=Math.round(fs*0.88)+'px';housesEl.appendChild(hd);}}
+      }
+    }
+    const ob=document.getElementById('ob-'+ci);
+    if(ob){
+      if(c.owner!==null&&!c.mortgaged){ob.style.display='block';ob.style.background=G.players[c.owner].color;ob.style.boxShadow=`0 0 10px ${G.players[c.owner].color}`;}
+      else ob.style.display='none';
+    }
+    const orEl=document.getElementById('or-'+ci);
+    if(orEl){
+      if(c.owner!==null&&!c.mortgaged){orEl.style.borderColor=G.players[c.owner].color+'55';orEl.style.boxShadow=`inset 0 0 8px ${G.players[c.owner].color}18`;}
+      else{orEl.style.borderColor='transparent';orEl.style.boxShadow='none';}
+    }
+    const mo=document.getElementById('mo-'+ci);
+    if(mo)mo.style.display=c.mortgaged?'flex':'none';
+  });
+}
+
+function renderDiceCenter() {
+  const el1=document.getElementById('die1'),el2=document.getElementById('die2');
+  if(el1)el1.textContent=DICE_FACES[(G.d1||1)-1];
+  if(el2)el2.textContent=DICE_FACES[(G.d2||1)-1];
+}
+
+function renderTokens() {
+  for(let ci=0;ci<40;ci++){const tc=document.getElementById('tc-'+ci);if(tc)tc.innerHTML='';}
+  G.players.forEach((p,pi)=>{
+    if(p.bankrupt)return;
+    const tc=document.getElementById('tc-'+p.pos);if(!tc)return;
+    const tk=document.createElement('div');tk.className='token';
+    const isActive=pi===G.turn&&!animating;
+    if(isActive){tk.classList.add('active-token');tk.style.setProperty('--tok-color',p.color);}
+    const tSize=Math.max(14,Math.round(boardSize/36));
+    tk.style.cssText=`width:${tSize}px;height:${tSize}px;background:${p.color};font-size:${Math.round(tSize*0.62)}px;`;
+    tk.textContent=p.char.emoji;tc.appendChild(tk);
+  });
+}
+
+function renderPlayers() {
+  const el=document.getElementById('players-list');if(!el||!G)return;
+  const nws=G.players.map((_,i)=>getNetWorth(i));
+  const maxNW=Math.max(...nws,START_MONEY);
+  el.innerHTML=G.players.map((p,i)=>{
+    const isAct=i===G.turn&&!p.bankrupt;
+    const nwPct=Math.round((nws[i]/maxNW)*100);
+    const jailBadge=p.jail_turns>0?`<span class="badge-jail">⚫${p.jail_turns}</span>`:'';
+    const abilBadge=!p.ability_used&&!p.is_bot?`<span class="badge-ability">✨능력</span>`:'';
+    const tradeBadge=G.phase==='trade_respond'&&G.trade&&G.trade.toIdx===i&&!p.is_bot?`<span class="badge-trade">🤝제안</span>`:'';
+    if(p.bankrupt)return`<div class="player-card bankrupt" style="--p-color:${p.color}"><div class="player-avatar" style="opacity:0.35">${p.char.emoji}</div><div class="player-info"><div class="player-name-row"><span class="player-name-txt" style="color:${p.color}">${p.name}</span><span class="badge-bankrupt">💀파산</span></div><div class="player-money" style="color:#444">₩0</div></div></div>`;
+    return`<div class="player-card${isAct?' active':''}" style="--p-color:${p.color}"><div class="player-avatar">${p.char.emoji}</div><div class="player-info"><div class="player-name-row"><span class="player-name-txt" style="color:${p.color}">${p.name}</span>${p.is_bot?'<span class="bot-badge">AI</span>':''}${jailBadge}${abilBadge}${tradeBadge}</div><div class="player-money">₩${p.money.toLocaleString()}</div><div class="net-worth-bar"><div class="net-worth-fill" style="width:${nwPct}%;background:${p.color}"></div></div></div></div>`;
+  }).join('');
+}
+
+function renderAction() {
+  const az=document.getElementById('action-zone');if(!az||!G)return;
+  const pidx=G.turn,p=G.players[pidx],phase=G.phase;
+
+  let html=`<div class="turn-banner" style="color:${p.color}"><span class="turn-avatar">${p.char.emoji}</span>${p.name}${p.is_bot?' AI':''} 차례</div>`;
+  html+=`<div class="dice-display"><div class="dice-mini${G.d1===G.d2?' double-mini':''}">${DICE_FACES[(G.d1||1)-1]}</div><div class="dice-mini${G.d1===G.d2?' double-mini':''}">${DICE_FACES[(G.d2||1)-1]}</div></div>`;
+
+  if(p.is_bot){html+=`<div class="info-box">🤖 AI 처리 중...</div>`;az.innerHTML=html;return;}
+  if(p.bankrupt){az.innerHTML=html;return;}
+
+  // Trade respond (from other player)
+  if(phase==='trade_respond'&&G.trade&&G.trade.toIdx===pidx){
+    const t=G.trade;const from=G.players[t.fromIdx];
+    const fp=t.fromProps.map(ci=>CELLS[ci].name).join(', ')||'없음';
+    const tp=t.toProps.map(ci=>CELLS[ci].name).join(', ')||'없음';
+    html+=`<div class="trade-box">
+      <div class="trade-title">🤝 거래 제안!</div>
+      <div style="font-size:0.7rem;color:var(--text3);margin-bottom:8px">
+        <b style="color:${from.color}">${from.name}</b>의 제안:
+      </div>
+      <div style="font-size:0.7rem;color:var(--cyan);margin-bottom:4px">📤 ${from.name}: ${fp} + ₩${t.fromMoney.toLocaleString()}</div>
+      <div style="font-size:0.7rem;color:var(--pink);margin-bottom:10px">📥 내 지불: ${tp} + ₩${t.toMoney.toLocaleString()}</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="respondTrade(true)">✅ 수락</button>
+      <button class="btn btn-ghost" onclick="respondTrade(false)">❌ 거절</button>
+    </div>`;
+    az.innerHTML=html;return;
+  }
+
+  if(phase==='trade_offer'&&G.trade&&G.trade.fromIdx===pidx){
+    const t=G.trade;
+    const myProps=G.cells.map((c,ci)=>({c,ci})).filter(({c})=>c.owner===pidx&&['prop','airport','util'].includes(c.type)&&!c.mortgaged);
+    const otherAlive=alive().filter(o=>G.players.indexOf(o)!==pidx);
+
+    const targetChips=()=>{
+      const tIdx=t.toIdx;
+      const theirProps=G.cells.map((c,ci)=>({c,ci})).filter(({c})=>c.owner===tIdx&&['prop','airport','util'].includes(c.type)&&!c.mortgaged);
+      return theirProps.map(({c,ci})=>`<div class="trade-prop-chip${t.toProps.includes(ci)?' selected-trade':''}" onclick="toggleTradeProp('to',${ci})">${c.flag||''}${c.name}</div>`).join('')||'<span style="font-size:0.65rem;color:var(--text3)">소유 없음</span>';
+    };
+
+    html+=`<div class="trade-box">
+      <div class="trade-title">🤝 거래 협상</div>
+      <div class="trade-section">상대 선택</div>
+      <select class="trade-target-select" onchange="updateTradeTarget(this)">
+        ${otherAlive.map(o=>{const i=G.players.indexOf(o);return`<option value="${i}"${t.toIdx===i?' selected':''}>${o.char.emoji} ${o.name}</option>`;}).join('')}
+      </select>
+      <div class="trade-section">📤 내가 줄 것</div>
+      <div class="trade-prop-list">${myProps.map(({c,ci})=>`<div class="trade-prop-chip${t.fromProps.includes(ci)?' selected-trade':''}" onclick="toggleTradeProp('from',${ci})">${c.flag||''}${c.name}</div>`).join('')||'<span style="font-size:0.65rem;color:var(--text3)">소유 없음</span>'}</div>
+      <input class="trade-money-input" type="number" placeholder="추가 지불 금액 (₩)" min="0" max="${p.money}" value="${t.fromMoney}" oninput="updateTradeFromMoney(this.value)">
+      <div class="trade-section">📥 내가 받을 것</div>
+      <div class="trade-prop-list" id="target-props">${targetChips()}</div>
+      <input class="trade-money-input" type="number" placeholder="상대 추가 지불 요청 (₩)" min="0" value="${t.toMoney}" oninput="updateTradeToMoney(this.value)">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-cyan" onclick="submitTrade()">📨 제안 보내기</button>
+      <button class="btn btn-ghost" onclick="cancelTrade()">취소</button>
+    </div>`;
+    az.innerHTML=html;return;
+  }
+
+  if(phase==='roll'){
+    if(p.jail_turns>0){
+      html+=`<div class="info-box">⚫ 블랙홀 구금 (${p.jail_turns}턴 남음)<br>보석금: ₩${JAIL_BAIL.toLocaleString()}</div>`;
+      html+=`<div class="btn-row"><button class="btn btn-orange" onclick="doJail(true)" ${p.money<JAIL_BAIL?'disabled':''}>💰 보석금</button><button class="btn btn-roll" style="flex:1.4" onclick="doJail(false)">🎲 더블 도전</button></div>`;
+    } else {
+      if(!p.ability_used)html+=`<button class="btn btn-purple" onclick="useAbility()">✨ ${p.char.ability}</button>`;
+      html+=`<button class="btn btn-roll" onclick="doRoll()" ${animating?'disabled':''}>🎲 주사위 굴리기!</button>`;
+      html+=`<div class="btn-row"><button class="btn btn-cyan" onclick="initiateTrade()">🤝 협상</button><button class="mgr-toggle${mgrOpen?' open':''}" style="flex:1.4;border-radius:var(--r2);font-size:0.74rem;padding:8px 10px" onclick="toggleMgr()">🏗️ 관리 <span class="mgr-toggle-arrow">▼</span></button></div>`;
+      html+=`<div class="mgr-list${mgrOpen?' open':''}" id="mgr-list"></div>`;
+    }
+  } else if(phase==='buy'){
+    const ci=p.pos,cell=G.cells[ci];
+    const ico=cell.flag||'🏠';
+    const rentTable=cell.type==='prop'?[['기본',`₩${cell.rent}`],['독점',`₩${cell.rent*2}`],['집1',`₩${cell.rent*RENT_MULT[1]}`],['집2',`₩${cell.rent*RENT_MULT[2]}`],['집3',`₩${cell.rent*RENT_MULT[3]}`],['호텔',`₩${cell.rent*RENT_MULT[4]}`]]:[];
+    const rentHtml=rentTable.map(r=>`<div class="prop-card-rent-row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('');
+    html+=`<div class="prop-card-popup" style="--card-color:${cell.color||'rgba(255,215,0,0.15)'}">
+      <div class="prop-card-color-band" style="background:${cell.color||'linear-gradient(90deg,#ffd700,#ff8c00)'}"></div>
+      <div class="prop-card-flag">${ico}</div>
+      <div class="prop-card-city">${cell.name}</div>
+      <div class="prop-card-country">${cell.country||''}</div>
+      <div class="prop-card-price">₩${cell.price.toLocaleString()}</div>
+      ${rentHtml}
+    </div>
+    <button class="btn btn-green" onclick="doBuy(true)" ${p.money<cell.price?'disabled':''}>✅ 매입! -₩${cell.price.toLocaleString()}</button>
+    <button class="btn btn-purple" onclick="doBuy(false)">🔨 경매 시작</button>`;
+  } else if(phase==='card'&&G.pending_card){
+    const card=G.pending_card;
+    const amtHtml=card.amount!==undefined?`<div class="card-effect ${card.amount>0?'gain':'lose'}">${card.amount>0?'+':''}₩${Math.abs(card.amount).toLocaleString()}</div>`:`<div class="card-effect">${card.type==='goto_jail'?'⚫ 블랙홀!':card.type==='nearest_airport'?'✈️ 공항으로!':card.type==='special'?'🌈 특별 혜택!':''}</div>`;
+    html+=`<div class="card-box"><div class="card-emoji">${card.emoji}</div><div class="card-title">${card.text}</div>${amtHtml}</div><button class="btn btn-roll" onclick="doCard()">확인!</button>`;
+  } else if(phase==='casino'){
+    const casinoBet=300;
+    html+=`<div class="casino-box">
+      <div class="casino-title">🎰 라스베가스!</div>
+      <div class="casino-slots" id="casino-slots">🍒🍋🔔</div>
+      <div class="casino-odds">당첨 확률 45% · 당첨 시 베팅의 3배<br>꽝 시 베팅금 손실</div>
+      <div class="casino-amount">베팅: ₩${casinoBet.toLocaleString()}</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gold" onclick="doCasino(true)" ${p.money<casinoBet?'disabled':''}>🎲 베팅!</button>
+      <button class="btn btn-ghost" onclick="doCasino(false)">패스</button>
+    </div>`;
+  } else if(phase==='auction'&&G.auction){
+    const auction=G.auction;const ci=auction.ci;const cell=G.cells[ci];
+    const leader=auction.leaderId>=0?G.players[auction.leaderId].name:'없음';
+    const minBid=auction.currentBid+50;
+    const amIPart=auction.participants.includes(pidx);
+    html+=`<div class="auction-box">
+      <div class="auction-title">🔨 경매!</div>
+      <div class="auction-prop">${cell.flag||'🏠'}</div>
+      <div class="auction-name">${cell.name} · ${cell.country||''}</div>
+      <div class="auction-current">₩${auction.currentBid.toLocaleString()}</div>
+      <div class="auction-leader">최고 입찰자: <b style="color:${auction.leaderId>=0?G.players[auction.leaderId].color:'#666'}">${leader}</b></div>
+    </div>`;
+    if(amIPart&&!p.bankrupt){
+      html+=`<div class="bid-input-row">
+        <input class="bid-input" type="number" id="bid-input" placeholder="입찰가" min="${minBid}" value="${Math.min(minBid,p.money)}" step="50">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-purple" onclick="playerBid(parseInt(document.getElementById('bid-input').value)||0)" ${p.money<minBid?'disabled':''}>🔨 입찰!</button>
+        <button class="btn btn-ghost" onclick="playerPass()">↩️ 패스</button>
+      </div>`;
+    } else {
+      html+=`<div class="info-box">🤖 AI 입찰 중...</div>`;
     }
   }
-  setInterval(draw, 55);
-})();
+
+  az.innerHTML=html;
+  if(phase==='roll'&&!p.jail_turns&&mgrOpen)renderMgr();
+  animateCasinoSlots();
+}
+
+function animateCasinoSlots() {
+  const el=document.getElementById('casino-slots');
+  if(!el)return;
+  const symbols=['🍒','🍋','🔔','💎','7️⃣','🍀'];
+  const iv=setInterval(()=>{
+    if(!document.getElementById('casino-slots')){clearInterval(iv);return;}
+    el.textContent=symbols[Math.floor(Math.random()*symbols.length)]+symbols[Math.floor(Math.random()*symbols.length)]+symbols[Math.floor(Math.random()*symbols.length)];
+  },120);
+  setTimeout(()=>clearInterval(iv),5000);
+}
+
+function toggleMgr(){mgrOpen=!mgrOpen;renderAction();}
+function renderMgr(){
+  const el=document.getElementById('mgr-list');if(!el)return;
+  const pidx=G.turn,p=G.players[pidx];
+  const mine=G.cells.map((c,ci)=>({c,ci})).filter(({c})=>c.owner===pidx);
+  if(!mine.length){el.innerHTML=`<div style="font-size:0.66rem;color:var(--text3);padding:4px 2px">소유 부동산 없음</div>`;return;}
+  el.innerHTML=mine.map(({c,ci})=>{
+    if(!['prop','airport','util'].includes(c.type))return'';
+    const canBuild=c.type==='prop'&&ownsGroup(pidx,c.group)&&!c.mortgaged&&(c.houses||0)<4;
+    const cost=BUILD_COST[c.group]||300;
+    let hIcons='';
+    if(c.houses===4)hIcons='<span style="color:#ff4560;font-size:0.6rem">🏨</span>';
+    else for(let i=0;i<(c.houses||0);i++)hIcons+='<span style="color:#10d96e;font-size:0.6rem">■</span>';
+    return`<div class="prop-row">
+      <div class="prop-color" style="background:${c.color||'#555'}"></div>
+      <span class="prop-name${c.mortgaged?' mortgaged':''}">${c.flag||''}${c.name}${hIcons}</span>
+      <div class="prop-btns">
+        ${canBuild&&p.money>=cost?`<button class="mini-b mini-b-build" onclick="doBuild(${pidx},${ci})">${(c.houses||0)===3?'🏨':'🏠'}</button>`:''}
+        ${!c.mortgaged&&(c.houses||0)===0?`<button class="mini-b mini-b-mort" onclick="doMortgage(${pidx},${ci})">저당</button>`:''}
+        ${c.mortgaged?`<button class="mini-b mini-b-unmort" onclick="doUnmortgage(${pidx},${ci})" ${p.money<Math.floor(c.price*0.6)?'disabled':''}>해제</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderLog(){
+  const el=document.getElementById('log-area');if(!el)return;
+  el.innerHTML=G.log.slice(0,60).map(e=>`<div class="log-row log-${e.style||''}">${e.msg}</div>`).join('');
+}
+
+function renderAll(){if(!G)return;renderBoard();renderTokens();renderDiceCenter();renderPlayers();renderAction();renderLog();}
+
+// ═══════════════════════════════════════════════════════════
+//  TOOLTIP
+// ═══════════════════════════════════════════════════════════
+function showTooltip(ci,e){
+  if(!G)return;
+  const c=G.cells[ci];
+  const tt=document.getElementById('tooltip');
+  const ttTitle=document.getElementById('tt-title');
+  const ttBody=document.getElementById('tt-body');
+  let bandHtml=c.color?`<span class="tooltip-band" style="background:${c.color}"></span>`:'';
+  ttTitle.innerHTML=`${bandHtml}${c.flag||''} ${c.name}`;
+  let rows='';
+  if(c.type==='prop'){
+    rows+=`<div class="tooltip-row"><span>국가</span><span>${c.country||'-'}</span></div>`;
+    rows+=`<div class="tooltip-row"><span>매입가</span><span>₩${c.price.toLocaleString()}</span></div>`;
+    if(c.owner!==null){
+      rows+=`<div class="tooltip-row"><span>소유자</span><span style="color:${G.players[c.owner].color}">${G.players[c.owner].name}</span></div>`;
+      if(!c.mortgaged){const rent=calcRent(ci,7);rows+=`<div class="tooltip-row"><span>현재 임료</span><span style="color:#10d96e">₩${rent.toLocaleString()}</span></div>`;}
+    }
+    if((c.houses||0)>0)rows+=`<div class="tooltip-row"><span>건물</span><span>${c.houses===4?'🏨 호텔':'🏠 집'+c.houses+'채'}</span></div>`;
+    if(c.mortgaged)rows+=`<div class="tooltip-row" style="color:#ff4560"><span>저당 중</span><span>⚠️</span></div>`;
+  } else if(c.type==='airport'){
+    rows+=`<div class="tooltip-row"><span>매입가</span><span>₩${c.price.toLocaleString()}</span></div>`;
+    if(c.owner!==null){const n=G.cells.filter(c2=>c2.type==='airport'&&c2.owner===c.owner).length;rows+=`<div class="tooltip-row"><span>소유자</span><span style="color:${G.players[c.owner].color}">${G.players[c.owner].name}</span></div>`;rows+=`<div class="tooltip-row"><span>현재 임료</span><span style="color:#10d96e">₩${(100*n*n).toLocaleString()}</span></div>`;}
+    rows+=`<div class="tooltip-row"><span>1/2/3/4개</span><span>₩100/400/900/1600</span></div>`;
+  } else if(c.type==='tax'){
+    rows+=`<div class="tooltip-row"><span>세금</span><span style="color:#ff4560">₩${c.price.toLocaleString()}</span></div>`;
+  } else if(c.type==='util'){
+    rows+=`<div class="tooltip-row"><span>매입가</span><span>₩${c.price.toLocaleString()}</span></div>`;
+    rows+=`<div class="tooltip-row"><span>1개 보유</span><span>주사위×4</span></div>`;
+    rows+=`<div class="tooltip-row"><span>2개 보유</span><span>주사위×12</span></div>`;
+  } else if(c.type==='casino'){
+    rows+=`<div class="tooltip-row"><span>베팅</span><span>₩300</span></div>`;
+    rows+=`<div class="tooltip-row"><span>당첨시</span><span style="color:#10d96e">₩900 (3배)</span></div>`;
+    rows+=`<div class="tooltip-row"><span>당첨율</span><span>45%</span></div>`;
+  }
+  ttBody.innerHTML=rows;
+  tt.style.display='block';
+  const rect=e.target.getBoundingClientRect();
+  let lx=rect.right+10,ly=rect.top;
+  if(lx+185>window.innerWidth)lx=rect.left-195;
+  if(ly+170>window.innerHeight)ly=window.innerHeight-180;
+  tt.style.left=lx+'px';tt.style.top=ly+'px';
+}
+function hideTooltip(){document.getElementById('tooltip').style.display='none';}
+
+// ═══════════════════════════════════════════════════════════
+//  SOUND
+// ═══════════════════════════════════════════════════════════
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}return audioCtx;}
+function playSound(type){
+  const ctx=getAudioCtx();if(!ctx)return;
+  try{
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    const now=ctx.currentTime;
+    if(type==='roll'){osc.type='square';osc.frequency.setValueAtTime(300,now);osc.frequency.exponentialRampToValueAtTime(650,now+0.1);osc.frequency.exponentialRampToValueAtTime(200,now+0.22);gain.gain.setValueAtTime(0.07,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.27);osc.start(now);osc.stop(now+0.27);}
+    else if(type==='buy'){osc.type='sine';[523,659,784].forEach((f,i)=>{osc.frequency.setValueAtTime(f,now+i*0.1);});gain.gain.setValueAtTime(0.09,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.42);osc.start(now);osc.stop(now+0.42);}
+    else if(type==='card'){osc.type='triangle';osc.frequency.setValueAtTime(440,now);osc.frequency.exponentialRampToValueAtTime(920,now+0.18);gain.gain.setValueAtTime(0.06,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.32);osc.start(now);osc.stop(now+0.32);}
+    else if(type==='casino'){osc.type='sawtooth';[800,400,1200,600,1800].forEach((f,i)=>{osc.frequency.setValueAtTime(f,now+i*0.05);});gain.gain.setValueAtTime(0.05,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.32);osc.start(now);osc.stop(now+0.32);}
+    else if(type==='click'){osc.type='sine';osc.frequency.setValueAtTime(1100,now);osc.frequency.exponentialRampToValueAtTime(700,now+0.06);gain.gain.setValueAtTime(0.04,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.09);osc.start(now);osc.stop(now+0.09);}
+    else if(type==='win'){[523,659,784,1047,1319].forEach((freq,i)=>{const o2=ctx.createOscillator(),g2=ctx.createGain();o2.connect(g2);g2.connect(ctx.destination);o2.type='sine';o2.frequency.setValueAtTime(freq,now+i*0.1);g2.gain.setValueAtTime(0.11,now+i*0.1);g2.gain.exponentialRampToValueAtTime(0.001,now+i*0.1+0.28);o2.start(now+i*0.1);o2.stop(now+i*0.1+0.28);});}
+    else if(type==='auction'){osc.type='sine';osc.frequency.setValueAtTime(880,now);osc.frequency.setValueAtTime(1100,now+0.1);gain.gain.setValueAtTime(0.07,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.22);osc.start(now);osc.stop(now+0.22);}
+    else if(type==='trade'){osc.type='sine';[660,880,1100].forEach((f,i)=>{osc.frequency.setValueAtTime(f,now+i*0.07);});gain.gain.setValueAtTime(0.06,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start(now);osc.stop(now+0.3);}
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GAME START / OVER / RESET
+// ═══════════════════════════════════════════════════════════
+function startGame(){
+  const name=document.getElementById('inp-name').value.trim()||'여행자';
+  const bots=parseInt(document.getElementById('inp-bots').value);
+  const diff=document.getElementById('inp-diff').value;
+  G=initGame(name,bots,diff);
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='flex';
+  setTimeout(()=>{
+    const bw=document.querySelector('.board-wrap');
+    if(bw){const avail=Math.min(bw.offsetWidth-20,bw.offsetHeight-20);boardSize=Math.max(340,Math.min(680,avail));}
+    buildBoard();
+    log('🌍 인베스트마블 REMASTERED 시작!','important');
+    log('🔨 경매 시스템 활성화 · 🤝 협상 시스템 활성화');
+    log('✨ 캐릭터 능력과 협상으로 세계를 정복하세요!');
+    renderAll();
+    setTimeout(checkBotTurn,1000);
+  },60);
+}
+
+function showGameOver(){
+  if(!G||!G.winner)return;
+  const winnerP=G.players[G.winnerIdx];
+  playSound('win');
+  document.getElementById('winner-avatar').textContent=winnerP.char.emoji;
+  document.getElementById('winner-name').textContent=`${winnerP.name} 우승!`;
+  const ranked=[...G.players].sort((a,b)=>getNetWorth(G.players.indexOf(b))-getNetWorth(G.players.indexOf(a)));
+  const medals=['🥇','🥈','🥉','4️⃣'];
+  document.getElementById('rank-list').innerHTML=ranked.map((p,i)=>{
+    const ri=G.players.indexOf(p);
+    return`<div class="rank-row"><span class="rank-medal">${medals[i]||''}</span><span class="rank-avatar">${p.char.emoji}</span><span class="rank-player" style="color:${p.color}">${p.name}</span>${p.bankrupt?`<span class="rank-dead">💀 파산</span>`:`<span class="rank-money">₩${getNetWorth(ri).toLocaleString()}</span>`}</div>`;
+  }).join('');
+  document.getElementById('gameover').style.display='flex';
+  butler('win');spawnConfetti();spawnFireworks();
+}
+
+function resetToChar(){
+  G=null;mgrOpen=false;animating=false;selectedChar=null;auctionState=null;tradeState=null;
+  document.getElementById('gameover').style.display='none';
+  document.getElementById('game').style.display='none';
+  document.getElementById('setup').style.display='none';
+  document.getElementById('char-select').style.display='flex';
+  document.querySelectorAll('.char-card').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('char-next-btn').classList.remove('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONFETTI & FIREWORKS
+// ═══════════════════════════════════════════════════════════
+function spawnConfetti(){
+  const colors=['#ff4560','#4dabf7','#10d96e','#ff8c42','#b26cf7','#ffd700','#2dd4bf','#f472b6'];
+  const shapes=['50%','4px','0'];
+  for(let i=0;i<160;i++){
+    const d=document.createElement('div');d.className='confetti-piece';
+    const size=5+Math.random()*12,dur=2+Math.random()*3,delay=Math.random()*2.5;
+    d.style.cssText=`left:${Math.random()*100}%;top:-20px;width:${size}px;height:${size*0.6}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${shapes[Math.floor(Math.random()*shapes.length)]};animation-duration:${dur}s;animation-delay:${delay}s;`;
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),(dur+delay+0.5)*1000);
+  }
+}
+
+function spawnFireworks(){
+  const bg=document.getElementById('fireworks-bg');if(!bg)return;
+  for(let fw=0;fw<6;fw++){
+    setTimeout(()=>{
+      const x=20+Math.random()*60,y=10+Math.random()*50;
+      const colors=['#ffd700','#ff4560','#4dabf7','#10d96e','#b26cf7'];
+      const color=colors[Math.floor(Math.random()*colors.length)];
+      for(let i=0;i<20;i++){
+        const p=document.createElement('div');
+        const angle=(i/20)*Math.PI*2,dist=60+Math.random()*80;
+        const dur=0.6+Math.random()*0.6;
+        p.style.cssText=`position:absolute;left:${x}%;top:${y}%;width:5px;height:5px;border-radius:50%;background:${color};animation:sparkleFly ${dur}s ease-out forwards;--dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist}px;`;
+        bg.appendChild(p);
+        setTimeout(()=>p.remove(),(dur+0.1)*1000);
+      }
+    },fw*500);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  initStars();renderCharGrid();
+});
 </script>
+</body>
+</html>
 """
-
-
-# ══════════════════════════════════════════════════════════
-#  메인 렌더 함수
-# ══════════════════════════════════════════════════════════
 
 def render():
     st.markdown("""
     <style>
-    .stApp { background-color: #010409 !important; }
-    section[data-testid="stSidebar"] { background: #010409 !important; }
-    .stMarkdown, .stMarkdown * { font-family: 'JetBrains Mono', monospace !important; }
+    #MainMenu{visibility:hidden;}
+    footer{visibility:hidden;}
+    header{visibility:hidden;}
+    .block-container{padding:0 !important;max-width:100% !important;}
+    iframe{border:none;}
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(TERMINAL_CSS, unsafe_allow_html=True)
+    # 화면 높이에 맞게 자동 조절 안내
+    col_info, col_tip = st.columns([3, 1])
+    with col_info:
+        st.caption("📱 모바일: 화면을 가로로 돌리면 더 편합니다 | 💡 게임이 잘리면 아래로 스크롤하세요")
+    with col_tip:
+        st.caption("🖥️ 권장: 1280px 이상 화면")
 
-    if 'terminal_cleared' not in st.session_state:
-        st.session_state.terminal_cleared = set()
-    # set 타입 보장 (DB에서 list로 불러온 경우 변환)
-    if not isinstance(st.session_state.terminal_cleared, set):
-        st.session_state.terminal_cleared = set(st.session_state.terminal_cleared)
+    components.html(GAME_HTML, height=880, scrolling=True)
 
-    # ── 스테이지 선택 화면 ───────────────────────────────
-    if 'terminal' not in st.session_state or \
-       st.session_state.terminal.get('at_select', False):
-
-        st.markdown(MATRIX_RAIN_HTML, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div style='font-family:"JetBrains Mono",monospace; padding: 28px 0 12px; text-align:center;'>
-          <div class='glitch-text' data-text='💻 THE TERMINAL 방탈출'
-               style='font-size:2rem; display:inline-block; margin-bottom:8px;'>
-            💻 THE TERMINAL 방탈출
-          </div>
-          <div style='color:#3a6a3a; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
-            초고난이도 커맨드라인 해킹 시뮬레이터 — 10 STAGES
-          </div>
-          <div style='color:#1a3a1a; font-size:0.75rem; margin-top:6px;'>
-            마우스는 잊어라 — 오직 커맨드라인으로 숨겨진 단서를 찾아 탈출하라
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        cleared_count = len(st.session_state.terminal_cleared)
-        total_stages  = len(STAGES)
-        progress_pct  = int(cleared_count / total_stages * 100)
-
-        if cleared_count > 0:
-            bar_filled = int(progress_pct / 10)  # 10칸 기준
-            bar_empty  = 10 - bar_filled
-            bar_str    = "█" * bar_filled + "░" * bar_empty
-            st.markdown(f"""
-            <div style='background:#030f03; border:1px solid #1a3a1a; border-radius:6px;
-                        padding:12px 18px; font-family:monospace; font-size:12px;
-                        color:#5a9a5a; margin-bottom:16px;'>
-              <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
-                <span>진행 현황</span>
-                <span style='color:#39ff14;font-weight:bold;'>{cleared_count} / {total_stages} CLEARED</span>
-              </div>
-              <div style='letter-spacing:2px;color:#39ff14;font-size:14px;'>
-                [{bar_str}] <span style='font-size:11px;color:#5a9a5a;'>{progress_pct}%</span>
-              </div>
-              <div style='margin-top:6px;color:#2a5c2a;font-size:11px;'>
-                {"🏆 전체 클리어! 당신은 진정한 해커입니다!" if cleared_count == total_stages else f"다음 목표: STAGE {cleared_count + 1} — {STAGES[cleared_count+1]['title'] if cleared_count+1 in STAGES else ''}"}
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        st.write("")
-
-        for snum, sdata in STAGES.items():
-            cleared = snum in st.session_state.terminal_cleared
-            locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
-
-            badge     = "<span class='clear-badge'>✅ CLEARED</span>" if cleared else ""
-            lock_icon = "🔒 " if locked else ""
-            diff_color = DIFF_COLORS.get(snum, "#39ff14")
-
-            st.markdown(f"""
-            <div class='stage-card' style='{"opacity:0.4;" if locked else ""}'>
-              <div class='stage-title'>{badge}{lock_icon}{html.escape(sdata['title'])}</div>
-              <div class='stage-desc'>{html.escape(sdata['desc'])}</div>
-              <div class='stage-meta'>
-                <span style='color:{diff_color};'>{sdata['difficulty']}</span>
-              </div>
-              <div class='flavor-text'>{html.escape(sdata.get('flavor', ''))}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            btn_label = (
-                f"[REPLAY] STAGE {snum} 다시하기" if cleared else
-                f"[LOCKED] STAGE {snum - 1} 클리어 후 해금" if locked else
-                f"[ENTER]  STAGE {snum} 시작하기"
-            )
-            if st.button(btn_label, key=f"stage_btn_{snum}",
-                         use_container_width=True, disabled=locked):
-                init_terminal(snum)
-                boot_msg = [
-                    "HYOMIN NETWORKS — Secure Shell v2.26.0",
-                    f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
-                    "Connecting to hyomin-secure-node...",
-                    "Connection established. ✓",
-                    "",
-                    "╔══════════════════════════════════════════╗",
-                    f"║  {sdata['title']:<40}║",
-                    "╚══════════════════════════════════════════╝",
-                    "",
-                    f"  📋 목표: {sdata['goal']}",
-                    f"  ⚠️  {sdata.get('flavor', '')}",
-                    "",
-                    "  `help` — 명령어 목록   `hint` — 힌트 보기",
-                    "─" * 44,
-                ]
-                st.session_state.terminal["output"] = boot_msg
-                st.session_state.terminal["at_select"] = False
-                st.rerun()
-
-        st.markdown(TERMINAL_JS, unsafe_allow_html=True)
-        return
-
-    # ── 터미널 게임 화면 ─────────────────────────────────
-    t          = st.session_state.terminal
-    stage_num  = t["stage"]
-    stage_data = STAGES[stage_num]
-
-    elapsed    = int(time.time() - t["start_time"])
-    mins, secs = divmod(elapsed, 60)
-    hint_warn  = t["hint_used"] >= 3
-
-    col_l, col_r = st.columns([4, 1])
-    with col_l:
-        st.markdown(
-            f"<div class='status-bar'>"
-            f"<span class='status-item'>⏱ <span class='status-val'>{mins:02d}:{secs:02d}</span></span>"
-            f"<span class='status-item'>CMD <span class='status-val'>{t['cmd_count']}</span></span>"
-            f"<span class='status-item'>HINT "
-            f"<span class='{'status-warn' if hint_warn else 'status-val'}'>{t['hint_used']}/3</span></span>"
-            f"<span class='status-item' style='color:#ffd700;'>{stage_data['title']}</span>"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-    with col_r:
-        if st.button("◀ 목록", use_container_width=True, key="back_btn"):
-            st.session_state.terminal["at_select"] = True
-            st.rerun()
-
-    # ── 터미널 출력 렌더링 ──────────────────────────────
-    output_html = ""
-    for line in t["output"]:
-        safe = html.escape(line)
-
-        if any(line.startswith(p) for p in [
-            "✅", "  ✅", "  클리어", "  명령어", "  힌트 사용", "  평가", "  다음"
-        ]):
-            cls = "green"
-        elif any(line.startswith(p) for p in [
-            "❌", "║   ACCESS DENIED", "║  ACCESS DENIED"
-        ]):
-            cls = "red"
-        elif line.startswith("[HINT]") or line.startswith("       "):
-            cls = "hint"
-        elif line.startswith("bash:"):
-            cls = "red"
-        elif any(line.startswith(p) for p in ["╔", "╚", "║", "═"]):
-            cls = "cyan" if ("GRANTED" in line or "ACCESS" in line) else "border"
-        elif line.startswith("─") or line.startswith("HYOMIN NETWORKS") \
-                or line.startswith("Last login") or line.startswith("Connecting"):
-            cls = "dim"
-        elif line.startswith("[DIR]"):
-            safe = f"📁 {html.escape(line[6:])}" if line.startswith("[DIR] ") else safe
-            cls  = "dir"
-        elif "Connection established" in line:
-            cls = "green"
-        elif line.startswith("  📋") or line.startswith("  ⚠️") or line.startswith("  `"):
-            cls = "blue"
-        elif line.startswith("find 결과") or line.startswith("검색 결과"):
-            cls = "cyan"
-        else:
-            cls = ""
-
-        output_html += f"<div class='term-line {cls}'>{safe}</div>"
-
-    cwd_disp = t["cwd"]
-    output_html += (
-        f"<div class='term-line prompt'>"
-        f"<span class='term-prompt-user'>ghost@hyomin</span>"
-        f"<span style='color:#b8ffb8;'>:</span>"
-        f"<span class='term-prompt-path'>{html.escape(cwd_disp)}</span>"
-        f"<span class='term-prompt-sym'># </span>"
-        f"<span class='blink-cursor'></span>"
-        f"</div>"
-    )
-
-    st.markdown(f"""
-    <div class='terminal-outer'>
-      <div class='term-titlebar'>
-        <div class='dot dot-r'></div>
-        <div class='dot dot-y'></div>
-        <div class='dot dot-g'></div>
-        <div class='term-title'>
-          ghost@hyomin-secure — {html.escape(cwd_disp)} — STAGE {stage_num}/10
-        </div>
-      </div>
-      <div class='term-body' id='term-scroll'>{output_html}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── 입력창 (클리어 전) ──────────────────────────────
-    if not t["solved"]:
-        cmd_input = st.text_input(
-            label="cmd",
-            key=f"cmd_input_{t['cmd_count']}",
-            placeholder="$ 명령어 입력 후 Enter ↵  (도움말: help)",
-            label_visibility="collapsed",
-        )
-
-        col1, col2, col3, col4 = st.columns([5, 1, 1, 1])
-        with col2:
-            enter_clicked = st.button(
-                "ENTER ↵", use_container_width=True, type="primary", key="enter_btn"
-            )
-        with col3:
-            hint_clicked = st.button("💡 HINT", use_container_width=True, key="hint_btn")
-        with col4:
-            if st.button("CLR", use_container_width=True, key="clear_btn"):
-                t["output"] = []
-                st.rerun()
-
-        if enter_clicked and cmd_input and cmd_input.strip():
-            add_output([f"ghost@hyomin:{t['cwd']}# {cmd_input}"])
-            add_output(process_command(cmd_input, stage_data))
-            t["history"].append(cmd_input)
-            st.rerun()
-
-        if hint_clicked:
-            add_output([f"ghost@hyomin:{t['cwd']}# hint"])
-            add_output(process_command("hint", stage_data))
-            st.rerun()
-
-    else:
-        # ── 클리어 화면 ─────────────────────────────────
-        st.session_state.terminal_cleared.add(stage_num)
-
-        # DB에 클리어 진행상황 영구 저장
-        from utils.core import sync_user_data
-        sync_user_data()
-
-        # 풍선은 한 번만
-        balloon_key = f"balloon_done_{stage_num}"
-        if balloon_key not in st.session_state:
-            st.session_state[balloon_key] = True
-            st.balloons()
-
-        st.markdown(f"""
-        <div style='
-          background: linear-gradient(135deg, #020c02, #041804);
-          border: 1px solid #39ff14;
-          border-radius: 8px;
-          padding: 20px 24px;
-          font-family: "JetBrains Mono", monospace;
-          text-align: center;
-          box-shadow: 0 0 30px rgba(57,255,20,0.2);
-          margin-bottom: 12px;
-        '>
-          <div style='color:#39ff14; font-size:1.5rem; font-weight:700; letter-spacing:3px;
-                      text-shadow: 0 0 20px rgba(57,255,20,0.6);'>
-            ✅ STAGE {stage_num} CLEAR
-          </div>
-          <div style='color:#5a9a5a; font-size:0.85rem; margin-top:10px;'>
-            클리어 시간: <span style='color:#39ff14;font-weight:700;'>{int((time.time() - t["start_time"])//60):02d}:{int((time.time() - t["start_time"])%60):02d}</span>
-            &nbsp;|&nbsp; 사용 힌트: {t['hint_used']}개
-            &nbsp;|&nbsp; 명령어: {t['cmd_count']}개
-          </div>
-          <div style='color:#2a5c2a; font-size:0.78rem; margin-top:8px;'>
-            진행: {len(st.session_state.terminal_cleared)}/{len(STAGES)} 스테이지 완료
-          </div>
-          {'<div style="color:#ffd700; font-size:1rem; margin-top:12px; letter-spacing:2px; text-shadow:0 0 15px rgba(255,215,0,0.6);">🏆 힌트 미사용 클리어! PERFECT HACK!</div>' if t["hint_used"] == 0 else ''}
-        </div>
-        """, unsafe_allow_html=True)
-
-        # 전체 클리어 체크
-        if len(st.session_state.terminal_cleared) == len(STAGES):
-            st.balloons()
-            st.markdown("""
-            <div style='background:linear-gradient(135deg,#1a1000,#2a1800);border:2px solid #ffd700;
-                        border-radius:10px;padding:20px;text-align:center;margin-bottom:14px;
-                        box-shadow:0 0 40px rgba(255,215,0,0.3);font-family:monospace;'>
-              <div style='color:#ffd700;font-size:1.4rem;font-weight:900;letter-spacing:4px;
-                          text-shadow:0 0 20px rgba(255,215,0,0.8);'>
-                🏆 ALL STAGES CLEARED 🏆
-              </div>
-              <div style='color:#b8860b;font-size:0.85rem;margin-top:10px;'>
-                당신은 효민 네트웍스의 모든 비밀을 해독했습니다.<br>
-                진정한 해커 — 창조자에게 도달했습니다.
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        col_sel, col_next = st.columns(2)
-        with col_sel:
-            if st.button("◀ 스테이지 목록", use_container_width=True, key="to_list"):
-                st.session_state.terminal["at_select"] = True
-                st.rerun()
-        with col_next:
-            next_s = stage_num + 1
-            if next_s in STAGES:
-                if st.button(
-                    f"▶ STAGE {next_s} 도전 →",
-                    use_container_width=True, type="primary", key="next_stage"
-                ):
-                    init_terminal(next_s)
-                    ns = STAGES[next_s]
-                    st.session_state.terminal["output"] = [
-                        "HYOMIN NETWORKS — Secure Shell v2.26.0",
-                        f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
-                        "Connecting...",
-                        "",
-                        "╔══════════════════════════════════════════╗",
-                        f"║  {ns['title']:<40}║",
-                        "╚══════════════════════════════════════════╝",
-                        "",
-                        f"  📋 목표: {ns['goal']}",
-                        f"  ⚠️  {ns.get('flavor', '')}",
-                        "",
-                        "  `help` 명령어 목록   `hint` 힌트 보기",
-                        "─" * 44,
-                    ]
-                    st.session_state.terminal["at_select"] = False
-                    st.rerun()
-            else:
-                st.markdown("""
-                <div style='
-                  color:#ffd700; font-family:monospace; text-align:center;
-                  padding:14px; border:1px solid #ffd700; border-radius:6px;
-                  font-size:1rem; letter-spacing:2px;
-                '>
-                  🏆 10 STAGES COMPLETE<br>
-                  <span style='font-size:0.8rem; color:#a07000;'>
-                    당신은 진짜 해커다.
-                  </span>
-                </div>
-                """, unsafe_allow_html=True)
-
-    st.markdown(TERMINAL_JS, unsafe_allow_html=True)
+if __name__ == "__main__":
+    render()
