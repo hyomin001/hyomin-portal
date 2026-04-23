@@ -363,6 +363,63 @@ h1, h2, h3, h4, h5, h6 { color: var(--text) !important; }
 p, span, div { color: var(--text); }
 .stExpander { border-color: var(--border) !important; }
 .stExpander summary { color: var(--text) !important; }
+
+/* ── 아키텍처 카드 (다크 테마) ── */
+.arch-card {
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 22px 24px; margin-bottom: 14px;
+  transition: border-color 0.25s, transform 0.25s;
+}
+.arch-card:hover { border-color: rgba(108,99,255,0.45); transform: translateY(-2px); }
+.arch-card h4 { color: var(--cyan) !important; margin: 0 0 10px; font-size: 1.02rem; }
+.arch-card p  { color: var(--text2) !important; margin: 0; font-size: 0.88rem; line-height: 1.65; }
+.arch-card code { background: rgba(108,99,255,0.18); color: var(--accent) !important; padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+
+.arch-badge {
+  display: inline-block;
+  background: rgba(108,99,255,0.15); color: var(--accent) !important;
+  border: 1px solid rgba(108,99,255,0.35); border-radius: 6px;
+  font-size: 0.72rem; font-weight: 700; padding: 2px 9px; margin: 3px 3px 0 0;
+}
+
+.arch-highlight {
+  background: linear-gradient(90deg, rgba(108,99,255,0.1), rgba(0,212,255,0.07));
+  border-left: 4px solid var(--accent); border-radius: 0 12px 12px 0;
+  padding: 16px 20px; margin-bottom: 16px;
+}
+.arch-highlight p { color: var(--text) !important; font-weight: 700; font-size: 0.97rem; margin: 0; }
+.arch-highlight p.sub { font-weight: 400; color: var(--text2) !important; font-size: 0.87rem; margin-top: 7px; }
+.arch-highlight.green {
+  background: linear-gradient(90deg, rgba(0,255,136,0.08), rgba(0,212,255,0.05));
+  border-left-color: var(--green);
+}
+.arch-highlight.green p { color: var(--green) !important; }
+
+.module-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.module-item {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; flex: 1; min-width: 180px;
+  font-size: 0.83rem; color: var(--text2) !important;
+  transition: border-color 0.2s;
+}
+.module-item:hover { border-color: rgba(108,99,255,0.4); }
+.module-item strong { color: var(--cyan) !important; display: block; margin-bottom: 3px; font-size: 0.8rem; }
+
+/* 서비스 가이드 내부 팁 박스 */
+.tip-box {
+  border-radius: 10px; padding: 12px 14px; margin-top: 12px;
+}
+.tip-box.blue  { background: rgba(0,212,255,0.08);  border-left: 3px solid var(--cyan); }
+.tip-box.green { background: rgba(0,255,136,0.08);  border-left: 3px solid var(--green); }
+.tip-box.gold  { background: rgba(255,215,0,0.08);  border-left: 3px solid var(--gold); }
+.tip-box.purple{ background: rgba(192,78,255,0.08); border-left: 3px solid #c04fff; }
+.tip-box p { margin: 0; font-size: 0.82rem; color: var(--text2) !important; line-height: 1.6; }
+.tip-box .tip-title { font-size: 0.84rem; font-weight: 700; margin-bottom: 5px; }
+.tip-box.blue   .tip-title { color: var(--cyan)  !important; }
+.tip-box.green  .tip-title { color: var(--green) !important; }
+.tip-box.gold   .tip-title { color: var(--gold)  !important; }
+.tip-box.purple .tip-title { color: #c04fff !important; }
 </style>
 """
 
@@ -580,366 +637,69 @@ if st.session_state.page_view == "portal":
                 time.sleep(0.8); st.session_state.page_view = "login"
             st.rerun()
 
-    # ── 시스템 공지 & 아키텍처 섹션 ───────────────────────
-    with st.expander("📋 시스템 공지 & 전체 아키텍처 구조 보기", expanded=False):
-
-        # 공지 카드
+    # ── 공지 & 아키텍처 ──
+    with st.expander("📋 시스템 공지 & 전체 아키텍처", expanded=False):
         st.markdown("""
-<div class="arch-highlight">
-    <p>🔧 시스템 대공사 및 재시작 안내</p>
-    <p class="sub">
-        데이터베이스를 외부 클라우드(MongoDB Atlas)로 완벽 분리하고,
-        <b>38개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다.
-        유저 자산은 이제 영구히 안전합니다.
-    </p>
+<div class='notice-card' style='border-color:rgba(0,255,136,0.3);'>
+  <h4>🌟 시즌 1 공식 개막</h4>
+  <p><b>기간:</b> 2026년 4월 15일 ~ 5월 15일 &nbsp;|&nbsp; 신규 가입 즉시 <b>초기 정착금 5억 원</b> 지급!</p>
 </div>
-<div class="arch-highlight" style="border-left-color:#16A34A; background: linear-gradient(90deg, #F0FDF4, #EFF6FF);">
-    <p style="color:#15803D !important;">🌟 정규 시즌 1 공식 개막</p>
-    <p class="sub">
-        <b>[시즌 기간]</b> 2026년 4월 15일 ~ 5월 15일<br>
-        새로운 시즌의 시작을 기념하여 모든 시민께 <b>초기 정착금 5억 원</b>을 즉시 지급합니다!
-    </p>
+<div class='notice-card' style='border-color:rgba(108,99,255,0.3);'>
+  <h4>🔧 시스템 대공사 완료</h4>
+  <p>MongoDB Atlas 클라우드 이전 완료. 38개 모듈화 설계 적용. 유저 자산 영구 안전 보존.</p>
+  <div style='margin-top:10px;'>
+    <span class='notice-badge'>MongoDB Atlas</span>
+    <span class='notice-badge'>SHA-256</span>
+    <span class='notice-badge'>38개 모듈</span>
+    <span class='notice-badge'>실시간 백업</span>
+  </div>
 </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("### 🏗️ SYSTEM ARCHITECTURE & MODULES")
-        st.markdown("---")
-
-        col_a, col_b = st.columns(2)
-
-        with col_a:
+    with st.expander("📖 서비스 완전 가이드", expanded=False):
+        g1, g2 = st.columns(2)
+        with g1:
             st.markdown("""
-<div class="arch-card">
-    <h4>🗄️ 데이터베이스 — MongoDB Atlas</h4>
-    <p>
-        모든 유저 자산 및 시장 데이터는 <b>MongoDB Atlas 클라우드</b>에 실시간 저장됩니다.
-        로컬 JSON 파일 의존을 완전히 탈피하여, 서버 재시작과 무관하게 데이터가 영구 보존됩니다.
-        비밀번호는 <b>SHA-256 단방향 해시</b>로 암호화되어 원문 복원이 불가능합니다. 
-    </p>
-    <div style="margin-top:10px;">
-        <span class="arch-badge">MongoDB Atlas</span>
-        <span class="arch-badge">SHA-256 암호화</span>
-        <span class="arch-badge">실시간 백업</span>
-        <span class="arch-badge">utils/database.py</span>
-    </div>
+<div class='notice-card'>
+  <h4>🌌 효민 유니버스</h4>
+  <p>가입 즉시 5억 지급. 주식·코인·부동산·은행·클랜·미니게임 8종·VIP 라운지.</p>
+  <div style='margin-top:8px;'>
+    <span class='notice-badge'>📈 주식</span><span class='notice-badge'>₿ 코인</span>
+    <span class='notice-badge'>🏠 부동산</span><span class='notice-badge'>🎰 게임 8종</span>
+  </div>
+</div>
+<div class='notice-card'>
+  <h4>🧠 AI 무한 모의고사</h4>
+  <p>Gemini 2.5 Flash가 PDF·텍스트를 분석해 무한 문제 생성. 오답 자동 재출제.</p>
+</div>
+<div class='notice-card'>
+  <h4>🎲 인베스트 마블</h4>
+  <p>모노폴리 기반 투자 보드게임. AI 봇 대전, 세계 랜드마크 독점.</p>
+</div>
+            """, unsafe_allow_html=True)
+        with g2:
+            st.markdown("""
+<div class='notice-card'>
+  <h4>🗳️ 월드 배틀</h4>
+  <p>매일 새로운 주제로 A vs B 진영 투표. 실시간 비율 시각화, 댓글, 완전 익명.</p>
+</div>
+<div class='notice-card'>
+  <h4>💻 THE TERMINAL</h4>
+  <p>CLI 명령어로 가상 파일시스템을 탐색해 방탈출. 10 스테이지, 단계별 힌트.</p>
+</div>
+<div class='notice-card'>
+  <h4>⚔️ 던전 런 REBORN</h4>
+  <p>뱀서라이크 서바이벌. 전사·마법사·궁수·닌자 4클래스. 웨이브 보스 격파.</p>
 </div>
             """, unsafe_allow_html=True)
 
-            st.markdown("""
-<div class="arch-card">
-    <h4>🧩 37개 독립 모듈 구조</h4>
-    <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>38개의 독립 모듈</b>로 구성됩니다.
-        각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
-        한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
-        유지보수 및 신규 기능 추가가 용이한 구조입니다.
-    </p>
-    <div style="margin-top:10px;">
-        <span class="arch-badge">app.py (진입점)</span>
-        <span class="arch-badge">pages/ (27개 페이지)</span>
-        <span class="arch-badge">utils/ (5개 유틸)</span>
-        <span class="arch-badge">독립 렌더링</span>
+    st.markdown("""
+    <div class='portal-footer'>
+      <p>ⓒ 2026 HYOMIN PORTAL INC. · Powered by AI & Vibe Coding</p>
+      <p style='margin-top:6px;font-size:0.7rem;'>Built with Claude · MongoDB Atlas · Streamlit · Gemini AI</p>
     </div>
-</div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-<div class="arch-card">
-    <h4>🔐 보안 & 접근 제어</h4>
-    <p>
-        로그인 5회 실패 시 30초 잠금이 적용되는 <b>Brute-force 방어</b> 시스템을 내장합니다.
-        관리자 계정은 별도의 <b>하드코딩 해시</b>로 보호되며, DB에 평문이 저장되지 않습니다.
-        VIP 라운지는 순자산 1,000억 이상 또는 관리자만 접근 가능한 권한 제어가 적용됩니다.
-    </p>
-    <div style="margin-top:10px;">
-        <span class="arch-badge">Brute-force 방어</span>
-        <span class="arch-badge">관리자 분리</span>
-        <span class="arch-badge">VIP 권한 제어</span>
-        <span class="arch-badge">utils/core.py</span>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-        with col_b:
-            st.markdown("""
-<div class="arch-card">
-    <h4>⏱️ 자동 시장 동기화 — Market Sync</h4>
-    <p>
-        유저가 접속하지 않는 동안에도 <b>시간 슬롯 기반 자동 계산</b>이 작동합니다.
-        주가 변동, 은행 이자, 부동산 임대료가 실시간으로 누적됩니다.
-        접속 시 경과 시간만큼의 모든 변화가 한 번에 정확하게 반영됩니다.
-    </p>
-    <div style="margin-top:10px;">
-        <span class="arch-badge">utils/market_sync.py</span>
-        <span class="arch-badge">주가 자동변동</span>
-        <span class="arch-badge">이자 자동계산</span>
-        <span class="arch-badge">임대료 자동누적</span>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-<div class="arch-card">
-    <h4>🌐 멀티 서비스 포털 구조</h4>
-    <p>
-        <b>HYOMIN PORTAL</b>은 단일 앱 안에서 여러 독립 서비스를 라우팅하는 구조입니다.
-        효민 유니버스(경제 시뮬레이션), AI 아카데미(모의고사), 월드 배틀(투표),
-        THE TERMINAL(방탈출) 등 각 서비스가 하나의 계정으로 통합 이용 가능합니다.
-    </p>
-    <div style="margin-top:10px;">
-        <span class="arch-badge">단일 계정 통합</span>
-        <span class="arch-badge">뷰 기반 라우팅</span>
-        <span class="arch-badge">세션 상태 공유</span>
-        <span class="arch-badge">app.py</span>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-<div class="arch-card">
-    <h4>📊 실시간 통계 & 온라인 감지</h4>
-    <p>
-        접속자 수는 <b>last_seen 타임스탬프</b> 기반으로 5분 이내 활성 유저를 집계합니다.
-        일별 방문자, 누적 가입자, 거래량 통계는 MongoDB stats 컬렉션에 별도 저장됩니다.
-        포털 메인 화면에서 실시간으로 서버 현황을 확인할 수 있습니다.
-    </p>
-    <div style="margin-top:10px;">
-        <span class="arch-badge">last_seen 감지</span>
-        <span class="arch-badge">일별 방문자 집계</span>
-        <span class="arch-badge">거래량 추적</span>
-        <span class="arch-badge">utils/core.py</span>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-        st.markdown("#### 📦 전체 모듈 목록")
-        st.markdown("""
-<div class="module-grid">
-    <div class="module-item"><strong>app.py</strong>진입점·라우터·로그인·뷰 전환</div>
-    <div class="module-item"><strong>utils/database.py</strong>MongoDB 연결·CRUD·stats 관리</div>
-    <div class="module-item"><strong>utils/core.py</strong>해시·포맷·순자산·세션 동기화</div>
-    <div class="module-item"><strong>utils/market_sync.py</strong>주가·코인·이자·임대료 자동동기화</div>
-    <div class="module-item"><strong>utils/config.py</strong>종목·부동산·강화 설정 상수</div>
-    <div class="module-item"><strong>utils/css.py</strong>유니버스 글로벌 다크 테마 CSS</div>
-    <div class="module-item"><strong>pages/home.py</strong>홈 광장·튜토리얼·성장 목표</div>
-    <div class="module-item"><strong>pages/stock.py</strong>주식 트레이딩·차트·매수매도</div>
-    <div class="module-item"><strong>pages/crypto.py</strong>코인 거래소·실시간 시세</div>
-    <div class="module-item"><strong>pages/real_estate.py</strong>부동산 매입·임대료 수익</div>
-    <div class="module-item"><strong>pages/bank.py</strong>대출·송금·이자 계산</div>
-    <div class="module-item"><strong>pages/txlog.py</strong>개인 거래 내역 조회</div>
-    <div class="module-item"><strong>pages/ranking.py</strong>시즌1 랭킹·게시판</div>
-    <div class="module-item"><strong>pages/clan.py</strong>길드·클랜 시스템</div>
-    <div class="module-item"><strong>pages/dm.py</strong>개인 쪽지·읽음 표시</div>
-    <div class="module-item"><strong>pages/quest.py</strong>일일 퀘스트·보상</div>
-    <div class="module-item"><strong>pages/title_shop.py</strong>칭호 상점·장착</div>
-    <div class="module-item"><strong>pages/vip.py</strong>VIP 전용 라운지</div>
-    <div class="module-item"><strong>pages/games/slot.py</strong>럭키 슬롯머신</div>
-    <div class="module-item"><strong>pages/games/blackjack.py</strong>블랙잭 카지노</div>
-    <div class="module-item"><strong>pages/games/holdem.py</strong>텍사스 홀덤</div>
-    <div class="module-item"><strong>pages/games/mine.py</strong>광산 노가다</div>
-    <div class="module-item"><strong>pages/games/quiz.py</strong>정처기 CBT 퀴즈</div>
-    <div class="module-item"><strong>pages/games/lotto.py</strong>글로벌 로또</div>
-    <div class="module-item"><strong>pages/games/forge.py</strong>전설의 명검 강화</div>
-    <div class="module-item"><strong>pages/games/gacha.py</strong>가챠 뽑기</div>
-    <div class="module-item"><strong>pages/sports/soccer_sim.py</strong>구단주 시뮬레이터</div>
-    <div class="module-item"><strong>pages/sports/penalty.py</strong>조기축구 승부차기</div>
-    <div class="module-item"><strong>pages/sports/racing.py</strong>하이퍼카 레이싱</div>
-    <div class="module-item"><strong>pages/sports/garage.py</strong>커스텀 튜닝 차고지</div>
-    <div class="module-item"><strong>pages/admin/panel.py</strong>창조주 통제소 (관리자 전용)</div>
-    <div class="module-item"><strong>pages/project_a.py</strong>AI 무한 모의고사</div>
-    <div class="module-item"><strong>pages/project_b.py</strong>월드 배틀</div>
-    <div class="module-item"><strong>pages/project_d.py</strong>🎲 인베스트 마블 보드게임</div>
-    <div class="module-item"><strong>pages/project_e.py</strong>⚔️ 뱀서라이크 던전 게임</div>
-</div>
-        """, unsafe_allow_html=True)
-
-    st.write("---")
-
-    # ── 서비스 가이드 섹션 ─────────────────────────────────
-    with st.expander("📖 6대 서비스 완전 가이드 보기", expanded=False):
-
-        st.markdown("### 🗺️ HYOMIN PORTAL — 서비스 소개")
-        st.markdown("---")
-
-        col_g1, col_g2 = st.columns(2)
-
-        with col_g1:
-            st.markdown("""
-<div class="arch-card">
-    <h4>🌌 유니버스 — 자본주의 생존 시뮬레이션</h4>
-    <p>
-        효민 유니버스는 <b>현실과 동일한 자본주의 경제 시스템</b>을 체험하는 경제 시뮬레이션입니다.
-        가입 즉시 <b>초기 정착금 5억 원</b>이 지급되며, 주식·코인·부동산·은행 등
-        다양한 금융 수단으로 자산을 불려 나갈 수 있습니다.
-        랭킹 시스템, 클랜, 일일 퀘스트, 미니게임, VIP 라운지까지 갖춘 풀 스케일 경제 세계입니다.
-    </p>
-    <div style="margin-top:12px;">
-        <span class="arch-badge">📈 주식 트레이딩</span>
-        <span class="arch-badge">₿ 코인 거래소</span>
-        <span class="arch-badge">🏠 부동산 임대</span>
-        <span class="arch-badge">🏦 대출·이자</span>
-        <span class="arch-badge">🏆 시즌 랭킹</span>
-        <span class="arch-badge">⚔️ 클랜 시스템</span>
-        <span class="arch-badge">🎰 미니게임 8종</span>
-        <span class="arch-badge">🚀 시즌 1 진행 중</span>
-    </div>
-    <div style="margin-top:10px;background:#EFF6FF;border-radius:8px;padding:10px 12px;">
-        <p style="margin:0;font-size:0.85rem;color:#1E40AF !important;font-weight:700;">💡 입문 가이드</p>
-        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
-            ① 로그인 후 유니버스 입장 → ② 홈 광장에서 튜토리얼 확인 → ③ 주식/코인 소액 매수로 시작
-            → ④ 일일 퀘스트 완료로 보너스 획득 → ⑤ 부동산 매입으로 패시브 수익 확보
-        </p>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-<div class="arch-card">
-    <h4>🧠 AI 무한 모의고사 — AI 아카데미</h4>
-    <p>
-        공부한 내용을 붙여넣기하거나 PDF/TXT 파일을 업로드하면,
-        <b>Gemini AI</b>가 실제 시험 스타일의 문제를 무한으로 생성해 드립니다.
-        문제 수(5~20개), 난이도(쉬움/보통/어려움), 문제 유형(4지선다/단답형/O×)을 자유롭게 설정할 수 있으며,
-        채점 후 <b>오답 자동 분석 및 재출제</b> 기능을 제공합니다.
-        정처기, 수능, 자격증 등 모든 분야에 활용 가능합니다.
-    </p>
-    <div style="margin-top:12px;">
-        <span class="arch-badge">🤖 Gemini 2.5 Flash</span>
-        <span class="arch-badge">📄 PDF/TXT 업로드</span>
-        <span class="arch-badge">🎚️ 난이도 3단계</span>
-        <span class="arch-badge">✏️ 3가지 문제 유형</span>
-        <span class="arch-badge">📊 오답 분석</span>
-        <span class="arch-badge">🔁 오답 재출제</span>
-    </div>
-    <div style="margin-top:10px;background:#F0FDF4;border-radius:8px;padding:10px 12px;">
-        <p style="margin:0;font-size:0.85rem;color:#15803D !important;font-weight:700;">💡 사용법</p>
-        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
-            ① AI 아카데미 입장 → ② 학습 내용 직접 입력 또는 파일 업로드 → ③ 문제 수·난이도·유형 설정
-            → ④ 문제 생성 → ⑤ 풀기 → ⑥ 채점 및 오답 확인 → ⑦ 오답만 재출제
-        </p>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-<div class="arch-card">
-    <h4>🎲 인베스트 마블 — 보드게임</h4>
-    <p>
-        모노폴리에서 영감을 받은 <b>투자형 보드게임</b>입니다.
-        AI 봇과 함께 주사위를 굴리며 전 세계 랜드마크 부지를 매입하고,
-        <b>집→호텔</b>을 건설해 임대료 수익을 올립니다.
-        저당 설정으로 급전을 마련하거나, 무인도에 갇혀 탈출을 시도하는 등
-        다이나믹한 경제 전략이 필요한 게임입니다.
-        화려한 3D 스타일 UI와 애니메이션이 적용된 풀 HTML 게임입니다.
-    </p>
-    <div style="margin-top:12px;">
-        <span class="arch-badge">🗺️ 세계 랜드마크 보드</span>
-        <span class="arch-badge">🤖 AI 봇 대전</span>
-        <span class="arch-badge">🏠 집·호텔 건설</span>
-        <span class="arch-badge">⛓️ 저당·경매</span>
-        <span class="arch-badge">🏝️ 무인도 탈출</span>
-        <span class="arch-badge">🎴 이벤트 카드</span>
-    </div>
-    <div style="margin-top:10px;background:#FFF7ED;border-radius:8px;padding:10px 12px;">
-        <p style="margin:0;font-size:0.85rem;color:#C2410C !important;font-weight:700;">💡 전략 팁</p>
-        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
-            같은 색 부지 독점 시 임대료 2배. 무인도 탈출은 주사위 더블 or 탈출 카드 사용.
-            현금이 부족할 땐 호텔을 팔거나 저당을 설정해 버텨라.
-        </p>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-        with col_g2:
-            st.markdown("""
-<div class="arch-card">
-    <h4>🗳️ 월드 배틀 — 실시간 진영 투표</h4>
-    <p>
-        매일 새로운 <b>오늘의 질문</b>이 올라오면, A 진영 또는 B 진영 중 하나를 선택해 투표합니다.
-        실시간으로 전체 투표 현황과 진영별 비율이 배틀 바를 통해 시각화되며,
-        투표 후 다른 시민들의 댓글도 확인할 수 있습니다.
-        관리자가 주제·기간·진영 이름을 자유롭게 설정하고, 종료된 투표는 히스토리로 보존됩니다.
-        완전 익명으로 진행되며 계정당 1표만 허용됩니다.
-    </p>
-    <div style="margin-top:12px;">
-        <span class="arch-badge">🔵🔴 2진영 배틀</span>
-        <span class="arch-badge">📊 실시간 비율 바</span>
-        <span class="arch-badge">💬 투표 후 댓글</span>
-        <span class="arch-badge">🕵️ 완전 익명</span>
-        <span class="arch-badge">⏱️ 마감 카운트다운</span>
-        <span class="arch-badge">📜 히스토리 보존</span>
-    </div>
-    <div style="margin-top:10px;background:#EFF6FF;border-radius:8px;padding:10px 12px;">
-        <p style="margin:0;font-size:0.85rem;color:#1E40AF !important;font-weight:700;">💡 참여 방법</p>
-        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
-            ① 로그인 후 월드 배틀 입장 → ② 오늘의 질문 확인 → ③ 원하는 진영 버튼 클릭
-            → ④ 투표 완료 후 비율 확인 → ⑤ 댓글로 의견 남기기 (마감 후 결과 공개)
-        </p>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-<div class="arch-card">
-    <h4>💻 THE TERMINAL — 방탈출</h4>
-    <p>
-        오직 <b>커맨드라인 명령어</b>만으로 단서를 추적해 방을 탈출하는 해킹 어드벤처 게임입니다.
-        총 <b>10개의 스테이지</b>로 구성되며, 각 스테이지마다 독립된 가상 파일시스템이 펼쳐집니다.
-        <code>ls</code>, <code>cat</code>, <code>cd</code>, <code>decode</code>, <code>rot13</code> 등
-        실제 터미널 명령어와 유사한 커맨드를 입력해 숨겨진 비밀번호를 찾아야 합니다.
-        단계별 3개의 힌트가 제공되며, 스테이지 난이도는 입문부터 전문가 수준까지 점진적으로 상승합니다.
-    </p>
-    <div style="margin-top:12px;">
-        <span class="arch-badge">🖥️ 10 STAGES</span>
-        <span class="arch-badge">📁 가상 파일시스템</span>
-        <span class="arch-badge">⌨️ 실제 CLI 명령어</span>
-        <span class="arch-badge">🔐 SHA-256 정답 검증</span>
-        <span class="arch-badge">💡 단계별 3힌트</span>
-        <span class="arch-badge">⭐~⭐⭐⭐⭐⭐ 난이도</span>
-    </div>
-    <div style="margin-top:10px;background:#FDF4FF;border-radius:8px;padding:10px 12px;">
-        <p style="margin:0;font-size:0.85rem;color:#7E22CE !important;font-weight:700;">💡 기본 명령어</p>
-        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
-            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">ls</code> 파일 목록 &nbsp;
-            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">ls -a</code> 숨김파일 포함 &nbsp;
-            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">cat [파일]</code> 내용 보기 &nbsp;
-            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">cd [경로]</code> 디렉토리 이동 &nbsp;
-            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">decode [문자열]</code> base64 해독 &nbsp;
-            <code style="background:#E9D5FF;padding:1px 5px;border-radius:3px;">unlock [정답]</code> 잠금 해제
-        </p>
-    </div>
-</div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-<div class="arch-card" style="border-left: 3px solid #7C3AED;">
-    <h4 style="color:#7C3AED !important;">⚔️ 던전 런 2.5D — SURVIVORS REBORN</h4>
-    <p>
-        사방에서 끝없이 몰려오는 몬스터들을 쓸어버리는 <b>본격 뱀서라이크(서바이벌)</b> 게임입니다.
-        화려한 <b>2.5D 입체 그래픽</b>과 함께 적의 웨이브를 돌파하고 보스를 격파하세요.
-        <b style="color:#EF4444;">레벨업 시 등장하는 무기와 패시브를 조합해 극한의 시너지를 완성하세요!</b><br>
-        <b>전사·마법사·궁수·닌자</b> 4개의 고유 클래스, 몰입감 넘치는 타격감, 그리고 강력한 웨이브 보스들이 기다립니다.
-    </p>
-    <div style="margin-top:12px;">
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🌪️ 뱀서라이크 서바이벌</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🧊 2.5D 입체 그래픽</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">⚔️ 자동 공격 & 핵앤슬래시</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🃏 무기/스킬 조합</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">👹 웨이브 보스전</span>
-    </div>
-    <div style="margin-top:10px;background:#F5F3FF;border-radius:8px;padding:10px 12px;">
-        <p style="margin:0;font-size:0.85rem;color:#7C3AED !important;font-weight:700;">💡 컨트롤</p>
-        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
-            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">W A S D</code> 또는 <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">↑↓←→</code> 상하좌우 이동 &nbsp;
-            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">자동</code> 기본 공격 &nbsp;
-            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">Q E R</code> 액티브 스킬 사용 &nbsp;
-            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">마우스</code> 캐릭터 및 능력 선택
-        </p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-            st.write("---")
+    """, unsafe_allow_html=True)
+    st.stop()
 
 
 # ==============================
