@@ -24,6 +24,7 @@ def load_vote_db():
             "votes_b":  [],
             "created":  0,
             "deadline": 0,
+            "comments": [],
         },
         "history": [],
         "total_participants": 0,
@@ -741,6 +742,118 @@ def render():
                 st.markdown(confetti_js("#F04F3D", "#F87171"), unsafe_allow_html=True)
                 st.rerun()
 
+    # ── 댓글 섹션 (투표 후에만 표시) ──────────────────
+    if user_voted and uid and not is_closed:
+        import time as _time
+        vdb_c = load_vote_db()
+        comments = vdb_c["current"].get("comments", [])
+
+        # 내가 쓴 댓글이 있는지 확인
+        my_comment = next((c for c in comments if c["uid"] == uid), None)
+
+        COMMENT_CSS = """
+<style>
+.comment-section{margin:20px 0;font-family:'Noto Sans KR',sans-serif;}
+.comment-head{font-size:0.75rem;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.comment-head::before{content:'';display:block;width:3px;height:16px;background:var(--gold);border-radius:2px;}
+.comment-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 16px;margin-bottom:8px;transition:border-color 0.15s;}
+.comment-card:hover{border-color:rgba(255,255,255,0.15);}
+.comment-meta{font-size:0.72rem;color:var(--text-dim);margin-bottom:6px;display:flex;gap:8px;align-items:center;}
+.comment-side-a{color:var(--blue);font-weight:700;}
+.comment-side-b{color:var(--red);font-weight:700;}
+.comment-body{font-size:0.88rem;color:var(--text);line-height:1.5;}
+.comment-likes{font-size:0.7rem;color:var(--text-dim);margin-top:6px;cursor:pointer;}
+.comment-likes:hover{color:var(--gold);}
+</style>"""
+        st.markdown(COMMENT_CSS, unsafe_allow_html=True)
+
+        st.markdown("<div class='comment-section'>", unsafe_allow_html=True)
+        st.markdown("<div class='comment-head'>💬 시민 의견</div>", unsafe_allow_html=True)
+
+        # 댓글 입력 (1인 1댓글)
+        if not my_comment:
+            comment_text = st.text_area(
+                "내 의견 남기기 (투표 후 공개 · 익명 처리)",
+                max_chars=150,
+                placeholder="이 주제에 대한 생각을 공유해보세요! (최대 150자)",
+                key="comment_input",
+                height=80
+            )
+            if st.button("💬 의견 등록", key="submit_comment", use_container_width=True):
+                if comment_text and comment_text.strip():
+                    vdb2 = load_vote_db()
+                    if "comments" not in vdb2["current"]:
+                        vdb2["current"]["comments"] = []
+                    # 중복 방지
+                    vdb2["current"]["comments"] = [c for c in vdb2["current"]["comments"] if c["uid"] != uid]
+                    side_label = cur["side_a"] if user_side == "A" else cur["side_b"]
+                    vdb2["current"]["comments"].append({
+                        "uid":   uid,
+                        "side":  user_side,
+                        "side_label": side_label,
+                        "text":  comment_text.strip()[:150],
+                        "ts":    _time.time(),
+                        "likes": [],
+                    })
+                    save_vote_db(vdb2)
+                    st.toast("💬 의견이 등록되었습니다!", icon="✅")
+                    st.rerun()
+                else:
+                    st.warning("의견을 입력해주세요.")
+        else:
+            st.info(f"💬 내 의견: {my_comment['text']}")
+            if st.button("🗑️ 의견 삭제", key="del_comment"):
+                vdb2 = load_vote_db()
+                vdb2["current"]["comments"] = [c for c in vdb2["current"].get("comments", []) if c["uid"] != uid]
+                save_vote_db(vdb2)
+                st.rerun()
+
+        # 댓글 목록 (최근 20개, 본인 uid 마스킹)
+        fresh = load_vote_db()
+        all_comments = sorted(fresh["current"].get("comments", []), key=lambda c: c["ts"], reverse=True)[:20]
+        if all_comments:
+            for idx, c in enumerate(all_comments):
+                masked_uid = c["uid"][:2] + "***" + c["uid"][-1:] if len(c["uid"]) > 3 else "***"
+                side_cls = "comment-side-a" if c["side"] == "A" else "comment-side-b"
+                side_emoji = cur.get("emoji_a","🔵") if c["side"] == "A" else cur.get("emoji_b","🔴")
+                from datetime import datetime
+                try:
+                    ts_str = datetime.fromtimestamp(c["ts"]).strftime("%m/%d %H:%M")
+                except:
+                    ts_str = ""
+                liked_by_me = uid in c.get("likes", [])
+                like_count  = len(c.get("likes", []))
+                like_label  = f"{'❤️' if liked_by_me else '🤍'} {like_count}"
+                safe_text = html.escape(c["text"])
+                st.html(f"""
+                <div class='comment-card'>
+                  <div class='comment-meta'>
+                    <span class='{side_cls}'>{side_emoji} {html.escape(c.get('side_label',''))} 진영</span>
+                    <span>{masked_uid}</span>
+                    <span>{ts_str}</span>
+                  </div>
+                  <div class='comment-body'>{safe_text}</div>
+                </div>""")
+                # 좋아요 버튼
+                if st.button(like_label, key=f"like_{idx}_{c['ts']}", help="좋아요"):
+                    vdb2 = load_vote_db()
+                    for cc in vdb2["current"].get("comments", []):
+                        if cc["uid"] == c["uid"]:
+                            likes = cc.get("likes", [])
+                            if uid in likes:
+                                likes.remove(uid)
+                            else:
+                                likes.append(uid)
+                            cc["likes"] = likes
+                    save_vote_db(vdb2)
+                    st.rerun()
+        else:
+            st.markdown("<div style='color:var(--text-dim);font-size:0.8rem;text-align:center;padding:16px;'>아직 의견이 없습니다. 첫 번째로 의견을 남겨보세요!</div>", unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
     # ── 히스토리 ──────────────────────────────────
     if vdb.get("history"):
         recent = list(reversed(vdb["history"][-6:]))
@@ -841,6 +954,7 @@ def render():
                         "votes_b":  [],
                         "created":  time.time(),
                         "deadline": time.time() + hours * 3600 if hours > 0 else 0,
+                        "comments": [],
                     }
                     save_vote_db(vdb2)
                     st.success("✅ 새 배틀이 시작되었습니다!")
