@@ -1010,7 +1010,7 @@ function updatePlayer(dt) {
   if (KEYS['ArrowLeft'] || KEYS['KeyA']) mx -= 1;
   if (KEYS['ArrowRight'] || KEYS['KeyD']) mx += 1;
   if (KEYS['ArrowUp'] || KEYS['KeyW']) my -= 1;
-  if (KEYS['ArrowDown'] || KEYS['KeyS']) my -= 1;
+  if (KEYS['ArrowDown'] || KEYS['KeyS']) my += 1;
 
   const moving = mx !== 0 || my !== 0;
   const spd = p.spd * (p._spdMult || 1);
