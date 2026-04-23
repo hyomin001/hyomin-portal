@@ -572,35 +572,33 @@ if st.session_state.page_view == "portal":
 
             st.markdown("""
 <div class="arch-card" style="border-left: 3px solid #7C3AED;">
-    <h4 style="color:#7C3AED !important;">⚔️ 뱀서라이크 던전 — ROGUELIKE DUNGEON</h4>
+    <h4 style="color:#7C3AED !important;">⚔️ 던전 런 2.5D — SURVIVORS REBORN</h4>
     <p>
-        방향키로 캐릭터를 이동시키며 <b>랜덤 생성된 던전</b>을 탐험하는 뱀서라이크 게임입니다.
-        몬스터를 처치하고 아이템을 모아 보스를 격파하세요.
-        <b style="color:#EF4444;">죽으면 처음부터 — 매 판이 다른 경험.</b><br>
-        <b>워리어·메이지·로그·팔라딘</b> 4개 클래스, 10층 던전, 20종 몬스터, 30종+ 아이템, 3종 보스.
-        FOG OF WAR(시야각), 턴제 전투, 스킬 포인트 배분, 15종 업적 시스템을 갖춘 풀 스케일 뱀서라이크.
+        사방에서 끝없이 몰려오는 몬스터들을 쓸어버리는 <b>본격 뱀서라이크(서바이벌)</b> 게임입니다.
+        화려한 <b>2.5D 입체 그래픽</b>과 함께 적의 웨이브를 돌파하고 보스를 격파하세요.
+        <b style="color:#EF4444;">레벨업 시 등장하는 무기와 패시브를 조합해 극한의 시너지를 완성하세요!</b><br>
+        <b>전사·마법사·궁수·닌자</b> 4개의 고유 클래스, 몰입감 넘치는 타격감, 그리고 강력한 웨이브 보스들이 기다립니다.
     </p>
     <div style="margin-top:12px;">
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🗺️ 랜덤 맵 생성</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">⚡ 턴제 전투</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🎒 아이템 30종+</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">👹 몬스터 20종</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">📊 성장 시스템</span>
-        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🏆 업적 15종</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🌪️ 뱀서라이크 서바이벌</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🧊 2.5D 입체 그래픽</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">⚔️ 자동 공격 & 핵앤슬래시</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🃏 무기/스킬 조합</span>
+        <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">👹 웨이브 보스전</span>
     </div>
     <div style="margin-top:10px;background:#F5F3FF;border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:#7C3AED !important;font-weight:700;">💡 컨트롤</p>
         <p style="margin:4px 0 0 0;font-size:0.82rem;color:#475569 !important;">
-            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">↑↓←→</code> 이동/공격 &nbsp;
-            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">Space</code> 대기/계단이동 &nbsp;
-            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">I</code> 인벤토리 &nbsp;
-            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">.</code> 계단 자동이동
+            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">W A S D</code> 또는 <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">↑↓←→</code> 상하좌우 이동 &nbsp;
+            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">자동</code> 기본 공격 &nbsp;
+            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">Q E R</code> 액티브 스킬 사용 &nbsp;
+            <code style="background:#DDD6FE;padding:1px 5px;border-radius:3px;">마우스</code> 캐릭터 및 능력 선택
         </p>
     </div>
 </div>
-            """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-    st.write("---")
+st.write("---")
 
     # ── 배너 섹션 ──────────────────────────────────────────
     col1, col2 = st.columns(2)
