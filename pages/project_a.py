@@ -72,7 +72,7 @@ def call_gemini(prompt):
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.3,
-            "maxOutputTokens": 4096
+            "maxOutputTokens": 8192
         }
     }
 
@@ -287,6 +287,8 @@ def render(market=None, nw=None):
     ss.setdefault("quiz_submitted", False)
     ss.setdefault("last_score", None)
     ss.setdefault("last_elapsed", 0)
+    ss.setdefault("bookmarks", set())
+    ss.setdefault("score_log", [])  # {"score":int,"count":int,"date":str}
 
     # 초기화 버튼
     if st.button("🧹 전체 초기화"):
@@ -308,7 +310,7 @@ def render(market=None, nw=None):
         st.info(f"텍스트 분석: {q} / 생성 성공 확률: {p}%")
 
         col1, col2, col3 = st.columns(3)
-        count = col1.slider("출제 문항 수", 3, 20, 5) # 문항수도 약간 넉넉하게
+        count = col1.slider("출제 문항 수", 3, 30, 5) # 문항수도 약간 넉넉하게
         difficulty = col2.selectbox("난이도", ["쉬움", "보통", "어려움", "최상(지옥)"])
         q_type = col3.selectbox("문제 스타일", ["개념 확인", "실무 응용", "함정 유발"])
 
@@ -354,7 +356,17 @@ def render(market=None, nw=None):
                 st.markdown(f"### Q{i+1}. {q.get('question','문제 오류')}")
 
                 options = q.get("options", ["1","2","3","4"])
-                ans = st.radio("선택", ["선택 안함"] + options, key=f"q_{i}")
+                col_q, col_bm = st.columns([10, 1])
+                with col_q:
+                    ans = st.radio("선택", ["선택 안함"] + options, key=f"q_{i}")
+                with col_bm:
+                    bm_icon = "🔖" if i in ss.bookmarks else "☆"
+                    if st.button(bm_icon, key=f"bm_{i}", help="북마크"):
+                        if i in ss.bookmarks:
+                            ss.bookmarks.discard(i)
+                        else:
+                            ss.bookmarks.add(i)
+                        st.rerun()
 
                 if ans != "선택 안함":
                     if ss.answers.get(i) != ans: 
@@ -417,12 +429,18 @@ def render(market=None, nw=None):
                         result_lines.append(f"   내 답: {user}  정답: {answer}")
                         result_lines.append(f"   해설: {q.get('explanation','')}")
                         result_lines.append("")
-                    st.download_button(
-                        "📥 결과 텍스트로 저장",
-                        data="\n".join(result_lines),
-                        file_name=f"quiz_result_{now_str}.txt",
-                        mime="text/plain"
-                    )
+                    col_dl1, col_dl2 = st.columns(2)
+                    with col_dl1:
+                        st.download_button(
+                            "📥 결과 텍스트로 저장",
+                            data="\n".join(result_lines),
+                            file_name=f"quiz_result_{now_str}.txt",
+                            mime="text/plain",
+                            use_container_width=True
+                        )
+                    with col_dl2:
+                        summary = f"📊 AI 모의고사 결과: {score}점 ({correct}/{total}) | 소요시간: {mins_e:02d}분 {secs_e:02d}초"
+                        st.code(summary, language=None)
                     
                     if score == 100:
                         st.balloons()
@@ -433,15 +451,41 @@ def render(market=None, nw=None):
                         st.toast("조금만 더 복습해볼까요? 오답 노트를 꼭 확인하세요! 💪", icon="🔥")
 
                     ss.history.append(score)
+                    from datetime import datetime
+                    ss.score_log.append({"score": score, "count": total, "date": datetime.now().strftime("%m/%d %H:%M")})
+                    if len(ss.score_log) > 20:
+                        ss.score_log = ss.score_log[-20:]
                     ss.wrong = wrong
                     ss.quiz_submitted = True
                     ss.last_elapsed = elapsed_time
 
             if ss.history:
                 avg = int(sum(ss.history)/len(ss.history))
-                st.metric("나의 누적 평균 점수", f"{avg} 점")
+                col_m1, col_m2 = st.columns(2)
+                col_m1.metric("나의 누적 평균 점수", f"{avg} 점")
+                col_m2.metric("총 응시 횟수", f"{len(ss.history)} 회")
+                if len(ss.history) >= 2:
+                    import pandas as pd
+                    chart_data = pd.DataFrame({
+                        "점수": ss.history[-10:],
+                        "회차": [f"{i+1}회" for i in range(len(ss.history[-10:]))]
+                    })
+                    st.line_chart(chart_data.set_index("회차"), use_container_width=True)
 
             if ss.wrong:
+                st.markdown("---")
+                # 북마크 섹션
+                if ss.bookmarks:
+                    with st.expander(f"🔖 북마크된 문제 ({len(ss.bookmarks)}개)", expanded=False):
+                        if ss.quiz:
+                            for bi in sorted(ss.bookmarks):
+                                if bi < len(ss.quiz):
+                                    bq = ss.quiz[bi]
+                                    st.markdown(f"**Q{bi+1}.** {bq.get('question','')}")
+                                    st.caption(f"정답: {bq.get('answer','')} | 해설: {bq.get('explanation','')[:80]}...")
+                                    if st.button(f"북마크 해제", key=f"unbm_{bi}"):
+                                        ss.bookmarks.discard(bi)
+                                        st.rerun()
                 st.markdown("---")
                 st.subheader("🔥 1타 강사 오답 밀착 마크 (하드코어 복수전)")
                 st.caption("틀린 문제의 개념과 해설을 모아 가장 어려운 난이도로 재출제합니다.")
