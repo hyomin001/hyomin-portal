@@ -2001,6 +2001,20 @@ RAF = requestAnimationFrame(loop);
 </html>"""
 
 def render():
+    import streamlit as st
+    # 게임 헤더 UI
+    st.markdown(f"""
+    <div style='background:linear-gradient(135deg,#0c1020,#111828);border:1px solid rgba(108,99,255,0.25);
+      border-radius:16px;padding:16px 24px;margin-bottom:12px;display:flex;align-items:center;gap:16px;'>
+      <div style='font-size:2rem;'>⚔️</div>
+      <div>
+        <div style='font-family:"Black Han Sans",sans-serif;font-size:1.1rem;color:#e8f0ff;'>⚔️ 던전 런 REBORN</div>
+        <div style='font-size:0.82rem;color:#8899bb;margin-top:2px;'>뱀서라이크 서바이벌. 사방에서 몰려오는 몬스터를 섬멸하고 보스를 격파하세요!</div>
+        <div style='font-size:0.76rem;color:#6c63ff;margin-top:4px;'>🎮 WASD/방향키: 이동 | 자동 공격 | Q E R: 스킬 | 레벨업 시 무기/패시브 선택</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("""
     <style>
     .block-container{padding:0!important;max-width:100%!important;}
