@@ -408,7 +408,7 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/project_a.py</strong>AI 무한 모의고사</div>
     <div class="module-item"><strong>pages/project_b.py</strong>월드 배틀</div>
     <div class="module-item"><strong>pages/project_d.py</strong>🎲 인베스트 마블 보드게임</div>
-    <div class="module-item"><strong>pages/project_e.py</strong>⚔️ 로그라이크 던전 게임</div>
+    <div class="module-item"><strong>pages/project_e.py</strong>⚔️ 뱀서라이크 던전 게임</div>
 </div>
         """, unsafe_allow_html=True)
 
@@ -572,13 +572,13 @@ if st.session_state.page_view == "portal":
 
             st.markdown("""
 <div class="arch-card" style="border-left: 3px solid #7C3AED;">
-    <h4 style="color:#7C3AED !important;">⚔️ 로그라이크 던전 — ROGUELIKE DUNGEON</h4>
+    <h4 style="color:#7C3AED !important;">⚔️ 뱀서라이크 던전 — ROGUELIKE DUNGEON</h4>
     <p>
-        방향키로 캐릭터를 이동시키며 <b>랜덤 생성된 던전</b>을 탐험하는 로그라이크 게임입니다.
+        방향키로 캐릭터를 이동시키며 <b>랜덤 생성된 던전</b>을 탐험하는 뱀서라이크 게임입니다.
         몬스터를 처치하고 아이템을 모아 보스를 격파하세요.
         <b style="color:#EF4444;">죽으면 처음부터 — 매 판이 다른 경험.</b><br>
         <b>워리어·메이지·로그·팔라딘</b> 4개 클래스, 10층 던전, 20종 몬스터, 30종+ 아이템, 3종 보스.
-        FOG OF WAR(시야각), 턴제 전투, 스킬 포인트 배분, 15종 업적 시스템을 갖춘 풀 스케일 로그라이크.
+        FOG OF WAR(시야각), 턴제 전투, 스킬 포인트 배분, 15종 업적 시스템을 갖춘 풀 스케일 뱀서라이크.
     </p>
     <div style="margin-top:12px;">
         <span class="arch-badge" style="background:#F5F3FF;color:#7C3AED !important;border-color:#DDD6FE;">🗺️ 랜덤 맵 생성</span>
@@ -652,7 +652,7 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("<div class='banner-card'><h2>⚔️ 로그라이크 던전</h2><p>방향키로 완전 지배 — 랜덤 던전 탐험·몬스터 처치·보스 격파</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>⚔️ 뱀서라이크 던전</h2><p>방향키로 완전 지배 — 랜덤 던전 탐험·몬스터 처치·보스 격파</p></div>", unsafe_allow_html=True)
         if st.button("던전 입장 ⚔️", key="b5", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_e"
@@ -951,7 +951,7 @@ elif st.session_state.page_view == "project_d":
 
 
 # ==============================
-# 10. [View 8] ⚔️ 로그라이크 던전
+# 10. [View 8] ⚔️ 뱀서라이크 던전
 # ==============================
 elif st.session_state.page_view == "project_e":
 
