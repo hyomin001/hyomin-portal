@@ -80,141 +80,76 @@ def _do_login(uid: str, users: dict, device_mode: str):
 
 
 # ==============================
-# 포털·로그인 전용 다크 게이밍 테마 CSS
+# 포털·로그인 전용 밝은 테마 CSS
 # ==============================
 PORTAL_LIGHT_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;600;700;900&display=swap');
-
-/* ── 전체 배경 ── */
-.stApp { background: #070714 !important; color: #E2E8F0 !important; }
-h1, h2, h3, h4 { color: #E2E8F0 !important; }
-p, span { color: #94A3B8; }
-hr { border-color: rgba(255,255,255,0.07) !important; }
-
-/* ── 포털 헤더 ── */
-.portal-header { text-align: center; padding: 48px 0 28px 0; }
+.stApp { background-color: #F8FAFC !important; color: #0F172A !important; }
+h1, h2, h3, h4, p, span, div { color: #0F172A; }
+.portal-header { text-align: center; padding: 50px 0 20px 0; }
 .portal-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 3.2rem; font-weight: 900; letter-spacing: 5px;
-    background: linear-gradient(90deg, #00E5FF 0%, #818CF8 50%, #FF4DE8 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text; margin-bottom: 12px; line-height: 1.1;
+    font-family: 'Inter', sans-serif; font-size: 3.5rem; font-weight: 900;
+    letter-spacing: 2px; color: #2563EB !important; margin-bottom: 10px;
 }
-.portal-subtitle { color: #64748B !important; font-size: 1rem; max-width: 560px; margin: 0 auto; line-height: 1.6; }
 .trust-badge {
-    display: inline-block; background: rgba(0,229,255,0.08);
-    border: 1px solid rgba(0,229,255,0.25); color: #00E5FF !important;
-    padding: 5px 14px; border-radius: 20px; font-size: 0.78rem;
-    font-weight: 700; margin-bottom: 18px; letter-spacing: 1px;
+    display: inline-block; background: rgba(37,99,235,0.1);
+    border: 1px solid rgba(37,99,235,0.3); color: #2563EB !important;
+    padding: 5px 12px; border-radius: 20px; font-size: 0.8rem;
+    font-weight: bold; margin-bottom: 20px;
 }
-
-/* ── 배너 카드 기본 ── */
 .banner-card {
-    border-radius: 16px; padding: 24px 22px;
-    border: 1px solid rgba(255,255,255,0.07) !important;
-    transition: all 0.28s ease; margin-bottom: 16px; min-height: 160px;
+    background: #FFFFFF !important; border-radius: 12px; padding: 30px;
+    text-align: center; border: 1px solid #E2E8F0 !important;
+    transition: all 0.3s ease; margin-bottom: 20px; min-height: 200px;
     display: flex; flex-direction: column; justify-content: center;
-    position: relative; overflow: hidden; cursor: pointer;
-    background: rgba(255,255,255,0.03) !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
-.banner-card::after {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    border-radius: 16px 16px 0 0; opacity: 0.9;
+.banner-card:hover {
+    border-color: #3B82F6 !important; transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(59,130,246,0.15);
 }
-.banner-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.18) !important; }
-.banner-card h2 { color: #FFFFFF !important; margin: 0 0 6px 0; font-size: 1.3rem; font-weight: 800; }
-.banner-card p  { color: #94A3B8 !important; font-size: 0.86rem; margin: 0; line-height: 1.5; }
-.banner-tag {
-    display: inline-block; padding: 2px 8px; border-radius: 4px;
-    font-size: 0.7rem; font-weight: 700; margin: 7px 3px 0 0;
-    background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6) !important;
-    border: 1px solid rgba(255,255,255,0.12);
-}
-
-/* ── 서비스별 카드 색상 ── */
-.banner-card.universe  { background: linear-gradient(135deg, rgba(0,229,255,0.07), rgba(0,68,255,0.04)) !important; border-color: rgba(0,229,255,0.18) !important; }
-.banner-card.universe::after  { background: linear-gradient(90deg,#00E5FF,#0066FF); }
-.banner-card.universe:hover   { box-shadow: 0 18px 42px rgba(0,229,255,0.14); }
-
-.banner-card.battle { background: linear-gradient(135deg, rgba(255,60,60,0.08), rgba(255,150,0,0.04)) !important; border-color: rgba(255,60,60,0.18) !important; }
-.banner-card.battle::after  { background: linear-gradient(90deg,#FF3C3C,#FF9600); }
-.banner-card.battle:hover   { box-shadow: 0 18px 42px rgba(255,60,60,0.14); }
-
-.banner-card.marble { background: linear-gradient(135deg, rgba(255,214,0,0.08), rgba(255,110,0,0.04)) !important; border-color: rgba(255,214,0,0.18) !important; }
-.banner-card.marble::after  { background: linear-gradient(90deg,#FFD600,#FF6E00); }
-.banner-card.marble:hover   { box-shadow: 0 18px 42px rgba(255,214,0,0.14); }
-
-.banner-card.academy { background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(0,180,100,0.04)) !important; border-color: rgba(0,255,136,0.18) !important; }
-.banner-card.academy::after  { background: linear-gradient(90deg,#00FF88,#00B464); }
-.banner-card.academy:hover   { box-shadow: 0 18px 42px rgba(0,255,136,0.14); }
-
-.banner-card.terminal { background: linear-gradient(135deg, rgba(100,100,100,0.08), rgba(50,50,50,0.04)) !important; border-color: rgba(100,100,100,0.2) !important; }
-.banner-card.terminal::after { background: linear-gradient(90deg,#888,#444); }
-.banner-card.terminal:hover  { box-shadow: 0 18px 42px rgba(100,100,100,0.14); }
-
-.banner-card.dungeon { background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(200,0,255,0.04)) !important; border-color: rgba(124,58,237,0.22) !important; }
-.banner-card.dungeon::after  { background: linear-gradient(90deg,#7C3AED,#C800FF); }
-.banner-card.dungeon:hover   { box-shadow: 0 18px 42px rgba(124,58,237,0.18); }
-
-/* ── LIVE 뱃지 ── */
-.live-badge {
-    display: inline-block; background: rgba(239,68,68,0.15);
-    border: 1px solid rgba(239,68,68,0.4); color: #EF4444 !important;
-    padding: 2px 8px; border-radius: 4px; font-size: 0.68rem;
-    font-weight: 800; letter-spacing: 1px; margin-left: 8px;
-    vertical-align: middle; animation: pulse-red 2s infinite;
-}
-@keyframes pulse-red {
-    0%,100% { opacity: 1; } 50% { opacity: 0.5; }
-}
-
-/* ── 실시간 통계 ── */
-.stat-grid { display:flex; gap:12px; margin:18px 0 8px 0; flex-wrap:wrap; }
+.banner-card h2 { color: #1E293B !important; margin-bottom: 8px; }
+.banner-card p  { color: #64748B !important; font-weight: 500; }
+.stat-grid { display:flex; gap:16px; margin:24px 0 8px 0; flex-wrap:wrap; }
 .stat-card {
-    flex:1; min-width:130px;
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-    border-radius:14px; padding:16px 14px; text-align:center;
-    transition: all 0.2s;
+    flex:1; min-width:160px; background:#FFFFFF; border:1px solid #E2E8F0;
+    border-radius:14px; padding:20px 18px 16px 18px; text-align:center;
+    box-shadow:0 2px 8px rgba(37,99,235,0.06); transition:box-shadow 0.2s,transform 0.2s;
 }
-.stat-card:hover { background: rgba(255,255,255,0.07); transform: translateY(-2px); }
-.stat-icon  { font-size:1.5rem; margin-bottom:4px; line-height:1; }
-.stat-value { font-size:1.5rem; font-weight:900; color:#E2E8F0 !important; line-height:1.1; margin-bottom:4px; }
-.stat-label { font-size:0.7rem; font-weight:600; color:#475569 !important; letter-spacing:0.06em; text-transform:uppercase; }
-.stat-card.online .stat-value { color:#00FF88 !important; }
-.stat-card.volume  .stat-value { color:#FFD600 !important; }
-.stat-section-title { font-size:0.7rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#334155 !important; margin-bottom:6px; }
-
-/* ── 아키텍처 섹션 ── */
+.stat-card:hover { box-shadow:0 6px 20px rgba(37,99,235,0.13); transform:translateY(-3px); }
+.stat-icon  { font-size:1.8rem; margin-bottom:6px; line-height:1; }
+.stat-value { font-size:1.6rem; font-weight:900; color:#1E40AF !important; line-height:1.1; margin-bottom:4px; }
+.stat-label { font-size:0.75rem; font-weight:600; color:#64748B !important; letter-spacing:0.04em; text-transform:uppercase; }
+.stat-card.online .stat-value { color:#16A34A !important; }
+.stat-card.volume  .stat-value { color:#7C3AED !important; }
+.stat-section-title { font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#94A3B8 !important; margin-bottom:4px; }
+/* 아키텍처 섹션 스타일 */
 .arch-card {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px;
-    padding: 20px 22px; margin-bottom: 14px;
+    background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
+    padding: 22px 24px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.07);
 }
-.arch-card h4 { color: #00E5FF !important; margin: 0 0 8px 0; font-size: 1rem; }
-.arch-card p  { color: #94A3B8 !important; margin: 0; font-size: 0.88rem; line-height: 1.6; }
+.arch-card h4 { color: #1E40AF !important; margin: 0 0 8px 0; font-size: 1.05rem; }
+.arch-card p  { color: #475569 !important; margin: 0; font-size: 0.92rem; line-height: 1.6; }
 .arch-badge {
-    display: inline-block; background: rgba(0,229,255,0.08); color: #00E5FF !important;
-    border: 1px solid rgba(0,229,255,0.2); border-radius: 5px; font-size: 0.72rem;
-    font-weight: 700; padding: 2px 8px; margin: 3px 3px 0 0;
+    display: inline-block; background: #EFF6FF; color: #2563EB !important;
+    border: 1px solid #BFDBFE; border-radius: 6px; font-size: 0.75rem;
+    font-weight: 700; padding: 2px 9px; margin: 3px 3px 0 0;
 }
 .arch-highlight {
-    background: rgba(0,229,255,0.05); border-left: 4px solid #00E5FF;
-    border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 14px;
+    background: linear-gradient(90deg, #EFF6FF, #F0FDF4);
+    border-left: 4px solid #2563EB; border-radius: 0 10px 10px 0;
+    padding: 14px 18px; margin-bottom: 18px;
 }
-.arch-highlight p { color: #E2E8F0 !important; font-weight: 600; font-size: 0.9rem; margin: 0; }
-.arch-highlight p.sub { font-weight: 400; color: #94A3B8 !important; font-size: 0.84rem; margin-top: 5px; }
-.module-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.arch-highlight p { color: #1E293B !important; font-weight: 600; font-size: 0.95rem; margin: 0; }
+.arch-highlight p.sub { font-weight: 400; color: #475569 !important; font-size: 0.88rem; margin-top: 6px; }
+.module-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .module-item {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 7px;
-    padding: 8px 12px; flex: 1; min-width: 180px;
-    font-size: 0.82rem; color: #94A3B8 !important;
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
+    padding: 10px 14px; flex: 1; min-width: 180px;
+    font-size: 0.85rem; color: #334155 !important;
 }
-.module-item strong { color: #CBD5E1 !important; display: block; margin-bottom: 2px; }
-
-/* ── 로그인 버튼 영역 다크 처리 ── */
-.login-header { text-align:center; padding: 32px 0 8px 0; }
-.login-title { font-family:'Orbitron',monospace; font-size:2rem; font-weight:900; color:#E2E8F0 !important; letter-spacing:2px; }
-.login-sub { color:#64748B !important; font-size:0.9rem; margin-top:6px; }
+.module-item strong { color: #1E40AF !important; display: block; margin-bottom: 2px; }
 </style>
 """
 
@@ -240,8 +175,8 @@ if st.session_state.page_view == "portal":
         <div class='portal-header'>
             <div class='trust-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM</div>
             <div class='portal-title'>HYOMIN PORTAL</div>
-            <p class='portal-subtitle'>
-                하나의 계정으로 경제 시뮬레이션, AI 학습, 보드게임, 배틀 투표, 방탈출, 던전까지 — 6가지 서비스 완전 무료
+            <p style='color:#475569;font-size:1.1rem;max-width:600px;margin:0 auto;'>
+                하나의 계정으로 효민 유니버스의 모든 경제, 엔터테인먼트, 커뮤니티 서비스를 통합 이용하세요.
             </p>
         </div>
     """, unsafe_allow_html=True)
@@ -669,11 +604,7 @@ if st.session_state.page_view == "portal":
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("""<div class='banner-card universe'>
-            <h2>🌌 유니버스 <span class='live-badge'>LIVE</span></h2>
-            <p>자본주의 생존 시뮬레이션 — 주식·코인·부동산으로 서버 1위를 노려라</p>
-            <div><span class='banner-tag'>📈 주식</span><span class='banner-tag'>₿ 코인</span><span class='banner-tag'>🏠 부동산</span><span class='banner-tag'>⚔️ 클랜</span><span class='banner-tag'>🎰 미니게임 8종</span></div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🌌 유니버스</h2><p>자본주의 생존 시뮬레이션 시즌 1</p></div>", unsafe_allow_html=True)
         if st.button("유니버스 입장하기 🚀", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "universe"
@@ -682,11 +613,7 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("""<div class='banner-card battle'>
-            <h2>🗳️ 월드 배틀</h2>
-            <p>매일 새 주제로 A vs B 진영 실시간 대결 — 결과는 마감 후 공개</p>
-            <div><span class='banner-tag'>🔴🔵 2진영</span><span class='banner-tag'>💬 댓글</span><span class='banner-tag'>🕵️ 익명</span><span class='banner-tag'>⏱️ 카운트다운</span></div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🗳️ 월드 배틀</h2><p>실시간 진영 투표 — 오늘의 질문에 답해라</p></div>", unsafe_allow_html=True)
         if st.button("지금 투표하기 🔥", key="b2", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_b"
@@ -695,11 +622,7 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("""<div class='banner-card marble'>
-            <h2>🎲 인베스트 마블</h2>
-            <p>전 세계 랜드마크를 독점하라 — AI 봇과 맞붙는 투자형 보드게임</p>
-            <div><span class='banner-tag'>🗺️ 세계 랜드마크</span><span class='banner-tag'>🤖 AI 봇 대전</span><span class='banner-tag'>🏠 집·호텔</span><span class='banner-tag'>🏝️ 무인도</span></div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🎲 🎲 인베스트 마블</h2><p>봇과 함께하는 보드게임 — 집·호텔·저당·무인도</p></div>", unsafe_allow_html=True)
         if st.button("🎲 인베스트 마블 입장 🎲", key="b4", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_d"
@@ -709,11 +632,7 @@ if st.session_state.page_view == "portal":
             st.rerun()
 
     with col2:
-        st.markdown("""<div class='banner-card academy'>
-            <h2>🧠 AI 무한 모의고사</h2>
-            <p>공부한 내용을 붙여넣으면 AI가 끝없이 문제를 생성 — 정처기·수능·자격증 전용</p>
-            <div><span class='banner-tag'>🤖 Gemini AI</span><span class='banner-tag'>📄 PDF 업로드</span><span class='banner-tag'>📊 오답 분석</span><span class='banner-tag'>🔁 재출제</span></div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>🧠 AI 무한 모의고사</h2><p>공부한 내용 복붙하면, AI가 끝없이 문제를 만들어 드립니다.</p></div>", unsafe_allow_html=True)
         if st.button("AI 아카데미 입장 📚", key="b1", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_a"
@@ -722,11 +641,7 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("""<div class='banner-card terminal'>
-            <h2>💻 THE TERMINAL</h2>
-            <p>오직 CLI 명령어만으로 단서를 추적해 탈출하라 — 10 스테이지 해킹 방탈출</p>
-            <div><span class='banner-tag'>🖥️ 10 STAGES</span><span class='banner-tag'>📁 가상 파일시스템</span><span class='banner-tag'>💡 3힌트</span><span class='banner-tag'>⭐~⭐⭐⭐⭐⭐</span></div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>💻 THE TERMINAL 방탈출</h2><p>오직 커맨드라인으로 숨겨진 단서를 찾아 방을 탈출하라</p></div>", unsafe_allow_html=True)
         if st.button("터미널 접속 >_", key="b3", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_c"
@@ -735,11 +650,7 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-        st.markdown("""<div class='banner-card dungeon'>
-            <h2>⚔️ 뱀서라이크 던전</h2>
-            <p>끝없이 몰려오는 몬스터를 쓸어버려라 — 4클래스 · 무기조합 · 웨이브 보스전</p>
-            <div><span class='banner-tag'>🌪️ 서바이벌</span><span class='banner-tag'>🧊 2.5D 그래픽</span><span class='banner-tag'>🃏 스킬 조합</span><span class='banner-tag'>👹 보스전</span></div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div class='banner-card'><h2>⚔️ 뱀서라이크 던전</h2><p>방향키로 완전 지배 — 랜덤 던전 탐험·몬스터 처치·보스 격파</p></div>", unsafe_allow_html=True)
         if st.button("던전 입장 ⚔️", key="b5", use_container_width=True):
             if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
                 st.session_state.page_view = "project_e"
@@ -748,7 +659,7 @@ if st.session_state.page_view == "portal":
                 time.sleep(1); st.session_state.page_view = "login"
             st.rerun()
 
-    st.markdown("<div style='text-align:center;padding:40px 0;color:#334155;font-size:0.78rem;'><p>ⓒ 2026 HYOMIN PORTAL INC. All rights reserved.</p></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;padding:40px 0;color:#94A3B8;font-size:0.8rem;'><p>ⓒ 2026 HYOMIN PORTAL INC. All rights reserved.</p></div>", unsafe_allow_html=True)
     st.stop()
 
 
@@ -761,7 +672,10 @@ elif st.session_state.page_view == "login":
     if st.button("🔙 포털 메인으로 돌아가기"):
         st.session_state.page_view = "portal"; st.rerun()
 
-    st.markdown("<div class='login-header'><div class='login-title'>HYOMIN ID</div><p class='login-sub'>안전한 서비스 이용을 위해 로그인해주세요.</p></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;padding:30px 0 10px 0;'>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color:#2563EB !important;'>HYOMIN ID 로그인</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#64748B !important;'>안전한 서비스 이용을 위해 로그인해주세요.</p>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
