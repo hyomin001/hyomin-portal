@@ -1177,6 +1177,16 @@ def process_command(cmd_raw, stage_data):
         t["output"] = []
         return []
 
+    # ── history ──────────────────────────────────
+    elif cmd == "history":
+        hist = t["history"]
+        if not hist:
+            return ["(명령어 히스토리 없음)"]
+        out = ["최근 명령어 히스토리:"]
+        for i, h in enumerate(hist[-20:], 1):
+            out.append(f"  {i:3d}  {h}")
+        return out
+
     # ── help / man ───────────────────────────────
     elif cmd in ("help", "man"):
         return [
@@ -1192,6 +1202,7 @@ def process_command(cmd_raw, stage_data):
             "║  tree [-a]            디렉토리 시각화        ║",
             "║  decode [b64]         base64 디코딩          ║",
             "║  rot13 [str]          ROT13 암복호화         ║",
+            "║  history              명령어 히스토리        ║",
             "║  hint                 힌트 (최대 3개)        ║",
             "║  unlock [pw]          잠금 해제 시도         ║",
             "║  clear                화면 지우기            ║",
@@ -1587,6 +1598,31 @@ def render():
 
         st.write("")
 
+        # 개인 기록 보기 (expander)
+        if "stage_records" in st.session_state and st.session_state.stage_records:
+            with st.expander("🏅 내 클리어 기록", expanded=False):
+                rec_rows = ""
+                for sn in sorted(STAGES.keys()):
+                    rec = st.session_state.stage_records.get(str(sn))
+                    if rec:
+                        bm, bs = divmod(rec["best_time"], 60)
+                        perfect = " 🌟" if rec["hints_used"] == 0 else ""
+                        rec_rows += (
+                            f"<div style='display:flex;justify-content:space-between;"
+                            f"font-family:monospace;font-size:0.8rem;color:#5a9a5a;"
+                            f"padding:4px 0;border-bottom:1px solid #0f2a0f;'>"
+                            f"<span style='color:#39ff14;'>STAGE {sn}</span>"
+                            f"<span>⏱ {bm:02d}:{bs:02d}{perfect}</span>"
+                            f"<span>힌트 {rec['hints_used']}개</span>"
+                            f"<span>CMD {rec['cmd_count']}</span>"
+                            f"</div>"
+                        )
+                st.markdown(
+                    f"<div style='background:#020c02;border:1px solid #1a3a1a;border-radius:6px;"
+                    f"padding:12px 16px;font-family:monospace;'>{rec_rows}</div>",
+                    unsafe_allow_html=True
+                )
+
         for snum, sdata in STAGES.items():
             cleared = snum in st.session_state.terminal_cleared
             locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
@@ -1729,11 +1765,11 @@ def render():
         cmd_input = st.text_input(
             label="cmd",
             key=f"cmd_input_{t['cmd_count']}",
-            placeholder="$ 명령어 입력 후 Enter ↵  (도움말: help)",
+            placeholder="$ 명령어 입력 (help=도움말 / hint=힌트 / history=이전명령어)",
             label_visibility="collapsed",
         )
 
-        col1, col2, col3, col4 = st.columns([5, 1, 1, 1])
+        col1, col2, col3, col4, col5 = st.columns([5, 1, 1, 1, 1])
         with col2:
             enter_clicked = st.button(
                 "ENTER ↵", use_container_width=True, type="primary", key="enter_btn"
@@ -1744,6 +1780,14 @@ def render():
             if st.button("CLR", use_container_width=True, key="clear_btn"):
                 t["output"] = []
                 st.rerun()
+        with col5:
+            if t["history"] and st.button("↑ 이전", use_container_width=True, key="prev_cmd"):
+                if "prev_cmd_idx" not in st.session_state:
+                    st.session_state.prev_cmd_idx = len(t["history"]) - 1
+                else:
+                    st.session_state.prev_cmd_idx = max(0, st.session_state.prev_cmd_idx - 1)
+                st.session_state["last_prev_cmd"] = t["history"][st.session_state.prev_cmd_idx]
+                st.info(f"↑ 이전 명령어: `{st.session_state['last_prev_cmd']}`  (복사해서 입력하세요)")
 
         if enter_clicked and cmd_input and cmd_input.strip():
             add_output([f"ghost@hyomin:{t['cwd']}# {cmd_input}"])
@@ -1759,6 +1803,19 @@ def render():
     else:
         # ── 클리어 화면 ─────────────────────────────────
         st.session_state.terminal_cleared.add(stage_num)
+
+        # 스테이지 클리어 기록 저장
+        elapsed_now = int(time.time() - t["start_time"])
+        if "stage_records" not in st.session_state:
+            st.session_state.stage_records = {}
+        rec_key = str(stage_num)
+        prev_best = st.session_state.stage_records.get(rec_key, {}).get("best_time", 999999)
+        if elapsed_now < prev_best:
+            st.session_state.stage_records[rec_key] = {
+                "best_time": elapsed_now,
+                "hints_used": t["hint_used"],
+                "cmd_count": t["cmd_count"],
+            }
 
         # DB에 클리어 진행상황 영구 저장
         from utils.core import sync_user_data
