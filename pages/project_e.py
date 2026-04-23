@@ -1,7 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# HTML 코드를 GAME_HTML 이라는 문자열 변수 안에 넣습니다.
 GAME_HTML = r"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -361,20 +360,20 @@ function drawSlashes() {
   }
 }
 
-// Shockwaves
-const WAVES = [];
+// Shockwaves (FIXED VARIABLE NAME)
+const SHOCKWAVES = [];
 function spawnWave(x, y, col, maxR = 120) {
-  WAVES.push({ x, y, col, r: 5, maxR, life: 1, speed: 6 });
+  SHOCKWAVES.push({ x, y, col, r: 5, maxR, life: 1, speed: 6 });
 }
 function tickWaves(dt) {
-  for (let i = WAVES.length - 1; i >= 0; i--) {
-    const w = WAVES[i];
+  for (let i = SHOCKWAVES.length - 1; i >= 0; i--) {
+    const w = SHOCKWAVES[i];
     w.r += w.speed * dt * 60; w.life -= .04 * dt * 60;
-    if (w.life <= 0 || w.r > w.maxR) WAVES.splice(i, 1);
+    if (w.life <= 0 || w.r > w.maxR) SHOCKWAVES.splice(i, 1);
   }
 }
 function drawWaves() {
-  for (const w of WAVES) {
+  for (const w of SHOCKWAVES) {
     ctx.save(); ctx.globalAlpha = Math.max(0, w.life) * .55;
     ctx.strokeStyle = w.col; ctx.shadowColor = w.col; ctx.shadowBlur = 8;
     ctx.lineWidth = 2.5 * w.life;
@@ -544,7 +543,6 @@ function applyPassives(p) {
 
 function initGame(clsId) {
   PARTS.length = 0; SLASHES.length = 0; PROJS.length = 0;
-  WAVES_QUEUE.length = 0;
 
   const p = mkPlayer(clsId);
   const defaultW = { warrior:'sword', mage:'fireball', archer:'arrow', ninja:'shuriken' };
@@ -574,7 +572,6 @@ function initGame(clsId) {
   startWave(0);
 }
 
-const WAVES_QUEUE = [];
 function startWave(idx) {
   G.waveIdx = idx;
   const wd = WAVES[Math.min(idx, WAVES.length - 1)];
