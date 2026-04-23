@@ -2,6 +2,7 @@
 # 🗳️ 효민 월드 배틀 v2.0 — 실시간 진영 투표 (완전 익명 · 배틀 아레나 UI)
 import streamlit as st
 import time
+import requests as _req
 import html
 import random
 from datetime import datetime
@@ -910,6 +911,45 @@ def render():
         st.write("")
         st.divider()
         st.markdown("#### ⚙️ 관리자 패널")
+
+
+        # ── AI 주제 추천 ──
+        with st.expander("🤖 AI 배틀 주제 자동 추천", expanded=False):
+            st.markdown("**Gemini AI가 트렌디한 배틀 주제를 추천해드립니다!**")
+            ai_category = st.selectbox("카테고리", ["일상/취향", "사회/시사", "음식", "게임/엔터", "직장/학교"], key="ai_cat")
+            if st.button("🤖 AI 주제 5개 추천받기", key="ai_recommend"):
+                gkey = st.secrets.get("GOOGLE_API_KEY","").strip()
+                if gkey:
+                    try:
+                        prompt = f"한국 10~30대가 열띠게 토론할 만한 '{ai_category}' 관련 A vs B 배틀 주제 5개를 JSON 배열로만 출력하세요. 예시: [{{\"topic\":\"치킨 vs 피자\",\"side_a\":\"치킨\",\"side_b\":\"피자\"}}]"
+                        res = _req.post(
+                            f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={gkey}",
+                            json={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.8,"maxOutputTokens":1024}},
+                            timeout=20
+                        )
+                        import json as _json, re as _re
+                        txt = res.json()['candidates'][0]['content']['parts'][0]['text']
+                        txt = txt.replace("```json","").replace("```","").strip()
+                        match = _re.search(r"\[.*\]", txt, _re.DOTALL)
+                        if match:
+                            suggestions = _json.loads(match.group())
+                            st.session_state["ai_suggestions"] = suggestions
+                    except Exception as e:
+                        st.error(f"AI 추천 실패: {e}")
+                else:
+                    st.error("GOOGLE_API_KEY 없음")
+            
+            if "ai_suggestions" in st.session_state:
+                for idx, sug in enumerate(st.session_state["ai_suggestions"]):
+                    col_s1, col_s2 = st.columns([4,1])
+                    with col_s1:
+                        st.markdown(f"**{sug.get('topic','')}** — {sug.get('side_a','')} vs {sug.get('side_b','')}")
+                    with col_s2:
+                        if st.button("이걸로!", key=f"use_sug_{idx}"):
+                            st.session_state["prefill_topic"] = sug.get("topic","")
+                            st.session_state["prefill_a"] = sug.get("side_a","")
+                            st.session_state["prefill_b"] = sug.get("side_b","")
+                            st.rerun()
 
         with st.expander("📝 새 배틀 설정", expanded=False):
             st.markdown("**새 투표 주제**")
