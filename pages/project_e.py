@@ -1,9 +1,8 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 클로드가 새로 짜준 HTML 코드 전체를 여기에 덮어쓰기 합니다.
-GAME_HTML = r"""
-<!DOCTYPE html>
+# HTML 코드를 GAME_HTML 이라는 문자열 변수 안에 넣습니다.
+GAME_HTML = r"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -178,7 +177,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 <div id="root">
   <canvas id="gc"></canvas>
 
-  <!-- HUD -->
   <div id="hud">
     <div id="hud-name" style="font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--gold);letter-spacing:2px;white-space:nowrap;">—</div>
     <div class="bar-wrap">
@@ -194,41 +192,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     <div id="timer-box">00:00</div>
   </div>
 
-  <!-- KILL COUNTER & WAVE PROGRESS -->
   <div id="killbar">
     <div id="kill-count">0 / 0</div>
     <div id="kill-sub">이번 웨이브</div>
     <div id="wave-progress-wrap"><div id="wave-progress" style="width:0%"></div></div>
   </div>
 
-  <!-- BOSS HP BAR -->
   <div id="boss-hpbar">
     <div id="boss-name-txt">BOSS</div>
     <div id="boss-hp-bg"><div id="boss-hp-fill" style="width:100%"></div></div>
   </div>
 
-  <!-- SKILL BAR -->
   <div id="skillbar"><div id="sk-cont" style="display:flex;gap:5px;"></div></div>
 
-  <!-- COMBO -->
   <div id="combo"><div id="combo-n">0</div><div id="combo-l">COMBO</div></div>
 
-  <!-- HIT VIGNETTE -->
   <div id="vignette"></div>
 
-  <!-- BOSS ANNOUNCE -->
   <div id="boss-announce">
     <div class="ba-wave" id="ba-wave">BOSS!</div>
     <div class="ba-name" id="ba-name">—</div>
   </div>
 
-  <!-- TOAST -->
   <div id="toast"><div id="toast-ico">🏆</div><div><div id="toast-t">—</div><div id="toast-s">—</div></div></div>
 
-  <!-- WEAPON UNLOCK BANNER -->
   <div id="unlock-banner"><div class="ub-inner"><div class="ub-ico" id="ub-ico">⚔️</div><div class="ub-name" id="ub-name">새 무기 획득!</div><div class="ub-desc" id="ub-desc">—</div></div></div>
 
-  <!-- LEVEL UP -->
   <div id="lvlup">
     <div class="lvlup-box">
       <div class="lvlup-title">⬆ LEVEL UP!</div>
@@ -237,7 +226,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     </div>
   </div>
 
-  <!-- RESULT -->
   <div id="result-ov" style="display:none">
     <div class="res-box">
       <div class="res-title" id="res-title">—</div>
@@ -249,7 +237,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     </div>
   </div>
 
-  <!-- TITLE -->
   <div id="title-ov">
     <div class="game-logo">던전 런</div>
     <div class="game-sub">SURVIVORS · REBORN</div>
@@ -1026,7 +1013,7 @@ function updatePlayer(dt) {
   if (KEYS['ArrowLeft'] || KEYS['KeyA']) mx -= 1;
   if (KEYS['ArrowRight'] || KEYS['KeyD']) mx += 1;
   if (KEYS['ArrowUp'] || KEYS['KeyW']) my -= 1;
-  if (KEYS['ArrowDown'] || KEYS['KeyS']) my += 1;
+  if (KEYS['ArrowDown'] || KEYS['KeyS']) my -= 1;
 
   const moving = mx !== 0 || my !== 0;
   const spd = p.spd * (p._spdMult || 1);
@@ -2017,22 +2004,17 @@ RAF = requestAnimationFrame(loop);
 </html>"""
 
 def render():
-    # 원래 있던 여백 제거 및 전체화면 스타일링 유지
     st.markdown("""
-<style>
-.block-container{padding:0!important;max-width:100%!important;}
-section[data-testid="stSidebar"]{display:none!important;}
-header{display:none!important;}footer{display:none!important;}
-iframe{border:none!important;}
-</style>
-""", unsafe_allow_html=True)
+    <style>
+    .block-container{padding:0!important;max-width:100%!important;}
+    section[data-testid="stSidebar"]{display:none!important;}
+    header{display:none!important;}footer{display:none!important;}
+    iframe{border:none!important;}
+    </style>
+    """, unsafe_allow_html=True)
 
-    # 캡션은 뱀서라이크 조작법에 맞게 살짝 수정했습니다
     st.caption("🎮 WASD/방향키: 이동 | 자동 공격 | Q·E·R: 스킬 | 레벨업 시 무기 선택!")
-    
-    # 높이(height)는 게임 화면에 맞게 조절하시면 됩니다. 840도 충분히 좋습니다.
     components.html(GAME_HTML, height=840, scrolling=False)
 
-# 페이지 실행을 위한 호출 부분 (앱 구조에 따라 생략 가능)
 if __name__ == "__main__":
     render()
