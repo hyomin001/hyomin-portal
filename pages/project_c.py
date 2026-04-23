@@ -1623,6 +1623,43 @@ def render():
                     unsafe_allow_html=True
                 )
 
+
+    # ── 개인 클리어 기록 패널 ──
+    cleared_count = len(st.session_state.terminal_cleared)
+    total_stages = len(STAGES)
+    prog_pct = cleared_count / total_stages * 100
+
+    st.markdown(f"""
+    <div style='background:linear-gradient(135deg,#0c1020,#111828);border:1px solid rgba(0,255,136,0.2);
+      border-radius:16px;padding:20px 24px;margin-bottom:20px;'>
+      <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
+        <div style='font-family:"Orbitron",sans-serif;font-size:0.8rem;color:#00d4ff;letter-spacing:2px;'>MISSION PROGRESS</div>
+        <div style='font-family:"Orbitron",sans-serif;font-size:1.2rem;font-weight:900;color:#00ff88;'>{cleared_count}/{total_stages}</div>
+      </div>
+      <div style='height:8px;background:rgba(255,255,255,0.05);border-radius:999px;overflow:hidden;'>
+        <div style='height:100%;width:{prog_pct:.1f}%;background:linear-gradient(90deg,#6c63ff,#00ff88);border-radius:999px;transition:width 0.5s;'></div>
+      </div>
+      <div style='display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;'>
+        {"".join([
+          f"<div style='background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.4);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#00ff88;font-weight:700;'>✅ STAGE {n} CLEAR</div>"
+          if n in st.session_state.terminal_cleared else
+          f"<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#3a4a6b;'>🔒 STAGE {n}</div>"
+          for n in range(1, total_stages + 1)
+        ])}
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if cleared_count == total_stages:
+        st.balloons()
+        st.markdown("""
+        <div style='text-align:center;padding:20px;background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(108,99,255,0.15));
+          border:2px solid rgba(255,215,0,0.5);border-radius:20px;margin-bottom:20px;'>
+          <div style='font-family:"Black Han Sans",sans-serif;font-size:2rem;color:#ffd700;'>🏆 ALL STAGES CLEARED!</div>
+          <div style='color:#8899bb;font-size:0.9rem;margin-top:8px;'>당신은 HYOMIN NETWORKS의 전설적인 해커입니다.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
         for snum, sdata in STAGES.items():
             cleared = snum in st.session_state.terminal_cleared
             locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
