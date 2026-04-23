@@ -596,9 +596,8 @@ if st.session_state.page_view == "portal":
         </p>
     </div>
 </div>
-""", unsafe_allow_html=True)
-
-st.write("---")
+            """, unsafe_allow_html=True)
+             st.write("---")
 
     # ── 배너 섹션 ──────────────────────────────────────────
     col1, col2 = st.columns(2)
