@@ -451,7 +451,6 @@ def render(market=None, nw=None):
                         st.toast("조금만 더 복습해볼까요? 오답 노트를 꼭 확인하세요! 💪", icon="🔥")
 
                     ss.history.append(score)
-                    from datetime import datetime
                     ss.score_log.append({"score": score, "count": total, "date": datetime.now().strftime("%m/%d %H:%M")})
                     if len(ss.score_log) > 20:
                         ss.score_log = ss.score_log[-20:]
