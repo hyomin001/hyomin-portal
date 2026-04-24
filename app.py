@@ -392,11 +392,68 @@ div[data-testid="stButton"] > button:hover {
   box-shadow: 0 8px 25px rgba(108,99,255,0.35) !important;
 }
 
-/* Streamlit 텍스트/헤더 색상 보정 */
+/* =========================================
+   Streamlit 네이티브 UI (셀렉트박스, 아코디언 등) 다크 테마 보정
+   ========================================= */
+
+/* 앱 전체 및 헤더 다크 배경 강제 적용 */
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* 일반 마크다운 텍스트 및 제목 색상 보정 */
+.stMarkdown p, .stMarkdown span { color: var(--text) !important; }
 h1, h2, h3, h4, h5, h6 { color: var(--text) !important; }
-p, span, div { color: var(--text); }
-.stExpander { border-color: var(--border) !important; }
-.stExpander summary { color: var(--text) !important; }
+
+/* ── ▶ 아코디언 (Expander) 다크 테마 적용 ── */
+[data-testid="stExpander"] {
+  background-color: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+}
+[data-testid="stExpander"] summary p {
+  color: var(--cyan) !important;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+[data-testid="stExpander"] summary svg {
+  fill: var(--cyan) !important;
+}
+
+/* ── 🔽 셀렉트 박스 (Selectbox) 다크 테마 적용 ── */
+div[data-baseweb="select"] > div {
+  background-color: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+/* 드롭다운 클릭 시 펼쳐지는 선택 옵션 리스트 배경 및 글자색 */
+div[data-baseweb="popover"] ul, ul[data-testid="stSelectboxVirtualDropdown"] {
+  background-color: var(--bg3) !important;
+  border: 1px solid var(--border) !important;
+}
+div[data-baseweb="popover"] li, li[role="option"] {
+  color: var(--text) !important;
+}
+div[data-baseweb="popover"] li:hover, li[role="option"]:hover {
+  background-color: rgba(108,99,255,0.2) !important;
+  color: var(--cyan) !important;
+}
+
+/* ── ✍️ 텍스트 입력창 (Input Box) 다크 테마 적용 ── */
+input[type="text"], input[type="password"] {
+  background-color: var(--bg2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+input[type="text"]::placeholder, input[type="password"]::placeholder {
+  color: var(--text2) !important;
+}
+
+/* ── 알림창(Warning, Info 등) 텍스트 가독성 보호 ── */
+div[data-testid="stAlert"] p, div[data-testid="stAlert"] span {
+  color: #111111 !important;
+}
 </style>
 """
 
