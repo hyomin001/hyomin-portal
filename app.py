@@ -394,7 +394,11 @@ div[data-testid="stButton"] > button:hover {
 
 /* Streamlit 텍스트/헤더 색상 보정 */
 h1, h2, h3, h4, h5, h6 { color: var(--text) !important; }
-p, span, div { color: var(--text); }
+.stApp p, 
+.stApp span, 
+.stApp div {
+  color: var(--text);
+}
 .stExpander { border-color: var(--border) !important; }
 .stExpander summary { color: var(--text) !important; }
 </style>
