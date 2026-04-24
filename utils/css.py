@@ -63,19 +63,41 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
 }
 
-/* 드롭다운 및 팝업 스타일 (글씨 안 보이는 현상 완벽 수정) */
-div[data-baseweb="select"] > div { background-color: #FFFFFF !important; }
-div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000 !important; font-weight: 600 !important; }
-
-[data-baseweb="popover"] { background-color: #FFFFFF !important; }
-[data-baseweb="popover"] span, [data-baseweb="popover"] div, 
-[role="listbox"] span, [role="listbox"] div, [role="listbox"] li,
-[data-baseweb="menu"] span, [data-baseweb="menu"] div, [data-baseweb="menu"] li { 
-    color: #000000 !important; 
+/* =======================================================
+   드롭다운 및 팝업 스타일 (다크 테마 전용으로 완벽 수정)
+======================================================== */
+div[data-baseweb="select"] > div {
+  background-color: #0a1020 !important;
+  border: 1px solid rgba(108,99,255,0.25) !important;
+  color: #e8f0ff !important;
 }
-[role="listbox"], [data-baseweb="menu"] { background-color: #FFFFFF !important; }
-[role="option"]:hover, [data-baseweb="menu"] li:hover, [role="option"]:hover span, [role="option"]:hover div { 
-    background-color: #EEEEEE !important; 
+
+/* 드롭다운 클릭 시 펼쳐지는 팝오버(메뉴 리스트) 배경 강제 다크화 */
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] > div,
+div[data-baseweb="popover"] ul, 
+ul[data-testid="stSelectboxVirtualDropdown"] {
+  background-color: #0f1830 !important;
+  border: 1px solid rgba(108,99,255,0.25) !important;
+}
+
+/* 드롭다운 내부 글자색 강제 적용 */
+li[role="option"], div[data-baseweb="popover"] li {
+  background-color: transparent !important;
+  color: #e8f0ff !important;
+}
+li[role="option"] span, div[data-baseweb="popover"] li span {
+  color: #e8f0ff !important;
+}
+
+/* 마우스 올렸을 때(hover) & 선택된 항목 효과 */
+li[role="option"]:hover, li[role="option"][aria-selected="true"],
+div[data-baseweb="popover"] li:hover {
+  background-color: rgba(108,99,255,0.2) !important;
+}
+li[role="option"]:hover span, li[role="option"][aria-selected="true"] span,
+div[data-baseweb="popover"] li:hover span {
+  color: #00d4ff !important;
 }
 
 /* 사이버펑크 버튼 스타일 */
