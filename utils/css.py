@@ -1,5 +1,3 @@
-# utils/css.py
-
 GLOBAL_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
