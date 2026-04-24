@@ -1,6 +1,7 @@
 # utils/css.py
 
 GLOBAL_CSS = """
+<style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
 * { box-sizing: border-box; }
@@ -64,48 +65,44 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
 }
 
 /* =======================================================
-   🔥 드롭다운(팝오버) 완벽 다크 테마 강제 적용 🔥
+   🔥 드롭다운/셀렉트박스 (Streamlit 전용 타겟팅 강제 덮어쓰기) 🔥
 ======================================================== */
-/* 1. 선택 박스 겉면 (클릭 전) */
-div[data-baseweb="select"] > div {
-  background-color: rgba(0, 0, 0, 0.5) !important;
+/* 1. 닫혀있을 때의 셀렉트박스 표면 */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+div[data-testid="stSelectbox"] div[data-baseweb="base-input"] {
+  background-color: #080A12 !important;
   border: 1px solid rgba(0, 229, 255, 0.3) !important;
-  border-radius: 8px !important;
 }
-div[data-baseweb="select"] span, div[data-baseweb="select"] div {
+div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
   color: #FFFFFF !important;
 }
 
-/* 2. 리스트 창(팝오버) - 배경과 묻히지 않도록 확실한 경계선과 그림자 추가 */
-[data-baseweb="popover"],
-[data-baseweb="popover"] > div,
-[data-baseweb="menu"],
-ul[role="listbox"],
-ul[data-testid="stSelectboxVirtualDropdown"] {
-  background-color: #121826 !important; /* 배경보다 살짝 밝은 다크 네이비로 구분감 부여 */
-  border: 1px solid #00E5FF !important; /* 형광 파란색 뚜렷한 테두리 */
-  border-radius: 8px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8) !important; /* 확실한 그림자로 입체감 부여 */
+/* 2. 펼쳐졌을 때의 팝오버 리스트 창 전체 (Streamlit Portal 타겟팅) */
+div[data-testid="stSelectboxVirtualDropdown"],
+ul[data-testid="stSelectboxVirtualDropdown"],
+div[data-baseweb="popover"] > div,
+div[role="listbox"] {
+  background-color: #080A12 !important;
+  border: 1px solid rgba(0, 229, 255, 0.3) !important;
 }
 
-/* 3. 리스트 안의 옵션 글씨들 */
-[data-baseweb="popover"] li,
-[role="option"],
-[role="option"] span {
+/* 3. 리스트 내부의 각 항목(옵션) */
+li[role="option"] {
   background-color: transparent !important;
   color: #FFFFFF !important;
 }
+li[role="option"] span {
+  color: #FFFFFF !important;
+}
 
-/* 4. 마우스 올렸을 때(hover) & 이미 선택된 항목 형광 효과 */
-[data-baseweb="popover"] li:hover,
-[role="option"]:hover,
-[role="option"][aria-selected="true"] {
+/* 4. 마우스 호버 및 선택된 항목 효과 */
+li[role="option"]:hover,
+li[role="option"][aria-selected="true"] {
   background-color: rgba(0, 229, 255, 0.2) !important;
 }
-[data-baseweb="popover"] li:hover span,
-[role="option"]:hover span,
-[role="option"][aria-selected="true"] span {
-  color: #00E5FF !important; /* 형광 파랑 */
+li[role="option"]:hover span,
+li[role="option"][aria-selected="true"] span {
+  color: #00E5FF !important;
   font-weight: 900 !important;
 }
 
@@ -161,4 +158,5 @@ ul[data-testid="stSelectboxVirtualDropdown"] {
     z-index: 999999 !important;
 }
 [data-testid="collapsedControl"] *, [data-testid="stSidebarCollapseButton"] * { opacity: 0 !important; font-size: 0 !important; }
+</style>
 """
