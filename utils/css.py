@@ -8,7 +8,7 @@ GLOBAL_CSS = """
 [data-testid="stSidebarNav"] { display: none !important; }
 
 /* =======================================================
-   [수정됨] 아이콘 깨짐 방지! 
+   아이콘 깨짐 방지! 
    위험한 div, span 강제 덮어쓰기를 제거하고 안전한 태그에만 적용
 ======================================================== */
 html, body, p, td, th, li, a {
@@ -64,40 +64,49 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
 }
 
 /* =======================================================
-   드롭다운 및 팝업 스타일 (다크 테마 전용으로 완벽 수정)
+   🔥 드롭다운(팝오버) 완벽 다크 테마 강제 적용 🔥
 ======================================================== */
+/* 1. 선택 박스 겉면 (클릭 전) */
 div[data-baseweb="select"] > div {
-  background-color: #0a1020 !important;
-  border: 1px solid rgba(108,99,255,0.25) !important;
-  color: #e8f0ff !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(0, 229, 255, 0.3) !important;
+  border-radius: 8px !important;
+}
+div[data-baseweb="select"] span, div[data-baseweb="select"] div {
+  color: #FFFFFF !important;
 }
 
-/* 드롭다운 클릭 시 펼쳐지는 팝오버(메뉴 리스트) 배경 강제 다크화 */
-div[data-baseweb="popover"],
-div[data-baseweb="popover"] > div,
-div[data-baseweb="popover"] ul, 
+/* 2. 리스트 창(팝오버) - 배경과 묻히지 않도록 확실한 경계선과 그림자 추가 */
+[data-baseweb="popover"],
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"],
+ul[role="listbox"],
 ul[data-testid="stSelectboxVirtualDropdown"] {
-  background-color: #0f1830 !important;
-  border: 1px solid rgba(108,99,255,0.25) !important;
+  background-color: #121826 !important; /* 배경보다 살짝 밝은 다크 네이비로 구분감 부여 */
+  border: 1px solid #00E5FF !important; /* 형광 파란색 뚜렷한 테두리 */
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8) !important; /* 확실한 그림자로 입체감 부여 */
 }
 
-/* 드롭다운 내부 글자색 강제 적용 */
-li[role="option"], div[data-baseweb="popover"] li {
+/* 3. 리스트 안의 옵션 글씨들 */
+[data-baseweb="popover"] li,
+[role="option"],
+[role="option"] span {
   background-color: transparent !important;
-  color: #e8f0ff !important;
-}
-li[role="option"] span, div[data-baseweb="popover"] li span {
-  color: #e8f0ff !important;
+  color: #FFFFFF !important;
 }
 
-/* 마우스 올렸을 때(hover) & 선택된 항목 효과 */
-li[role="option"]:hover, li[role="option"][aria-selected="true"],
-div[data-baseweb="popover"] li:hover {
-  background-color: rgba(108,99,255,0.2) !important;
+/* 4. 마우스 올렸을 때(hover) & 이미 선택된 항목 형광 효과 */
+[data-baseweb="popover"] li:hover,
+[role="option"]:hover,
+[role="option"][aria-selected="true"] {
+  background-color: rgba(0, 229, 255, 0.2) !important;
 }
-li[role="option"]:hover span, li[role="option"][aria-selected="true"] span,
-div[data-baseweb="popover"] li:hover span {
-  color: #00d4ff !important;
+[data-baseweb="popover"] li:hover span,
+[role="option"]:hover span,
+[role="option"][aria-selected="true"] span {
+  color: #00E5FF !important; /* 형광 파랑 */
+  font-weight: 900 !important;
 }
 
 /* 사이버펑크 버튼 스타일 */
