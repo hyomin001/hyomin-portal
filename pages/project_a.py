@@ -144,7 +144,38 @@ ACADEMY_CSS = """
 }
 
 .stApp { background: var(--bg) !important; color: var(--text) !important; }
-h1,h2,h3,h4,p,span,div,label { color: var(--text) !important; }
+/* 제목·단락 텍스트만 색상 지정 (span/div 제외 — 팝오버 색 충돌 방지) */
+h1,h2,h3,h4,p,label { color: var(--text) !important; }
+
+/* ── 드롭다운 트리거 + 팝오버 완전 커버 ── */
+div[data-baseweb="select"] > div {
+  background-color: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+div[data-baseweb="select"] span,
+div[data-baseweb="select"] div { color: var(--text) !important; background-color: transparent !important; }
+[data-baseweb="popover"],
+[role="listbox"],
+[data-baseweb="menu"],
+ul[data-testid="stSelectboxVirtualDropdown"] {
+  background-color: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+}
+[data-baseweb="popover"] *,
+[role="listbox"] *,
+[data-baseweb="menu"] *,
+ul[data-testid="stSelectboxVirtualDropdown"] * {
+  color: var(--text) !important;
+  background-color: transparent !important;
+}
+[role="option"]:hover, [data-baseweb="menu"] li:hover {
+  background-color: rgba(108,99,255,0.2) !important;
+}
+[role="option"]:hover *, [data-baseweb="menu"] li:hover * { color: var(--cyan) !important; }
+[role="option"][aria-selected="true"] { background-color: rgba(0,212,255,0.15) !important; }
+[role="option"][aria-selected="true"] * { color: var(--cyan) !important; }
 
 /* ── 히어로 헤더 ── */
 .academy-hero {
