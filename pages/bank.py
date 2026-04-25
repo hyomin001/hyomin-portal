@@ -46,7 +46,8 @@ def render(market, nw):
                     new_my_cash = db_cash - amt  # ← DB 기준으로 차감
                     us_fresh[st.session_state.logged_in_user]['cash'] = new_my_cash
                     us_fresh[st.session_state.logged_in_user]['last_send_time'] = _time.time()
-                    us_fresh[target]['cash'] += amt
+                    # target 유저의 'cash' 키가 없을 경우를 방어
+                    us_fresh[target]['cash'] = us_fresh[target].get('cash', 0) + amt
                     save_db(USERS_FILE, us_fresh)
                     st.session_state.global_cash = new_my_cash  # ← DB 저장 후 세션 동기화
                     log_tx(st.session_state.logged_in_user, "송금", f"{target}에게 송금", -amt)
