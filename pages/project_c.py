@@ -1660,55 +1660,54 @@ def render():
             </div>
             """, unsafe_allow_html=True)
 
-            for snum, sdata in STAGES.items():
-                cleared = snum in st.session_state.terminal_cleared
-                locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
+        for snum, sdata in STAGES.items():
+            cleared = snum in st.session_state.terminal_cleared
+            locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
 
-                badge     = "<span class='clear-badge'>✅ CLEARED</span>" if cleared else ""
-                lock_icon = "🔒 " if locked else ""
-                diff_color = DIFF_COLORS.get(snum, "#39ff14")
+            badge     = "<span class='clear-badge'>✅ CLEARED</span>" if cleared else ""
+            lock_icon = "🔒 " if locked else ""
+            diff_color = DIFF_COLORS.get(snum, "#39ff14")
 
-                st.markdown(f"""
-                <div class='stage-card' style='{"opacity:0.4;" if locked else ""}'>
-                  <div class='stage-title'>{badge}{lock_icon}{html.escape(sdata['title'])}</div>
-                  <div class='stage-desc'>{html.escape(sdata['desc'])}</div>
-                  <div class='stage-meta'>
-                    <span style='color:{diff_color};'>{sdata['difficulty']}</span>
-                  </div>
-                  <div class='flavor-text'>{html.escape(sdata.get('flavor', ''))}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class='stage-card' style='{"opacity:0.4;" if locked else ""}'>
+              <div class='stage-title'>{badge}{lock_icon}{html.escape(sdata['title'])}</div>
+              <div class='stage-desc'>{html.escape(sdata['desc'])}</div>
+              <div class='stage-meta'>
+                <span style='color:{diff_color};'>{sdata['difficulty']}</span>
+              </div>
+              <div class='flavor-text'>{html.escape(sdata.get('flavor', ''))}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-                btn_label = (
-                    f"[REPLAY] STAGE {snum} 다시하기" if cleared else
-                    f"[LOCKED] STAGE {snum - 1} 클리어 후 해금" if locked else
-                    f"[ENTER]  STAGE {snum} 시작하기"
-                )
-                if st.button(btn_label, key=f"stage_btn_{snum}",
-                             use_container_width=True, disabled=locked):
-                    init_terminal(snum)
-                    boot_msg = [
-                        "HYOMIN NETWORKS — Secure Shell v2.26.0",
-                        f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
-                        "Connecting to hyomin-secure-node...",
-                        "Connection established. ✓",
-                        "",
-                        "╔══════════════════════════════════════════╗",
-                        f"║  {sdata['title']:<40}║",
-                        "╚══════════════════════════════════════════╝",
-                        "",
-                        f"  📋 목표: {sdata['goal']}",
-                        f"  ⚠️  {sdata.get('flavor', '')}",
-                        "",
-                        "  `help` — 명령어 목록   `hint` — 힌트 보기",
-                        "─" * 44,
-                    ]
-                    st.session_state.terminal["output"] = boot_msg
-                    st.session_state.terminal["at_select"] = False
-                    st.rerun()
+            btn_label = (
+                f"[REPLAY] STAGE {snum} 다시하기" if cleared else
+                f"[LOCKED] STAGE {snum - 1} 클리어 후 해금" if locked else
+                f"[ENTER]  STAGE {snum} 시작하기"
+            )
+            if st.button(btn_label, key=f"stage_btn_{snum}",
+                         use_container_width=True, disabled=locked):
+                init_terminal(snum)
+                boot_msg = [
+                    "HYOMIN NETWORKS — Secure Shell v2.26.0",
+                    f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
+                    "Connecting to hyomin-secure-node...",
+                    "Connection established. ✓",
+                    "",
+                    "╔══════════════════════════════════════════╗",
+                    f"║  {sdata['title']:<40}║",
+                    "╚══════════════════════════════════════════╝",
+                    "",
+                    f"  📋 목표: {sdata['goal']}",
+                    f"  ⚠️  {sdata.get('flavor', '')}",
+                    "",
+                    "  `help` — 명령어 목록   `hint` — 힌트 보기",
+                    "─" * 44,
+                ]
+                st.session_state.terminal["output"] = boot_msg
+                st.session_state.terminal["at_select"] = False
+                st.rerun()
 
-            st.markdown(TERMINAL_JS, unsafe_allow_html=True)
-            return
+        st.markdown(TERMINAL_JS, unsafe_allow_html=True)
         return
 
 
