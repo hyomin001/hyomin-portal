@@ -1252,7 +1252,7 @@ TERMINAL_CSS = """
     display: flex;
     align-items: center;
     gap: 8px;
-    border-bottom: 1px solid #1a3a1a;
+    border-bottom: 1px solid #86efac;
 }
 .dot { width:12px; height:12px; border-radius:50%; }
 .dot-r { background:#ff5f57; box-shadow: 0 0 6px #ff5f57; }
@@ -1268,11 +1268,11 @@ TERMINAL_CSS = """
     font-size: 13px;
     line-height: 1.7;
     scrollbar-width: thin;
-    scrollbar-color: #1a3a1a #020c02;
+    scrollbar-color: #86efac #020c02;
 }
 .term-body::-webkit-scrollbar { width: 6px; }
 .term-body::-webkit-scrollbar-track { background: #020c02; }
-.term-body::-webkit-scrollbar-thumb { background: #1a3a1a; border-radius: 3px; }
+.term-body::-webkit-scrollbar-thumb { background: #86efac; border-radius: 3px; }
 .term-line { color: #b8ffb8; white-space: pre-wrap; word-break: break-all; margin: 0; }
 .term-line.green  { color: #39ff14; text-shadow: 0 0 8px rgba(57,255,20,0.4); }
 .term-line.yellow { color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.3); }
@@ -1562,10 +1562,10 @@ def render():
                style='font-size:2rem; display:inline-block; margin-bottom:8px;'>
             💻 THE TERMINAL 방탈출
           </div>
-          <div style='color:#3a6a3a; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
+          <div style='color:#4ade80; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
             초고난이도 커맨드라인 해킹 시뮬레이터 — 10 STAGES
           </div>
-          <div style='color:#1a3a1a; font-size:0.75rem; margin-top:6px;'>
+          <div style='color:#86efac; font-size:0.75rem; margin-top:6px;'>
             마우스는 잊어라 — 오직 커맨드라인으로 숨겨진 단서를 찾아 탈출하라
           </div>
         </div>
@@ -1580,7 +1580,7 @@ def render():
             bar_empty  = 10 - bar_filled
             bar_str    = "█" * bar_filled + "░" * bar_empty
             st.markdown(f"""
-            <div style='background:#030f03; border:1px solid #1a3a1a; border-radius:6px;
+            <div style='background:#030f03; border:1px solid #86efac; border-radius:6px;
                         padding:12px 18px; font-family:monospace; font-size:12px;
                         color:#5a9a5a; margin-bottom:16px;'>
               <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
@@ -1618,7 +1618,7 @@ def render():
                             f"</div>"
                         )
                 st.markdown(
-                    f"<div style='background:#020c02;border:1px solid #1a3a1a;border-radius:6px;"
+                    f"<div style='background:#020c02;border:1px solid #86efac;border-radius:6px;"
                     f"padding:12px 16px;font-family:monospace;'>{rec_rows}</div>",
                     unsafe_allow_html=True
                 )
@@ -1711,6 +1711,12 @@ def render():
         return
 
     # ── 터미널 게임 화면 ─────────────────────────────────
+    # 안전장치: terminal 키 없으면 선택화면으로 강제 복귀
+    if 'terminal' not in st.session_state:
+        st.session_state.terminal = {"at_select": True}
+        st.rerun()
+        return
+
     t          = st.session_state.terminal
     stage_num  = t["stage"]
     stage_data = STAGES[stage_num]
