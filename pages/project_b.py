@@ -841,13 +841,14 @@ def render():
                 if st.button(like_label, key=f"like_{idx}_{c['ts']}", help="좋아요"):
                     vdb2 = load_vote_db()
                     for cc in vdb2["current"].get("comments", []):
-                        if cc["uid"] == c["uid"]:
+                        if cc.get("ts") == c["ts"]:  # uid 대신 ts로 매칭 (정확한 댓글 특정)
                             likes = cc.get("likes", [])
                             if uid in likes:
                                 likes.remove(uid)
                             else:
                                 likes.append(uid)
                             cc["likes"] = likes
+                            break  # 해당 댓글 찾으면 바로 중단
                     save_vote_db(vdb2)
                     st.rerun()
         else:
@@ -859,14 +860,17 @@ def render():
     if vdb.get("history"):
         recent = list(reversed(vdb["history"][-6:]))
         rows_html = ""
-        for h in recent:
-            ta, tb = h.get('votes_a', 0), h.get('votes_b', 0)
+        for hist_item in recent:
+            ta, tb = hist_item.get('votes_a', 0), hist_item.get('votes_b', 0)
+            # votes_a/votes_b가 리스트로 저장된 경우 정수로 변환 (데이터 형식 혼용 방어)
+            if isinstance(ta, list): ta = len(ta)
+            if isinstance(tb, list): tb = len(tb)
             total_h = ta + tb or 1
             pa = round(ta / total_h * 100)
             pb = 100 - pa
-            h_sa = safe_md(h.get('side_a', ''))
-            h_sb = safe_md(h.get('side_b', ''))
-            h_tp = safe_md(h.get('topic', ''))
+            h_sa = safe_md(hist_item.get('side_a', ''))
+            h_sb = safe_md(hist_item.get('side_b', ''))
+            h_tp = safe_md(hist_item.get('topic', ''))
             if ta > tb:
                 badge_cls, badge_txt = "hist-badge-a", h_sa + " 승 🎉"
             elif tb > ta:
@@ -874,7 +878,7 @@ def render():
             else:
                 badge_cls, badge_txt = "hist-badge-tie", "🤝 무승부"
 
-            date_str = h.get('ended', '')
+            date_str = hist_item.get('ended', '')
             rows_html += (
                 "<div class='hist-card'>"
                 "<div class='hist-top'>"
@@ -953,17 +957,20 @@ def render():
 
         with st.expander("📝 새 배틀 설정", expanded=False):
             st.markdown("**새 투표 주제**")
-            new_topic = st.text_input("질문", max_chars=60, placeholder="예: 치킨 vs 피자, 뭘 선택할래?")
+            new_topic = st.text_input("질문", max_chars=60, placeholder="예: 치킨 vs 피자, 뭘 선택할래?",
+                                      value=st.session_state.pop("prefill_topic", ""))
 
             c1, c2 = st.columns(2)
             with c1:
                 st.markdown("**🔵 A 진영**")
-                new_side_a  = st.text_input("진영 이름 A", max_chars=20, key="adm_na")
+                new_side_a  = st.text_input("진영 이름 A", max_chars=20, key="adm_na",
+                                             value=st.session_state.pop("prefill_a", ""))
                 new_desc_a  = st.text_input("설명 A (선택)", max_chars=40, key="adm_da", placeholder="짧은 설명")
                 new_emoji_a = st.text_input("이모지 A", max_chars=4, key="adm_ea", value="🔵")
             with c2:
                 st.markdown("**🔴 B 진영**")
-                new_side_b  = st.text_input("진영 이름 B", max_chars=20, key="adm_nb")
+                new_side_b  = st.text_input("진영 이름 B", max_chars=20, key="adm_nb",
+                                             value=st.session_state.pop("prefill_b", ""))
                 new_desc_b  = st.text_input("설명 B (선택)", max_chars=40, key="adm_db", placeholder="짧은 설명")
                 new_emoji_b = st.text_input("이모지 B", max_chars=4, key="adm_eb", value="🔴")
 
@@ -973,13 +980,18 @@ def render():
                 if new_topic and new_side_a and new_side_b:
                     vdb2 = load_vote_db()
                     old = vdb2["current"]
-                    if old.get("votes_a") or old.get("votes_b"):
+                    old_va = old.get("votes_a", [])
+                    old_vb = old.get("votes_b", [])
+                    # votes_a/votes_b가 리스트 또는 정수 모두 처리
+                    cnt_old_a = len(old_va) if isinstance(old_va, list) else int(old_va)
+                    cnt_old_b = len(old_vb) if isinstance(old_vb, list) else int(old_vb)
+                    if cnt_old_a or cnt_old_b:
                         vdb2["history"].append({
                             "topic":   old["topic"],
                             "side_a":  old["side_a"],
                             "side_b":  old["side_b"],
-                            "votes_a": len(old["votes_a"]),
-                            "votes_b": len(old["votes_b"]),
+                            "votes_a": cnt_old_a,
+                            "votes_b": cnt_old_b,
                             "ended":   datetime.now(KST).strftime("%Y-%m-%d"),
                         })
                     vdb2["current"] = {
