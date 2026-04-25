@@ -11,10 +11,12 @@ def check_quest(qid, nw, st_session, market):
     elif qid == "landlord": return any(v > 0 for v in st_session.real_estate.values())
     elif qid == "debtfree": return st_session.loan == 0
     elif qid == "investor":
-        return sum(st_session.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price'] for s in stock_config) >= 100_000_000
+        stock_data = market.get('stock_data', {})
+        return sum(st_session.portfolio.get(s['id'], {}).get('qty', 0) * stock_data.get(s['id'], {}).get('price', 0) for s in stock_config) >= 100_000_000
     elif qid == "coin100m":
         if 'crypto_data' not in market: return False
-        return sum(ci.get('qty', 0) * market['crypto_data'].get(cid, {}).get('price', 0) for cid, ci in st_session.get('crypto_portfolio', {}).items()) >= 100_000_000
+        crypto_data = market['crypto_data']
+        return sum(ci.get('qty', 0) * crypto_data.get(cid, {}).get('price', 0) for cid, ci in st_session.get('crypto_portfolio', {}).items()) >= 100_000_000
     elif qid == "billionaire": return nw >= 100_000_000_000
     return False
 
@@ -22,7 +24,8 @@ def get_progress_hint(qid, nw, st_session, market):
     if qid == "rich5":      return f"현재 순자산: {format_korean_money(nw)} / 5억"
     elif qid == "landlord": return f"보유 부동산: {sum(v for v in st_session.real_estate.values())}채 / 1채"
     elif qid == "investor":
-        sv = sum(st_session.portfolio.get(s['id'], {}).get('qty', 0) * market['stock_data'][s['id']]['price'] for s in stock_config)
+        stock_data = market.get('stock_data', {})
+        sv = sum(st_session.portfolio.get(s['id'], {}).get('qty', 0) * stock_data.get(s['id'], {}).get('price', 0) for s in stock_config)
         return f"주식 평가액: {format_korean_money(int(sv))} / 1억"
     elif qid == "coin100m":
         cv = sum(ci.get('qty',0) * market['crypto_data'].get(cid,{}).get('price',0) for cid, ci in st_session.get('crypto_portfolio',{}).items()) if 'crypto_data' in market else 0
