@@ -171,8 +171,11 @@ def render(market, nw):
                                                  index=["일반멤버", "운영진", "부클랜장"].index(m_rank) if m_rank in ["일반멤버", "운영진", "부클랜장"] else 0,
                                                  key=f"r_sel_{m}", label_visibility="collapsed")
                             if new_r != m_rank:
-                                cdata['member_ranks'][m] = new_r
-                                save_clan_db(clans); st.rerun()
+                                clans_fresh2 = load_clan_db()
+                                if my_clan in clans_fresh2 and m in clans_fresh2[my_clan].get('member_ranks', {}):
+                                    clans_fresh2[my_clan]['member_ranks'][m] = new_r
+                                    save_clan_db(clans_fresh2)
+                                st.rerun()
                     with col_m3:
                         if can_kick and m != uid and m != cdata['leader']:
                             if st.button("🦶 추방", key=f"k_{m}", use_container_width=True):
