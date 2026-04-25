@@ -28,12 +28,21 @@ label, label p, label div, .stRadio label, [data-testid="stWidgetLabel"] p, [dat
 }
 
 /* 프리미엄 다크 스페이스 배경 */
-.stApp {
-  background-color: #080A12 !important;
-  background-image: 
-    radial-gradient(circle at 15% 30%, rgba(0, 229, 255, 0.05), transparent 30%),
-    radial-gradient(circle at 85% 70%, rgba(255, 0, 200, 0.05), transparent 30%) !important;
-  background-attachment: fixed;
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+.main {
+  background-color: #080A12 !important;
+  background-image:
+    radial-gradient(circle at 15% 30%, rgba(0, 229, 255, 0.05), transparent 30%),
+    radial-gradient(circle at 85% 70%, rgba(255, 0, 200, 0.05), transparent 30%) !important;
+  background-attachment: fixed;
+}
+
+/* block-container 투명 처리 (배경 덮어씌워지는 현상 방지) */
+[data-testid="stVerticalBlock"],
+.block-container {
+  background: transparent !important;
 }
 
 [data-testid='stSidebar'] {
