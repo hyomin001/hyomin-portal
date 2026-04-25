@@ -819,10 +819,9 @@ def render():
                 masked_uid = c["uid"][:2] + "***" + c["uid"][-1:] if len(c["uid"]) > 3 else "***"
                 side_cls = "comment-side-a" if c["side"] == "A" else "comment-side-b"
                 side_emoji = cur.get("emoji_a","🔵") if c["side"] == "A" else cur.get("emoji_b","🔴")
-                from datetime import datetime
                 try:
                     ts_str = datetime.fromtimestamp(c["ts"]).strftime("%m/%d %H:%M")
-                except:
+                except Exception:
                     ts_str = ""
                 liked_by_me = uid in c.get("likes", [])
                 like_count  = len(c.get("likes", []))
@@ -956,21 +955,28 @@ def render():
                             st.rerun()
 
         with st.expander("📝 새 배틀 설정", expanded=False):
+            # AI 추천 prefill: key를 widget key와 동일하게 세팅해두면
+            # Streamlit이 session_state 값을 자동으로 위젯 초기값으로 사용함
+            if "prefill_topic" in st.session_state:
+                st.session_state["adm_topic"] = st.session_state.pop("prefill_topic")
+            if "prefill_a" in st.session_state:
+                st.session_state["adm_na"] = st.session_state.pop("prefill_a")
+            if "prefill_b" in st.session_state:
+                st.session_state["adm_nb"] = st.session_state.pop("prefill_b")
+
             st.markdown("**새 투표 주제**")
             new_topic = st.text_input("질문", max_chars=60, placeholder="예: 치킨 vs 피자, 뭘 선택할래?",
-                                      value=st.session_state.pop("prefill_topic", ""))
+                                      key="adm_topic")
 
             c1, c2 = st.columns(2)
             with c1:
                 st.markdown("**🔵 A 진영**")
-                new_side_a  = st.text_input("진영 이름 A", max_chars=20, key="adm_na",
-                                             value=st.session_state.pop("prefill_a", ""))
+                new_side_a  = st.text_input("진영 이름 A", max_chars=20, key="adm_na")
                 new_desc_a  = st.text_input("설명 A (선택)", max_chars=40, key="adm_da", placeholder="짧은 설명")
                 new_emoji_a = st.text_input("이모지 A", max_chars=4, key="adm_ea", value="🔵")
             with c2:
                 st.markdown("**🔴 B 진영**")
-                new_side_b  = st.text_input("진영 이름 B", max_chars=20, key="adm_nb",
-                                             value=st.session_state.pop("prefill_b", ""))
+                new_side_b  = st.text_input("진영 이름 B", max_chars=20, key="adm_nb")
                 new_desc_b  = st.text_input("설명 B (선택)", max_chars=40, key="adm_db", placeholder="짧은 설명")
                 new_emoji_b = st.text_input("이모지 B", max_chars=4, key="adm_eb", value="🔴")
 
