@@ -388,36 +388,6 @@ details select {
 }
 .stApp h4, .stApp h3 { color: var(--text) !important; }
 hr { border-color: rgba(255,255,255,0.1) !important; }
-
-/* ── 드롭다운 트리거 + 팝오버 완전 커버 ── */
-div[data-baseweb="select"] > div {
-  background-color: var(--bg3) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text) !important;
-}
-div[data-baseweb="select"] span,
-div[data-baseweb="select"] div { color: var(--text) !important; background-color: transparent !important; }
-[data-baseweb="popover"],
-[role="listbox"],
-[data-baseweb="menu"],
-ul[data-testid="stSelectboxVirtualDropdown"] {
-  background-color: var(--bg3) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 10px !important;
-}
-[data-baseweb="popover"] *,
-[role="listbox"] *,
-[data-baseweb="menu"] *,
-ul[data-testid="stSelectboxVirtualDropdown"] * {
-  color: var(--text) !important;
-  background-color: transparent !important;
-}
-[role="option"]:hover, [data-baseweb="menu"] li:hover {
-  background-color: rgba(61,142,240,0.18) !important;
-}
-[role="option"]:hover *, [data-baseweb="menu"] li:hover * { color: var(--blue) !important; }
-[role="option"][aria-selected="true"] { background-color: rgba(61,142,240,0.15) !important; }
-[role="option"][aria-selected="true"] * { color: var(--blue) !important; }
 </style>
 """
 
