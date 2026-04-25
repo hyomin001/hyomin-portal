@@ -2024,7 +2024,7 @@ def render():
     </style>
     """, unsafe_allow_html=True)
 
-    st.caption("🎮 WASD/방향키: 이동 | 자동 공격 | Q·E·R: 스킬 | 레벨업 시 무기 선택!")
+    st.caption("🎮 WASD/방향키: 이동 | 자동 공격 | ><| 레벨업 시 무기 선택!")
     components.html(GAME_HTML, height=840, scrolling=False)
 
 if __name__ == "__main__":
