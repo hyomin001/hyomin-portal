@@ -1711,28 +1711,28 @@ def render():
         return
 
     # ── 터미널 게임 화면 ─────────────────────────────────
-    # 안전장치: terminal 키 없으면 선택화면으로 강제 복귀
-    if 'terminal' not in st.session_state:
+    # 안전장치: terminal 키 없거나 stage 키 없으면 선택화면으로 강제 복귀
+    if 'terminal' not in st.session_state or 'stage' not in st.session_state.terminal:
         st.session_state.terminal = {"at_select": True}
         st.rerun()
         return
 
     t          = st.session_state.terminal
-    stage_num  = t["stage"]
+    stage_num  = t.get("stage", 1)
     stage_data = STAGES[stage_num]
 
-    elapsed    = int(time.time() - t["start_time"])
+    elapsed    = int(time.time() - t.get("start_time", time.time()))
     mins, secs = divmod(elapsed, 60)
-    hint_warn  = t["hint_used"] >= 3
+    hint_warn  = t.get("hint_used", 0) >= 3
 
     col_l, col_r = st.columns([4, 1])
     with col_l:
         st.markdown(
             f"<div class='status-bar'>"
             f"<span class='status-item'>⏱ <span class='status-val'>{mins:02d}:{secs:02d}</span></span>"
-            f"<span class='status-item'>CMD <span class='status-val'>{t['cmd_count']}</span></span>"
+            f"<span class='status-item'>CMD <span class='status-val'>{t.get('cmd_count', 0)}</span></span>"
             f"<span class='status-item'>HINT "
-            f"<span class='{'status-warn' if hint_warn else 'status-val'}'>{t['hint_used']}/3</span></span>"
+            f"<span class='{'status-warn' if hint_warn else 'status-val'}'>{t.get('hint_used', 0)}/3</span></span>"
             f"<span class='status-item' style='color:#ffd700;'>{stage_data['title']}</span>"
             f"</div>",
             unsafe_allow_html=True,
@@ -1804,10 +1804,10 @@ def render():
     """, unsafe_allow_html=True)
 
     # ── 입력창 (클리어 전) ──────────────────────────────
-    if not t["solved"]:
+    if not t.get("solved", False):
         cmd_input = st.text_input(
             label="cmd",
-            key=f"cmd_input_{t['cmd_count']}",
+            key=f"cmd_input_{t.get('cmd_count', 0)}",
             placeholder="$ 명령어 입력 (help=도움말 / hint=힌트 / history=이전명령어)",
             label_visibility="collapsed",
         )
