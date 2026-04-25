@@ -1624,91 +1624,93 @@ def render():
                 )
 
 
-    # ── 개인 클리어 기록 패널 ──
-    cleared_count = len(st.session_state.terminal_cleared)
-    total_stages = len(STAGES)
-    prog_pct = cleared_count / total_stages * 100
+        # ── 개인 클리어 기록 패널 ──
+        cleared_count = len(st.session_state.terminal_cleared)
+        total_stages = len(STAGES)
+        prog_pct = cleared_count / total_stages * 100
 
-    st.markdown(f"""
-    <div style='background:linear-gradient(135deg,#0c1020,#111828);border:1px solid rgba(0,255,136,0.2);
-      border-radius:16px;padding:20px 24px;margin-bottom:20px;'>
-      <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
-        <div style='font-family:"Orbitron",sans-serif;font-size:0.8rem;color:#00d4ff;letter-spacing:2px;'>MISSION PROGRESS</div>
-        <div style='font-family:"Orbitron",sans-serif;font-size:1.2rem;font-weight:900;color:#00ff88;'>{cleared_count}/{total_stages}</div>
-      </div>
-      <div style='height:8px;background:rgba(255,255,255,0.05);border-radius:999px;overflow:hidden;'>
-        <div style='height:100%;width:{prog_pct:.1f}%;background:linear-gradient(90deg,#6c63ff,#00ff88);border-radius:999px;transition:width 0.5s;'></div>
-      </div>
-      <div style='display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;'>
-        {"".join([
-          f"<div style='background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.4);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#00ff88;font-weight:700;'>✅ STAGE {n} CLEAR</div>"
-          if n in st.session_state.terminal_cleared else
-          f"<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#94A3B8;'>🔒 STAGE {n}</div>"
-          for n in range(1, total_stages + 1)
-        ])}
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if cleared_count == total_stages:
-        st.balloons()
-        st.markdown("""
-        <div style='text-align:center;padding:20px;background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(108,99,255,0.15));
-          border:2px solid rgba(255,215,0,0.5);border-radius:20px;margin-bottom:20px;'>
-          <div style='font-family:"Black Han Sans",sans-serif;font-size:2rem;color:#ffd700;'>🏆 ALL STAGES CLEARED!</div>
-          <div style='color:#8899bb;font-size:0.9rem;margin-top:8px;'>당신은 HYOMIN NETWORKS의 전설적인 해커입니다.</div>
+        st.markdown(f"""
+        <div style='background:linear-gradient(135deg,#0c1020,#111828);border:1px solid rgba(0,255,136,0.2);
+          border-radius:16px;padding:20px 24px;margin-bottom:20px;'>
+          <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
+            <div style='font-family:"Orbitron",sans-serif;font-size:0.8rem;color:#00d4ff;letter-spacing:2px;'>MISSION PROGRESS</div>
+            <div style='font-family:"Orbitron",sans-serif;font-size:1.2rem;font-weight:900;color:#00ff88;'>{cleared_count}/{total_stages}</div>
+          </div>
+          <div style='height:8px;background:rgba(255,255,255,0.05);border-radius:999px;overflow:hidden;'>
+            <div style='height:100%;width:{prog_pct:.1f}%;background:linear-gradient(90deg,#6c63ff,#00ff88);border-radius:999px;transition:width 0.5s;'></div>
+          </div>
+          <div style='display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;'>
+            {"".join([
+              f"<div style='background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.4);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#00ff88;font-weight:700;'>✅ STAGE {n} CLEAR</div>"
+              if n in st.session_state.terminal_cleared else
+              f"<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#94A3B8;'>🔒 STAGE {n}</div>"
+              for n in range(1, total_stages + 1)
+            ])}
+          </div>
         </div>
         """, unsafe_allow_html=True)
 
-        for snum, sdata in STAGES.items():
-            cleared = snum in st.session_state.terminal_cleared
-            locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
-
-            badge     = "<span class='clear-badge'>✅ CLEARED</span>" if cleared else ""
-            lock_icon = "🔒 " if locked else ""
-            diff_color = DIFF_COLORS.get(snum, "#39ff14")
-
-            st.markdown(f"""
-            <div class='stage-card' style='{"opacity:0.4;" if locked else ""}'>
-              <div class='stage-title'>{badge}{lock_icon}{html.escape(sdata['title'])}</div>
-              <div class='stage-desc'>{html.escape(sdata['desc'])}</div>
-              <div class='stage-meta'>
-                <span style='color:{diff_color};'>{sdata['difficulty']}</span>
-              </div>
-              <div class='flavor-text'>{html.escape(sdata.get('flavor', ''))}</div>
+        if cleared_count == total_stages:
+            st.balloons()
+            st.markdown("""
+            <div style='text-align:center;padding:20px;background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(108,99,255,0.15));
+              border:2px solid rgba(255,215,0,0.5);border-radius:20px;margin-bottom:20px;'>
+              <div style='font-family:"Black Han Sans",sans-serif;font-size:2rem;color:#ffd700;'>🏆 ALL STAGES CLEARED!</div>
+              <div style='color:#8899bb;font-size:0.9rem;margin-top:8px;'>당신은 HYOMIN NETWORKS의 전설적인 해커입니다.</div>
             </div>
             """, unsafe_allow_html=True)
 
-            btn_label = (
-                f"[REPLAY] STAGE {snum} 다시하기" if cleared else
-                f"[LOCKED] STAGE {snum - 1} 클리어 후 해금" if locked else
-                f"[ENTER]  STAGE {snum} 시작하기"
-            )
-            if st.button(btn_label, key=f"stage_btn_{snum}",
-                         use_container_width=True, disabled=locked):
-                init_terminal(snum)
-                boot_msg = [
-                    "HYOMIN NETWORKS — Secure Shell v2.26.0",
-                    f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
-                    "Connecting to hyomin-secure-node...",
-                    "Connection established. ✓",
-                    "",
-                    "╔══════════════════════════════════════════╗",
-                    f"║  {sdata['title']:<40}║",
-                    "╚══════════════════════════════════════════╝",
-                    "",
-                    f"  📋 목표: {sdata['goal']}",
-                    f"  ⚠️  {sdata.get('flavor', '')}",
-                    "",
-                    "  `help` — 명령어 목록   `hint` — 힌트 보기",
-                    "─" * 44,
-                ]
-                st.session_state.terminal["output"] = boot_msg
-                st.session_state.terminal["at_select"] = False
-                st.rerun()
+            for snum, sdata in STAGES.items():
+                cleared = snum in st.session_state.terminal_cleared
+                locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
 
-        st.markdown(TERMINAL_JS, unsafe_allow_html=True)
+                badge     = "<span class='clear-badge'>✅ CLEARED</span>" if cleared else ""
+                lock_icon = "🔒 " if locked else ""
+                diff_color = DIFF_COLORS.get(snum, "#39ff14")
+
+                st.markdown(f"""
+                <div class='stage-card' style='{"opacity:0.4;" if locked else ""}'>
+                  <div class='stage-title'>{badge}{lock_icon}{html.escape(sdata['title'])}</div>
+                  <div class='stage-desc'>{html.escape(sdata['desc'])}</div>
+                  <div class='stage-meta'>
+                    <span style='color:{diff_color};'>{sdata['difficulty']}</span>
+                  </div>
+                  <div class='flavor-text'>{html.escape(sdata.get('flavor', ''))}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                btn_label = (
+                    f"[REPLAY] STAGE {snum} 다시하기" if cleared else
+                    f"[LOCKED] STAGE {snum - 1} 클리어 후 해금" if locked else
+                    f"[ENTER]  STAGE {snum} 시작하기"
+                )
+                if st.button(btn_label, key=f"stage_btn_{snum}",
+                             use_container_width=True, disabled=locked):
+                    init_terminal(snum)
+                    boot_msg = [
+                        "HYOMIN NETWORKS — Secure Shell v2.26.0",
+                        f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
+                        "Connecting to hyomin-secure-node...",
+                        "Connection established. ✓",
+                        "",
+                        "╔══════════════════════════════════════════╗",
+                        f"║  {sdata['title']:<40}║",
+                        "╚══════════════════════════════════════════╝",
+                        "",
+                        f"  📋 목표: {sdata['goal']}",
+                        f"  ⚠️  {sdata.get('flavor', '')}",
+                        "",
+                        "  `help` — 명령어 목록   `hint` — 힌트 보기",
+                        "─" * 44,
+                    ]
+                    st.session_state.terminal["output"] = boot_msg
+                    st.session_state.terminal["at_select"] = False
+                    st.rerun()
+
+            st.markdown(TERMINAL_JS, unsafe_allow_html=True)
+            return
         return
+
 
     # ── 터미널 게임 화면 ─────────────────────────────────
     # 안전장치: terminal 키 없거나 stage 키 없으면 선택화면으로 강제 복귀
