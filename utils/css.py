@@ -85,6 +85,24 @@ div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000
     background-color: #EEEEEE !important; 
 }
 
+
+/* 탭 버튼 가시성 */
+[data-testid="stTabs"] [data-baseweb="tab"] {
+  color: #94A3B8 !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
+  color: #00E5FF !important;
+  font-weight: 700 !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+  background-color: #00E5FF !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab-border"] {
+  background-color: rgba(255,255,255,0.1) !important;
+}
+
 /* 사이버펑크 버튼 스타일 */
 .stButton > button {
   font-family: 'Noto Sans KR', sans-serif !important;
@@ -122,7 +140,10 @@ div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000
 /* 테이블 (주식, 코인) */
 .stock-table { width: 100%; border-collapse: collapse; }
 .stock-table th { background: rgba(0, 229, 255, 0.1); color: #00E5FF !important; font-family: 'Orbitron', sans-serif !important; font-size: 0.8rem !important; padding: 12px; text-align: left; border-bottom: 1px solid rgba(0, 229, 255, 0.2); letter-spacing: 1px; }
-.stock-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; }
+.stock-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; color: #E2E8F0 !important; }
+.stock-table tr { background: transparent !important; }
+.stock-table tr:hover { background: rgba(0, 229, 255, 0.04) !important; }
+.stock-table { background: transparent !important; }
 .p-up   { color: #FF4B4B !important; font-weight: 900; }
 .p-down { color: #4B9EFF !important; font-weight: 900; }
 .p-flat { color: #888 !important; }
