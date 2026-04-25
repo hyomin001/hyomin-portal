@@ -13,7 +13,7 @@ GAME_HTML = r"""<!DOCTYPE html>
   --bg:#05080f;--bg2:#080d1a;--bg3:#0d1525;--bg4:#121d32;
   --glass:rgba(255,255,255,0.03);--glass2:rgba(255,255,255,0.07);
   --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-  --text:#e8f0ff;--text2:#7a8fb5;--text3:#3a4a6b;
+  --text:#e8f0ff;--text2:#7a8fb5;--text3:#94A3B8;
   --gold:#ffd700;--gold2:#ffb800;--gold3:#ff9500;
   --green:#10d96e;--red:#ff4560;--blue:#4dabf7;--purple:#b26cf7;
   --orange:#ff8c42;--pink:#f472b6;--teal:#2dd4bf;--cyan:#22d3ee;
