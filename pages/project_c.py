@@ -1643,7 +1643,7 @@ def render():
         {"".join([
           f"<div style='background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.4);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#00ff88;font-weight:700;'>✅ STAGE {n} CLEAR</div>"
           if n in st.session_state.terminal_cleared else
-          f"<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#3a4a6b;'>🔒 STAGE {n}</div>"
+          f"<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#94A3B8;'>🔒 STAGE {n}</div>"
           for n in range(1, total_stages + 1)
         ])}
       </div>
