@@ -1392,37 +1392,6 @@ TERMINAL_CSS = """
 .status-val  { color: #39ff14; font-weight: bold; }
 .status-warn { color: #ff3333; animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-/* ── 드롭다운 트리거 + 팝오버 완전 커버 (터미널 테마) ── */
-div[data-baseweb="select"] > div {
-  background-color: #020c02 !important;
-  border: 1px solid #1a4a1a !important;
-  color: #39ff14 !important;
-}
-div[data-baseweb="select"] span,
-div[data-baseweb="select"] div { color: #39ff14 !important; background-color: transparent !important; }
-[data-baseweb="popover"],
-[role="listbox"],
-[data-baseweb="menu"],
-ul[data-testid="stSelectboxVirtualDropdown"] {
-  background-color: #020c02 !important;
-  border: 1px solid #1a4a1a !important;
-  border-radius: 4px !important;
-}
-[data-baseweb="popover"] *,
-[role="listbox"] *,
-[data-baseweb="menu"] *,
-ul[data-testid="stSelectboxVirtualDropdown"] * {
-  color: #39ff14 !important;
-  background-color: transparent !important;
-  font-family: 'JetBrains Mono', monospace !important;
-}
-[role="option"]:hover, [data-baseweb="menu"] li:hover {
-  background-color: #0a2a0a !important;
-}
-[role="option"]:hover *, [data-baseweb="menu"] li:hover * { color: #ffffff !important; }
-[role="option"][aria-selected="true"] { background-color: #0f3a0f !important; }
-[role="option"][aria-selected="true"] * { color: #39ff14 !important; }
 </style>
 """
 
