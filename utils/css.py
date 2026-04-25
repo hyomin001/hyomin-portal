@@ -61,20 +61,49 @@ h3 { font-size: 1.1rem !important; font-weight: 800 !important; color: #FFD600 !
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
 }
 
-/* 드롭다운 및 팝업 스타일 (글씨 안 보이는 현상 완벽 수정) */
-div[data-baseweb="select"] > div { background-color: #FFFFFF !important; }
-div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000 !important; font-weight: 600 !important; }
+/* ── 드롭다운 트리거 (닫힌 박스) ── */
+div[data-baseweb="select"] > div {
+  background-color: #0d1526 !important;
+  border: 1px solid rgba(0, 229, 255, 0.25) !important;
+  border-radius: 8px !important;
+  color: #FFFFFF !important;
+}
+div[data-baseweb="select"] span,
+div[data-baseweb="select"] div {
+  color: #FFFFFF !important;
+  background-color: transparent !important;
+  font-weight: 600 !important;
+}
 
-[data-baseweb="popover"] { background-color: #FFFFFF !important; }
-[data-baseweb="popover"] span, [data-baseweb="popover"] div, 
-[role="listbox"] span, [role="listbox"] div, [role="listbox"] li,
-[data-baseweb="menu"] span, [data-baseweb="menu"] div, [data-baseweb="menu"] li { 
-    color: #000000 !important; 
+/* ── 드롭다운 팝오버 (열린 리스트) — 배경·글씨 완전 커버 ── */
+[data-baseweb="popover"],
+[role="listbox"],
+[data-baseweb="menu"],
+ul[data-testid="stSelectboxVirtualDropdown"] {
+  background-color: #0d1526 !important;
+  border: 1px solid rgba(0, 229, 255, 0.2) !important;
+  border-radius: 10px !important;
 }
-[role="listbox"], [data-baseweb="menu"] { background-color: #FFFFFF !important; }
-[role="option"]:hover, [data-baseweb="menu"] li:hover, [role="option"]:hover span, [role="option"]:hover div { 
-    background-color: #EEEEEE !important; 
+
+/* 팝오버 내부 모든 하위 요소 — span/div 색 충돌 원천 차단 */
+[data-baseweb="popover"] *,
+[role="listbox"] *,
+[data-baseweb="menu"] *,
+ul[data-testid="stSelectboxVirtualDropdown"] * {
+  color: #FFFFFF !important;
+  background-color: transparent !important;
 }
+
+/* 개별 옵션 항목 */
+[role="option"] { background-color: transparent !important; }
+[role="option"]:hover,
+[data-baseweb="menu"] li:hover {
+  background-color: rgba(0, 229, 255, 0.12) !important;
+}
+[role="option"]:hover *,
+[data-baseweb="menu"] li:hover * { color: #00E5FF !important; }
+[role="option"][aria-selected="true"] { background-color: rgba(0, 229, 255, 0.18) !important; }
+[role="option"][aria-selected="true"] * { color: #00E5FF !important; }
 
 /* 사이버펑크 버튼 스타일 */
 .stButton > button {
