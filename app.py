@@ -427,40 +427,18 @@ div[data-baseweb="select"] > div {
   border: 1px solid var(--border) !important;
   color: var(--text) !important;
 }
-div[data-baseweb="select"] span,
-div[data-baseweb="select"] div {
-  color: var(--text) !important;
-  background-color: transparent !important;
-}
-
-/* 드롭다운 팝오버 (열린 리스트) — 배경·글씨 완전 커버 */
-[data-baseweb="popover"],
-[role="listbox"],
-[data-baseweb="menu"],
-ul[data-testid="stSelectboxVirtualDropdown"] {
+/* 드롭다운 클릭 시 펼쳐지는 선택 옵션 리스트 배경 및 글자색 */
+div[data-baseweb="popover"] ul, ul[data-testid="stSelectboxVirtualDropdown"] {
   background-color: var(--bg3) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 10px !important;
 }
-
-/* 팝오버 내부 모든 하위 요소 — * 선택자로 색 충돌 원천 차단 */
-[data-baseweb="popover"] *,
-[role="listbox"] *,
-[data-baseweb="menu"] *,
-ul[data-testid="stSelectboxVirtualDropdown"] * {
+div[data-baseweb="popover"] li, li[role="option"] {
   color: var(--text) !important;
-  background-color: transparent !important;
 }
-
-/* 개별 옵션 호버/선택 */
-[role="option"]:hover,
-[data-baseweb="menu"] li:hover {
+div[data-baseweb="popover"] li:hover, li[role="option"]:hover {
   background-color: rgba(108,99,255,0.2) !important;
+  color: var(--cyan) !important;
 }
-[role="option"]:hover *,
-[data-baseweb="menu"] li:hover * { color: var(--cyan) !important; }
-[role="option"][aria-selected="true"] { background-color: rgba(0,212,255,0.15) !important; }
-[role="option"][aria-selected="true"] * { color: var(--cyan) !important; }
 
 /* ── ✍️ 텍스트 입력창 (Input Box) 다크 테마 적용 ── */
 input[type="text"], input[type="password"] {
