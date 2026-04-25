@@ -92,7 +92,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .form-input,.form-select{width:100%;background:var(--bg4);border:1.5px solid var(--border2);border-radius:var(--r2);
   color:var(--text);padding:11px 14px;font-size:0.88rem;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color 0.2s;}
 .form-input:focus,.form-select:focus{border-color:var(--gold);}
-.form-select option{background:#0d1525;}
+.form-select option{background:#0d1525;color:var(--text);}
 .btn-start{width:100%;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:14px;color:#fff;
   font-family:'Black Han Sans',sans-serif;font-size:1.1rem;letter-spacing:3px;padding:16px;cursor:pointer;
   margin-top:10px;transition:all 0.2s;box-shadow:0 8px 32px rgba(255,140,0,0.4);}
@@ -330,6 +330,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .trade-money-input{width:100%;background:var(--bg4);border:1.5px solid var(--border2);border-radius:8px;color:var(--text);padding:7px 11px;font-size:0.82rem;font-family:'Noto Sans KR',sans-serif;outline:none;margin-bottom:6px;}
 .trade-money-input:focus{border-color:var(--cyan);}
 .trade-target-select{width:100%;background:var(--bg4);border:1.5px solid var(--border2);border-radius:8px;color:var(--text);padding:7px 11px;font-size:0.82rem;font-family:'Noto Sans KR',sans-serif;outline:none;margin-bottom:8px;}
+.trade-target-select option{background:var(--bg4);color:var(--text);}
 
 /* Casino */
 .casino-box{background:linear-gradient(160deg,#180a08,#220e0a);border:1.5px solid rgba(255,165,0,0.3);border-radius:18px;
