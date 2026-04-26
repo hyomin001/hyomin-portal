@@ -15,18 +15,22 @@ def get_mongo_client():
     if uri: return MongoClient(uri)
     return None
 
+def _get_col(file: str):
+    client = get_mongo_client()
+    if client is None: return None
+    db = client["hyomin_universe"]
+    return db[file.replace(".json", "").replace("_db", "")]
+
 def load_db(file, default):
     """MongoDB에서 데이터 불러오기 (재시도 1회 포함)"""
     client = get_mongo_client()
     if client is None:
         st.error("❌ DB 연결 실패: MongoDB에 연결할 수 없습니다. 관리자에게 문의하세요.")
         st.stop()
-    # 🛡️ 주의 #4 수정: 일시적 오류 시 1회 재시도 후 graceful 처리
     for attempt in range(2):
         try:
-            db       = client["hyomin_universe"]
-            col_name = file.replace(".json", "").replace("_db", "")
-            doc      = db[col_name].find_one({"_id": "main"})
+            col = _get_col(file)
+            doc = col.find_one({"_id": "main"})
             if doc:
                 doc.pop("_id", None)
                 if "_list" in doc and len(doc) == 1:
@@ -36,30 +40,101 @@ def load_db(file, default):
         except Exception as e:
             logging.error(f"[load_db] {file} 로드 실패 (시도 {attempt+1}/2): {e}")
             if attempt == 0:
-                _time.sleep(0.5)  # 0.5초 후 재시도
+                _time.sleep(0.5)
                 continue
-            # 2회 모두 실패 시 — 빈 default 반환으로 graceful 처리 (st.stop 대신)
             st.warning(f"⚠️ DB 일시 오류 발생. 일부 데이터가 최신이 아닐 수 있습니다. ({file})")
             return default
 
 def save_db(file, data):
     """MongoDB에 데이터 저장하기"""
-    if data is None:
-        return
+    if data is None: return
     client = get_mongo_client()
     if client is None:
         logging.error(f"[save_db] MongoDB 연결 없음 - {file} 저장 취소")
         return
     try:
-        db       = client["hyomin_universe"]
-        col_name = file.replace(".json", "").replace("_db", "")
+        col = _get_col(file)
         if isinstance(data, list):
             doc_to_save = {"_id": "main", "_list": data}
         else:
             doc_to_save = {"_id": "main", **data}
-        db[col_name].replace_one({"_id": "main"}, doc_to_save, upsert=True)
+        col.replace_one({"_id": "main"}, doc_to_save, upsert=True)
     except Exception as e:
         logging.error(f"[save_db] {file} 저장 실패: {e}")
+
+
+def atomic_deduct_cash(uid: str, amount: int) -> bool:
+    """
+    MongoDB 원자적 현금 차감 — Race Condition 방어의 핵심.
+    users 도큐먼트에서 uid.cash >= amount 인 경우에만 $inc로 차감.
+    성공 시 True, 잔액 부족 또는 오류 시 False 반환.
+    """
+    client = get_mongo_client()
+    if client is None: return False
+    try:
+        col = _get_col(USERS_FILE)
+        result = col.find_one_and_update(
+            {"_id": "main", f"{uid}.cash": {"$gte": amount}},
+            {"$inc": {f"{uid}.cash": -amount}},
+        )
+        return result is not None
+    except Exception as e:
+        logging.error(f"[atomic_deduct_cash] {uid} 차감 실패: {e}")
+        return False
+
+
+def atomic_add_cash(uid: str, amount: int) -> bool:
+    """MongoDB 원자적 현금 지급."""
+    client = get_mongo_client()
+    if client is None: return False
+    try:
+        col = _get_col(USERS_FILE)
+        col.update_one(
+            {"_id": "main"},
+            {"$inc": {f"{uid}.cash": amount}},
+        )
+        return True
+    except Exception as e:
+        logging.error(f"[atomic_add_cash] {uid} 지급 실패: {e}")
+        return False
+
+
+# ── 로그인 잠금 — DB 기반 ──────────────────────────────────────────────────
+
+def get_login_lock(uid: str) -> tuple[int, float]:
+    """(실패 횟수, 잠금 해제 타임스탬프) 반환. uid가 없으면 (0, 0) 반환."""
+    try:
+        col = _get_col(USERS_FILE)
+        doc = col.find_one({"_id": "main"}, {f"{uid}.login_fails": 1, f"{uid}.lock_until": 1})
+        if not doc or uid not in doc: return 0, 0.0
+        u = doc[uid]
+        return u.get("login_fails", 0), float(u.get("lock_until", 0))
+    except Exception as e:
+        logging.error(f"[get_login_lock] {e}")
+        return 0, 0.0
+
+def set_login_lock(uid: str, fails: int, lock_until: float):
+    """로그인 실패 횟수·잠금 타임스탬프를 DB에 원자적으로 저장."""
+    try:
+        col = _get_col(USERS_FILE)
+        col.update_one(
+            {"_id": "main"},
+            {"$set": {f"{uid}.login_fails": fails, f"{uid}.lock_until": lock_until}},
+        )
+    except Exception as e:
+        logging.error(f"[set_login_lock] {e}")
+
+def clear_login_lock(uid: str):
+    """로그인 성공 시 잠금 초기화."""
+    try:
+        col = _get_col(USERS_FILE)
+        col.update_one(
+            {"_id": "main"},
+            {"$set": {f"{uid}.login_fails": 0, f"{uid}.lock_until": 0.0}},
+        )
+    except Exception as e:
+        logging.error(f"[clear_login_lock] {e}")
+
 
 # 📊 통계 전용 로드/저장
 def load_stats():
@@ -73,17 +148,8 @@ def load_stats():
 def save_stats(data):
     save_db(STATS_FILE, data)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FIX: log_tx 내부 거래량 통계 RMW 개선
-#   기존: log_tx 안에서 load_stats() → 수정 → save_stats() 패턴이
-#         tx 로그 저장과 같은 함수에 묶여 있어 두 번의 DB 왕복이 직렬로 실행됨.
-#         동시 요청 시 두 번째 load가 첫 번째 save 이전 값을 읽어 거래량 누락.
-#   변경: 통계 집계를 log_tx와 분리하고, 조회 후 저장까지의 코드를
-#         최대한 짧게 유지하여 경쟁 창(race window)을 최소화.
-#         (완전한 원자성은 MongoDB $inc 마이그레이션으로 추후 해결)
-# ─────────────────────────────────────────────────────────────────────────────
 def _update_daily_volume(amount: int):
-    """거래량 통계만 별도로 빠르게 갱신 (RMW 창 최소화)"""
+    """거래량 통계만 별도로 빠르게 갱신"""
     try:
         stats = load_stats()
         today = datetime.now(KST).strftime("%Y-%m-%d")
@@ -92,12 +158,10 @@ def _update_daily_volume(amount: int):
         stats["daily_volume"] = vol
         save_stats(stats)
     except Exception as e:
-        logging.error(f"[_update_daily_volume] 통계 갱신 실패 (거래는 이미 완료됨): {e}")
-
+        logging.error(f"[_update_daily_volume] 통계 갱신 실패: {e}")
 
 def log_tx(uid: str, category: str, desc: str, amount: int):
     """거래 로그 기록 + 거래량 통계 갱신"""
-    # 1단계: 거래 로그 저장 (핵심 — 실패해선 안 됨)
     logs = load_db(TXLOG_FILE, {})
     if uid not in logs: logs[uid] = []
     logs[uid].insert(0, {
@@ -109,7 +173,6 @@ def log_tx(uid: str, category: str, desc: str, amount: int):
     logs[uid] = logs[uid][:200]
     save_db(TXLOG_FILE, logs)
 
-    # 2단계: 거래량 통계 갱신 (분리 실행 — 실패해도 거래 자체에 영향 없음)
     if category in ["주식매수", "주식매도", "코인매수", "코인매도"]:
         _update_daily_volume(amount)
 
