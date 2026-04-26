@@ -94,17 +94,30 @@ def run_market_sync():
         m_up = True
 
     # 대출 이자 폭탄 (오프라인 보정)
+    # DB에서 최신 loan_time을 읽어 다중 탭 이중 부과 방지
     if 'logged_in_user' in st.session_state and st.session_state.loan > 0:
-        elapsed = cur_t - st.session_state.loan_time
-        cyc = min(int(elapsed / 10), 30)
-        if cyc > 0:
-            old_loan = st.session_state.loan
-            st.session_state.loan = min(int(st.session_state.loan * (1.02 ** cyc)), 999_999_999_999_999)
-            st.session_state.loan_time += cyc * 10
-            added = st.session_state.loan - old_loan
-            if added > 0:
-                st.warning(f"⚠️ 오프라인 동안 대출 이자 {format_korean_money(added)}이 붙었습니다!")
-            sync_user_data()
+        try:
+            _u_fresh   = load_db(USERS_FILE, {})
+            _uid_      = st.session_state.logged_in_user
+            _u_data    = _u_fresh.get(_uid_, {})
+            db_loan     = _u_data.get('loan', 0)
+            db_loan_t   = _u_data.get('loan_time', cur_t)
+            # 세션과 DB 중 최신 loan_time을 기준으로 계산
+            ref_loan_t  = max(st.session_state.loan_time, db_loan_t)
+            ref_loan    = max(st.session_state.loan, db_loan)
+            elapsed = cur_t - ref_loan_t
+            cyc = min(int(elapsed / 10), 30)
+            if cyc > 0:
+                old_loan = ref_loan
+                new_loan = min(int(ref_loan * (1.02 ** cyc)), 999_999_999_999_999)
+                st.session_state.loan      = new_loan
+                st.session_state.loan_time = ref_loan_t + cyc * 10
+                added = new_loan - old_loan
+                if added > 0:
+                    st.warning(f"⚠️ 오프라인 동안 대출 이자 {format_korean_money(added)}이 붙었습니다!")
+                sync_user_data()
+        except Exception:
+            pass
             
     if m_up: save_market(market)
     return market
