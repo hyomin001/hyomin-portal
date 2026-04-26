@@ -48,7 +48,7 @@ def get_net_worth(uid, market_data):
     for eid, count in u.get('real_estate', {}).items():
         if eid in estate_config: w += estate_config[eid]['base_price'] * count * 0.8
     w_lv = u.get('weapon_level', 0)
-    if w_lv > 0: w += FORGE_DATA[w_lv]['sell']
+    if w_lv > 0 and w_lv in FORGE_DATA: w += FORGE_DATA[w_lv]['sell']
     return w
 
 def sync_user_data():
