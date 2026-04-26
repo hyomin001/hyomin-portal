@@ -98,7 +98,15 @@ def render(market, nw):
                 if st.session_state.loan <= 0:
                     st.session_state.loan = 0
                     if st.session_state.equipped_title == "💸 신용불량자":
-                        st.session_state.equipped_title = "🌱 신규시민"
+                        # 이전 칭호를 복원 (없으면 기본값으로)
+                        prev_title = st.session_state.get('_pre_debt_title', '🌱 신규시민')
+                        # 복원 대상 칭호가 인벤토리에 있는지 확인
+                        if prev_title in st.session_state.inventory:
+                            st.session_state.equipped_title = prev_title
+                        elif st.session_state.inventory:
+                            st.session_state.equipped_title = st.session_state.inventory[-1]
+                        else:
+                            st.session_state.equipped_title = '🌱 신규시민'
                         st.success("🎉 대출 전액 상환 완료! 신용이 회복되었습니다.")
                     else: st.success("🎉 대출 전액 상환 완료!")
                 else: st.success(f"✅ {format_korean_money(actual)} 상환 완료.")
