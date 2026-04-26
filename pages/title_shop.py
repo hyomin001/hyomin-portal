@@ -46,10 +46,34 @@ def render(market, nw):
                     st.button("✅ 장착 중", key=f"inv_eq_{i}", disabled=True, use_container_width=True)
 
     st.write("---")
+    st.markdown("### 🛒 칭호 상점")
+
+    # 페이지네이션 (한 페이지에 10개씩 표시, 성능 개선)
+    PAGE_SIZE = 10
+    total_titles = 100
+    total_pages  = total_titles // PAGE_SIZE
+
+    if "title_shop_page" not in st.session_state:
+        st.session_state.title_shop_page = 0
+
+    cur_page = st.session_state.title_shop_page
+    start_i  = cur_page * PAGE_SIZE + 1
+    end_i    = start_i + PAGE_SIZE
+
+    # 페이지 네비게이션
+    nav_c1, nav_c2, nav_c3 = st.columns([1, 3, 1])
+    with nav_c1:
+        if st.button("◀ 이전", disabled=(cur_page == 0), use_container_width=True):
+            st.session_state.title_shop_page -= 1; st.rerun()
+    with nav_c2:
+        st.markdown(f"<div style='text-align:center;color:#888;padding-top:8px;'>페이지 {cur_page + 1} / {total_pages} (Lv.{start_i}~Lv.{end_i-1})</div>", unsafe_allow_html=True)
+    with nav_c3:
+        if st.button("다음 ▶", disabled=(cur_page >= total_pages - 1), use_container_width=True):
+            st.session_state.title_shop_page += 1; st.rerun()
 
     cols = st.columns(2)
-    for i in range(1, 101):
-        with cols[i % 2]:
+    for i in range(start_i, end_i):
+        with cols[(i - start_i) % 2]:
             title_name = f"💫 초월자 Lv.{i}" if i >= 90 else f"💎 VIP 칭호 Lv.{i}"
             price      = i * 10_000_000
 
