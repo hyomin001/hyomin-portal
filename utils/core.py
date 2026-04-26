@@ -4,6 +4,7 @@ import time
 import random
 import streamlit as st
 import os
+import bcrypt
 from utils.config import (
     KST, USERS_FILE, MARKET_FILE, estate_config,
     stock_config, FORGE_DATA, MINE_ITEMS, CRYPTO_CONFIG, DAILY_QUESTS_CONFIG
@@ -16,8 +17,32 @@ ADMIN_HASH = os.environ.get("ADMIN_HASH", "")
 if not ADMIN_HASH:
     raise ValueError("환경변수 ADMIN_HASH가 설정되지 않았습니다. 배포 전 반드시 Streamlit Secrets에 설정하세요.")
 
+
+# ── 비밀번호 해싱 (bcrypt + 레거시 SHA-256 호환) ────────────────────────────
+
 def hash_pw(pw: str) -> str:
+    """레거시 SHA-256 해시 — 관리자 비교 및 레거시 판별 전용."""
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
+
+def hash_pw_bcrypt(pw: str) -> str:
+    """신규 bcrypt 해시 생성 (회원가입·비밀번호 변경 시 사용)."""
+    return bcrypt.hashpw(pw.encode('utf-8'), bcrypt.gensalt(rounds=12)).decode('utf-8')
+
+def is_legacy_hash(h: str) -> bool:
+    """SHA-256 해시(64자 hex)인지 판별."""
+    return len(h) == 64 and all(c in '0123456789abcdef' for c in h.lower())
+
+def verify_pw(pw: str, stored_hash: str) -> bool:
+    """저장된 해시가 bcrypt든 SHA-256이든 자동으로 검증."""
+    if is_legacy_hash(stored_hash):
+        return hashlib.compare_digest(hash_pw(pw), stored_hash)
+    try:
+        return bcrypt.checkpw(pw.encode('utf-8'), stored_hash.encode('utf-8'))
+    except Exception:
+        return False
+
+
+# ── 유틸리티 ─────────────────────────────────────────────────────────────────
 
 def format_korean_money(num):
     try:
@@ -67,26 +92,23 @@ def sync_user_data():
         'loan_time': st.session_state.loan_time,
         'crypto_portfolio': st.session_state.get('crypto_portfolio', {}),
         'daily_quests': st.session_state.get('daily_quests', {}),
-        'weapon_level': st.session_state.get('weapon_level', 0), 
+        'weapon_level': st.session_state.get('weapon_level', 0),
         'bulk_trade_date': st.session_state.get('bulk_trade_date', ''),
         'bulk_trade_count': st.session_state.get('bulk_trade_count', 0),
         'last_estate_reset': st.session_state.get('last_estate_reset', 0),
         'terminal_cleared': list(st.session_state.get('terminal_cleared', set())),
+        'gacha_pity': st.session_state.get('gacha_pity', 0),
     })
     save_db(USERS_FILE, users)
 
 def pull_user_data():
-    """
-    [근본 버그 픽스] 
-    DB의 최신 상태를 강제로 현재 세션(브라우저 탭)으로 불러옵니다.
-    이 함수가 실행되면 다중 탭이나 과거의 망령(캐시)이 DB를 덮어쓰는 일이 절대 발생하지 않습니다.
-    """
-    if 'logged_in_user' not in st.session_state: 
+    """DB의 최신 상태를 강제로 현재 세션으로 불러옵니다."""
+    if 'logged_in_user' not in st.session_state:
         return
-        
+
     users = load_db(USERS_FILE, {})
     uid = st.session_state.logged_in_user
-    
+
     if uid in users:
         u = users[uid]
         st.session_state.global_cash = u.get('cash', 0)
@@ -104,6 +126,7 @@ def pull_user_data():
         st.session_state.bulk_trade_count = u.get('bulk_trade_count', 0)
         st.session_state.last_estate_reset = u.get('last_estate_reset', 0)
         st.session_state.terminal_cleared = set(u.get('terminal_cleared', []))
+        st.session_state.gacha_pity = u.get('gacha_pity', 0)
 
 def get_market():
     def init_m():
@@ -155,7 +178,6 @@ def set_cooldown(key: str): st.session_state[f"_cd_{key}"] = time.time()
 def cooldown_remaining(key: str, cooldown_sec: float = 2.0) -> float:
     return max(0.0, cooldown_sec - (time.time() - st.session_state.get(f"_cd_{key}", 0)))
 
-# 📊 [통계] 실시간 접속자 계산 — home.py·app.py 공용
 def get_online_users() -> int:
     """last_seen 타임스탬프 기준 5분 이내 활동한 유저 수 반환"""
     try:
