@@ -1,7 +1,10 @@
 # pages/txlog.py
 import streamlit as st
+import csv
+import io
 from utils.core import format_korean_money
-from utils.database import load_db, TXLOG_FILE
+from utils.config import TXLOG_FILE
+from utils.database import load_db
 
 def render(market, nw):
     st.title("📜 내 거래 기록")
@@ -14,8 +17,24 @@ def render(market, nw):
     if not my_logs:
         st.info("아직 거래 기록이 없습니다.")
     else:
-        cats_all = sorted(set(l['category'] for l in my_logs))
-        sel_cat  = st.selectbox("카테고리 필터", ["전체"] + cats_all)
+        col_filter, col_dl = st.columns([3, 1])
+        with col_filter:
+            cats_all = sorted(set(l['category'] for l in my_logs))
+            sel_cat  = st.selectbox("카테고리 필터", ["전체"] + cats_all)
+        with col_dl:
+            # CSV 다운로드 버튼
+            csv_buf = io.StringIO()
+            writer  = csv.writer(csv_buf)
+            writer.writerow(["시간", "카테고리", "설명", "금액(원)"])
+            for l in my_logs:
+                writer.writerow([l['time'], l['category'], l['desc'], l['amount']])
+            st.download_button(
+                label="📥 CSV 다운로드",
+                data=csv_buf.getvalue().encode('utf-8-sig'),
+                file_name=f"{uid_log}_txlog.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
 
         filtered = my_logs if sel_cat == "전체" else [l for l in my_logs if l['category'] == sel_cat]
 
@@ -37,8 +56,10 @@ def render(market, nw):
             cat_icons = {
                 "주식매수":"📉","주식매도":"📈","부동산매입":"🏗️","부동산구매":"🛒",
                 "부동산판매":"🏷️","부동산수금":"💰","송금":"📤","대출":"💳","대출상환":"🏦",
-                "로또":"🎫","축구베팅":"⚽","레이싱":"🏎️","슬롯":"🎰",
-                "광산":"⛏️","CBT":"💻","칭호구매":"👑","VIP슬롯":"💎","승부차기":"🥅", 
+                "로또":"🎫","로또당첨":"🎊","축구베팅":"⚽","레이싱":"🏎️","슬롯":"🎰",
+                "광산":"⛏️","CBT":"💻","칭호구매":"👑","VIP슬롯":"💎","승부차기":"🥅",
+                "퀘스트":"📅","강화":"🗡️","가챠":"🎴","코인매수":"🪙","코인매도":"💱",
+                "송금수신":"📥","무기판매":"💰",
             }
             cat_ico = cat_icons.get(log['category'], "📋")
             st.markdown(f"""
