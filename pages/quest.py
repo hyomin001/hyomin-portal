@@ -8,7 +8,7 @@ from utils.database import log_tx
 def check_quest(qid, nw, st_session, market):
     if qid == "attendance": return True
     elif qid == "rich5": return nw >= 500_000_000
-    elif qid == "landlord": return any(v > 0 for v in st_session.real_estate.values())
+    elif qid == "landlord": return any(v > 0 for v in (st_session.real_estate or {}).values())
     elif qid == "debtfree": return st_session.loan == 0
     elif qid == "investor":
         stock_data = market.get('stock_data', {})
@@ -73,4 +73,6 @@ def render(market, nw):
                 st.session_state.global_cash += q['reward']
                 log_tx(st.session_state.logged_in_user, "퀘스트", f"{q['name']} 완료", q['reward'])
                 sync_user_data()
+                st.toast(f"🎉 {q['name']} 완료! +{format_korean_money(q['reward'])}", icon="🎁")
+                st.balloons()
                 st.rerun()
