@@ -1155,6 +1155,10 @@ elif st.session_state.page_view == "universe":
 
     nw = _calc_nw_from_session(market)
     if st.session_state.loan > 0 and nw < 0:
+        # 이전 칭호 저장 (신용불량자가 아닐 때만 저장)
+        cur_title = st.session_state.equipped_title
+        if cur_title != "💸 신용불량자":
+            st.session_state['_pre_debt_title'] = cur_title
         st.session_state.equipped_title = "💸 신용불량자"
         sync_user_data()
 
