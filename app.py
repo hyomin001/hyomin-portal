@@ -10,7 +10,8 @@ from datetime import datetime
 # ==============================
 from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA
 from utils.database import load_db, save_db, load_stats, save_stats
-from utils.core import hash_pw, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
+from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
+from utils.database import get_login_lock, set_login_lock, clear_login_lock, save_db
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
 
@@ -704,11 +705,11 @@ if st.session_state.page_view == "portal":
     <p>
         모든 유저 자산 및 시장 데이터는 <b>MongoDB Atlas 클라우드</b>에 실시간 저장됩니다.
         로컬 JSON 파일 의존을 완전히 탈피하여, 서버 재시작과 무관하게 데이터가 영구 보존됩니다.
-        비밀번호는 <b>SHA-256 단방향 해시</b>로 암호화되어 원문 복원이 불가능합니다.
+        비밀번호는 <b>bcrypt 단방향 해시</b>로 암호화되어 원문 복원이 불가능합니다. (레거시 SHA-256 → 로그인 시 자동 마이그레이션)
     </p>
     <div style="margin-top:10px;">
         <span class="arch-badge">MongoDB Atlas</span>
-        <span class="arch-badge">SHA-256 암호화</span>
+        <span class="arch-badge">bcrypt 암호화</span>
         <span class="arch-badge">실시간 백업</span>
         <span class="arch-badge">utils/database.py</span>
     </div>
@@ -1070,26 +1071,50 @@ elif st.session_state.page_view == "login":
             l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
 
             if st.button("🚀 로그인 및 계속하기", use_container_width=True):
-                _fails      = st.session_state.get('login_fails', 0)
-                _lock_until = st.session_state.get('login_lock_until', 0)
+                users = load_db(USERS_FILE, {})
+
+                # ── DB 기반 로그인 잠금 확인 ──────────────────────────────
+                if l_id and l_id in users:
+                    _fails, _lock_until = get_login_lock(l_id)
+                else:
+                    # 없는 아이디는 세션으로만 임시 추적 (brute-force 방어)
+                    _fails      = st.session_state.get('_anon_fails', 0)
+                    _lock_until = st.session_state.get('_anon_lock', 0)
+
                 if time.time() < _lock_until:
                     _remain = int(_lock_until - time.time())
                     st.error(f"🔒 로그인 시도 초과. {_remain}초 후 다시 시도하세요.")
                     st.stop()
-                users = load_db(USERS_FILE, {})
+
+                # ── 관리자 로그인 (SHA-256 유지) ─────────────────────────
                 if l_id == "admin" and hash_pw(l_pw) == ADMIN_HASH:
                     if "admin" not in users:
                         users["admin"] = {"pw": ADMIN_HASH, "cash": 999_999_999_999,
                                           "inventory": [], "equipped_title": "👑 절대신 창조주"}
                         save_db(USERS_FILE, users)
                     _do_login("admin", users, device_mode)
-                elif l_id != "admin" and l_id in users and users[l_id]['pw'] == hash_pw(l_pw):
+
+                # ── 일반 유저 로그인 (bcrypt + 레거시 SHA-256 자동 마이그레이션) ──
+                elif l_id != "admin" and l_id in users and verify_pw(l_pw, users[l_id]['pw']):
+                    # 레거시 SHA-256 해시 감지 → 로그인 시점에 bcrypt로 자동 교체
+                    if is_legacy_hash(users[l_id]['pw']):
+                        users[l_id]['pw'] = hash_pw_bcrypt(l_pw)
+                        save_db(USERS_FILE, users)
+                    clear_login_lock(l_id)
                     _do_login(l_id, users, device_mode)
+
+                # ── 로그인 실패 ───────────────────────────────────────────
                 else:
                     _fails += 1
-                    st.session_state['login_fails'] = _fails
+                    if l_id and l_id in users:
+                        _lock_until_new = (time.time() + 30) if _fails >= 5 else 0.0
+                        set_login_lock(l_id, _fails, _lock_until_new)
+                    else:
+                        st.session_state['_anon_fails'] = _fails
+                        if _fails >= 5:
+                            st.session_state['_anon_lock'] = time.time() + 30
+
                     if _fails >= 5:
-                        st.session_state['login_lock_until'] = time.time() + 30
                         st.error("🔒 로그인 5회 실패. 30초 후 다시 시도하세요.")
                     else:
                         st.error(f"❌ 아이디 또는 비밀번호가 올바르지 않습니다. (남은 시도: {5 - _fails}회)")
@@ -1108,7 +1133,7 @@ elif st.session_state.page_view == "login":
                     st.error("⚠️ 비밀번호는 6자 이상이어야 합니다.")
                 else:
                     users[clean_id] = {
-                        "pw": hash_pw(n_pw), "cash": 500_000_000, "inventory": [],
+                        "pw": hash_pw_bcrypt(n_pw), "cash": 500_000_000, "inventory": [],
                         "equipped_title": "🌱 신규시민", "portfolio": {}, "real_estate": {},
                         "rent_time": time.time(), "loan": 0, "loan_time": time.time(),
                         "last_estate_reset": 0, "bulk_trade_date": "", "bulk_trade_count": 0,
@@ -1226,7 +1251,10 @@ elif st.session_state.page_view == "universe":
 
     st.markdown(f"<div class='news-banner'>📡 {market['news']}</div>", unsafe_allow_html=True)
     if market.get('admin_msg'):
-        st.markdown(f"<div style='background:rgba(255,0,0,0.08);border:1px solid {market.get('admin_color','#FF4B4B')};border-radius:10px;padding:12px;color:{market.get('admin_color','#FF4B4B')}!important;font-weight:900;margin:8px 0;'>📢 [관리자 공지] {market['admin_msg']}</div>", unsafe_allow_html=True)
+        import html as _html_mod
+        _safe_msg = _html_mod.escape(str(market['admin_msg']))
+        _safe_color = _html_mod.escape(str(market.get('admin_color','#FF4B4B')))
+        st.markdown(f"<div style='background:rgba(255,0,0,0.08);border:1px solid {_safe_color};border-radius:10px;padding:12px;color:{_safe_color}!important;font-weight:900;margin:8px 0;'>📢 [관리자 공지] {_safe_msg}</div>", unsafe_allow_html=True)
 
     menu = st.session_state.current_page
     if   menu == "🏠 홈 광장 (튜토리얼)":   from pages import home;              home.render(market, nw)
