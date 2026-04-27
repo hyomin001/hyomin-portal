@@ -828,7 +828,7 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/games/blackjack.py</strong>블랙잭 카지노</div>
     <div class="module-item"><strong>pages/games/holdem.py</strong>텍사스 홀덤</div>
     <div class="module-item"><strong>pages/games/mine.py</strong>광산 노가다</div>
-    <div class="module-item"><strong>pages/games/quiz.py</strong>정처기 CBT 퀴즈</div>
+    <div class="module-item"><strong>pages/games/quiz.py</strong>사주팔</div>
     <div class="module-item"><strong>pages/games/lotto.py</strong>글로벌 로또</div>
     <div class="module-item"><strong>pages/games/forge.py</strong>전설의 명검 강화</div>
     <div class="module-item"><strong>pages/games/gacha.py</strong>가챠 뽑기</div>
