@@ -1662,6 +1662,19 @@ function showGameOver(){
   document.getElementById('rank-list').innerHTML=ranked.map((p,i)=>{const ri=G.players.indexOf(p);return`<div class="rank-row"><span class="rank-medal">${medals[i]||''}</span><span style="font-size:1.25rem">${p.char.emoji}</span><span class="rank-player" style="color:${p.color}">${p.name}</span>${p.bankrupt?`<span style="color:var(--red);font-size:0.7rem">💀 파산</span>`:`<span class="rank-money">₩${getNetWorth(ri).toLocaleString()}</span>`}</div>`;}).join('');
   document.getElementById('gameover').style.display='flex';
   butler('win');spawnConfetti();spawnFireworks();
+  // ── 게임 결과를 부모(Streamlit)로 전송 ──
+  const isWin = !G.players[0].bankrupt && G.winner === G.players[0].name;
+  const myNetWorth = getNetWorth(0);
+  const myRank = ranked.findIndex(p=>G.players.indexOf(p)===0) + 1;
+  try {
+    window.parent.postMessage({
+      type: 'marble_result',
+      win: isWin,
+      rank: myRank,
+      net_worth: myNetWorth,
+      total_players: G.players.length
+    }, '*');
+  } catch(e) {}
 }
 
 function resetToChar(){
@@ -1688,6 +1701,52 @@ window.addEventListener('DOMContentLoaded',()=>{initStars();renderCharGrid();});
 
 def render():
     import streamlit as st
+    from utils.database import load_db, save_db, log_tx, atomic_add_cash
+    from utils.config import USERS_FILE
+    from utils.core import sync_user_data
+
+    uid = st.session_state.get('logged_in_user', '')
+
+    # ── 마블 통계 로드 ──
+    if 'marble_stats' not in st.session_state:
+        users = load_db(USERS_FILE, {})
+        u_data = users.get(uid, {})
+        st.session_state.marble_stats = u_data.get('marble_stats', {
+            'wins': 0, 'losses': 0, 'best_net_worth': 0, 'games_played': 0
+        })
+
+    stats = st.session_state.marble_stats
+
+    # ── 게임 결과 수신 처리 (URL query param 방식) ──
+    qp = st.query_params
+    if qp.get('marble_win') and not st.session_state.get('marble_result_processed'):
+        st.session_state.marble_result_processed = True
+        is_win     = qp.get('marble_win') == 'true'
+        net_worth  = int(qp.get('marble_nw', 0))
+        rank       = int(qp.get('marble_rank', 1))
+
+        stats['games_played'] = stats.get('games_played', 0) + 1
+        if is_win:
+            stats['wins'] = stats.get('wins', 0) + 1
+            win_reward = 100_000_000
+            atomic_add_cash(uid, win_reward)
+            st.session_state.global_cash += win_reward
+            log_tx(uid, "마블", f"인베스트마블 우승 (최종자산 ₩{net_worth:,})", win_reward)
+            st.success(f"🏆 마블 우승 보상: +{win_reward:,}원!")
+        else:
+            stats['losses'] = stats.get('losses', 0) + 1
+        if net_worth > stats.get('best_net_worth', 0):
+            stats['best_net_worth'] = net_worth
+        st.session_state.marble_stats = stats
+
+        # DB 저장
+        users = load_db(USERS_FILE, {})
+        if uid in users:
+            users[uid]['marble_stats'] = stats
+            save_db(USERS_FILE, users)
+        sync_user_data()
+        st.rerun()
+
     # 게임 헤더 UI
     st.markdown(f"""
     <div style='background:linear-gradient(135deg,#0c1020,#111828);border:1px solid rgba(108,99,255,0.25);
@@ -1701,6 +1760,34 @@ def render():
     </div>
     """, unsafe_allow_html=True)
 
+    # ── 내 전적 표시 ──
+    wins   = stats.get('wins', 0)
+    losses = stats.get('losses', 0)
+    played = stats.get('games_played', 0)
+    best   = stats.get('best_net_worth', 0)
+    win_rate = int(wins / played * 100) if played > 0 else 0
+
+    st.markdown(f"""
+    <div style='display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;'>
+      <div style='background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
+        <div style='color:#888;font-size:0.72rem;'>전적</div>
+        <div style='color:#00FF88;font-weight:900;font-size:1rem;'>{wins}승 {losses}패</div>
+      </div>
+      <div style='background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
+        <div style='color:#888;font-size:0.72rem;'>승률</div>
+        <div style='color:#FFD600;font-weight:900;font-size:1rem;'>{win_rate}%</div>
+      </div>
+      <div style='background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
+        <div style='color:#888;font-size:0.72rem;'>최고 자산</div>
+        <div style='color:#00E5FF;font-weight:900;font-size:1rem;'>₩{best:,}</div>
+      </div>
+      <div style='background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
+        <div style='color:#888;font-size:0.72rem;'>총 게임</div>
+        <div style='color:#E2E8F0;font-weight:900;font-size:1rem;'>{played}판</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("""
     <style>
     #MainMenu{visibility:hidden;}footer{visibility:hidden;}header{visibility:hidden;}
@@ -1708,7 +1795,24 @@ def render():
     iframe{border:none;}
     </style>
     """, unsafe_allow_html=True)
-    st.caption("📱 모바일: 가로 화면 권장 | 🖥️ 권장: 1280px 이상")
+    st.caption("📱 모바일: 가로 화면 권장 | 🖥️ 권장: 1280px 이상 | 🏆 우승 시 1억원 보상!")
+
+    # postMessage 수신 리스너 (게임 결과 → query param으로 전달)
+    listener_html = """
+    <script>
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'marble_result') {
+        const d = e.data;
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set('marble_win',   d.win ? 'true' : 'false');
+        url.searchParams.set('marble_nw',    d.net_worth);
+        url.searchParams.set('marble_rank',  d.rank);
+        window.parent.location.href = url.toString();
+      }
+    });
+    </script>
+    """
+    st.components.v1.html(listener_html, height=0)
     components.html(GAME_HTML, height=880, scrolling=True)
 
 if __name__ == "__main__":
