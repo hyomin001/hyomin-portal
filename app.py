@@ -890,7 +890,7 @@ if st.session_state.page_view == "portal":
         <b>Gemini AI</b>가 실제 시험 스타일의 문제를 무한으로 생성해 드립니다.
         문제 수(5~20개), 난이도(쉬움/보통/어려움), 문제 유형(4지선다/단답형/O×)을 자유롭게 설정할 수 있으며,
         채점 후 <b>오답 자동 분석 및 재출제</b> 기능을 제공합니다.
-        정처기, 수능, 자격증 등 모든 분야에 활용 가능합니다.
+        시험, 수능, 자격증 등 모든 분야에 활용 가능합니다.
     </p>
     <div style="margin-top:12px;">
         <span class="arch-badge">🤖 Gemini 2.5 Flash</span>
@@ -1195,7 +1195,7 @@ elif st.session_state.page_view == "universe":
 
     CATEGORY_MENUS = {
         "📈 경제":        ["🏠 홈 광장 (튜토리얼)", "📈 주식 트레이딩", "🪙 코인 거래소", "🏢 부동산 거래소", "🏦 은행 (대출/송금)", "📜 내 거래 기록"],
-        "🎮 미니게임":    ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "🃏 텍사스 홀덤", "💻 정처기 CBT", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
+        "🎮 미니게임":    ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "🃏 텍사스 홀덤", "💻 사주팔자", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
         "🌟 성장 & 혜택": ["📅 일일 퀘스트", "👑 칭호 상점"],
         "⚽ 스포츠":      ["⚽ 구단주 시뮬레이터", "⚽ 조기축구 승부차기", "🏎️ 하이퍼카 레이싱", "🛠️ 커스텀 튜닝 차고지"],
         "👥 커뮤니티":    ["🏰 길드/클랜", "🏅 [시즌1]랭킹 & 게시판", "✉️ 개인 쪽지함"],
@@ -1273,7 +1273,7 @@ elif st.session_state.page_view == "universe":
     elif menu == "🃏 블랙잭 카지노":         from pages.games import blackjack;   blackjack.render(market, nw)
     elif menu == "🃏 텍사스 홀덤":           from pages.games import holdem;      holdem.render(market, nw)
     elif menu == "⛏️ 광산 (노가다)":         from pages.games import mine;        mine.render(market, nw)
-    elif menu == "💻 정처기 CBT":            from pages.games import quiz;        quiz.render(market, nw)
+    elif menu == "💻 사주팔자":            from pages.games import quiz;        quiz.render(market, nw)
     elif menu == "⚔️ 글로벌 로또":           from pages.games import lotto;       lotto.render(market, nw)
     elif menu == "🗡️ 전설의 명검 강화":      from pages.games import forge;       forge.render(market, nw)
     elif menu == "🎴 가챠 뽑기":             from pages.games import gacha;       gacha.render(market, nw)
