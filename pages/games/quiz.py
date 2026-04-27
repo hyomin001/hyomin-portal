@@ -2,37 +2,24 @@
 import streamlit as st
 import random
 from datetime import date
-from utils.core import format_korean_money, sync_user_data
-from utils.database import log_tx, atomic_add_cash
+from utils.core import format_korean_money, set_cooldown, cooldown_remaining, sync_user_data
+from utils.database import log_tx, atomic_deduct_cash
 
-# ──────────────────────────────────────────────────────────────
-# 🔮 사주팔자 데이터
-# ──────────────────────────────────────────────────────────────
+SAJU_COST = 10_000_000  # 1천만원
 
-# 12지신
 ZODIAC = {
-    0:  ("🐀 자(子)", "쥐"),
-    1:  ("🐂 축(丑)", "소"),
-    2:  ("🐅 인(寅)", "호랑이"),
-    3:  ("🐇 묘(卯)", "토끼"),
-    4:  ("🐉 진(辰)", "용"),
-    5:  ("🐍 사(巳)", "뱀"),
-    6:  ("🐎 오(午)", "말"),
-    7:  ("🐑 미(未)", "양"),
-    8:  ("🐒 신(申)", "원숭이"),
-    9:  ("🐓 유(酉)", "닭"),
-    10: ("🐕 술(戌)", "개"),
-    11: ("🐖 해(亥)", "돼지"),
+    0:  ("🐀 자(子)", "쥐"),   1:  ("🐂 축(丑)", "소"),
+    2:  ("🐅 인(寅)", "호랑이"), 3:  ("🐇 묘(卯)", "토끼"),
+    4:  ("🐉 진(辰)", "용"),   5:  ("🐍 사(巳)", "뱀"),
+    6:  ("🐎 오(午)", "말"),   7:  ("🐑 미(未)", "양"),
+    8:  ("🐒 신(申)", "원숭이"), 9:  ("🐓 유(酉)", "닭"),
+    10: ("🐕 술(戌)", "개"),   11: ("🐖 해(亥)", "돼지"),
 }
 
-# 오행
-ELEMENTS = ["🌲 목(木)", "🔥 화(火)", "🌍 토(土)", "🪙 금(金)", "💧 수(水)"]
-
-# 천간
+ELEMENTS       = ["🌲 목(木)", "🔥 화(火)", "🌍 토(土)", "🪙 금(金)", "💧 수(水)"]
 HEAVENLY_STEMS = ["갑(甲)", "을(乙)", "병(丙)", "정(丁)", "무(戊)",
                   "기(己)", "경(庚)", "신(辛)", "임(壬)", "계(癸)"]
 
-# 오늘의 운세 텍스트 풀
 FORTUNE_POOL = {
     "재물운": [
         "오늘은 작은 투자가 큰 수익으로 이어질 수 있는 날입니다. 단, 욕심은 금물.",
@@ -72,38 +59,27 @@ FORTUNE_POOL = {
     ],
 }
 
-# 음식별 오행 매핑
 FOOD_ELEMENTS = {
-    "🍚 밥/국": "🌍 토(土)",
-    "🍖 고기": "🔥 화(火)",
-    "🥗 채소/샐러드": "🌲 목(木)",
-    "🍜 라면/국수": "💧 수(水)",
-    "🍣 해산물/생선": "💧 수(水)",
-    "🍕 피자/빵": "🌍 토(土)",
-    "🍗 치킨/튀김": "🔥 화(火)",
-    "☕ 커피/음료": "🌲 목(木)",
-    "🍰 디저트/과자": "🪙 금(金)",
-    "🥩 스테이크": "🪙 금(金)",
-    "🍱 도시락/편의점": "🌍 토(土)",
-    "🍔 버거/패스트푸드": "🔥 화(火)",
+    "🍚 밥/국": "🌍 토(土)", "🍖 고기": "🔥 화(火)",
+    "🥗 채소/샐러드": "🌲 목(木)", "🍜 라면/국수": "💧 수(水)",
+    "🍣 해산물/생선": "💧 수(水)", "🍕 피자/빵": "🌍 토(土)",
+    "🍗 치킨/튀김": "🔥 화(火)", "☕ 커피/음료": "🌲 목(木)",
+    "🍰 디저트/과자": "🪙 금(金)", "🥩 스테이크": "🪙 금(金)",
+    "🍱 도시락/편의점": "🌍 토(土)", "🍔 버거/패스트푸드": "🔥 화(火)",
 }
 
-# 오늘의 행운 아이템
 LUCKY_ITEMS = [
     "🔴 빨간 물건", "💙 파란 물건", "🌿 식물", "📚 책", "💰 동전",
     "⌚ 시계", "🎵 음악", "🌊 물", "🪨 돌", "🕯️ 초", "🎋 대나무",
 ]
 
-# 행운의 숫자
-LUCKY_NUMBERS_POOL = list(range(1, 100))
 
-# 별자리 (생년월일 기반)
 def get_star_sign(birth_month, birth_day):
     signs = [
         (1, 20, "🏹 염소자리"), (2, 19, "🌊 물병자리"), (3, 20, "🐟 물고기자리"),
-        (4, 20, "🐏 양자리"), (5, 21, "🐂 황소자리"), (6, 21, "👯 쌍둥이자리"),
-        (7, 22, "🦀 게자리"), (8, 23, "🦁 사자자리"), (9, 23, "👧 처녀자리"),
-        (10, 23, "⚖️ 천칭자리"), (11, 22, "🦂 전갈자리"), (12, 22, "🏹 사수자리"),
+        (4, 20, "🐏 양자리"),   (5, 21, "🐂 황소자리"), (6, 21, "👯 쌍둥이자리"),
+        (7, 22, "🦀 게자리"),   (8, 23, "🦁 사자자리"), (9, 23, "👧 처녀자리"),
+        (10, 23, "⚖️ 천칭자리"),(11, 22, "🦂 전갈자리"),(12, 22, "🏹 사수자리"),
         (12, 31, "🏹 염소자리"),
     ]
     for month, day, sign in signs:
@@ -111,79 +87,61 @@ def get_star_sign(birth_month, birth_day):
             return sign
     return "🏹 염소자리"
 
-def get_zodiac(birth_year):
-    return ZODIAC[(birth_year - 4) % 12]
-
-def get_element(birth_year):
-    return ELEMENTS[(birth_year % 10) // 2]
-
-def get_heavenly_stem(birth_year):
-    return HEAVENLY_STEMS[birth_year % 10]
+def get_zodiac(birth_year):      return ZODIAC[(birth_year - 4) % 12]
+def get_element(birth_year):     return ELEMENTS[(birth_year % 10) // 2]
+def get_heavenly_stem(birth_year): return HEAVENLY_STEMS[birth_year % 10]
 
 def generate_saju(name, birth_year, birth_month, birth_day, last_food):
-    """입력값 기반으로 오늘의 사주 운세 생성"""
-    # 시드를 오늘 날짜 + 유저 정보로 고정 (하루에 한 번 같은 결과)
-    today = date.today()
-    seed  = hash(f"{name}{birth_year}{birth_month}{birth_day}{today.isoformat()}")
-    rng   = random.Random(seed)
+    """시드 없음 — 볼 때마다 완전 랜덤 결과"""
+    rng = random.Random()
 
     zodiac_label, zodiac_animal = get_zodiac(birth_year)
-    element     = get_element(birth_year)
-    stem        = get_heavenly_stem(birth_year)
-    star_sign   = get_star_sign(birth_month, birth_day)
+    element      = get_element(birth_year)
+    stem         = get_heavenly_stem(birth_year)
+    star_sign    = get_star_sign(birth_month, birth_day)
     food_element = FOOD_ELEMENTS.get(last_food, rng.choice(ELEMENTS))
 
-    # 운세 점수 (1~5)
     scores = {cat: rng.randint(1, 5) for cat in ["재물운", "애정운", "건강운", "총운"]}
-    # 음식의 오행이 태어난 해의 오행과 맞으면 재물운 +1 보너스
     if food_element == element and scores["재물운"] < 5:
         scores["재물운"] += 1
 
-    # 운세 텍스트
-    fortunes   = {cat: rng.choice(FORTUNE_POOL[cat]) for cat in FORTUNE_POOL}
-    lucky_item = rng.choice(LUCKY_ITEMS)
-    lucky_num  = rng.choice(LUCKY_NUMBERS_POOL)
-
     return {
-        "zodiac": zodiac_label,
-        "zodiac_animal": zodiac_animal,
-        "element": element,
-        "stem": stem,
-        "star_sign": star_sign,
+        "zodiac":       zodiac_label,
+        "element":      element,
+        "stem":         stem,
+        "star_sign":    star_sign,
         "food_element": food_element,
-        "scores": scores,
-        "fortunes": fortunes,
-        "lucky_item": lucky_item,
-        "lucky_num": lucky_num,
+        "scores":       scores,
+        "fortunes":     {cat: rng.choice(FORTUNE_POOL[cat]) for cat in FORTUNE_POOL},
+        "lucky_item":   rng.choice(LUCKY_ITEMS),
+        "lucky_num":    rng.randint(1, 99),
     }
 
 def star_bar(score):
-    filled = "⭐" * score
-    empty  = "☆" * (5 - score)
-    return f"{filled}{empty}"
+    return "⭐" * score + "☆" * (5 - score)
 
 
 # ──────────────────────────────────────────────────────────────
 # 🔮 메인 렌더
 # ──────────────────────────────────────────────────────────────
 def render(market, nw):
-    st.title("🔮 오늘의 사주팔자")
-    st.caption("생년월일 + 가장 최근에 먹은 음식으로 오늘 하루 운세를 봐드립니다!")
+    st.title("🔮 사주팔자")
+    st.caption(f"생년월일 + 최근에 먹은 음식으로 운세를 봐드립니다. 1회 {format_korean_money(SAJU_COST)}")
 
     uid = st.session_state.logged_in_user
 
     # ── 입력 폼 ──
     if 'saju_result' not in st.session_state:
-        st.markdown("""
+        st.markdown(f"""
         <div style='background:linear-gradient(135deg,rgba(100,0,200,0.1),rgba(0,0,100,0.15));
              border:1px solid rgba(180,0,255,0.3);border-radius:14px;padding:20px;margin-bottom:20px;'>
           <div style='font-size:1.1rem;font-weight:900;color:#CC88FF;margin-bottom:8px;'>🔮 사주 정보 입력</div>
-          <div style='color:#888;font-size:0.85rem;'>오늘 날짜 기준으로 사주를 분석합니다. 매일 새로운 결과가 나옵니다!</div>
+          <div style='color:#888;font-size:0.85rem;'>볼 때마다 다른 결과가 나옵니다. 비용: <b style='color:#FFD600;'>{format_korean_money(SAJU_COST)}</b></div>
         </div>
         """, unsafe_allow_html=True)
 
         with st.form("saju_form"):
-            name       = st.text_input("이름 (닉네임 가능)", placeholder="홍길동")
+            name = st.text_input("이름 (닉네임 가능)", placeholder="홍길동")
             col1, col2, col3 = st.columns(3)
             with col1:
                 birth_year  = st.number_input("출생 연도", min_value=1900, max_value=2010, value=2000, step=1)
@@ -193,16 +151,24 @@ def render(market, nw):
                 birth_day   = st.number_input("출생 일", min_value=1, max_value=31, value=1, step=1)
 
             last_food = st.selectbox("가장 최근에 먹은 음식", list(FOOD_ELEMENTS.keys()))
+            st.caption(f"💵 현재 잔액: {format_korean_money(st.session_state.global_cash)}")
 
-            submitted = st.form_submit_button("🔮 사주 보기!", use_container_width=True)
-            if submitted:
+            if st.form_submit_button(f"🔮 사주 보기! ({format_korean_money(SAJU_COST)})", use_container_width=True):
                 if not name.strip():
                     st.warning("이름을 입력해주세요!")
+                elif st.session_state.global_cash < SAJU_COST:
+                    st.error(f"잔액 부족! 감정료 {format_korean_money(SAJU_COST)}이 필요합니다.")
                 else:
-                    result = generate_saju(name.strip(), int(birth_year), int(birth_month), int(birth_day), last_food)
-                    st.session_state.saju_result = result
-                    st.session_state.saju_name   = name.strip()
-                    st.session_state.saju_rewarded = False
+                    if not atomic_deduct_cash(uid, SAJU_COST):
+                        st.error("잔액 부족! (DB 검증 실패)")
+                        st.stop()
+                    st.session_state.global_cash -= SAJU_COST
+                    log_tx(uid, "사주", "사주 감정료", -SAJU_COST)
+                    sync_user_data()
+                    st.session_state.saju_result = generate_saju(
+                        name.strip(), int(birth_year), int(birth_month), int(birth_day), last_food
+                    )
+                    st.session_state.saju_name = name.strip()
                     st.rerun()
         return
 
@@ -215,8 +181,8 @@ def render(market, nw):
     <div style='background:linear-gradient(135deg,rgba(100,0,200,0.15),rgba(0,0,150,0.2));
          border:2px solid rgba(180,0,255,0.5);border-radius:18px;padding:24px;text-align:center;margin-bottom:24px;'>
       <div style='font-size:3rem;margin-bottom:8px;'>{result['zodiac'].split()[0]}</div>
-      <div style='font-size:1.4rem;font-weight:900;color:#CC88FF;'>{name}님의 오늘의 사주</div>
-      <div style='color:#888;font-size:0.82rem;margin-top:6px;'>{today.strftime("%Y년 %m월 %d일")} 기준</div>
+      <div style='font-size:1.4rem;font-weight:900;color:#CC88FF;'>{name}님의 사주</div>
+      <div style='color:#888;font-size:0.82rem;margin-top:6px;'>{today.strftime("%Y년 %m월 %d일")} 감정</div>
       <div style='display:flex;justify-content:center;gap:16px;margin-top:14px;flex-wrap:wrap;'>
         <span style='background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:4px 12px;color:#FFD600;font-size:0.82rem;'>{result['zodiac']}</span>
         <span style='background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.3);border-radius:8px;padding:4px 12px;color:#00E5FF;font-size:0.82rem;'>{result['star_sign']}</span>
@@ -281,22 +247,9 @@ def render(market, nw):
         </div>
         """, unsafe_allow_html=True)
 
-    # 총운 기반 보상 (1회 지급)
     st.write("")
-    total_score = result['scores']['총운']
-    if not st.session_state.get('saju_rewarded', False):
-        reward_map = {5: 2_000_000, 4: 1_000_000, 3: 500_000, 2: 200_000, 1: 100_000}
-        reward = reward_map[total_score]
-        atomic_add_cash(uid, reward)
-        st.session_state.global_cash += reward
-        st.session_state.saju_rewarded = True
-        log_tx(uid, "사주", f"사주 총운 {total_score}성 보상", reward)
-        sync_user_data()
-        st.success(f"🎁 오늘의 사주 보상: +{format_korean_money(reward)} (총운 {star_bar(total_score)})")
-
-    st.write("")
-    if st.button("🔄 다시 보기 (정보 초기화)", use_container_width=True):
-        for k in ['saju_result', 'saju_name', 'saju_rewarded']:
+    if st.button(f"🔄 다시 보기 ({format_korean_money(SAJU_COST)})", use_container_width=True):
+        for k in ['saju_result', 'saju_name']:
             if k in st.session_state:
                 del st.session_state[k]
         st.rerun()
