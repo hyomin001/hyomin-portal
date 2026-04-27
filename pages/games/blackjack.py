@@ -1,170 +1,296 @@
-# pages/games/gacha.py
+# pages/games/blackjack.py
 import streamlit as st
 import random
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
-from utils.database import log_tx, save_market, atomic_deduct_cash
-
-GACHA_TICKET_PRICE = 50_000_000
-PITY_THRESHOLD     = 80   # 80회 내 전설 1개 보장
-
-# 가챠 풀 (전체 가중치 합: 1000)
-GACHA_POOL = [
-    # --- 💎 전설 (총합 10 = 1.0%) ---
-    {"grade": "💎 전설", "name": "👑 [시즌한정] 우주의 도박꾼", "weight": 2, "type": "title"},
-    {"grade": "💎 전설", "name": "👑 [시즌한정] 운영자를 노린다", "weight": 2, "type": "title"},
-    {"grade": "💎 전설", "name": "👑 [시즌한정] 갓생러",         "weight": 2, "type": "title"},
-    {"grade": "💎 전설", "name": "👑 건물주 위의 조물주",       "weight": 2, "type": "title"},
-    {"grade": "💎 전설", "name": "👑 인간 도파민",             "weight": 2, "type": "title"},
-
-    # --- 🔴 영웅 (총합 50 = 5.0%) ---
-    {"grade": "🔴 영웅", "name": "⚔️ 전장의 지배자",           "weight": 10, "type": "title"},
-    {"grade": "🔴 영웅", "name": "🚀 화성 갈끄니까",           "weight": 10, "type": "title"},
-    {"grade": "🔴 영웅", "name": "📈 떡상의 화신",             "weight": 10, "type": "title"},
-    {"grade": "🔴 영웅", "name": "💎 다이아몬드 손",           "weight": 10, "type": "title"},
-    {"grade": "🔴 영웅", "name": "🏎️ 최고급 슈퍼카 열쇠",       "weight": 10, "type": "item"},
-
-    # --- 🔵 희귀 (총합 140 = 14.0%) ---
-    {"grade": "🔵 희귀", "name": "🎖️ 행운의 사나이",           "weight": 28, "type": "title"},
-    {"grade": "🔵 희귀", "name": "💼 여의도 펀드매니저",       "weight": 28, "type": "title"},
-    {"grade": "🔵 희귀", "name": "🏦 은행 VIP 고객",           "weight": 28, "type": "title"},
-    {"grade": "🔵 희귀", "name": "🐷 황금 돼지 저금통",         "weight": 28, "type": "item"},
-    {"grade": "🔵 희귀", "name": "🪙 비트코인 기념주화",       "weight": 28, "type": "item"},
-
-    # --- 🟢 일반 (총합 300 = 30.0%) ---
-    {"grade": "🟢 일반", "name": "🍀 행운의 클로버",           "weight": 60, "type": "title"},
-    {"grade": "🟢 일반", "name": "🐜 영차영차 개미",           "weight": 60, "type": "title"},
-    {"grade": "🟢 일반", "name": "🍜 뜨끈한 든든 국밥",         "weight": 60, "type": "item"},
-    {"grade": "🟢 일반", "name": "🎟️ 로또 5등 당첨금",         "weight": 60, "type": "item"},
-    {"grade": "🟢 일반", "name": "☕ 브랜드 커피 쿠폰",         "weight": 60, "type": "item"},
-
-    # --- 🟤 꽝 (총합 500 = 50.0%) ---
-    {"grade": "🟤 꽝",   "name": "🛡️ 파괴방지권",             "weight": 100, "type": "item"},
-    {"grade": "🟤 꽝",   "name": "🥫 빈 깡통",                "weight": 100, "type": "item"},
-    {"grade": "🟤 꽝",   "name": "🧾 찢어진 영수증",          "weight": 100, "type": "item"},
-    {"grade": "🟤 꽝",   "name": "📉 상장폐지된 주식",        "weight": 100, "type": "item"},
-    {"grade": "🟤 꽝",   "name": "🌡️ 한강물 온도계",          "weight": 100, "type": "item"},
-]
-
-# 전설 아이템 인덱스 목록 (pity 보장 뽑기용)
-LEGENDARY_ITEMS = [i for i, item in enumerate(GACHA_POOL) if "전설" in item['grade']]
-
-
-def _pull_one(pity: int) -> tuple[dict, int]:
-    """
-    단일 뽑기. pity는 전설 미획득 연속 횟수.
-    pity+1 >= PITY_THRESHOLD 이면 전설 강제 지급.
-    반환: (item, new_pity)
-    """
-    pity += 1
-
-    if pity >= PITY_THRESHOLD:
-        # 천장 도달 — 랜덤 전설 강제 지급
-        idx = random.choice(LEGENDARY_ITEMS)
-        return GACHA_POOL[idx], 0  # pity 리셋
-
-    weights = [item['weight'] for item in GACHA_POOL]
-    idx     = random.choices(range(len(GACHA_POOL)), weights=weights, k=1)[0]
-    item    = GACHA_POOL[idx]
-
-    new_pity = 0 if "전설" in item['grade'] else pity
-    return item, new_pity
-
+from utils.database import log_tx, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
-    st.title("🎴 가챠 뽑기")
+    st.title("🃏 블랙잭 카지노")
 
-    uid   = st.session_state.logged_in_user
-    pity  = st.session_state.get('gacha_pity', 0)
-    pulls_to_pity = PITY_THRESHOLD - pity
+    CARD_VALS = {'A':11,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':10,'Q':10,'K':10}
+    SUITS = ['♠','♥','♦','♣']
 
-    st.markdown(f"""
-    <div style='background:linear-gradient(135deg,rgba(180,0,255,0.1),rgba(0,0,180,0.1));
-         border:2px solid rgba(180,0,255,0.4);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;'>
-      <div style='font-size:2rem;'>🎴</div>
-      <div style='font-size:1.3rem;font-weight:900;color:#FF00FF;margin-top:8px;'>시즌 {market.get('season_num',1)} 한정 가챠</div>
-      <div style='color:#888;font-size:0.85rem;margin-top:6px;'>1회당 {format_korean_money(GACHA_TICKET_PRICE)} | 전설 칭호 획득 시 서버 전체 공지!</div>
-      <div style='margin-top:10px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);border-radius:8px;padding:8px 14px;display:inline-block;'>
-        <span style='color:#FFD600;font-weight:900;'>⭐ 천장 보정: {pulls_to_pity}회 이내 전설 100% 보장</span>
-        <div style='background:rgba(255,215,0,0.2);border-radius:4px;height:6px;margin-top:6px;'>
-          <div style='background:#FFD600;border-radius:4px;height:6px;width:{min(100, pity/PITY_THRESHOLD*100):.0f}%;'></div>
-        </div>
-        <div style='color:#aaa;font-size:0.75rem;margin-top:4px;'>{pity} / {PITY_THRESHOLD} 누적</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    def bj_make_deck():
+        deck = [(rank, suit) for rank in CARD_VALS for suit in SUITS] * 6
+        random.shuffle(deck)
+        return deck
 
-    st.markdown("### 📋 아이템 확률표")
-    grade_summary = {}
-    for item in GACHA_POOL:
-        g = item['grade']
-        grade_summary[g] = grade_summary.get(g, 0) + item['weight']
-    total_weight = sum(grade_summary.values())
+    def bj_value(hand):
+        val  = sum(CARD_VALS[r] for r, s in hand)
+        aces = sum(1 for r, s in hand if r == 'A')
+        while val > 21 and aces:
+            val -= 10; aces -= 1
+        return val
 
-    rows_html = "<table class='stock-table'><thead><tr><th>등급</th><th style='text-align:right;'>기본 확률</th></tr></thead><tbody>"
-    for grade, w in grade_summary.items():
-        pct = w / total_weight * 100
-        rows_html += f"<tr><td>{grade}</td><td style='text-align:right;color:#FFD600;font-weight:900;'>{pct:.1f}%</td></tr>"
-    rows_html += f"<tr><td colspan='2' style='color:#FFD600;font-size:0.8rem;'>⭐ {PITY_THRESHOLD}회 내 전설 1개 100% 보장 (천장)</td></tr>"
-    rows_html += "</tbody></table>"
-    st.markdown(rows_html, unsafe_allow_html=True)
-    st.write("---")
-
-    pull_count = st.selectbox("뽑기 횟수", [1, 5, 10], format_func=lambda x: f"{x}회 ({format_korean_money(GACHA_TICKET_PRICE * x)})")
-    total_cost = GACHA_TICKET_PRICE * pull_count
-    st.caption(f"총 비용: {format_korean_money(total_cost)}")
-
-    cd_gacha = cooldown_remaining("gacha_pull", 3.0)
-    if cd_gacha > 0:
-        st.warning(f"⏱️ 쿨다운 {cd_gacha:.1f}초")
-    elif st.button(f"🎴 {pull_count}회 뽑기!", use_container_width=True):
-        if st.session_state.global_cash < total_cost:
-            st.error("잔액 부족!")
-        else:
-            set_cooldown("gacha_pull")
-            # 원자적 차감
-            if not atomic_deduct_cash(uid, total_cost):
-                st.error("잔액 부족! (DB 검증 실패)")
-                st.stop()
-            st.session_state.global_cash -= total_cost
-
-            got_legendary = False
-            result_html   = ""
-            current_pity  = pity
-
-            for _ in range(pull_count):
-                item, current_pity = _pull_one(current_pity)
-
-                grade_col = ("#FFD600" if "전설" in item['grade']
-                             else "#00E5FF" if "영웅" in item['grade']
-                             else "#AA88FF" if "희귀" in item['grade']
-                             else "#00FF88" if "일반" in item['grade']
-                             else "#888")
-
-                pity_badge = " ✨<b style='color:#FFD600;'>천장 보정!</b>" if current_pity == 0 and "전설" in item['grade'] else ""
-
-                if item['name'] not in st.session_state.inventory:
-                    st.session_state.inventory.append(item['name'])
-
-                result_html += (f"<div style='background:rgba(255,255,255,0.04);border:1px solid {grade_col}44;"
-                                f"border-radius:10px;padding:12px 16px;margin:6px 0;display:flex;"
-                                f"justify-content:space-between;align-items:center;'>"
-                                f"<span style='color:{grade_col};font-weight:900;'>{item['grade']}{pity_badge}</span>"
-                                f"<span style='color:#E2E8F0;font-weight:900;'>{item['name']}</span></div>")
-
-                if "전설" in item['grade']:
-                    got_legendary = True
-                    market['news'] = f"🎴 [가챠 대박] {uid}님이 전설 [{item['name']}] 획득!!"
-                    save_market(market)
-
-            # pity 저장
-            st.session_state.gacha_pity = current_pity
-
-            st.markdown(f"<div style='margin:16px 0;'>{result_html}</div>", unsafe_allow_html=True)
-            log_tx(uid, "가챠", f"가챠 {pull_count}회 뽑기", -total_cost)
-            sync_user_data()
-
-            if got_legendary:
-                st.balloons()
-                st.success("🎉 전설 등급 획득! 칭호 상점에서 장착하세요!")
+    def bj_render(hand, hide_second=False):
+        parts = []
+        for i, (r, s) in enumerate(hand):
+            if i == 1 and hide_second:
+                parts.append("<span style='font-size:2.2rem;background:#222;border:2px solid #555;padding:6px 10px;border-radius:8px;margin:3px;display:inline-block;'>🂠</span>")
             else:
-                st.success(f"✅ 뽑기 완료! 칭호 상점에서 장착할 수 있습니다. (천장까지 {PITY_THRESHOLD - current_pity}회)")
+                col = "color:#FF4B4B;" if s in ['♥','♦'] else "color:#1a1a1a;"
+                parts.append(f"<span style='font-size:1.5rem;font-weight:900;background:#fff;{col}padding:6px 12px;border-radius:8px;margin:3px;display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,0.4);'>{r}{s}</span>")
+        return " ".join(parts)
+
+    def bj_dealer_play(dealer, deck):
+        while bj_value(dealer) < 17:
+            dealer.append(deck.pop())
+        return dealer, deck
+
+    if 'bj_state' not in st.session_state:
+        st.session_state.update({
+            'bj_state': 'betting', 'bj_deck': bj_make_deck(),
+            'bj_player': [], 'bj_dealer': [], 'bj_bet': 0,
+            'bj_split_hand': [], 'bj_split_active': False, 'bj_split_bet': 0,
+            'bj_current_hand': 'main',  # 'main' or 'split'
+        })
+
+    state = st.session_state.bj_state
+    uid   = st.session_state.logged_in_user
+
+    # ── 베팅 화면 ──
+    if state == 'betting':
+        st.markdown(f"""
+        <div style='text-align:center;padding:30px;background:linear-gradient(135deg,rgba(180,0,0,0.15),rgba(0,100,0,0.15));
+             border:2px solid rgba(255,215,0,0.3);border-radius:18px;margin-bottom:24px;'>
+          <div style='font-size:4rem;'>🃏</div>
+          <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#FFD600;margin-top:8px;font-weight:900;'>BLACKJACK</div>
+          <div style='color:#888;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 더블다운 = 카드 1장 추가 + 베팅 2배 &nbsp;|&nbsp; 스플릿 = 페어 분리</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        bet = st.number_input("베팅 금액 (원)", min_value=1_000_000, step=1_000_000, value=1_000_000, format="%d", key="bj_bet_input")
+        st.caption(f"💵 베팅 예정: {format_korean_money(bet)} | 잔액: {format_korean_money(st.session_state.global_cash)}")
+
+        cd_deal = cooldown_remaining("bj_deal", 1.0)
+        if cd_deal > 0:
+            st.warning(f"⏱️ {cd_deal:.1f}초 후 딜 가능")
+        elif st.button("🃏 카드 딜!", use_container_width=True):
+            if st.session_state.global_cash < bet:
+                st.error("잔액 부족!")
+            else:
+                set_cooldown("bj_deal")
+                # 원자적 차감
+                if not atomic_deduct_cash(uid, bet):
+                    st.error("잔액 부족! (DB 검증 실패)")
+                    st.stop()
+                st.session_state.global_cash -= bet
+                st.session_state.bj_bet = bet
+                deck   = st.session_state.bj_deck if len(st.session_state.bj_deck) > 30 else bj_make_deck()
+                player = [deck.pop(), deck.pop()]
+                dealer = [deck.pop(), deck.pop()]
+                st.session_state.bj_player     = player
+                st.session_state.bj_dealer     = dealer
+                st.session_state.bj_deck       = deck
+                st.session_state.bj_split_hand = []
+                st.session_state.bj_split_active = False
+                st.session_state.bj_split_bet  = 0
+                st.session_state.bj_current_hand = 'main'
+
+                if bj_value(player) == 21:
+                    dl, dk = bj_dealer_play(dealer, deck)
+                    st.session_state.bj_dealer = dl
+                    st.session_state.bj_deck   = dk
+                    st.session_state.bj_state  = 'done'
+                else:
+                    st.session_state.bj_state = 'playing'
+                sync_user_data()
+                st.rerun()
+
+    # ── 플레이 화면 ──
+    elif state == 'playing':
+        player   = st.session_state.bj_player
+        dealer   = st.session_state.bj_dealer
+        bet      = st.session_state.bj_bet
+        pval     = bj_value(player)
+        split_on = st.session_state.bj_split_active
+        cur_hand = st.session_state.bj_current_hand
+
+        # 딜러 패
+        st.markdown("### 🎩 딜러의 패")
+        st.markdown(f"{bj_render(dealer, hide_second=True)}", unsafe_allow_html=True)
+        st.caption(f"딜러 공개 패: {bj_value([dealer[0]])}점 + ?")
+        st.write("")
+
+        # 현재 플레이 손 표시
+        def show_hand(hand, label, hand_bet):
+            hval = bj_value(hand)
+            col = "#FF4B4B" if hval > 21 else "#00FF88" if hval == 21 else "#fff"
+            bust_str = "  💥BUST" if hval > 21 else ("  🃏BJ!" if hval == 21 and len(hand) == 2 else "")
+            st.markdown(f"### 🎴 {label} (베팅: {format_korean_money(hand_bet)})")
+            st.markdown(f"{bj_render(hand)} <span style='color:{col};font-size:1.2rem;font-weight:900;margin-left:12px;'>{hval}점{bust_str}</span>", unsafe_allow_html=True)
+            return hval
+
+        if split_on:
+            if cur_hand == 'main':
+                pval = show_hand(player, "메인 손 (진행 중)", bet)
+                show_hand(st.session_state.bj_split_hand, "스플릿 손 (대기)", st.session_state.bj_split_bet)
+            else:
+                show_hand(player, "메인 손 (완료)", bet)
+                pval = show_hand(st.session_state.bj_split_hand, "스플릿 손 (진행 중)", st.session_state.bj_split_bet)
+        else:
+            pval = show_hand(player, "내 패", bet)
+
+        st.write("")
+
+        # 스플릿 가능 여부
+        can_split = (
+            not split_on
+            and len(player) == 2
+            and player[0][0] == player[1][0]
+            and st.session_state.global_cash >= bet
+        )
+        # 더블다운 가능 여부 (처음 2장일 때만)
+        active_hand = player if (not split_on or cur_hand == 'main') else st.session_state.bj_split_hand
+        can_double  = len(active_hand) == 2 and st.session_state.global_cash >= bet
+
+        def finish_current_hand():
+            """현재 손을 스탠드 처리하고, 스플릿이 있으면 다음 손으로 전환."""
+            if split_on and cur_hand == 'main':
+                st.session_state.bj_current_hand = 'split'
+            else:
+                # 모든 손 완료 → 딜러 플레이 → done
+                dl, dk = bj_dealer_play(st.session_state.bj_dealer, st.session_state.bj_deck)
+                st.session_state.bj_dealer = dl
+                st.session_state.bj_deck   = dk
+                st.session_state.bj_state  = 'done'
+
+        # 액션 버튼
+        cols = st.columns(4 if (can_split or can_double) else 2)
+        col_idx = 0
+
+        with cols[col_idx]:
+            if st.button("👊 히트", use_container_width=True):
+                deck = st.session_state.bj_deck
+                if not split_on or cur_hand == 'main':
+                    st.session_state.bj_player.append(deck.pop())
+                    new_val = bj_value(st.session_state.bj_player)
+                else:
+                    st.session_state.bj_split_hand.append(deck.pop())
+                    new_val = bj_value(st.session_state.bj_split_hand)
+                st.session_state.bj_deck = deck
+                if new_val >= 21:
+                    finish_current_hand()
+                st.rerun()
+        col_idx += 1
+
+        with cols[col_idx]:
+            if st.button("🛑 스탠드", use_container_width=True):
+                finish_current_hand()
+                st.rerun()
+        col_idx += 1
+
+        if can_double:
+            with cols[col_idx]:
+                if st.button("✌️ 더블다운", use_container_width=True):
+                    # 추가 베팅 (원자적)
+                    if atomic_deduct_cash(uid, bet):
+                        st.session_state.global_cash -= bet
+                        deck = st.session_state.bj_deck
+                        if not split_on or cur_hand == 'main':
+                            st.session_state.bj_player.append(deck.pop())
+                            st.session_state.bj_bet *= 2
+                        else:
+                            st.session_state.bj_split_hand.append(deck.pop())
+                            st.session_state.bj_split_bet *= 2
+                        st.session_state.bj_deck = deck
+                        finish_current_hand()
+                        sync_user_data()
+                        st.rerun()
+                    else:
+                        st.error("잔액 부족! (더블다운 실패)")
+            col_idx += 1
+
+        if can_split:
+            with cols[col_idx]:
+                if st.button("🔀 스플릿", use_container_width=True):
+                    # 추가 베팅 (원자적)
+                    if atomic_deduct_cash(uid, bet):
+                        st.session_state.global_cash -= bet
+                        deck = st.session_state.bj_deck
+                        # 두 번째 카드를 스플릿 손으로 분리
+                        split_card = st.session_state.bj_player.pop()
+                        st.session_state.bj_split_hand  = [split_card, deck.pop()]
+                        st.session_state.bj_player.append(deck.pop())
+                        st.session_state.bj_deck        = deck
+                        st.session_state.bj_split_active = True
+                        st.session_state.bj_split_bet   = bet
+                        st.session_state.bj_current_hand = 'main'
+                        sync_user_data()
+                        st.rerun()
+                    else:
+                        st.error("잔액 부족! (스플릿 실패)")
+
+    # ── 결과 화면 ──
+    else:  # done
+        player = st.session_state.bj_player
+        dealer = st.session_state.bj_dealer
+        bet    = st.session_state.bj_bet
+        split_hand = st.session_state.bj_split_hand
+        split_bet  = st.session_state.bj_split_bet
+        split_on   = st.session_state.bj_split_active
+
+        # 딜러 패 공개
+        st.markdown("### 🎩 딜러의 패")
+        dval = bj_value(dealer)
+        dcol = "#FF4B4B" if dval > 21 else "#fff"
+        st.markdown(f"{bj_render(dealer)} <span style='color:{dcol};font-size:1.1rem;font-weight:900;margin-left:12px;'>{dval}점{'  💥BUST' if dval>21 else ''}</span>", unsafe_allow_html=True)
+        st.write("")
+
+        def calc_result(hand, hand_bet):
+            pval_f = bj_value(hand)
+            is_bj  = (pval_f == 21 and len(hand) == 2 and not split_on)
+            if pval_f > 21:
+                return "💥 버스트! 패배", "#4B9EFF", 0
+            elif dval > 21:
+                return "🎉 딜러 버스트! 승리!", "#FF4B4B", hand_bet * 2
+            elif is_bj and dval != 21:
+                return "🃏 블랙잭!! 1.5배!", "#FFD600", int(hand_bet * 2.5)
+            elif pval_f > dval:
+                return "🎉 승리!", "#00FF88", hand_bet * 2
+            elif pval_f == dval:
+                return "🤝 푸시 (타이)", "#888888", hand_bet
+            else:
+                return "😢 패배...", "#4B9EFF", 0
+
+        def show_result_card(hand, hand_bet, label):
+            result, res_col, prize = calc_result(hand, hand_bet)
+            net     = prize - hand_bet
+            net_str = f"+{format_korean_money(net)}" if net > 0 else f"-{format_korean_money(abs(net))}" if net < 0 else "베팅금 반환"
+            net_col = "#FF4B4B" if net > 0 else "#4B9EFF" if net < 0 else "#888"
+            st.markdown(f"### 🎴 {label}")
+            st.markdown(f"{bj_render(hand)} <span style='font-size:1rem;color:#aaa;margin-left:12px;'>{bj_value(hand)}점</span>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style='text-align:center;background:rgba(0,0,0,0.4);border:2px solid {res_col};
+                 border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 0 30px {res_col}44;'>
+              <div style='font-size:1.5rem;font-weight:900;color:{res_col};'>{result}</div>
+              <div style='font-size:1.2rem;font-weight:900;color:{net_col};margin-top:8px;'>{net_str}</div>
+              <div style='color:#888;font-size:0.8rem;margin-top:6px;'>지급액: {format_korean_money(prize)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            return prize
+
+        if 'bj_paid' not in st.session_state:
+            st.session_state.bj_paid = True
+            total_prize = 0
+            total_prize += show_result_card(player, bet, "메인 손" if split_on else "내 패")
+            if split_on:
+                total_prize += show_result_card(split_hand, split_bet, "스플릿 손")
+
+            if total_prize > 0:
+                atomic_add_cash(uid, total_prize)
+                st.session_state.global_cash += total_prize
+                total_net = total_prize - bet - (split_bet if split_on else 0)
+                log_tx(uid, "블랙잭", f"블랙잭 결과 (총 지급 {format_korean_money(total_prize)})", total_net)
+            sync_user_data()
+        else:
+            # 이미 지급된 경우 결과만 재표시
+            show_result_card(player, bet, "메인 손" if split_on else "내 패")
+            if split_on:
+                show_result_card(split_hand, split_bet, "스플릿 손")
+
+        if st.button("🔄 다시 하기!", use_container_width=True):
+            for k in ['bj_state','bj_player','bj_dealer','bj_bet','bj_paid',
+                      'bj_split_hand','bj_split_active','bj_split_bet','bj_current_hand']:
+                if k in st.session_state: del st.session_state[k]
+            st.rerun()
