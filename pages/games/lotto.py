@@ -2,14 +2,14 @@
 import streamlit as st
 import time
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
-from utils.config import USERS_FILE
-from utils.database import load_db, log_tx, save_market
+from utils.database import log_tx, save_market, atomic_deduct_cash
 
 def render(market, nw):
-    st.title("⚔️ 1시간 글로벌 로또")
+    st.title("🎫 1시간 글로벌 로또")
 
+    uid           = st.session_state.logged_in_user
     rem           = max(0, int(3_600 - (time.time() - market['lotto_last_draw'])))
-    my_t          = market['lotto_tickets'].get(st.session_state.logged_in_user, 0)
+    my_t          = market['lotto_tickets'].get(uid, 0)
     total_tickets = sum(market['lotto_tickets'].values()) if market['lotto_tickets'] else 0
     my_pct        = (my_t / total_tickets * 100) if total_tickets > 0 else 0
 
@@ -34,23 +34,22 @@ def render(market, nw):
     if cd_lotto > 0:
         st.warning(f"⏱️ 쿨다운 {cd_lotto:.1f}초")
     elif st.button("🎫 티켓 구매하기", use_container_width=True):
-        if st.session_state.global_cash >= cost:
-            set_cooldown("lotto_buy")
-            u_db_check = load_db(USERS_FILE, {})
-            db_cash = u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0)
-            if db_cash < cost:
-                st.error("잔액 부족! (DB 검증 실패)")
-            else:
-                st.session_state.global_cash -= cost
-                market['lotto_pool']    += cost
-                market['lotto_tickets'][st.session_state.logged_in_user] = my_t + b_cnt
-                save_market(market)
-                log_tx(st.session_state.logged_in_user, "로또", f"로또 {b_cnt}장 구매", -cost)
-                sync_user_data()
-                st.success(f"✅ {b_cnt}장 구매 완료!")
-                st.rerun()
-        else:
+        if st.session_state.global_cash < cost:
             st.error("잔액 부족!")
+        else:
+            set_cooldown("lotto_buy")
+            # atomic_deduct_cash로 Race Condition 방어 (다른 탭 동시 구매 방지)
+            if not atomic_deduct_cash(uid, cost):
+                st.error("잔액 부족! (DB 검증 실패)")
+                st.stop()
+            st.session_state.global_cash -= cost
+            market['lotto_pool']    += cost
+            market['lotto_tickets'][uid] = my_t + b_cnt
+            save_market(market)
+            log_tx(uid, "로또", f"로또 {b_cnt}장 구매", -cost)
+            sync_user_data()
+            st.success(f"✅ {b_cnt}장 구매 완료!")
+            st.rerun()
 
     if market['lotto_tickets']:
         st.write("---")
@@ -58,5 +57,5 @@ def render(market, nw):
         sorted_t = sorted(market['lotto_tickets'].items(), key=lambda x: x[1], reverse=True)
         for uid_l, cnt in sorted_t[:10]:
             pct     = cnt / total_tickets * 100
-            me_mark = " 👈" if uid_l == st.session_state.logged_in_user else ""
+            me_mark = " 👈" if uid_l == uid else ""
             st.markdown(f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);'><span style='color:#94A3B8;'>{uid_l}{me_mark}</span><span style='color:#FF00FF;font-weight:900;'>{cnt}장 ({pct:.1f}%)</span></div>", unsafe_allow_html=True)
