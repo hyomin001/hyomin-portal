@@ -1796,6 +1796,8 @@ function gameOver() {
     <div class="rs">최고 콤보<b>${p.maxCombo} HIT</b></div>`;
   setTimeout(() => el.style.display = 'flex', 800);
   sfx_death();
+  // ── 결과 전송 ──
+  try { window.parent.postMessage({ type:'dungeon_result', win:false, score:p.score, kills:p.kills, wave:G.waveIdx+1, level:p.level }, '*'); } catch(e){}
 }
 
 function gameWin() {
@@ -1811,6 +1813,8 @@ function gameWin() {
     <div class="rs">점수<b>${p.score}</b></div>`;
   el.style.display = 'flex';
   sfx_clear(); sfx_clear();
+  // ── 결과 전송 ──
+  try { window.parent.postMessage({ type:'dungeon_result', win:true, score:p.score, kills:p.kills, wave:G.waveIdx+1, level:p.level }, '*'); } catch(e){}
 }
 
 function retryGame() {
@@ -2002,6 +2006,60 @@ RAF = requestAnimationFrame(loop);
 
 def render():
     import streamlit as st
+    import streamlit.components.v1 as components
+    from utils.database import load_db, save_db, log_tx, atomic_add_cash
+    from utils.config import USERS_FILE
+    from utils.core import sync_user_data
+
+    uid = st.session_state.get('logged_in_user', '')
+
+    # ── 던전 통계 로드 ──
+    if 'dungeon_stats' not in st.session_state:
+        users = load_db(USERS_FILE, {})
+        u_data = users.get(uid, {})
+        st.session_state.dungeon_stats = u_data.get('dungeon_stats', {
+            'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0
+        })
+
+    dstats = st.session_state.dungeon_stats
+
+    # ── 게임 결과 수신 처리 ──
+    qp = st.query_params
+    if qp.get('dungeon_score') and not st.session_state.get('dungeon_result_processed'):
+        st.session_state.dungeon_result_processed = True
+        is_win = qp.get('dungeon_win') == 'true'
+        score  = int(qp.get('dungeon_score', 0))
+        kills  = int(qp.get('dungeon_kills', 0))
+
+        dstats['games_played'] = dstats.get('games_played', 0) + 1
+        if score > dstats.get('best_score', 0):
+            dstats['best_score'] = score
+        if kills > dstats.get('best_kills', 0):
+            dstats['best_kills'] = kills
+        if is_win:
+            dstats['clears'] = dstats.get('clears', 0) + 1
+            clear_reward = 200_000_000
+            atomic_add_cash(uid, clear_reward)
+            st.session_state.global_cash += clear_reward
+            log_tx(uid, "던전", f"던전런 클리어 (점수:{score}, 킬:{kills})", clear_reward)
+            st.success(f"🏆 던전 클리어 보상: +{clear_reward:,}원!")
+        else:
+            # 점수 기반 보상
+            score_reward = score * 1000
+            if score_reward > 0:
+                atomic_add_cash(uid, score_reward)
+                st.session_state.global_cash += score_reward
+                log_tx(uid, "던전", f"던전런 점수 보상 (점수:{score})", score_reward)
+        st.session_state.dungeon_stats = dstats
+
+        # DB 저장
+        users = load_db(USERS_FILE, {})
+        if uid in users:
+            users[uid]['dungeon_stats'] = dstats
+            save_db(USERS_FILE, users)
+        sync_user_data()
+        st.rerun()
+
     # 게임 헤더 UI
     st.markdown(f"""
     <div style='background:linear-gradient(135deg,#0c1020,#111828);border:1px solid rgba(108,99,255,0.25);
@@ -2015,6 +2073,33 @@ def render():
     </div>
     """, unsafe_allow_html=True)
 
+    # ── 내 던전 기록 표시 ──
+    best_score  = dstats.get('best_score', 0)
+    best_kills  = dstats.get('best_kills', 0)
+    clears      = dstats.get('clears', 0)
+    played      = dstats.get('games_played', 0)
+
+    st.markdown(f"""
+    <div style='display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;'>
+      <div style='background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
+        <div style='color:#888;font-size:0.72rem;'>최고 점수</div>
+        <div style='color:#FFD600;font-weight:900;font-size:1rem;'>{best_score:,}</div>
+      </div>
+      <div style='background:rgba(255,50,70,0.08);border:1px solid rgba(255,50,70,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
+        <div style='color:#888;font-size:0.72rem;'>최고 킬</div>
+        <div style='color:#FF4B4B;font-weight:900;font-size:1rem;'>{best_kills:,}</div>
+      </div>
+      <div style='background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
+        <div style='color:#888;font-size:0.72rem;'>클리어</div>
+        <div style='color:#00FF88;font-weight:900;font-size:1rem;'>{clears}회</div>
+      </div>
+      <div style='background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
+        <div style='color:#888;font-size:0.72rem;'>총 플레이</div>
+        <div style='color:#00E5FF;font-weight:900;font-size:1rem;'>{played}판</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("""
     <style>
     .block-container{padding:0!important;max-width:100%!important;}
@@ -2024,7 +2109,24 @@ def render():
     </style>
     """, unsafe_allow_html=True)
 
-    st.caption("🎮 WASD/방향키: 이동 | 자동 공격 | 배운것 중 일부는 Q-E-R로 스킬 사용| 레벨업 시 무기 선택!")
+    st.caption("🎮 WASD/방향키: 이동 | 자동 공격 | Q E R: 스킬 | 레벨업 시 무기 선택! | 🏆 클리어 보상 2억원!")
+
+    # postMessage 수신 리스너 (결과 → query param)
+    listener_html = """
+    <script>
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'dungeon_result') {
+        const d = e.data;
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set('dungeon_win',   d.win ? 'true' : 'false');
+        url.searchParams.set('dungeon_score', d.score);
+        url.searchParams.set('dungeon_kills', d.kills);
+        window.parent.location.href = url.toString();
+      }
+    });
+    </script>
+    """
+    st.components.v1.html(listener_html, height=0)
     components.html(GAME_HTML, height=840, scrolling=False)
 
 if __name__ == "__main__":
