@@ -31,7 +31,7 @@ def run_market_sync():
             for s in stock_config:
                 curr = market['stock_data'][s['id']]
                 ch = (random.random() - 0.5) * 2 * s['vol']
-                curr['price'] = round(max(1_000, curr['price'] * (1 + ch)))
+                curr['price'] = round(max(s.get('base_price', 50_000) * 0.05, curr['price'] * (1 + ch)))
                 curr['history'].append(curr['price'])
                 if len(curr['history']) > 60: curr['history'].pop(0)
         market['last_tick'] = cur_t
@@ -55,7 +55,8 @@ def run_market_sync():
             for c in CRYPTO_CONFIG:
                 curr = market['crypto_data'][c['id']]
                 ch = (random.random() - 0.5) * 2 * c['vol']
-                curr['price'] = max(0.01, round(curr['price'] * (1 + ch), 6))
+                price_floor = c.get('base_price', 1) * 0.001  # 베이스의 0.1% 최솟값
+                curr['price'] = max(price_floor, round(curr['price'] * (1 + ch), 6))
                 curr['history'].append(curr['price'])
                 if len(curr['history']) > 60: curr['history'].pop(0)
         market['crypto_tick'] = cur_t
