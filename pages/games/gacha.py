@@ -2,11 +2,12 @@
 import streamlit as st
 import random
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
-from utils.database import log_tx, save_market
+from utils.database import log_tx, save_market, atomic_deduct_cash
 
 GACHA_TICKET_PRICE = 50_000_000
+PITY_THRESHOLD     = 80   # 80회 내 전설 1개 보장
 
-# 도파민 폭발 대규모 업데이트 가챠 풀! (전체 가중치 합: 1000)
+# 가챠 풀 (전체 가중치 합: 1000)
 GACHA_POOL = [
     # --- 💎 전설 (총합 10 = 1.0%) ---
     {"grade": "💎 전설", "name": "👑 [시즌한정] 우주의 도박꾼", "weight": 2, "type": "title"},
@@ -44,14 +45,53 @@ GACHA_POOL = [
     {"grade": "🟤 꽝",   "name": "🌡️ 한강물 온도계",          "weight": 100, "type": "item"},
 ]
 
+# 전설 아이템 인덱스 목록 (pity 천장 보장용)
+LEGENDARY_ITEMS = [i for i, item in enumerate(GACHA_POOL) if "전설" in item['grade']]
+
+
+def _pull_one(pity: int) -> tuple[dict, int]:
+    """
+    단일 뽑기. pity는 전설 미획득 연속 횟수.
+    pity+1 >= PITY_THRESHOLD 이면 전설 강제 지급 (천장).
+    반환: (item, new_pity)
+    """
+    pity += 1
+
+    if pity >= PITY_THRESHOLD:
+        # 천장 도달 — 랜덤 전설 강제 지급, pity 리셋
+        idx = random.choice(LEGENDARY_ITEMS)
+        return GACHA_POOL[idx], 0
+
+    weights = [item['weight'] for item in GACHA_POOL]
+    idx     = random.choices(range(len(GACHA_POOL)), weights=weights, k=1)[0]
+    item    = GACHA_POOL[idx]
+
+    # 전설 뽑으면 pity 리셋, 아니면 누적
+    new_pity = 0 if "전설" in item['grade'] else pity
+    return item, new_pity
+
+
 def render(market, nw):
     st.title("🎴 가챠 뽑기")
+
+    uid  = st.session_state.logged_in_user
+    # pity는 DB에서 pull_user_data()로 로드된 값 사용 (새로고침해도 유지됨)
+    pity = st.session_state.get('gacha_pity', 0)
+    pulls_to_pity = PITY_THRESHOLD - pity
+
     st.markdown(f"""
     <div style='background:linear-gradient(135deg,rgba(180,0,255,0.1),rgba(0,0,180,0.1));
          border:2px solid rgba(180,0,255,0.4);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;'>
       <div style='font-size:2rem;'>🎴</div>
       <div style='font-size:1.3rem;font-weight:900;color:#FF00FF;margin-top:8px;'>시즌 {market.get('season_num',1)} 한정 가챠</div>
       <div style='color:#888;font-size:0.85rem;margin-top:6px;'>1회당 {format_korean_money(GACHA_TICKET_PRICE)} | 전설 칭호 획득 시 서버 전체 공지!</div>
+      <div style='margin-top:10px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);border-radius:8px;padding:8px 14px;display:inline-block;'>
+        <span style='color:#FFD600;font-weight:900;'>⭐ 천장 보정: {pulls_to_pity}회 이내 전설 100% 보장</span>
+        <div style='background:rgba(255,215,0,0.2);border-radius:4px;height:6px;margin-top:6px;'>
+          <div style='background:#FFD600;border-radius:4px;height:6px;width:{min(100, pity/PITY_THRESHOLD*100):.0f}%;'></div>
+        </div>
+        <div style='color:#aaa;font-size:0.75rem;margin-top:4px;'>{pity} / {PITY_THRESHOLD} 누적</div>
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -62,10 +102,11 @@ def render(market, nw):
         grade_summary[g] = grade_summary.get(g, 0) + item['weight']
     total_weight = sum(grade_summary.values())
 
-    rows_html = "<table class='stock-table'><thead><tr><th>등급</th><th style='text-align:right;'>확률</th></tr></thead><tbody>"
+    rows_html = "<table class='stock-table'><thead><tr><th>등급</th><th style='text-align:right;'>기본 확률</th></tr></thead><tbody>"
     for grade, w in grade_summary.items():
         pct = w / total_weight * 100
         rows_html += f"<tr><td>{grade}</td><td style='text-align:right;color:#FFD600;font-weight:900;'>{pct:.1f}%</td></tr>"
+    rows_html += f"<tr><td colspan='2' style='color:#FFD600;font-size:0.8rem;'>⭐ {PITY_THRESHOLD}회 내 전설 1개 100% 보장 (천장)</td></tr>"
     rows_html += "</tbody></table>"
     st.markdown(rows_html, unsafe_allow_html=True)
     st.write("---")
@@ -82,31 +123,50 @@ def render(market, nw):
             st.error("잔액 부족!")
         else:
             set_cooldown("gacha_pull")
+            # 원자적 차감 (Race Condition 방어)
+            if not atomic_deduct_cash(uid, total_cost):
+                st.error("잔액 부족! (DB 검증 실패)")
+                st.stop()
             st.session_state.global_cash -= total_cost
-
-            weights = [item['weight'] for item in GACHA_POOL]
-            results = random.choices(range(len(GACHA_POOL)), weights=weights, k=pull_count)
 
             got_legendary = False
             result_html   = ""
-            for idx in results:
-                item = GACHA_POOL[idx]
-                grade_col = "#FFD600" if "전설" in item['grade'] else "#00E5FF" if "희귀" in item['grade'] else "#00FF88" if "일반" in item['grade'] else "#888"
+            current_pity  = pity
+
+            for _ in range(pull_count):
+                item, current_pity = _pull_one(current_pity)
+
+                grade_col = ("FFD600" if "전설" in item['grade']
+                             else "00E5FF" if "영웅" in item['grade']
+                             else "AA88FF" if "희귀" in item['grade']
+                             else "00FF88" if "일반" in item['grade']
+                             else "888888")
+
+                pity_badge = " ✨<b style='color:#FFD600;'>천장 보정!</b>" if current_pity == 0 and "전설" in item['grade'] else ""
+
                 if item['name'] not in st.session_state.inventory:
                     st.session_state.inventory.append(item['name'])
 
-                result_html += f"<div style='background:rgba(255,255,255,0.04);border:1px solid {grade_col}44;border-radius:10px;padding:12px 16px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;'><span style='color:{grade_col};font-weight:900;'>{item['grade']}</span><span style='color:#E2E8F0;font-weight:900;'>{item['name']}</span></div>"
+                result_html += (f"<div style='background:rgba(255,255,255,0.04);border:1px solid #{grade_col}44;"
+                                f"border-radius:10px;padding:12px 16px;margin:6px 0;display:flex;"
+                                f"justify-content:space-between;align-items:center;'>"
+                                f"<span style='color:#{grade_col};font-weight:900;'>{item['grade']}{pity_badge}</span>"
+                                f"<span style='color:#E2E8F0;font-weight:900;'>{item['name']}</span></div>")
+
                 if "전설" in item['grade']:
                     got_legendary = True
-                    market['news'] = f"🎴 [가챠 대박] {st.session_state.logged_in_user}님이 전설 [{item['name']}] 획득!!"
+                    market['news'] = f"🎴 [가챠 대박] {uid}님이 전설 [{item['name']}] 획득!!"
                     save_market(market)
 
+            # pity를 세션과 DB 모두에 저장 (sync_user_data가 gacha_pity를 포함)
+            st.session_state.gacha_pity = current_pity
+
             st.markdown(f"<div style='margin:16px 0;'>{result_html}</div>", unsafe_allow_html=True)
-            log_tx(st.session_state.logged_in_user, "가챠", f"가챠 {pull_count}회 뽑기", -total_cost)
-            sync_user_data()
+            log_tx(uid, "가챠", f"가챠 {pull_count}회 뽑기", -total_cost)
+            sync_user_data()  # gacha_pity 포함하여 DB에 저장됨
 
             if got_legendary:
                 st.balloons()
                 st.success("🎉 전설 등급 획득! 칭호 상점에서 장착하세요!")
             else:
-                st.success("✅ 뽑기 완료! 칭호 상점에서 장착할 수 있습니다.")
+                st.success(f"✅ 뽑기 완료! 칭호 상점에서 장착할 수 있습니다. (천장까지 {PITY_THRESHOLD - current_pity}회)")
