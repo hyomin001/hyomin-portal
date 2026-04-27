@@ -6,8 +6,11 @@ from datetime import datetime
 from utils.config import stock_config, KST, USERS_FILE
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
 from utils.database import load_db, log_tx, save_market
+from streamlit_autorefresh import st_autorefresh
 
 def render(market, nw):
+    # 10초마다 자동 새로고침 — market_sync가 주가를 업데이트함
+    st_autorefresh(interval=10000, limit=None, key="stock_auto_refresh")
     st.title("📈 통합 거래소")
 
     TRADE_COOLDOWN   = 3.0
