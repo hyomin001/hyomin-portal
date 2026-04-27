@@ -3,12 +3,13 @@ import streamlit as st
 import random
 from utils.config import MINE_ITEMS
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
-from utils.database import log_tx, save_market
+from utils.database import log_tx, save_market, atomic_add_cash
 
 def render(market, nw):
     st.title("⛏️ 효민 광산")
     st.markdown("<div style='color:#888;margin-bottom:16px;'>곡괭이를 들어 광물을 캐세요!</div>", unsafe_allow_html=True)
 
+    uid  = st.session_state.logged_in_user
     cash = st.session_state.global_cash
     if cash < 10_000_000:
         mine_tier, mine_label, mine_color = 0, "🪨 초보 광산",  "#888"
@@ -55,14 +56,16 @@ def render(market, nw):
         elif st.button("⛏️ 한 번 캐기!", use_container_width=True):
             set_cooldown("mine_single")
             result = do_mine(1)[0]
+            # atomic_add_cash로 DB에 직접 반영 (sync 실패 시에도 로그와 DB가 일치)
+            atomic_add_cash(uid, result['value'])
             st.session_state.global_cash += result['value']
-            log_tx(st.session_state.logged_in_user, "광산", f"{result['name']} 채굴", result['value'])
+            log_tx(uid, "광산", f"{result['name']} 채굴", result['value'])
             sync_user_data()
             if result['name'] in ["다이아몬드", "전설의 원석"]:
                 if result['name'] == "전설의 원석": claim_hidden_title("first_legendary_ore", "👑 [유일무이] 럭키가이")
                 st.balloons()
                 st.success(f"✨ {result['icon']} **{result['name']}** 발견!! +{format_korean_money(result['value'])}")
-                market['news'] = f"⛏️ [{st.session_state.logged_in_user}] 광산에서 {result['name']} 채굴 대박!"
+                market['news'] = f"⛏️ [{uid}] 광산에서 {result['name']} 채굴 대박!"
                 save_market(market)
             elif result['name'] in ["루비", "사파이어"]:
                 st.success(f"🎉 {result['icon']} {result['name']} 발견! +{format_korean_money(result['value'])}")
@@ -79,8 +82,10 @@ def render(market, nw):
             set_cooldown("mine_ten")
             results = do_mine(10)
             total   = sum(r['value'] for r in results)
+            # atomic_add_cash로 DB에 직접 반영
+            atomic_add_cash(uid, total)
             st.session_state.global_cash += total
-            log_tx(st.session_state.logged_in_user, "광산", "10회 연속 채굴", total)
+            log_tx(uid, "광산", "10회 연속 채굴", total)
             sync_user_data()
             summary = {}
             for r in results:
