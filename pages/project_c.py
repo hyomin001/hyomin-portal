@@ -1,5 +1,5 @@
 # pages/project_c.py
-# 💻 THE TERMINAL — 방탈출 v3.0 [10 STAGES / NO REWARD]
+# 💻 THE TERMINAL — 방탈출 v3.0 [10 STAGES]
 import streamlit as st
 import time
 import base64
@@ -1861,8 +1861,32 @@ def render():
                 "cmd_count": t["cmd_count"],
             }
 
-        # DB에 클리어 진행상황 영구 저장
+        # DB에 클리어 진행상황 영구 저장 + 스테이지 클리어 보상 지급
         from utils.core import sync_user_data
+        from utils.database import log_tx, atomic_add_cash
+
+        uid = st.session_state.logged_in_user
+
+        # 스테이지별 클리어 보상 (최초 클리어 시 1회만 지급)
+        stage_reward_key = f"stage_reward_paid_{stage_num}"
+        if stage_reward_key not in st.session_state:
+            st.session_state[stage_reward_key] = True
+            STAGE_REWARDS = {
+                1: 5_000_000,   2: 10_000_000,  3: 15_000_000,
+                4: 20_000_000,  5: 30_000_000,  6: 40_000_000,
+                7: 50_000_000,  8: 70_000_000,  9: 100_000_000,
+                10: 500_000_000,
+            }
+            # 힌트 미사용 보너스 (기본 보상의 50% 추가)
+            base_reward    = STAGE_REWARDS.get(stage_num, 10_000_000)
+            perfect_bonus  = base_reward // 2 if t["hint_used"] == 0 else 0
+            total_reward   = base_reward + perfect_bonus
+            atomic_add_cash(uid, total_reward)
+            st.session_state.global_cash += total_reward
+            bonus_str = f" (퍼펙트 보너스 +{perfect_bonus:,}원 포함!)" if perfect_bonus > 0 else ""
+            log_tx(uid, "터미널", f"STAGE {stage_num} 클리어 보상{bonus_str}", total_reward)
+            st.success(f"💰 STAGE {stage_num} 클리어 보상: +{total_reward:,}원{bonus_str}")
+
         sync_user_data()
 
         # 풍선은 한 번만
@@ -1901,6 +1925,19 @@ def render():
         # 전체 클리어 체크
         if len(st.session_state.terminal_cleared) == len(STAGES):
             st.balloons()
+            # 전체 클리어 특별 보상 (최초 1회)
+            if "terminal_full_clear_rewarded" not in st.session_state:
+                st.session_state.terminal_full_clear_rewarded = True
+                from utils.core import sync_user_data, claim_hidden_title
+                from utils.database import log_tx, atomic_add_cash
+                uid = st.session_state.logged_in_user
+                full_clear_cash = 1_000_000_000  # 10억
+                atomic_add_cash(uid, full_clear_cash)
+                st.session_state.global_cash += full_clear_cash
+                log_tx(uid, "터미널", "THE TERMINAL 전체 클리어 보상", full_clear_cash)
+                claim_hidden_title("terminal_full_clear", "💻 [전설] 효민 네트웍스의 해커")
+                sync_user_data()
+                st.success("🏆 전체 클리어 보상: +1,000,000,000원 & 칭호 [효민 네트웍스의 해커] 획득!")
             st.markdown("""
             <div style='background:linear-gradient(135deg,#1a1000,#2a1800);border:2px solid #ffd700;
                         border-radius:10px;padding:20px;text-align:center;margin-bottom:14px;
