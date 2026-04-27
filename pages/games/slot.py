@@ -39,25 +39,23 @@ def render(market, nw):
             set_cooldown(f"slot_{sel_tier}")
             uid = st.session_state.logged_in_user
 
-            # ──────────────────────────────────────────────────────────────
-            # 🔒 원자적 차감 — MongoDB find_one_and_update + $inc
-            # 단일 DB 왕복으로 잔액 확인과 차감을 동시 처리 (Race Condition 방어)
-            # ──────────────────────────────────────────────────────────────
-            deducted = atomic_deduct_cash(uid, tier['cost'])
-            if not deducted:
+            # ── STEP 1: 베팅금 원자적 차감 ─────────────────────────────────
+            # find_one_and_update로 잔액 확인 + 차감을 단일 DB 왕복에 처리.
+            # 다른 탭에서 동시에 돈을 쓰더라도 Race Condition이 발생하지 않음.
+            if not atomic_deduct_cash(uid, tier['cost']):
                 st.error("잔액 부족! (DB 검증 실패 — 다른 탭에서 동시 처리 중일 수 있습니다.)")
                 st.stop()
-
-            # 세션 상태도 동기화
             st.session_state.global_cash -= tier['cost']
 
             syms = list(SYMBOLS.keys())
             wts  = list(SYMBOLS.values())
 
-            # 결과를 먼저 결정
+            # ── STEP 2: 결과 먼저 확정 ──────────────────────────────────────
+            # 애니메이션 전에 결과를 결정하고 당첨금을 즉시 지급함.
+            # 이후 애니메이션은 이미 결정된 결과를 "연출"하는 것이지
+            # 결과를 실시간으로 정하는 게 아님 (의도된 설계).
             final = [random.choices(syms, weights=wts)[0] for _ in range(3)]
 
-            # 당첨금 계산
             if final[0] == final[1] == final[2] == "💎":
                 prize = tier['jackpot']
             elif final[0] == final[1] == final[2]:
@@ -67,20 +65,22 @@ def render(market, nw):
             else:
                 prize = 0
 
-            # 당첨금 지급 (원자적)
+            # ── STEP 3: 당첨금 원자적 지급 ──────────────────────────────────
             if prize > 0:
                 atomic_add_cash(uid, prize)
                 st.session_state.global_cash += prize
 
-            # 애니메이션
+            # ── STEP 4: 애니메이션 (결과 연출) ──────────────────────────────
+            # 이미 DB 처리는 끝난 상태. 시각적 연출만 담당.
             for _ in range(14):
                 r = [random.choices(syms, weights=wts)[0] for _ in range(3)]
                 slot_display.markdown(f"<div style='font-size: 3.5rem; text-align: center; padding: 20px; background: rgba(0,0,0,0.6); border: 1px inset rgba(255,214,0,0.2); border-radius: 14px; letter-spacing: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; text-shadow: 0 0 10px rgba(255,255,255,0.2);'>{r[0]} &nbsp; {r[1]} &nbsp; {r[2]}</div>", unsafe_allow_html=True)
                 time.sleep(0.08)
 
+            # 최종 결과 표시
             slot_display.markdown(f"<div style='font-size: 3.5rem; text-align: center; padding: 20px; background: rgba(0,0,0,0.6); border: 1px inset rgba(255,214,0,0.2); border-radius: 14px; letter-spacing: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; text-shadow: 0 0 10px rgba(255,255,255,0.2);'>{final[0]} &nbsp; {final[1]} &nbsp; {final[2]}</div>", unsafe_allow_html=True)
 
-            # 결과 메시지
+            # ── STEP 5: 결과 메시지 + 로그 ──────────────────────────────────
             if final[0] == final[1] == final[2] == "💎":
                 if sel_tier == 0:
                     claim_hidden_title("first_slot_jackpot", "👑 [유일무이] 기적을 부르는 유저")
