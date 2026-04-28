@@ -4,7 +4,7 @@ import random
 from utils.config import stock_config, estate_config
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
 from utils.config import USERS_FILE
-from utils.database import load_db, log_tx
+from utils.database import load_db, log_tx, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
     st.title("💎 VIP 시크릿 라운지")
@@ -37,12 +37,15 @@ def render(market, nw):
             if st.session_state.global_cash >= 100_000_000:
                 u_db_check = load_db(USERS_FILE, {})
                 db_cash = u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0)
-                if db_cash < 100_000_000:
+                # ✅ [BUG FIX] 기존 코드: load_db 후 세션에서 차감 (Race Condition 취약)
+                # 수정: atomic_deduct_cash로 DB 원자적 차감 후 세션 동기화
+                if not atomic_deduct_cash(st.session_state.logged_in_user, 100_000_000):
                     st.error("잔액 부족! (DB 검증 실패)")
                 else:
                     set_cooldown("vip_slot")
                     st.session_state.global_cash -= 100_000_000
                     if random.random() < 0.5:
+                        atomic_add_cash(st.session_state.logged_in_user, 250_000_000)
                         st.session_state.global_cash += 250_000_000
                         st.success("🎉 승리! +2.5억 획득!")
                         log_tx(st.session_state.logged_in_user, "VIP슬롯", "VIP 슬롯 승리", 150_000_000)
