@@ -1201,7 +1201,7 @@ elif st.session_state.page_view == "universe":
         "👥 커뮤니티":    ["🏰 길드/클랜", "🏅 [시즌1]랭킹 & 게시판", "✉️ 개인 쪽지함"],
     }
     if is_vip:   CATEGORY_MENUS["📈 경제"].insert(1, "💎 VIP 라운지")
-    if is_admin: CATEGORY_MENUS["⚙️ 관리"] = ["🛠️ 창조주 통제소"]
+    if is_admin: CATEGORY_MENUS["⚙️ 관리"] = ["🛠️ 창조주 통제소", "📡 O-RAN IQ 분석기"]
 
     def get_current_category():
         for cat, pages in CATEGORY_MENUS.items():
@@ -1282,6 +1282,7 @@ elif st.session_state.page_view == "universe":
     elif menu == "🏎️ 하이퍼카 레이싱":      from pages.sports import racing;     racing.render(market, nw)
     elif menu == "🛠️ 커스텀 튜닝 차고지":   from pages.sports import garage;     garage.render(market, nw)
     elif menu == "🛠️ 창조주 통제소":        from pages.admin import panel;       panel.render(market, nw)
+    elif menu == "📡 O-RAN IQ 분석기":      from pages import oran_analyzer;     oran_analyzer.render()
     else: st.info(f"🚧 '{menu}' 페이지를 로드할 수 없습니다.")
 
 
