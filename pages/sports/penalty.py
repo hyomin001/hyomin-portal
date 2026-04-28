@@ -2,7 +2,7 @@
 import streamlit as st
 import random
 from utils.core import format_korean_money, sync_user_data, claim_hidden_title
-from utils.database import log_tx
+from utils.database import log_tx, atomic_deduct_cash
 
 def render(market, nw):
     st.title("⚽ 조기축구 승부차기")
@@ -34,6 +34,11 @@ def render(market, nw):
             if st.session_state.global_cash < bet:
                 st.error("잔액이 부족합니다!")
             else:
+                # ✅ [BUG FIX] 세션만 차감하던 것을 atomic_deduct_cash로 교체 (Race Condition 방어)
+                uid = st.session_state.logged_in_user
+                if not atomic_deduct_cash(uid, bet):
+                    st.error("잔액 부족! (DB 검증 실패)")
+                    st.stop()
                 st.session_state.global_cash -= bet
                 st.session_state.ps_bet = bet
                 st.session_state.ps_state = 'playing'
