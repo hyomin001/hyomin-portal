@@ -2025,6 +2025,9 @@ def render():
 
     # ── 게임 결과 수신 처리 ──
     qp = st.query_params
+    # ✅ [BUG FIX] dungeon_result_processed 플래그를 query param 존재 여부 기반으로 판단
+    # 이전: 세션이 살아있는 동안 두 번째 판부터 결과가 무시됨
+    # 수정: query param이 있을 때만 처리하고, 처리 직후 query param을 클리어
     if qp.get('dungeon_score') and not st.session_state.get('dungeon_result_processed'):
         st.session_state.dungeon_result_processed = True
         is_win = qp.get('dungeon_win') == 'true'
@@ -2049,15 +2052,20 @@ def render():
             if score_reward > 0:
                 atomic_add_cash(uid, score_reward)
                 st.session_state.global_cash += score_reward
-                log_tx(uid, "던전", f"던전런 점수 보상 (점수:{score})", score_reward)
+                log_tx(uid, "던전", f"던전런 점수 보상 (점수:{score}, 킬:{kills})", score_reward)
+            else:
+                # score=0이어도 플레이 기록은 남김
+                log_tx(uid, "던전", f"던전런 종료 (점수:{score}, 킬:{kills})", 0)
         st.session_state.dungeon_stats = dstats
 
-        # DB 저장
-        users = load_db(USERS_FILE, {})
-        if uid in users:
-            users[uid]['dungeon_stats'] = dstats
-            save_db(USERS_FILE, users)
+        # ✅ [BUG FIX] dungeon_stats는 sync_user_data()에 포함되므로 별도 save_db 불필요
+        # sync_user_data()가 dungeon_stats를 포함하여 저장함 (core.py 수정 연동)
         sync_user_data()
+
+        # ✅ [BUG FIX] 처리 후 query params 클리어 → 새로고침/재진입 시 중복 처리 방지
+        st.query_params.clear()
+        # ✅ [BUG FIX] 다음 판을 위해 처리 플래그 초기화
+        del st.session_state['dungeon_result_processed']
         st.rerun()
 
     # 게임 헤더 UI
@@ -2112,6 +2120,9 @@ def render():
     st.caption("🎮 WASD/방향키: 이동 | 자동 공격 | Q E R: 스킬 | 레벨업 시 무기 선택! | 🏆 클리어 보상 2억원!")
 
     # postMessage 수신 리스너 (결과 → query param)
+    # ✅ [BUG FIX] 리스너를 게임 iframe보다 먼저 렌더링하면 별도 iframe이라 메시지를 못 받을 수 있음
+    # window.parent 기준으로 수신하므로 순서 상관없이 동작하지만,
+    # 안전하게 게임 결과 수신 시 dungeon_result_processed 플래그도 초기화
     listener_html = """
     <script>
     window.addEventListener('message', function(e) {
