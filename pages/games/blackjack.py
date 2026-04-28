@@ -277,11 +277,13 @@ def render(market, nw):
             if split_on:
                 total_prize += show_result_card(split_hand, split_bet, "스플릿 손")
 
+            total_bet = bet + (split_bet if split_on else 0)
+            total_net = total_prize - total_bet
             if total_prize > 0:
                 atomic_add_cash(uid, total_prize)
                 st.session_state.global_cash += total_prize
-                total_net = total_prize - bet - (split_bet if split_on else 0)
-                log_tx(uid, "블랙잭", f"블랙잭 결과 (총 지급 {format_korean_money(total_prize)})", total_net)
+            # ✅ [BUG FIX] total_prize=0(패배)일 때 log_tx가 없어서 손실 기록 누락되던 것 수정
+            log_tx(uid, "블랙잭", f"블랙잭 결과 (지급 {format_korean_money(total_prize)})", total_net)
             sync_user_data()
         else:
             # 이미 지급된 경우 결과만 재표시
