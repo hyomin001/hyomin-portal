@@ -5,7 +5,7 @@ import time
 from utils.config import FORGE_DATA
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
 from utils.config import USERS_FILE
-from utils.database import load_db, save_db, log_tx, save_market  # 👈 save_db 임포트 추가!
+from utils.database import load_db, save_db, log_tx, save_market, atomic_add_cash
 
 def render(market, nw):
     st.title("🗡️ 전설의 명검 강화소")
@@ -167,6 +167,8 @@ def render(market, nw):
         st.write("---")
         if st.button(f"💰 무기 판매 (익절): {format_korean_money(w_info['sell'])}", use_container_width=True, type="secondary"):
             sell_amt = w_info['sell']
+            # ✅ [BUG FIX] 세션만 증가하던 것을 atomic_add_cash로 교체 (DB와 세션 동시 반영)
+            atomic_add_cash(st.session_state.logged_in_user, sell_amt)
             st.session_state.global_cash += sell_amt
             st.session_state.weapon_level = 0
             log_tx(st.session_state.logged_in_user, "무기판매", f"{w_info['name']} 판매", sell_amt)
