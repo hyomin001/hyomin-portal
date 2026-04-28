@@ -4,7 +4,7 @@ import random
 import time
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
 from utils.config import USERS_FILE
-from utils.database import load_db, save_db, log_tx
+from utils.database import load_db, save_db, log_tx, atomic_deduct_cash
 
 def render(market, nw):
     st.title("🏎️ 하이퍼카 레이싱")
@@ -65,6 +65,10 @@ def render(market, nw):
             st.error("잔액 부족!")
         else:
             set_cooldown("race_start")
+            # ✅ [BUG FIX] 세션만 차감하던 것을 atomic_deduct_cash로 교체 (Race Condition 방어)
+            if not atomic_deduct_cash(uid, bet_amt):
+                st.error("잔액 부족! (DB 검증 실패)")
+                st.stop()
             st.session_state.global_cash -= bet_amt
             positions = {c['name']: 0.0 for c in CARS}
             winner    = None
