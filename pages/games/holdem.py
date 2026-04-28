@@ -327,7 +327,8 @@ def render(market, nw):
                 u_fresh[uid]['cash'] += prize
                 log_tx(uid, "홀덤", "무승부 (베팅금 반환)", prize)
             else:
-                log_tx(uid, "홀덤", "패배 (팟 잃음)", 0)
+                # ✅ [BUG FIX] 패배 시 손실액을 음수로 기록 (기존: 0으로 기록하여 txlog에서 확인 불가)
+                log_tx(uid, "홀덤", "패배 (팟 잃음)", -state['base_bet'])
                 
             save_db(USERS_FILE, u_fresh)
             st.session_state.global_cash = u_fresh[uid]['cash']
