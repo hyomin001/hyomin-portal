@@ -3,7 +3,7 @@ import streamlit as st
 import random
 import time
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
-from utils.database import log_tx
+from utils.database import log_tx, atomic_deduct_cash
 
 def render(market, nw):
     st.title("🏆 구단주 시뮬레이터")
@@ -46,8 +46,15 @@ def render(market, nw):
             st.error("베팅 금액이 현재 잔액을 초과합니다!")
         else:
             set_cooldown("soccer_game")
-            
-            # 베팅금 사전 차감을 없애고, 마지막에 '순수익/순손실'로 한 번에 정산하도록 변경했습니다.
+
+            # ✅ [BUG FIX] 베팅금을 게임 시작 전 atomic_deduct_cash로 선차감
+            # 기존: net_profit으로 나중에 한 번에 정산 → 게임 도중 세션이 끊기면 베팅금 미차감
+            if betting > 0:
+                uid = st.session_state.logged_in_user
+                if not atomic_deduct_cash(uid, betting):
+                    st.error("잔액 부족! (DB 검증 실패)")
+                    st.stop()
+                st.session_state.global_cash -= betting
             my_s  = FORMATION_STATS[my_form]
             opp_s = FORMATION_STATS[opp_form]
             h_score = a_score = 0
@@ -100,6 +107,7 @@ def render(market, nw):
             st.write("---")
             
             # 💡 결과 및 순수익(net_profit) 정산 로직
+            # ✅ [BUG FIX] betting은 이미 선차감됨 → 상금(prize)만 지급
             if h_score > a_score:
                 st.success(f"🎉 승리! {my_team} {h_score}:{a_score} {opp_team}")
                 prize = (10_000_000 + betting * 2) if betting > 0 else 5_000_000
@@ -109,13 +117,11 @@ def render(market, nw):
                 prize = (2_000_000 + betting) if betting > 0 else 2_000_000
             else:
                 st.error(f"😢 패배... {h_score}:{a_score}")
-                prize = 500_000
+                prize = 500_000 if betting == 0 else 0
 
-            # 최종 순수익 (상금 - 내가 건 돈) 계산
-            net_profit = prize - betting
-            st.session_state.global_cash += net_profit
+            net_profit = prize - betting  # 표시용 순손익 계산 (betting=0이면 prize=net_profit)
+            st.session_state.global_cash += prize
             
-            # 거래 기록(txlog)에 순수익/순손실을 명확하게 기록
             if net_profit > 0:
                 log_tx(st.session_state.logged_in_user, "축구베팅", f"경기 승리 보상", net_profit)
             elif net_profit < 0:
