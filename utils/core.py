@@ -98,6 +98,10 @@ def sync_user_data():
         'last_estate_reset': st.session_state.get('last_estate_reset', 0),
         'terminal_cleared': list(st.session_state.get('terminal_cleared', set())),
         'gacha_pity': st.session_state.get('gacha_pity', 0),
+        # ✅ [BUG FIX] dungeon_stats가 sync_user_data에 누락되어 있었음
+        'dungeon_stats': st.session_state.get('dungeon_stats', {
+            'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0
+        }),
     })
     save_db(USERS_FILE, users)
 
@@ -127,6 +131,10 @@ def pull_user_data():
         st.session_state.last_estate_reset = u.get('last_estate_reset', 0)
         st.session_state.terminal_cleared = set(u.get('terminal_cleared', []))
         st.session_state.gacha_pity = u.get('gacha_pity', 0)
+        # ✅ [BUG FIX] pull_user_data에도 dungeon_stats 복원 추가
+        st.session_state.dungeon_stats = u.get('dungeon_stats', {
+            'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0
+        })
 
 def get_market():
     def init_m():
