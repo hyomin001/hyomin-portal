@@ -913,11 +913,15 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/project_b.py</strong>월드 배틀</div>
     <div class="module-item"><strong>pages/project_d.py</strong>🎲 인베스트 마블 보드게임</div>
     <div class="module-item"><strong>pages/project_e.py</strong>⚔️ 뱀서라이크 던전 게임</div>
+    <div class="module-item"><strong>pages/project_f.py</strong>🏎️ 네온 도주 레이싱</div>
+    <div class="module-item"><strong>pages/project_g.py</strong>🧟 좀비 아포칼립스 슈터</div>
+    <div class="module-item"><strong>pages/project_h.py</strong>🥊 스트리트 파이터 EX</div>
+    <div class="module-item"><strong>pages/project_i.py</strong>🎯 스나이퍼 엘리트</div>
 </div>
         """, unsafe_allow_html=True)
 
-    # ── 6대 서비스 완전 가이드 ─────────────────────────────
-    with st.expander("📖 6대 서비스 완전 가이드 보기", expanded=False):
+    # ── 전체 서비스 완전 가이드 ──────────────────────────────
+    with st.expander("📖 전체 서비스 완전 가이드 보기", expanded=False):
 
         st.markdown("### 🗺️ HYOMIN PORTAL — 서비스 소개")
         st.markdown("---")
@@ -1100,6 +1104,123 @@ if st.session_state.page_view == "portal":
             <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">자동</code> 기본 공격 &nbsp;
             <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">Q E R</code> 액티브 스킬 사용 &nbsp;
             <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">마우스</code> 캐릭터 및 능력 선택
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+        # ── 신규 게임 4종 가이드 ────────────────────────────────
+        st.markdown("### 🎮 신규 게임 4종 가이드")
+        st.markdown("---")
+
+        col_ng1, col_ng2 = st.columns(2)
+
+        with col_ng1:
+            st.markdown("""
+<div class="arch-card" style="border-left-color:#00d4ff;">
+    <h4 style="color:#00d4ff !important;">🏎️ 네온 도주 레이싱 &#8212; NEON RUNAWAY</h4>
+    <p>
+        5레인 무한 도로를 달리며 경찰 추격을 뿌리치는 하이스피드 레이싱 게임입니다.
+        레인을 빠르게 전환하며 장애물을 피하고, 니트로 부스터로 화려한 스피드를 폭발시키세요.
+        연속 회피로 콤보가 상승하며, 최대 ×8 콤보로 점수를 높여보세요.
+        경찰 수는 파도비로 늘수록 더 터프해집니다.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge" style="color:#00d4ff !important;background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.35);">🛣️ 5레인 무한 도로</span>
+        <span class="arch-badge" style="color:#00d4ff !important;background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.35);">⚡ 니트로 부스터</span>
+        <span class="arch-badge" style="color:#00d4ff !important;background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.35);">🚨 경찰 추격 웨이브</span>
+        <span class="arch-badge" style="color:#00d4ff !important;background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.35);">×8 콤보 시스템</span>
+    </div>
+    <div style="margin-top:10px;background:rgba(0,212,255,0.07);border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:var(--cyan) !important;font-weight:700;">💡 컨트롤</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
+            PC: <code style="background:rgba(0,212,255,0.15);padding:1px 5px;border-radius:3px;">←→ 방향키</code> 레인 전환 &nbsp;
+            <code style="background:rgba(0,212,255,0.15);padding:1px 5px;border-radius:3px;">Space</code> 니트로 &nbsp;|&nbsp;
+            모바일: D-PAD + NITRO 버튼 지원
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card" style="border-left-color:#ff2244;">
+    <h4 style="color:#ff2244 !important;">🧟 좀비 아포칼립스 &#8212; ZOMBIE APOCALYPSE</h4>
+    <p>
+        탑다운 시점의 시가지 맵에서 철연같이 몰려드는 좀비를 생존하는 싸일법 슈터입니다.
+        새로운 웨이브마다 상점에서 코인으로 <b>무기 업그레이드</b>와 <b>탄약 보충</b>을 하며,
+        권총·라이플·샷건·섬광백열 4종 무기를 스위칭할 수 있습니다.
+        보스 좀비가 등장하는 매 5라운드를 버티세요.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge" style="color:#ff2244 !important;background:rgba(255,34,68,0.12);border-color:rgba(255,34,68,0.35);">🎯 탑다운 슈터</span>
+        <span class="arch-badge" style="color:#ff2244 !important;background:rgba(255,34,68,0.12);border-color:rgba(255,34,68,0.35);">🔫 4종 무기 시스템</span>
+        <span class="arch-badge" style="color:#ff2244 !important;background:rgba(255,34,68,0.12);border-color:rgba(255,34,68,0.35);">🛒 라운드간 상점</span>
+        <span class="arch-badge" style="color:#ff2244 !important;background:rgba(255,34,68,0.12);border-color:rgba(255,34,68,0.35);">🧟‍♂️ 보스 좀비</span>
+    </div>
+    <div style="margin-top:10px;background:rgba(255,34,68,0.07);border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:#ff2244 !important;font-weight:700;">💡 컨트롤</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
+            PC: <code style="background:rgba(255,34,68,0.15);padding:1px 5px;border-radius:3px;">WASD</code> 이동 &nbsp;
+            <code style="background:rgba(255,34,68,0.15);padding:1px 5px;border-radius:3px;">마우스</code> 조준·사격 &nbsp;
+            <code style="background:rgba(255,34,68,0.15);padding:1px 5px;border-radius:3px;">R</code> 재장전 &nbsp;
+            <code style="background:rgba(255,34,68,0.15);padding:1px 5px;border-radius:3px;">1-4</code> 무기 교체 &nbsp;|&nbsp; 모바일: 조이스틱 + 발사 버튼
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+        with col_ng2:
+            st.markdown("""
+<div class="arch-card" style="border-left-color:#c04fff;">
+    <h4 style="color:#c04fff !important;">🥊 스트리트 파이터 EX &#8212; STREET FIGHTER EX</h4>
+    <p>
+        <b>6가지 고유 캐릭터</b>(전사/파이터/닌자/모헨/닉느/고스트) 중 하나를 선택해 AI CPU와 1v1 대결하는 게임입니다.
+        각 캐릭터마다 고유한 필살기와 <b>슈퍼 게이지</b>가 있으며,
+        3라운드 선승일경식으로 진행됩니다.
+        콤보 파출로 슈퍼게이지를 치는 초리한 파이널 필살기를 시전하세요!
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">🎮 6캐릭터 대전</span>
+        <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">⚡ 슈퍼 게이지</span>
+        <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">🔥 필살기 파이니슬</span>
+        <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">🏆 3라운드 선승</span>
+    </div>
+    <div style="margin-top:10px;background:rgba(192,79,255,0.08);border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:#c04fff !important;font-weight:700;">💡 컨트롤</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
+            PC: <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">WASD/화살표</code> 이동 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">J</code> 펀치 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">K</code> 킥 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">U</code> 점프 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">I</code> 스페셔이얼 &nbsp;|&nbsp; 모바일: D-PAD + 에행버튼
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+<div class="arch-card" style="border-left-color:#00ff88;">
+    <h4 style="color:#00ff88 !important;">🎯 스나이퍼 엘리트 &#8212; SNIPER ELITE</h4>
+    <p>
+        스코프로 목표물을 조준해 정밀 사격으로 미션을 완수하는 탁월한 스나이퍼 시뮬레이션입니다.
+        바람의 방향과 세기에 따라 탄도가 휘므로, 리드를 교정해 발사해야 합니다.
+        헤드샷 성공 시 <b>슬로모션 X레이 연출</b>이 화려하게 펼쳐집니다.
+        총 5개 미션, 목표 수는 파도비로 증가합니다.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔭 4배율 스코프</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🌬️ 바람 탄도 물리</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">💀 헤드샷 X레이</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🎯 5미션 차례대로 난이도</span>
+    </div>
+    <div style="margin-top:10px;background:rgba(0,255,136,0.07);border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:var(--green) !important;font-weight:700;">💡 컨트롤</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
+            PC: <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">마우스</code> 조준 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">우클릭</code> 스코프 줌 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">좌클릭/Space</code> 발사 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">Shift</code> 호흡고르기 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">R</code> 재장전 &nbsp;|&nbsp; 모바일: 터치 지원
         </p>
     </div>
 </div>
