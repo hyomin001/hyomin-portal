@@ -672,6 +672,78 @@ if st.session_state.page_view == "portal":
                 time.sleep(0.8); st.session_state.page_view = "login"
             st.rerun()
 
+    # ── 신규 게임 행 ──────────────────────────────────────────
+    st.markdown("<div class='game-section-title'>🆕 신규 게임 추가</div>", unsafe_allow_html=True)
+    nc1, nc2, nc3, nc4 = st.columns(4)
+
+    with nc1:
+        st.markdown("""
+        <div class='game-card' style='border-color:rgba(0,212,255,0.4);min-height:180px;'>
+          <div class='card-badge badge-new'>🆕 NEW</div>
+          <div class='card-icon'>🏎️</div>
+          <div class='card-title'>네온 도주 레이싱</div>
+          <div class='card-desc'>5레인 무한 도로 · 니트로 부스터<br>경찰 추격 · ×8 콤보 시스템</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("레이싱 입장 🏎️", use_container_width=True, key="btn_f"):
+            if st.session_state.get('logged_in_user'):
+                st.session_state.page_view = "project_f"
+            else:
+                st.warning("⚠️ 로그인이 필요합니다.")
+                time.sleep(0.8); st.session_state.page_view = "login"
+            st.rerun()
+
+    with nc2:
+        st.markdown("""
+        <div class='game-card' style='border-color:rgba(255,34,68,0.4);min-height:180px;'>
+          <div class='card-badge badge-hot'>🔥 HOT</div>
+          <div class='card-icon'>🧟</div>
+          <div class='card-title'>좀비 아포칼립스</div>
+          <div class='card-desc'>탑다운 좀비 슈터 · 4종 무기<br>웨이브 + 상점 업그레이드</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("생존 입장 🧟", use_container_width=True, key="btn_g"):
+            if st.session_state.get('logged_in_user'):
+                st.session_state.page_view = "project_g"
+            else:
+                st.warning("⚠️ 로그인이 필요합니다.")
+                time.sleep(0.8); st.session_state.page_view = "login"
+            st.rerun()
+
+    with nc3:
+        st.markdown("""
+        <div class='game-card' style='border-color:rgba(192,79,255,0.4);min-height:180px;'>
+          <div class='card-badge' style='background:rgba(192,79,255,0.2);color:#c04fff;border:1px solid rgba(192,79,255,0.4);'>⚡ PVP</div>
+          <div class='card-icon'>🥊</div>
+          <div class='card-title'>스트리트 파이터 EX</div>
+          <div class='card-desc'>1v1 격투 · 6 캐릭터 · AI CPU<br>필살기 · 슈퍼 게이지 · 3라운드</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("대전 입장 🥊", use_container_width=True, key="btn_h"):
+            if st.session_state.get('logged_in_user'):
+                st.session_state.page_view = "project_h"
+            else:
+                st.warning("⚠️ 로그인이 필요합니다.")
+                time.sleep(0.8); st.session_state.page_view = "login"
+            st.rerun()
+
+    with nc4:
+        st.markdown("""
+        <div class='game-card' style='border-color:rgba(0,255,136,0.4);min-height:180px;'>
+          <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.35);'>🎯 ELITE</div>
+          <div class='card-icon'>🎯</div>
+          <div class='card-title'>스나이퍼 엘리트</div>
+          <div class='card-desc'>5 미션 · 4배율 스코프<br>바람 탄도 · 헤드샷 슬로우모션</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("임무 입장 🎯", use_container_width=True, key="btn_i"):
+            if st.session_state.get('logged_in_user'):
+                st.session_state.page_view = "project_i"
+            else:
+                st.warning("⚠️ 로그인이 필요합니다.")
+                time.sleep(0.8); st.session_state.page_view = "login"
+            st.rerun()
+
     # ── 시스템 공지 & 아키텍처 섹션 ───────────────────────
     with st.expander("📋 시스템 공지 & 전체 아키텍처 구조 보기", expanded=False):
 
@@ -1344,3 +1416,51 @@ elif st.session_state.page_view == "project_e":
         st.session_state.page_view = "portal"; st.rerun()
     from pages import project_e
     project_e.render()
+
+
+# ==============================
+# 11. [View 9] 🏎️ 네온 도주 레이싱
+# ==============================
+elif st.session_state.page_view == "project_f":
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"; st.rerun()
+    if st.button("🏠 포털 메인으로 나가기", key="back_f"):
+        st.session_state.page_view = "portal"; st.rerun()
+    from pages import project_f
+    project_f.render()
+
+
+# ==============================
+# 12. [View 10] 🧟 좀비 아포칼립스
+# ==============================
+elif st.session_state.page_view == "project_g":
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"; st.rerun()
+    if st.button("🏠 포털 메인으로 나가기", key="back_g"):
+        st.session_state.page_view = "portal"; st.rerun()
+    from pages import project_g
+    project_g.render()
+
+
+# ==============================
+# 13. [View 11] 🥊 스트리트 파이터 EX
+# ==============================
+elif st.session_state.page_view == "project_h":
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"; st.rerun()
+    if st.button("🏠 포털 메인으로 나가기", key="back_h"):
+        st.session_state.page_view = "portal"; st.rerun()
+    from pages import project_h
+    project_h.render()
+
+
+# ==============================
+# 14. [View 12] 🎯 스나이퍼 엘리트
+# ==============================
+elif st.session_state.page_view == "project_i":
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"; st.rerun()
+    if st.button("🏠 포털 메인으로 나가기", key="back_i"):
+        st.session_state.page_view = "portal"; st.rerun()
+    from pages import project_i
+    project_i.render()
