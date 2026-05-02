@@ -45,15 +45,7 @@ def render(market, nw):
         u_db = load_db(USERS_FILE, {})
         uid_list = [u for u in u_db.keys() if u != "admin"]
 
-        migrated = False
-        for _uid, _udata in u_db.items():
-            if _uid == "admin": continue
-            pw_val = _udata.get('pw', '')
-            if len(pw_val) != 64:  
-                u_db[_uid]['pw'] = hash_pw(pw_val)
-                migrated = True
-        
-        if migrated: save_db(USERS_FILE, u_db)
+
 
         if uid_list:
             sel_u  = st.selectbox("조작할 유저 선택", uid_list, key="admin_sel_u")
@@ -82,6 +74,18 @@ def render(market, nw):
                 st.write("")
                 st.metric("현재 현금", format_korean_money(u_data.get('cash', 0)))
                 st.metric("현재 대출", format_korean_money(u_data.get('loan', 0)))
+                st.write("")
+                st.markdown("##### 🔑 비밀번호 초기화")
+                new_pw_admin = st.text_input("새 비밀번호", type="password", placeholder="새 비밀번호 입력", key="admin_pw_reset")
+                if st.button("🔑 비밀번호 강제 변경", use_container_width=True, key="admin_pw_btn"):
+                    if not new_pw_admin:
+                        st.error("비밀번호를 입력하세요.")
+                    else:
+                        from utils.core import hash_pw_bcrypt
+                        u_db[sel_u]['pw'] = hash_pw_bcrypt(new_pw_admin)
+                        save_db(USERS_FILE, u_db)
+                        st.success(f"✅ {sel_u} 비밀번호 변경 완료!")
+                        st.rerun()
 
             c_btn1, c_btn2, c_btn3 = st.columns(3)
             if c_btn1.button("🔥 유저 데이터 강제 개조", use_container_width=True):
