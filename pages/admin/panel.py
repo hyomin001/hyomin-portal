@@ -715,6 +715,20 @@ def render(market, nw):
             for sn, rec in sorted(records.items(), key=lambda x: int(x[0]), reverse=True):
                 st.markdown(f"**시즌 {sn}**\n- 🥇 1위: {rec.get('rank1','?')}\n- 🥈 2위: {rec.get('rank2','?')}\n- 🥉 3위: {rec.get('rank3','?')}")
         st.write("---")
+        st.markdown("### 🔑 전체 비밀번호 초기화")
+        st.caption("⚠️ admin 제외 모든 유저 비밀번호를 **1234** 로 초기화합니다.")
+        if st.button("🔑 전체 비밀번호 1234로 초기화", type="primary", use_container_width=True):
+            from utils.core import hash_pw_bcrypt
+            pw_db = load_db(USERS_FILE, {})
+            new_hash = hash_pw_bcrypt("1234")
+            for u in pw_db:
+                if u == "admin": continue
+                pw_db[u]['pw'] = new_hash
+            save_db(USERS_FILE, pw_db)
+            st.success("✅ 전체 유저 비밀번호가 1234로 초기화됐습니다!")
+            st.rerun()
+
+        st.write("---")
         st.markdown("### 💥 우주 대폭발 (시즌 1 완벽 초기화)")
         st.caption("⚠️ **경고:** 모든 유저의 칭호, 차량, 명검, 클랜, 게시판, 쪽지, 거래 기록이 싹 다 날아가고 시즌 1 1일차로 완벽하게 돌아갑니다. (아이디/비밀번호만 유지)")
         
