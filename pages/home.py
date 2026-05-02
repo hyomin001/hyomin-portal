@@ -113,7 +113,32 @@ def render(market, nw):
         """, unsafe_allow_html=True)
 
     st.write("---")
-    
+
+    # 🔑 비밀번호 변경
+    st.markdown("### 🔑 비밀번호 변경")
+    with st.expander("비밀번호 변경하기"):
+        cur_pw  = st.text_input("현재 비밀번호", type="password", key="chpw_cur")
+        new_pw1 = st.text_input("새 비밀번호",   type="password", key="chpw_new1")
+        new_pw2 = st.text_input("새 비밀번호 확인", type="password", key="chpw_new2")
+        if st.button("✅ 변경하기", key="chpw_btn"):
+            from utils.core import verify_pw, hash_pw_bcrypt
+            from utils.database import load_db, save_db
+            from utils.config import USERS_FILE
+            uid   = st.session_state.logged_in_user
+            users = load_db(USERS_FILE, {})
+            if not verify_pw(cur_pw, users[uid]['pw']):
+                st.error("❌ 현재 비밀번호가 틀렸습니다.")
+            elif len(new_pw1) < 1:
+                st.error("❌ 새 비밀번호를 입력해주세요.")
+            elif new_pw1 != new_pw2:
+                st.error("❌ 새 비밀번호가 일치하지 않습니다.")
+            else:
+                users[uid]['pw'] = hash_pw_bcrypt(new_pw1)
+                save_db(USERS_FILE, users)
+                st.success("✅ 비밀번호가 변경되었습니다!")
+
+    st.write("---")
+
     # 4. 주식 핫 종목
     st.markdown("### 📈 실시간 시장 현황")
     top_stocks = sorted(stock_config, key=lambda s: (
