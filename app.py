@@ -1260,6 +1260,15 @@ elif st.session_state.page_view == "login":
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
 
         with tabs[0]:
+            st.markdown("""
+<div style='background:rgba(255,200,0,0.1);border:1px solid #FFD600;border-radius:10px;padding:14px;margin-bottom:16px;'>
+  <div style='color:#FFD600;font-weight:900;font-size:1rem;'>📢 공지사항</div>
+  <div style='color:#E2E8F0;font-size:0.9rem;margin-top:6px;'>
+    서버 점검으로 인해 <b>모든 계정의 비밀번호가 1234로 초기화</b>되었습니다.<br>
+    로그인 후 <b>🏠 홈 광장</b>에서 비밀번호를 변경해주세요.
+  </div>
+</div>
+""", unsafe_allow_html=True)
             l_id = st.text_input("아이디", placeholder="아이디를 입력하세요")
             l_pw = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
 
