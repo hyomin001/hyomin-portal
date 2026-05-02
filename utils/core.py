@@ -34,9 +34,12 @@ def is_legacy_hash(h: str) -> bool:
 
 def verify_pw(pw: str, stored_hash: str) -> bool:
     """저장된 해시가 bcrypt든 SHA-256이든 자동으로 검증."""
-    if is_legacy_hash(stored_hash):
-        return hashlib.compare_digest(hash_pw(pw), stored_hash)
+    # stored_hash가 None이거나 문자열이 아닌 경우 방어
+    if not stored_hash or not isinstance(stored_hash, str):
+        return False
     try:
+        if is_legacy_hash(stored_hash):
+            return hashlib.compare_digest(hash_pw(pw), stored_hash)
         return bcrypt.checkpw(pw.encode('utf-8'), stored_hash.encode('utf-8'))
     except Exception:
         return False
