@@ -9,8 +9,8 @@ GAME_HTML = r"""<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:758px;overflow:hidden;background:#0a0a0f;touch-action:none;}
-#wrap{position:relative;width:100%;height:758px;display:flex;align-items:center;justify-content:center;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0f;touch-action:none;}
+#wrap{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
 #gc{display:block;touch-action:none;}
 #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
 
@@ -1150,4 +1150,4 @@ requestAnimationFrame(loop);
 
 def render():
     st.markdown("<style>iframe{border:none!important;}</style>", unsafe_allow_html=True)
-    components.html(GAME_HTML, height=760, scrolling=False)
+    components.html(GAME_HTML, height=900, scrolling=False)
