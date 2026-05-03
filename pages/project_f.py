@@ -9,8 +9,8 @@ GAME_HTML = r"""<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:758px;overflow:hidden;background:#0a0a0f;touch-action:none;}
-#wrap{position:relative;width:100%;height:758px;display:flex;align-items:center;justify-content:center;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0f;touch-action:none;}
+#wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;}
 #gc{display:block;touch-action:none;}
 #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
 
@@ -80,20 +80,9 @@ html,body{width:100%;height:758px;overflow:hidden;background:#0a0a0f;touch-actio
 .brow{font-size:8px;color:rgba(255,255,255,.22);margin-bottom:14px;font-family:'Share Tech Mono',monospace;}
 .bnum{color:#ff8800;font-family:'Orbitron',sans-serif;}
 .instrow{font-size:8px;color:rgba(255,255,255,.18);line-height:2.2;margin-bottom:14px;font-family:'Share Tech Mono',monospace;}
-
-#ctrl-bar{position:absolute;top:0;left:0;right:0;z-index:200;background:rgba(0,0,0,0.82);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;gap:16px;padding:5px 12px;font-size:10px;color:#778;letter-spacing:1px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.06);}
-#ctrl-bar span{color:#aab;}
-#ctrl-bar b{color:#00ffcc;font-weight:700;}
 </style>
 </head>
 <body>
-  <div id="ctrl-bar">
-    <span><b>← →</b> / <b>A D</b> 방향 전환</span>
-    <span>|</span>
-    <span><b>Space / Shift</b> 부스터(니트로)</span>
-    <span>|</span>
-    <span>장애물 피해 달려라!</span>
-  </div>
 <div id="wrap">
   <canvas id="gc"></canvas>
   <div id="ui">
@@ -148,7 +137,7 @@ const BW = 420, BH = 740;
 let scale = 1;
 
 function resize() {
-  const rw = innerWidth||760, rh = innerHeight||560;
+  const rw = innerWidth, rh = innerHeight;
   scale = Math.min(rw/BW, rh/BH);
   gc.width  = BW; gc.height = BH;
   const pw = BW*scale, ph = BH*scale;
@@ -156,7 +145,6 @@ function resize() {
   ui.style.cssText  = `position:absolute;left:${(rw-pw)/2}px;top:${(rh-ph)/2}px;width:${pw}px;height:${ph}px;pointer-events:none;`;
 }
 resize(); addEventListener('resize', resize);
-setTimeout(resize,100);setTimeout(resize,500);
 
 // ═══════════════════════════════════════════════════════
 //  DATA
