@@ -95,6 +95,54 @@ def render(market, nw):
 </div>""", unsafe_allow_html=True)
 
 
+        # ── 던전런 이번 주 TOP 5 ──
+        st.markdown("---")
+        st.markdown("### 🗡️ 이번 주 던전런 최고 점수 TOP 5")
+        from datetime import timedelta
+        now_kst = datetime.now(KST)
+        week_start = (now_kst - timedelta(days=now_kst.weekday())).replace(hour=0,minute=0,second=0,microsecond=0)
+        dungeon_scores = []
+        for uid_r, udata in users_all.items():
+            if uid_r == "admin": continue
+            ds = udata.get('dungeon_stats', {})
+            weekly = udata.get('dungeon_weekly', {})
+            # 주간 기록이 있으면 주간 점수, 없으면 최고점수로 fallback
+            ws = weekly.get('score', 0)
+            ww = weekly.get('week_start', '')
+            score = ws if ww == week_start.strftime('%Y-%m-%d') else ds.get('best_score', 0)
+            if score > 0:
+                dungeon_scores.append({
+                    'uid': uid_r,
+                    'title': udata.get('equipped_title', '🌱 신규시민'),
+                    'score': score,
+                    'kills': weekly.get('kills', ds.get('best_kills', 0)) if ww == week_start.strftime('%Y-%m-%d') else ds.get('best_kills', 0),
+                    'clears': ds.get('clears', 0),
+                })
+        dungeon_scores.sort(key=lambda x: x['score'], reverse=True)
+        d_medals = ["🥇","🥈","🥉","4위","5위"]
+        if dungeon_scores:
+            for i, d in enumerate(dungeon_scores[:5]):
+                me = "🫵" if d['uid'] == st.session_state.logged_in_user else ""
+                col = "#FFD600" if i==0 else "#C0C0C0" if i==1 else "#CD7F32" if i==2 else "#00E5FF"
+                s_du = html.escape(d['uid'])
+                s_dt = html.escape(d['title'])
+                st.markdown(f"""
+<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,0.15);border-radius:12px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;'>
+  <div style='display:flex;align-items:center;gap:10px;'>
+    <span style='font-size:1.3rem;'>{d_medals[i]}</span>
+    <div>
+      <span style='font-weight:900;color:#CBD5E1;margin-right:6px;'>{s_du} {me}</span>
+      <span style='color:#888;font-size:0.82rem;'>{s_dt}</span>
+    </div>
+  </div>
+  <div style='text-align:right;'>
+    <div style='font-weight:900;color:{col};font-size:1rem;'>🗡️ {d["score"]:,}점</div>
+    <div style='font-size:0.8rem;color:#666;'>킬 {d["kills"]} · 클리어 {d["clears"]}회</div>
+  </div>
+</div>""", unsafe_allow_html=True)
+        else:
+            st.info("이번 주 던전런 기록이 없습니다. 지금 바로 도전해보세요! ⚔️")
+
     # ==========================================
     # 💬 탭 2: 게시판 로직 (완벽 개편)
     # ==========================================
