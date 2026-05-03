@@ -11,8 +11,8 @@ GAME_HTML = r"""<!DOCTYPE html>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{--red:#ff2244;--blue:#33aaff;--gold:#f5c518;--green:#00ff88;--purple:#c04fff;--cyan:#00d4ff;--orange:#ff7700;--bg:#08030f;--glass:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);}
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;}
-#root{position:relative;width:100vw;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+html,body{width:100%;height:728px;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;}
+#root{position:relative;width:100%;height:728px;overflow:hidden;display:flex;flex-direction:column;}
 
 /* HUD */
 #hud{display:flex;align-items:center;gap:8px;padding:10px 12px 6px;background:linear-gradient(180deg,rgba(0,0,0,.9)0%,transparent 100%);pointer-events:none;position:relative;z-index:50;}
@@ -114,10 +114,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 /* OVERLAY (title/end) */
 #overlay{position:absolute;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.93);}
-.ov-box{text-align:center;padding:30px 22px;background:linear-gradient(160deg,rgba(8,3,15,.98),rgba(14,6,24,.98));border:1px solid rgba(192,79,255,.22);border-radius:20px;min-width:340px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.ov-box{text-align:center;padding:30px 22px;background:linear-gradient(160deg,rgba(8,3,15,.98),rgba(14,6,24,.98));border:1px solid rgba(192,79,255,.22);border-radius:20px;min-width:340px;max-width:95vw;max-height:680px;overflow-y:auto;}
 .ov-eye{font-size:7px;letter-spacing:4px;color:var(--purple);background:rgba(192,79,255,.1);border:1px solid rgba(192,79,255,.22);border-radius:99px;padding:3px 12px;display:inline-block;margin-bottom:12px;}
 .ov-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(22px,5.5vw,36px);letter-spacing:3px;line-height:1.1;margin-bottom:4px;}
-.ov-sub{font-size:8px;color:#334;letter-spacing:4px;margin-bottom:14px;}
+.ov-sub{font-size:8px;color:#aab;letter-spacing:4px;margin-bottom:14px;}
 .char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;}
 .cc{padding:10px 5px;background:var(--glass);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .18s;text-align:center;position:relative;}
 .cc:hover{border-color:rgba(0,212,255,.35);}
@@ -202,12 +202,14 @@ const cWrap=document.getElementById('canvas-wrap');
 
 let CW=560,CH=380,SC=1;
 function resize(){
-  const w=cWrap.clientWidth,h=cWrap.clientHeight;
+  const w=cWrap.clientWidth||window.innerWidth||560;
+  const h=cWrap.clientHeight||window.innerHeight||380;
   SC=Math.min(w/CW,h/CH);
   canvas.width=CW;canvas.height=CH;
   canvas.style.width=(CW*SC)+'px';canvas.style.height=(CH*SC)+'px';
   canvas.style.left=((w-CW*SC)/2)+'px';canvas.style.top=((h-CH*SC)/2)+'px';
 }
+setTimeout(resize,100);setTimeout(resize,500);
 resize();window.addEventListener('resize',resize);
 
 const KEYS={};
