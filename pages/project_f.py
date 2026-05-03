@@ -1140,7 +1140,9 @@ document.getElementById('gc').addEventListener('touchend',e=>{
 // ═══════════════════════════════════════════════════════
 //  BOOT
 // ═══════════════════════════════════════════════════════
-showTitle();
+initGame();
+G.run = true;
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>"""
