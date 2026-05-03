@@ -447,6 +447,18 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 /* 이동 경로 하이라이트 */
 .cell.path-highlight{filter:brightness(1.6) !important;z-index:6 !important;}
 
+/* ── 이어하기 팝업 ── */
+#resume-popup{position:fixed;inset:0;z-index:999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);}
+.resume-card{background:linear-gradient(160deg,#0d1525,#080d1a);border:1.5px solid rgba(255,215,0,.35);border-radius:22px;padding:32px 36px;text-align:center;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.8),0 0 60px rgba(255,215,0,.08);}
+.resume-title{font-family:'Black Han Sans',sans-serif;font-size:1.5rem;background:linear-gradient(135deg,#ffd700,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:3px;margin-bottom:8px;}
+.resume-sub{font-size:.72rem;color:var(--text3);letter-spacing:2px;margin-bottom:20px;}
+.resume-info{font-size:.85rem;color:var(--gold2);background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.18);border-radius:10px;padding:10px 18px;margin-bottom:22px;}
+.resume-btns{display:flex;gap:10px;}
+.resume-btn-yes{flex:1.5;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:12px;color:#fff;font-family:'Black Han Sans',sans-serif;font-size:1rem;letter-spacing:2px;padding:13px;cursor:pointer;transition:all .2s;}
+.resume-btn-yes:hover{transform:translateY(-2px);}
+.resume-btn-no{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;color:var(--text3);font-size:.85rem;padding:13px;cursor:pointer;transition:all .2s;}
+.resume-btn-no:hover{background:rgba(255,255,255,.1);}
+
 /* 도착 셀 강조 */
 .cell.landing-cell{animation:landingGlow 0.6s ease-out !important;z-index:7 !important;}
 @keyframes landingGlow{0%{filter:brightness(2.5) saturate(2);}100%{filter:brightness(1);}}
@@ -456,6 +468,19 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 <div class="bg-mesh"></div>
 <div class="star-field" id="star-field"></div>
 <div id="toast-container"></div>
+
+<!-- 이어하기 팝업 -->
+<div id="resume-popup">
+  <div class="resume-card">
+    <div class="resume-title">💾 이전 게임 발견!</div>
+    <div class="resume-sub">저장된 게임이 있습니다</div>
+    <div class="resume-info" id="resume-info">불러오는 중...</div>
+    <div class="resume-btns">
+      <button class="resume-btn-yes" onclick="resumeGame()">▶ 이어서 하기</button>
+      <button class="resume-btn-no" onclick="dismissResume()">새 게임</button>
+    </div>
+  </div>
+</div>
 
 <!-- CHARACTER SELECT -->
 <div id="char-select">
@@ -1693,7 +1718,94 @@ function spawnFireworks(){
   for(let fw=0;fw<6;fw++){setTimeout(()=>{const x=20+Math.random()*60,y=10+Math.random()*50;const colors=['#ffd700','#ff4560','#4dabf7','#10d96e','#b26cf7'];const color=colors[Math.floor(Math.random()*colors.length)];for(let i=0;i<20;i++){const p=document.createElement('div');const angle=(i/20)*Math.PI*2,dist=60+Math.random()*80,dur=0.6+Math.random()*0.6;p.style.cssText=`position:absolute;left:${x}%;top:${y}%;width:5px;height:5px;border-radius:50%;background:${color};animation:sparkleFly ${dur}s ease-out forwards;--dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist}px;`;bg.appendChild(p);setTimeout(()=>p.remove(),(dur+0.1)*1000);}},fw*500);}
 }
 
-window.addEventListener('DOMContentLoaded',()=>{initStars();renderCharGrid();});
+// ═══════════════════════════════════════════════════════════
+//  💾 게임 중간 저장 & 이어하기
+// ═══════════════════════════════════════════════════════════
+const SAVE_KEY = 'marble_save_v1';
+
+function saveGame() {
+  if (!G || G.phase === 'gameover') return;
+  try {
+    const snap = {
+      G: JSON.parse(JSON.stringify(G)),
+      selectedCharId: selectedChar ? selectedChar.id : null,
+      boardSize,
+      ts: Date.now(),
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(snap));
+  } catch(e) {}
+}
+
+function hasSave() {
+  try { return !!localStorage.getItem(SAVE_KEY); } catch(e) { return false; }
+}
+
+function deleteSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
+function resumeGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const snap = JSON.parse(raw);
+    G = snap.G;
+    selectedChar = snap.selectedCharId !== null ? CHARACTERS[snap.selectedCharId] : CHARACTERS[0];
+    boardSize = snap.boardSize || 560;
+    document.getElementById('resume-popup').style.display = 'none';
+    document.getElementById('char-select').style.display = 'none';
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('game').style.display = 'flex';
+    setTimeout(() => {
+      buildBoard();
+      log('📂 이전 게임을 이어서 시작합니다!', 'important');
+      renderAll();
+      setTimeout(checkBotTurn, 800);
+    }, 60);
+  } catch(e) { deleteSave(); }
+}
+
+function dismissResume() {
+  deleteSave();
+  document.getElementById('resume-popup').style.display = 'none';
+}
+
+// 자동 저장: 매 턴 변경 시
+const _origNextTurn = nextTurn;
+function nextTurn() {
+  _origNextTurn();
+  saveGame();
+}
+
+// 게임 오버 시 저장 삭제
+const _origShowGameOver = showGameOver;
+function showGameOver() {
+  deleteSave();
+  _origShowGameOver();
+}
+
+// 새 게임 시작 시 저장 삭제
+const _origResetToChar = resetToChar;
+function resetToChar() {
+  deleteSave();
+  _origResetToChar();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initStars();
+  renderCharGrid();
+  // 저장된 게임이 있으면 이어하기 팝업 표시
+  if (hasSave()) {
+    try {
+      const snap = JSON.parse(localStorage.getItem(SAVE_KEY));
+      const ageMin = Math.round((Date.now() - (snap.ts || 0)) / 60000);
+      const p0 = snap.G && snap.G.players ? snap.G.players[0] : null;
+      const infoTxt = p0 ? `${p0.char.emoji} ${p0.name} · ₩${(p0.money||0).toLocaleString()} · ${ageMin}분 전` : '이전 게임';
+      document.getElementById('resume-info').textContent = infoTxt;
+      document.getElementById('resume-popup').style.display = 'flex';
+    } catch(e) { deleteSave(); }
+  }
+});
 </script>
 </body>
 </html>
