@@ -1660,6 +1660,52 @@ def render():
             </div>
             """, unsafe_allow_html=True)
 
+            # ── 타임어택 모드 ──────────────────────────────
+            st.markdown("""
+            <div style='background:linear-gradient(135deg,#0a0f0a,#0c1a10);border:2px solid rgba(57,255,20,0.5);
+              border-radius:16px;padding:20px 24px;margin-bottom:20px;'>
+              <div style='font-family:"Orbitron",sans-serif;font-size:1rem;color:#39ff14;letter-spacing:4px;margin-bottom:8px;'>⏱ TIME ATTACK MODE</div>
+              <div style='font-size:0.8rem;color:#4a9a4a;margin-bottom:12px;'>전체 10스테이지를 얼마나 빠르게 클리어할 수 있는가? 최속 기록에 도전하라!</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 타임어택 기록 표시
+            ta_best = st.session_state.get('ta_best_time', 0)
+            if ta_best > 0:
+                bm, bs = divmod(int(ta_best), 60)
+                st.markdown(f"""
+                <div style='background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.3);border-radius:10px;
+                  padding:10px 18px;font-family:monospace;font-size:0.9rem;color:#39ff14;margin-bottom:10px;text-align:center;'>
+                  🏅 내 최속 기록: <b>{bm:02d}분 {bs:02d}초</b>
+                </div>
+                """, unsafe_allow_html=True)
+
+            col_ta1, col_ta2 = st.columns(2)
+            with col_ta1:
+                if st.button("⚡ 타임어택 시작!", key="ta_start", use_container_width=True):
+                    st.session_state['ta_mode'] = True
+                    st.session_state['ta_start_time'] = time.time()
+                    st.session_state['ta_stage'] = 1
+                    # 클리어 기록 초기화 (타임어택 전용)
+                    st.session_state['ta_cleared'] = set()
+                    init_terminal(1)
+                    st.session_state.terminal['at_select'] = False
+                    st.session_state.terminal['output'] = [
+                        "╔══════════════════════════════════════════╗",
+                        "║       ⏱  TIME ATTACK MODE START!        ║",
+                        "╚══════════════════════════════════════════╝",
+                        "",
+                        "  전체 10스테이지 최속 클리어에 도전!",
+                        "  STAGE 1 — 버려진 서버실",
+                        "─" * 44,
+                    ]
+                    st.rerun()
+            with col_ta2:
+                if ta_best > 0:
+                    st.caption(f"최속: {bm:02d}:{bs:02d}")
+                else:
+                    st.caption("기록 없음")
+
         for snum, sdata in STAGES.items():
             cleared = snum in st.session_state.terminal_cleared
             locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
@@ -1725,6 +1771,20 @@ def render():
     elapsed    = int(time.time() - t.get("start_time", time.time()))
     mins, secs = divmod(elapsed, 60)
     hint_warn  = t.get("hint_used", 0) >= 3
+
+    # 타임어택 모드 HUD
+    if st.session_state.get('ta_mode'):
+        ta_elapsed = int(time.time() - st.session_state.get('ta_start_time', time.time()))
+        ta_m, ta_s = divmod(ta_elapsed, 60)
+        st.markdown(f"""
+        <div style='background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.4);border-radius:8px;
+          padding:6px 16px;margin-bottom:8px;display:flex;justify-content:space-between;
+          font-family:monospace;font-size:0.82rem;'>
+          <span style='color:#39ff14;font-weight:700;'>⚡ TIME ATTACK</span>
+          <span style='color:#39ff14;'>총 경과: <b>{ta_m:02d}:{ta_s:02d}</b></span>
+          <span style='color:#4a9a4a;'>STAGE {stage_num}/10</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     col_l, col_r = st.columns([4, 1])
     with col_l:
@@ -1956,17 +2016,20 @@ def render():
         col_sel, col_next = st.columns(2)
         with col_sel:
             if st.button("◀ 스테이지 목록", use_container_width=True, key="to_list"):
+                st.session_state.pop('ta_mode', None)
                 st.session_state.terminal["at_select"] = True
                 st.rerun()
         with col_next:
             next_s = stage_num + 1
             if next_s in STAGES:
-                if st.button(
-                    f"▶ STAGE {next_s} 도전 →",
-                    use_container_width=True, type="primary", key="next_stage"
-                ):
+                # 타임어택 모드: 자동 다음 스테이지 진행 버튼
+                ta_label = f"⚡ [TA] STAGE {next_s} 즉시 돌입 →" if st.session_state.get('ta_mode') else f"▶ STAGE {next_s} 도전 →"
+                if st.button(ta_label, use_container_width=True, type="primary", key="next_stage"):
+                    if st.session_state.get('ta_mode'):
+                        st.session_state['ta_stage'] = next_s
                     init_terminal(next_s)
                     ns = STAGES[next_s]
+                    ta_hud = f"  ⏱ 타임어택 경과: {int((time.time()-st.session_state.get('ta_start_time',time.time()))//60):02d}:{int((time.time()-st.session_state.get('ta_start_time',time.time()))%60):02d}" if st.session_state.get('ta_mode') else ""
                     st.session_state.terminal["output"] = [
                         "HYOMIN NETWORKS — Secure Shell v2.26.0",
                         f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
@@ -1978,6 +2041,7 @@ def render():
                         "",
                         f"  📋 목표: {ns['goal']}",
                         f"  ⚠️  {ns.get('flavor', '')}",
+                        ta_hud,
                         "",
                         "  `help` 명령어 목록   `hint` 힌트 보기",
                         "─" * 44,
@@ -1985,17 +2049,38 @@ def render():
                     st.session_state.terminal["at_select"] = False
                     st.rerun()
             else:
-                st.markdown("""
-                <div style='
-                  color:#ffd700; font-family:monospace; text-align:center;
-                  padding:14px; border:1px solid #ffd700; border-radius:6px;
-                  font-size:1rem; letter-spacing:2px;
-                '>
-                  🏆 10 STAGES COMPLETE<br>
-                  <span style='font-size:0.8rem; color:#a07000;'>
-                    당신은 진짜 해커다.
-                  </span>
-                </div>
-                """, unsafe_allow_html=True)
+                # 타임어택 최종 클리어 처리
+                if st.session_state.get('ta_mode'):
+                    ta_total = time.time() - st.session_state.get('ta_start_time', time.time())
+                    tm, ts = divmod(int(ta_total), 60)
+                    prev_best = st.session_state.get('ta_best_time', 0)
+                    is_new_record = (prev_best == 0 or ta_total < prev_best)
+                    if is_new_record:
+                        st.session_state['ta_best_time'] = ta_total
+                    st.markdown(f"""
+                    <div style='text-align:center;padding:16px;background:linear-gradient(135deg,rgba(57,255,20,0.15),rgba(0,212,255,0.1));
+                      border:2px solid #39ff14;border-radius:12px;margin-bottom:12px;font-family:monospace;'>
+                      <div style='color:#39ff14;font-size:1.2rem;font-weight:900;letter-spacing:3px;'>⏱ TIME ATTACK CLEAR!</div>
+                      <div style='color:#00ff88;font-size:2rem;font-weight:900;margin:8px 0;'>{tm:02d}:{ts:02d}</div>
+                      {'<div style="color:#ffd700;font-size:0.9rem;">🏅 NEW RECORD!</div>' if is_new_record else f'<div style="color:#4a9a4a;font-size:0.85rem;">이전 기록: {int(prev_best//60):02d}:{int(prev_best%60):02d}</div>'}
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.session_state.pop('ta_mode', None)
+                    if st.button("↩ 타이틀로", use_container_width=True, key="ta_done"):
+                        st.session_state.terminal["at_select"] = True
+                        st.rerun()
+                else:
+                    st.markdown("""
+                    <div style='
+                      color:#ffd700; font-family:monospace; text-align:center;
+                      padding:14px; border:1px solid #ffd700; border-radius:6px;
+                      font-size:1rem; letter-spacing:2px;
+                    '>
+                      🏆 10 STAGES COMPLETE<br>
+                      <span style='font-size:0.8rem; color:#a07000;'>
+                        당신은 진짜 해커다.
+                      </span>
+                    </div>
+                    """, unsafe_allow_html=True)
 
     st.markdown(TERMINAL_JS, unsafe_allow_html=True)
