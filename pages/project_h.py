@@ -403,11 +403,27 @@ function doAtk(f,moveKey,opp){
 
 function applyHit(atk,def,dmg,kb,stun,skipState){
   if(def.state==='ko'||def.hitCD>0||def.invT>0)return;
-  // Guard
+  // ── 퍼펙트 가드 / 카운터 ──
+  // 가드 버튼을 공격 직전 12프레임 내에 눌렀으면 퍼펙트 가드
   if(def.blocking&&def.blockT>0){
     const move=atk.curMove;
     const isLow=move&&move.low;
     if(!isLow||def.blockLow){
+      // 퍼펙트 가드 판정: blockT가 높을수록(방금 눌렀을수록) 퍼펙트
+      const isPerfect = def.blockT >= 18; // 18프레임 이내 = 퍼펙트
+      if(isPerfect){
+        // 피해 0 + 카운터 데미지
+        const ctrDmg = Math.round(dmg * 0.4);
+        atk.hp=Math.max(0,atk.hp-ctrDmg);
+        def.vx=0;
+        spawnP(def.x,def.y,{n:22,col:['#00ffcc','#ffffff','#44ffff'],glow:true,vMax:8,szMax:10});
+        spawnHN(def.x,def.y-48,'⚡ PERFECT!','#00ffcc');
+        spawnHN(atk.x,atk.y-38,'-'+ctrDmg+'','#ff4444');
+        atk.hitstop=8;def.hitstop=8;
+        atk.super=Math.min(100,atk.super+3);def.super=Math.min(100,def.super+8);
+        triggerHPGhost(atk);triggerHPGhost(def);return;
+      }
+      // 일반 가드
       def.hp=Math.max(0,def.hp-Math.round(dmg*.1));
       def.vx=atk.facing*2;
       spawnP(def.x,def.y,{n:5,col:'rgba(180,220,255,.7)',glow:true,vMax:3});
