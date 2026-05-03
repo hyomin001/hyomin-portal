@@ -239,7 +239,7 @@ function ghostDraw(ctx, frame){
   const gx = ghostBest.frames[Math.min(frame, ghostBest.frames.length-1)];
   ghostX += (gx - ghostX) * 0.35;
   const car = CARS[selCar];
-  const cx = canvas.width/2, cy = canvas.height, ch = cy;
+  const cx = gc.width/2, cy = gc.height, ch = cy;
   const carH = 72, carW = 32;
   const PLAYER_Y = ch * 0.75;
   ctx.save();
