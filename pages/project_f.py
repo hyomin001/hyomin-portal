@@ -336,14 +336,15 @@ function update(){
 
   // Lane switch — only when not already moving
   const car=CARS[selCar];
-  if(L&&!lastL&&!G.laneMoving){
+  const slip = G._slipFactor !== undefined ? G._slipFactor : 1.0;
+  if(L&&!lastL&&!G.laneMoving&&Math.random()<slip){
     if(G.lane>0){G.lane--; G.targetX=LANE_CX[G.lane]; G.laneMoving=true; G.laneDir=-1;}
     else showBanner('WALL!','#ff2255');
-  }
-  if(R&&!lastR&&!G.laneMoving){
+  } else if(L&&!lastL&&Math.random()>=slip){ showBanner('🌧️ 미끄러짐!','#44aaff'); }
+  if(R&&!lastR&&!G.laneMoving&&Math.random()<slip){
     if(G.lane<LANE_COUNT-1){G.lane++; G.targetX=LANE_CX[G.lane]; G.laneMoving=true; G.laneDir=1;}
     else showBanner('WALL!','#ff2255');
-  }
+  } else if(R&&!lastR&&Math.random()>=slip){ showBanner('🌧️ 미끄러짐!','#44aaff'); }
   lastL=L; lastR=R;
 
   // Smooth lane slide
@@ -380,6 +381,28 @@ function update(){
   G.dashOff= (G.dashOff + G.speed*dt*0.55) % 120;
   G.bgY    = (G.bgY + G.speed*dt*0.12) % BH;       // parallax bg
   G.dist  += G.speed * dt * 0.00028;
+
+  // ── 날씨/노면 환경 변화 ──────────────────────────────
+  if(!G.weatherTimer) G.weatherTimer = 0;
+  G.weatherTimer += dt;
+  // 매 30초마다 날씨 전환
+  if(G.weatherTimer > 30) {
+    G.weatherTimer = 0;
+    const weathers = ['clear','rain','fog'];
+    const cur = G.weather || 'clear';
+    const next = weathers.filter(w=>w!==cur)[Math.floor(Math.random()*(weathers.length-1))];
+    G.weather = next;
+    if(next==='rain') showBanner('🌧️ 빗길! 미끄러움 주의','#44aaff');
+    else if(next==='fog') showBanner('🌫️ 안개 발생! 시야 제한','#aabbcc');
+    else showBanner('☀️ 날씨 맑음','#ffdd44');
+  }
+  // 빗길 미끄러짐 효과: 조작 입력 일부 흡수
+  G._slipFactor = (G.weather==='rain') ? 0.65 : 1.0;
+  // 빗방울 파티클
+  if(G.weather==='rain' && Math.random()<0.4) {
+    const rx = Math.random()*BW;
+    particles.push({x:rx,y:0,vx:-1,vy:18+Math.random()*8,life:1,col:'rgba(100,180,255,0.55)',sz:1.5,isRain:true});
+  }
 
   // Move traffic (they travel DOWN the screen toward player)
   for(const tc of G.traffic){
@@ -892,6 +915,24 @@ function render(){
     nv.addColorStop(0,'transparent');
     nv.addColorStop(1,car.col+'18');
     ctx.fillStyle=nv; ctx.fillRect(0,0,BW,BH);
+  }
+
+  // ── 날씨 오버레이 ──
+  if(G.weather==='rain'){
+    // 빗방울 렌더링
+    for(const p of particles){
+      if(!p.isRain) continue;
+      ctx.save();
+      ctx.globalAlpha=Math.max(0,p.life)*0.7;
+      ctx.strokeStyle=p.col; ctx.lineWidth=p.sz;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-2,p.y+8); ctx.stroke();
+      ctx.restore();
+      p.x+=p.vx; p.y+=p.vy; p.life-=0.04;
+    }
+    // 빗길 화면 틴트
+    ctx.save(); ctx.globalAlpha=0.10; ctx.fillStyle='#2255aa'; ctx.fillRect(0,0,BW,BH); ctx.restore();
+  } else if(G.weather==='fog'){
+    ctx.save(); ctx.globalAlpha=0.22; ctx.fillStyle='#ccddee'; ctx.fillRect(0,0,BW,BH); ctx.restore();
   }
 
   if(G.shake>0) ctx.restore();
