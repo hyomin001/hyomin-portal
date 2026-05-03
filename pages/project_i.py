@@ -58,7 +58,10 @@ canvas{position:absolute;top:0;left:0;}
 /* SCOPE */
 #scope-wrap{position:absolute;inset:0;z-index:50;pointer-events:none;display:none;}
 #scope-bg{position:absolute;inset:0;background:rgba(0,0,0,.9);}
-#scope-lens{position:absolute;border-radius:50%;overflow:hidden;left:50%;top:50%;transform:translate(-50%,-50%);border:3px solid rgba(0,200,0,.55);box-shadow:0 0 0 2000px rgba(0,0,0,.9);}
+#scope-lens{position:absolute;border-radius:50%;overflow:hidden;left:50%;top:50%;transform:translate(-50%,-50%);border:3px solid rgba(0,200,0,.55);box-shadow:0 0 0 2000px rgba(0,0,0,.9);width:280px;height:280px;}
+/* 경보 레벨 */
+#alert-strip{position:absolute;top:0;left:0;right:0;height:5px;z-index:201;pointer-events:none;opacity:0;transition:opacity .3s,background .4s;}
+#alert-lbl{position:absolute;top:5px;left:50%;transform:translateX(-50%);z-index:201;pointer-events:none;font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:3px;padding:2px 14px;border-radius:0 0 6px 6px;background:rgba(0,0,0,.75);opacity:0;transition:opacity .3s;white-space:nowrap;}
 #scope-cv{display:block;}
 #scope-ui{position:absolute;inset:0;pointer-events:none;}
 /* Sway container */
@@ -208,6 +211,8 @@ canvas{position:absolute;top:0;left:0;}
   <div id="rl-ring"><canvas id="rl-cv" width="52" height="52"></canvas><div id="rl-txt">장전중...</div></div>
 
   <div id="killfeed"></div>
+  <div id="alert-strip"></div>
+  <div id="alert-lbl"></div>
   <div id="slowmo-frame"></div>
   <div id="slowmo-lbl">SLOW MOTION</div>
 
@@ -297,6 +302,9 @@ const WEATHERS = [
 // ================================================================
 let G = { running: false, diffLv: 1 };
 let PARTS = [], HITS = [];
+let alertLevel = 0;        // 0=평온 1=경계 2=고경계 3=봉쇄
+let alertDecayTimer = 0;
+let _totalReinforced = 0;  // 증원된 표적 수
 
 // ================================================================
 //  INIT
@@ -323,6 +331,7 @@ function initGame(){
     sessionStats: { headshots:0, bodyshots:0, misses:0, longestShot:0 },
   };
   PARTS=[]; HITS=[];
+  alertLevel=0; alertDecayTimer=0; _totalReinforced=0;
   drawStaticBg();
   buildAmmoDisplay();
   setWind();
@@ -591,6 +600,11 @@ function fire(){
     G.bullets.push({x:originX, y:originY, tx:hitX, ty:hitY, life:1});
   }
 
+  // 총성 → 경보 레벨 상승
+  alertLevel = Math.min(3, alertLevel + 1);
+  alertDecayTimer = 480; // ~8초
+  updateAlertHUD();
+
   // Muzzle flash
   spawnP(originX,originY,{n:5,col:[w.col,'#fff'],vMin:2,vMax:5,dMin:.08,dMax:.12,glow:true});
 
@@ -612,6 +626,31 @@ function switchWeapon(idx){
   G.wIdx=idx;
   document.getElementById('weapon-name').textContent=WDEFS[idx].name;
   buildAmmoDisplay();
+}
+
+// ================================================================
+//  ALERT LEVEL HUD
+// ================================================================
+function updateAlertHUD(){
+  const strip=document.getElementById('alert-strip');
+  const lbl=document.getElementById('alert-lbl');
+  const root=document.getElementById('root');
+  const msgs=['','⚠️ 경계 — 적이 움직임을 감지했다','🔴 고경계 — 증원 요청 중','🚨 봉쇄 — 전군 응전!'];
+  const cols=['','rgba(255,140,0,1)','rgba(255,50,0,1)','rgba(255,0,50,1)'];
+  const shadows=['','inset 0 0 20px rgba(255,140,0,.25)','inset 0 0 32px rgba(255,50,0,.35)','inset 0 0 50px rgba(255,0,50,.5)'];
+  if(strip){
+    strip.style.opacity = alertLevel>0 ? '1':'0';
+    strip.style.background = cols[alertLevel]||'transparent';
+    // 점멸 효과 (고경계 이상)
+    if(alertLevel>=2){ strip.style.animation='alertBlink .6s infinite'; }
+    else strip.style.animation='none';
+  }
+  if(lbl){
+    lbl.style.opacity = alertLevel>0 ? '1':'0';
+    lbl.style.color = cols[alertLevel]||'transparent';
+    lbl.textContent = msgs[alertLevel]||'';
+  }
+  if(root){ root.style.boxShadow = shadows[alertLevel]||'none'; }
 }
 
 // ================================================================
@@ -648,6 +687,19 @@ function checkClear(){
     const bonus=(G.mIdx+1)*700;
     G.score+=bonus;
     G.cleared.push(G.mIdx);
+
+    // ── 등급 산출 (마지막 미션 클리어 시) ──
+    if(G.mIdx===MISSIONS.length-1){
+      const headRatio = G.totalKills>0 ? G.sessionStats.headshots/G.totalKills : 0;
+      const silent = alertLevel===0; // 무소음 여부
+      const missRatio = (G.sessionStats.misses||0)/(Math.max(1,G.totalKills+G.sessionStats.misses));
+      let grade='B';
+      if(headRatio>=0.6 && silent && missRatio<0.3) grade='S';
+      else if(headRatio>=0.4 && alertLevel<=1 && missRatio<0.5) grade='A';
+      G._finalGrade=grade;
+      const gradeReward={S:1000000,A:500000,B:200000};
+      try{window.parent.postMessage({type:'sniper_result',grade,reward:gradeReward[grade],score:G.score},'*');}catch(e){}
+    }
     const mc=document.getElementById('mc-banner');
     document.getElementById('mc-big').textContent=G.mIdx<MISSIONS.length-1?'✅ 미션 클리어!':'🏆 전 임무 완료!';
     document.getElementById('mc-sub').textContent=`+${bonus.toLocaleString()} 보너스 / 다음 미션 준비 중`;
@@ -662,13 +714,20 @@ function checkClear(){
 
 function showResult(victory){
   G.running=false;
+  alertLevel=0; updateAlertHUD();
   const best=Math.max(G.score,parseInt(localStorage.getItem('snipeBest')||'0'));
   localStorage.setItem('snipeBest',best);
+  const grade=G._finalGrade||'B';
+  const gradeColor={S:'var(--gold)',A:'var(--green)',B:'var(--cyan)'}[grade]||'var(--cyan)';
+  const gradeReward={S:'100만원',A:'50만원',B:'20만원'}[grade];
+  const gradeDesc={S:'무소음·헤드샷 달인 🏆',A:'숙련 저격수 ⭐',B:'임무 완료 ✅'}[grade]||'';
+  const gradeHTML=victory?`<div style="margin:10px 0;padding:10px;background:rgba(255,255,255,.04);border:1px solid ${gradeColor}55;border-radius:10px;"><div style="font-family:'Black Han Sans',sans-serif;font-size:28px;color:${gradeColor};">${grade} 등급</div><div style="font-size:9px;color:#667;margin-top:2px;">${gradeDesc}</div><div style="font-size:10px;color:var(--gold);margin-top:4px;">💰 포털 보상: ${gradeReward}</div></div>`:'';
   const ov=document.getElementById('overlay');
   ov.innerHTML=`<div class="ov-box">
     <div class="ov-eye">${victory?'ALL MISSIONS CLEARED':'MISSION FAILED'}</div>
     <div class="ov-title" style="color:${victory?'var(--gold)':'var(--red)'}">${victory?'🏆 임무 완료!':'⏱️ 실패!'}</div>
     <div class="ov-sub">${victory?'MISSION COMPLETE':'TIME OVER'}</div>
+    ${gradeHTML}
     <div class="stats-row">
       <div class="sc"><div class="sv" style="color:var(--gold)">${G.score.toLocaleString()}</div><div class="sl">점수</div></div>
       <div class="sc"><div class="sv">${G.totalKills}</div><div class="sl">처치</div></div>
@@ -688,6 +747,34 @@ function showResult(victory){
 function update(){
   if(!G.running || G.missionComplete) return;
   G.frame++;
+
+  // ── 경보 레벨 처리 ──
+  if(alertDecayTimer>0){ alertDecayTimer--; }
+  else if(alertLevel>0){ alertLevel=Math.max(0,alertLevel-1); updateAlertHUD(); }
+  // 경보 2이상: 표적 이동속도 소폭 증가
+  if(alertLevel>=2){
+    G.targets.forEach(t=>{if(t.alive&&t.spd>0) t.spd=Math.min(t.spd*1.0008,3.5);});
+  }
+  // 경보 3: 10초마다 증원 표적 1명 추가 (최대 3명까지)
+  if(alertLevel>=3 && G.frame%600===0 && _totalReinforced<3){
+    const W=canvas.width,H=canvas.height;
+    const t_extra=TTYPES[Math.floor(Math.random()*TTYPES.length)];
+    const side=Math.floor(Math.random()*4);
+    let rx,ry;
+    if(side===0){rx=W*.1+Math.random()*W*.8;ry=-40;}
+    else if(side===1){rx=W+40;ry=H*.2+Math.random()*H*.6;}
+    else if(side===2){rx=W*.1+Math.random()*W*.8;ry=H+40;}
+    else{rx=-40;ry=H*.2+Math.random()*H*.6;}
+    G.targets.push({
+      x:rx,y:ry,baseX:rx,baseY:ry,
+      sz:t_extra.sz+4,emoji:'🪖',pts:t_extra.pts,head:t_extra.head,body:t_extra.body,label:'증원병',
+      spd:1.4,phase:Math.random()*Math.PI*2,amp:W*.08,
+      alive:true,flash:0,dist:150+Math.floor(Math.random()*200),
+      isBoss:false,alertLevel:1,vx:0,vy:0,patrolDir:1,
+    });
+    _totalReinforced++;
+    spawnHit(canvas.width/2,canvas.height/2,'🚨 증원 도착!','#ff2244');
+  }
 
   // Kill chain decay
   if(G.chainTimer>0) G.chainTimer--;
@@ -822,9 +909,14 @@ function drawScope(){
   const zoom = WDEFS[G.wIdx].zoom;
   const SW=280, SH=280;
   const srcW=W/zoom, srcH=H/zoom;
-  const srcX=G.scopeX-srcW/2, srcY=G.scopeY-srcH/2;
-  // Draw bg
-  sCtx.drawImage(bgc, srcX, srcY, srcW, srcH, 0, 0, SW, SH);
+  // 좌표 클램핑 → 화면 끝에서도 까맣게 되지 않도록
+  const rawX=G.scopeX-srcW/2, rawY=G.scopeY-srcH/2;
+  const srcX=Math.max(0,Math.min(W-srcW, rawX));
+  const srcY=Math.max(0,Math.min(H-srcH, rawY));
+  // 1) 정적 배경 (bgc)
+  try{ sCtx.drawImage(bgc, srcX, srcY, srcW, srcH, 0, 0, SW, SH); }catch(e){}
+  // 2) 게임 캔버스(표적·파티클) 를 그 위에 합성
+  try{ sCtx.drawImage(canvas, srcX, srcY, srcW, srcH, 0, 0, SW, SH); }catch(e){}
   // Draw targets in scope
   const scX=SW/srcW, scY=SH/srcH;
   G.targets.forEach(t=>{
