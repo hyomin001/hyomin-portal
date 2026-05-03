@@ -214,11 +214,20 @@ const KEYS={};
 window.addEventListener('keydown',e=>{
   KEYS[e.code]=true;
   if(!G.running)return;
+  // P1 attacks
   if(e.code==='KeyX'||e.code==='KeyJ')doAtk(P1,'punch',P2);
   if(e.code==='KeyC'||e.code==='KeyK')doAtk(P1,'kick',P2);
   if(e.code==='KeyB')doAtk(P1,'heavy',P2);
   if(e.code==='KeyV'||e.code==='KeyL')doAtk(P1,'special',P2);
   if(e.code==='KeyM')doAtk(P1,'super',P2);
+  // P2 attacks (VS 2P 모드)
+  if(vsMode){
+    if(e.code==='Numpad1'||e.code==='KeyU')doAtk(P2,'punch',P1);
+    if(e.code==='Numpad2'||e.code==='KeyI')doAtk(P2,'kick',P1);
+    if(e.code==='Numpad3'||e.code==='KeyO')doAtk(P2,'heavy',P1);
+    if(e.code==='Numpad0'||e.code==='KeyP')doAtk(P2,'special',P1);
+    if(e.code==='NumpadEnter'||e.code==='BracketLeft')doAtk(P2,'super',P1);
+  }
   ['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&e.preventDefault();
 });
 window.addEventListener('keyup',e=>KEYS[e.code]=false);
@@ -340,7 +349,8 @@ function tickParts(){
 //  GAME STATE
 // ================================================================
 let G={running:false},P1,P2;
-let selChar=0,diffLv=1;
+let selChar=0,selChar2=1,diffLv=1;
+let vsMode=false; // false=아케이드(CPU) true=2P대전
 let arcadeStage=0, p1StageWins=0, cpuStageWins=0, roundN=1, roundActive=false, roundTimer=0;
 let arcadeScore=0, arcadePerfects=0, arcadeMaxCombo=0;
 let superChargeMode=false; // for stage 6
@@ -569,6 +579,25 @@ function handlePlayerInput(p,opp){
   }
 }
 
+// P2 별도 입력 핸들러 (2P VS 모드)
+function handleP2Input(p,opp){
+  if(p.hitstop>0)return;
+  // P2: WASD 이동, E 점프
+  const gl=KEYS['KeyA']||p._tL;
+  const gr=KEYS['KeyD']||p._tR;
+  const gj=KEYS['KeyW']||KEYS['KeyE']||p._tJ;
+  const gd=KEYS['KeyS']||p._tDown;
+  const holdBack=(p.facing===1&&gl)||(p.facing===-1&&gr);
+  if(gd&&holdBack){p.blocking=true;p.blockT=4;p.blockLow=true;}
+  else if(holdBack&&p.onGround){p.blocking=true;p.blockT=4;p.blockLow=false;}
+  if(['idle','walk'].includes(p.state)){
+    if(gl){p.vx=-p.char.spd;p.state='walk';}
+    else if(gr){p.vx=p.char.spd;p.state='walk';}
+    else{p.vx*=.55;if(Math.abs(p.vx)<.5)p.state='idle';}
+    if(gj&&p.onGround){p.vy=-p.char.jump;p.onGround=false;p.state='jump';}
+  }
+}
+
 function updateProjs(){
   for(let i=PROJS.length-1;i>=0;i--){
     const pr=PROJS[i];pr.x+=pr.vx;pr.life--;
@@ -589,53 +618,54 @@ function updateProjs(){
 //  ROUND / STAGE SYSTEM
 // ================================================================
 function startRound(){
-  const stage=STAGES[arcadeStage];
+  const stage=vsMode?{cpuIdx:selChar2,ruleKey:'normal',rounds:3}:STAGES[arcadeStage];
   const cpuChar=CHARS[stage.cpuIdx];
   P1=makeF(selChar,false);P2=makeF(stage.cpuIdx,true);P2.facing=-1;
   PROJS=[];PARTS=[];HITS=[];
-  const maxRounds=stage.rounds;
   roundTimer=(stage.ruleKey==='timeKill'?60:99)*60;
   roundActive=true;
   document.getElementById('rnd-lbl').textContent='ROUND '+roundN;
   document.getElementById('fn-p1').textContent=CHARS[selChar].name;
-  document.getElementById('fn-p2').textContent=cpuChar.name;
+  document.getElementById('fn-p2').textContent=vsMode?'P2 · '+cpuChar.name:cpuChar.name;
   document.getElementById('fn-p2').style.color=cpuChar.col;
   document.getElementById('hf-p2').style.background=`linear-gradient(90deg,#ff0022,${cpuChar.col})`;
   document.getElementById('hg-p1').style.width='100%';
   document.getElementById('hg-p2').style.width='100%';
-  updateProgress();buildSuperBars();comboOff();
+  if(!vsMode)updateProgress();buildSuperBars();comboOff();
 }
 
-function roundEnd(winner){
-  roundActive=false;
-  const res=document.getElementById('rnd-result');
-  const stage=STAGES[arcadeStage];
-  const maxRounds=stage.rounds;
-  if(winner==='p1'){
-    p1StageWins++;
-    res.style.color='var(--blue)';res.textContent='🏆 P1 WIN!';
-    // Perfect bonus
-    if(P1.hp===P1.maxHp){arcadeScore+=500;arcadePerfects++;}
-    arcadeScore+=200+Math.round((P1.hp/P1.maxHp)*300);
-  }else{
-    cpuStageWins++;
-    res.style.color='var(--red)';res.textContent='CPU WIN!';
-  }
-  res.style.opacity='1';
-  setTimeout(()=>{
-    res.style.opacity='0';
-    const needWins=Math.ceil(maxRounds/2+.5);
-    if(p1StageWins>=needWins){
-      // Stage clear
-      stageWon();
-    }else if(cpuStageWins>=needWins){
-      // Stage failed
-      stageLost();
-    }else{
-      roundN++;startRound();
-    }
-  },2200);
+function roundEnd(winner){\n  roundActive=false;\n  const res=document.getElementById('rnd-result');\n  const stage=vsMode?{rounds:3}:STAGES[arcadeStage];\n  const maxRounds=stage.rounds;\n  if(winner==='p1'){\n    p1StageWins++;\n    res.style.color='var(--blue)';res.textContent='🏆 P1 WIN!';\n    if(!vsMode&&P1.hp===P1.maxHp){arcadeScore+=500;arcadePerfects++;}\n    if(!vsMode)arcadeScore+=200+Math.round((P1.hp/P1.maxHp)*300);\n  }else{\n    cpuStageWins++;\n    res.style.color='var(--red)';res.textContent=vsMode?'🏆 P2 WIN!':'CPU WIN!';\n  }\n  res.style.opacity='1';\n  setTimeout(()=>{\n    res.style.opacity='0';\n    const needWins=Math.ceil(maxRounds/2+.5);\n    if(vsMode){\n      if(p1StageWins>=needWins||cpuStageWins>=needWins){ showVSResult(); }\n      else{ roundN++;startRound(); }\n    }else{\n      if(p1StageWins>=needWins){ stageWon(); }\n      else if(cpuStageWins>=needWins){ stageLost(); }\n      else{ roundN++;startRound(); }\n    }\n  },2200);\n}
+
+// ── VS 2P 결과 ──
+function showVSResult(){
+  G.running=false;
+  const winner=p1StageWins>cpuStageWins?'P1':'P2';
+  const wChar=p1StageWins>cpuStageWins?CHARS[selChar]:CHARS[selChar2];
+  const ov=document.getElementById('overlay');
+  ov.innerHTML=`<div class="ov-box">
+    <div class="ov-eye">2P VS MODE</div>
+    <div class="ov-title" style="color:var(--gold)">🏆 ${winner} WIN!</div>
+    <div style="font-size:52px;margin:10px 0">${wChar.emoji}</div>
+    <div style="font-family:'Black Han Sans',sans-serif;font-size:16px;color:${wChar.col};letter-spacing:2px;margin-bottom:16px">${wChar.name}</div>
+    <div class="ss-stats" style="justify-content:center">
+      <div class="ss-sc"><div class="ss-sv" style="color:var(--blue)">${p1StageWins}</div><div class="ss-sl">P1 승</div></div>
+      <div class="ss-sc"><div class="ss-sv" style="color:var(--red)">${cpuStageWins}</div><div class="ss-sl">P2 승</div></div>
+    </div>
+    <button class="ov-btn" onclick="window.startVS()">리매치 🥊</button>
+    <br><button class="ov-btn2" onclick="showTitle()">모드 선택</button>
+  </div>`;
+  ov.style.display='flex';
 }
+
+window.startVS=function(){
+  document.getElementById('overlay').style.display='none';
+  vsMode=true;
+  p1StageWins=0;cpuStageWins=0;roundN=1;
+  arcadeScore=0;arcadePerfects=0;arcadeMaxCombo=0;
+  superChargeMode=false;PROJS=[];PARTS=[];HITS=[];
+  initStars(); updateProgress();
+  G={running:true}; startRound(); requestAnimationFrame(loop);
+};
 
 function stageWon(){
   arcadeStage++;
@@ -899,7 +929,8 @@ function loop(){
     document.getElementById('timer').classList.toggle('low',sec<=10);
     if(roundTimer<=0){const w=P1.hp>=P2.hp?'p1':'cpu';roundEnd(w);}
     updateFighter(P1,P2);updateFighter(P2,P1);
-    updateProjs();updateAI(P2,P1);
+    updateProjs();
+    if(vsMode){ handleP2Input(P2,P1); } else { updateAI(P2,P1); }
     handlePlayerInput(P1,P2);
     updateSuperBars();updateHPBars();
     // Supercharge mode: passive fill
@@ -917,7 +948,6 @@ function showTitle(){
   document.getElementById('overlay').style.display='flex';
   document.getElementById('stage-screen').style.display='none';
   const dnames=['신병 🟢','특전사 🟡','전설 🔴'],ddesc=['느린 AI·입문용','균형 AI·표준','공격적 AI·고수용'];
-  const bnames=['속도','공격','방어','체력'];
   document.getElementById('ovc').innerHTML=`
     <div class="ov-eye">ARCADE MODE · 8 STAGES</div>
     <div class="ov-title" style="color:var(--purple)">🥊 스트리트<br>파이터 EX</div>
@@ -927,24 +957,55 @@ function showTitle(){
       🔥 Stage 5: 라이벌전(3선승제) &nbsp;|&nbsp; ⚠️ Stage 3: 핸디캡전<br>
       ☠️ Stage 7: 서든데스 &nbsp;|&nbsp; 👹 Stage 8: 최종 보스전
     </div>
+    <div style="font-size:9px;color:var(--blue);letter-spacing:2px;margin-bottom:6px;font-weight:700">🎮 P1 캐릭터 선택</div>
     <div class="char-grid" id="cg"></div>
-    <div style="font-size:8px;color:#336;margin-bottom:8px;letter-spacing:2px">CPU 난이도</div>
-    <div class="diff-row">${dnames.map((n,i)=>`<div class="dt${i===diffLv?' sel':''}" onclick="setDiff(${i})"><div>${n}</div><div style="font-size:7px;color:#446;margin-top:1px">${ddesc[i]}</div></div>`).join('')}</div>
-    <div style="font-size:8px;color:#334;line-height:2.3;margin-bottom:12px">
-      ← → 이동 | ↑/Z 점프 | ↓ 가드<br>
-      X/J 펀치 | C/K 킥 | B 강공격 | V/L 필살기 | M 슈퍼기술
+    <div id="vs-p2-section" style="display:none">
+      <div style="font-size:9px;color:var(--red);letter-spacing:2px;margin-bottom:6px;margin-top:10px;font-weight:700">🎮 P2 캐릭터 선택</div>
+      <div class="char-grid" id="cg2"></div>
+      <div style="font-size:8px;color:#446;line-height:2.2;margin:10px 0;background:rgba(255,34,68,.06);border:1px solid rgba(255,34,68,.18);border-radius:8px;padding:8px 12px;text-align:left">
+        P1: ← → 이동 | ↑/Z 점프 | ↓ 가드 | X 펀치 | C 킥 | B 강공격 | V 필살기 | M 슈퍼기술<br>
+        P2: A D 이동 | W 점프 | S 가드 | U 펀치 | I 킥 | O 강공격 | P 필살기 | [ 슈퍼기술
+      </div>
+      <button class="ov-btn" style="background:linear-gradient(135deg,rgba(255,34,68,.22),rgba(192,79,255,.14));border-color:rgba(255,34,68,.55);color:var(--red)" onclick="window.startVS()">2P 대전 시작 🥊</button>
     </div>
-    <button class="ov-btn" onclick="startArcade()">아케이드 시작 🏆</button>`;
+    <div id="vs-arcade-section">
+      <div style="font-size:8px;color:#336;margin-bottom:8px;letter-spacing:2px">CPU 난이도</div>
+      <div class="diff-row">${dnames.map((n,i)=>`<div class="dt${i===diffLv?' sel':''}" onclick="setDiff(${i})"><div>${n}</div><div style="font-size:7px;color:#446;margin-top:1px">${ddesc[i]}</div></div>`).join('')}</div>
+      <div style="font-size:8px;color:#334;line-height:2.3;margin-bottom:12px">
+        ← → 이동 | ↑/Z 점프 | ↓ 가드<br>
+        X/J 펀치 | C/K 킥 | B 강공격 | V/L 필살기 | M 슈퍼기술
+      </div>
+      <button class="ov-btn" onclick="startArcade()">아케이드 시작 🏆</button>
+      <br><button class="ov-btn" style="margin-top:8px;background:linear-gradient(135deg,rgba(255,34,68,.18),rgba(100,80,200,.1));border-color:rgba(255,34,68,.4);color:var(--red)" onclick="toggleVSMode()">👥 2P 대전 모드</button>
+    </div>`;
   buildCharGrid();
 }
 
+window.toggleVSMode=function(){
+  const s1=document.getElementById('vs-arcade-section');
+  const s2=document.getElementById('vs-p2-section');
+  const isVS=s2.style.display==='block';
+  s2.style.display=isVS?'none':'block';
+  s1.style.display=isVS?'block':'none';
+  if(!isVS) buildCharGrid2();
+};
+
 function buildCharGrid(){
   const g=document.getElementById('cg');if(!g)return;g.innerHTML='';
-  // Only show non-boss chars (boss is hidden)
   CHARS.slice(0,6).forEach((c,i)=>{
     const d=document.createElement('div');d.className='cc'+(i===selChar?' sel':'');
     d.innerHTML=`<div class="cc-badge" style="background:${c.badgeCol}22;color:${c.badgeCol};border:1px solid ${c.badgeCol}44">${c.badge}</div><span class="cc-ico">${c.emoji}</span><div class="cc-name" style="color:${c.col}">${c.name}</div><div class="cc-type">${c.type}</div>`;
-    d.onclick=()=>{selChar=i;document.querySelectorAll('.cc').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};
+    d.onclick=()=>{selChar=i;g.querySelectorAll('.cc').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};
+    g.appendChild(d);
+  });
+}
+
+function buildCharGrid2(){
+  const g=document.getElementById('cg2');if(!g)return;g.innerHTML='';
+  CHARS.slice(0,6).forEach((c,i)=>{
+    const d=document.createElement('div');d.className='cc'+(i===selChar2?' sel':'');
+    d.innerHTML=`<div class="cc-badge" style="background:${c.badgeCol}22;color:${c.badgeCol};border:1px solid ${c.badgeCol}44">${c.badge}</div><span class="cc-ico">${c.emoji}</span><div class="cc-name" style="color:${c.col}">${c.name}</div><div class="cc-type">${c.type}</div>`;
+    d.onclick=()=>{selChar2=i;g.querySelectorAll('.cc').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};
     g.appendChild(d);
   });
 }
@@ -952,6 +1013,7 @@ window.setDiff=d=>{diffLv=d;document.querySelectorAll('.dt').forEach((t,i)=>t.cl
 
 window.startArcade=function(){
   document.getElementById('overlay').style.display='none';
+  vsMode=false;
   arcadeStage=0;p1StageWins=0;cpuStageWins=0;roundN=1;
   arcadeScore=0;arcadePerfects=0;arcadeMaxCombo=0;
   superChargeMode=false;PROJS=[];PARTS=[];HITS=[];
