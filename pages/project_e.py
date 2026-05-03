@@ -2116,6 +2116,19 @@ def render():
             dstats['best_score'] = score
         if kills > dstats.get('best_kills', 0):
             dstats['best_kills'] = kills
+
+        # ── 주간 랭킹 저장 ──
+        from datetime import timedelta
+        now_kst = datetime.now(KST)
+        week_start_str = (now_kst - timedelta(days=now_kst.weekday())).replace(
+            hour=0,minute=0,second=0,microsecond=0).strftime('%Y-%m-%d')
+        weekly = st.session_state.get('dungeon_weekly', {})
+        if weekly.get('week_start') != week_start_str:
+            weekly = {'week_start': week_start_str, 'score': 0, 'kills': 0}
+        if score > weekly.get('score', 0):
+            weekly['score'] = score
+            weekly['kills'] = kills
+        st.session_state.dungeon_weekly = weekly
         if is_win:
             dstats['clears'] = dstats.get('clears', 0) + 1
             clear_reward = 200_000_000
@@ -2134,6 +2147,15 @@ def render():
                 # score=0이어도 플레이 기록은 남김
                 log_tx(uid, "던전", f"던전런 종료 (점수:{score}, 킬:{kills})", 0)
         st.session_state.dungeon_stats = dstats
+
+        # ── dungeon_weekly를 users DB에 직접 반영 ──
+        from utils.database import load_db, save_db
+        from utils.config import USERS_FILE
+        _users = load_db(USERS_FILE, {})
+        if uid in _users:
+            _users[uid]['dungeon_stats'] = dstats
+            _users[uid]['dungeon_weekly'] = st.session_state.get('dungeon_weekly', {})
+            save_db(USERS_FILE, _users)
 
         # ✅ [BUG FIX] dungeon_stats는 sync_user_data()에 포함되므로 별도 save_db 불필요
         # sync_user_data()가 dungeon_stats를 포함하여 저장함 (core.py 수정 연동)
