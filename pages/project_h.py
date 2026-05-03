@@ -640,7 +640,34 @@ function startRound(){resize();
   if(!vsMode)updateProgress();buildSuperBars();comboOff();
 }
 
-function roundEnd(winner){\n  roundActive=false;\n  const res=document.getElementById('rnd-result');\n  const stage=vsMode?{rounds:3}:STAGES[arcadeStage];\n  const maxRounds=stage.rounds;\n  if(winner==='p1'){\n    p1StageWins++;\n    res.style.color='var(--blue)';res.textContent='🏆 P1 WIN!';\n    if(!vsMode&&P1.hp===P1.maxHp){arcadeScore+=500;arcadePerfects++;}\n    if(!vsMode)arcadeScore+=200+Math.round((P1.hp/P1.maxHp)*300);\n  }else{\n    cpuStageWins++;\n    res.style.color='var(--red)';res.textContent=vsMode?'🏆 P2 WIN!':'CPU WIN!';\n  }\n  res.style.opacity='1';\n  setTimeout(()=>{\n    res.style.opacity='0';\n    const needWins=Math.ceil(maxRounds/2+.5);\n    if(vsMode){\n      if(p1StageWins>=needWins||cpuStageWins>=needWins){ showVSResult(); }\n      else{ roundN++;startRound(); }\n    }else{\n      if(p1StageWins>=needWins){ stageWon(); }\n      else if(cpuStageWins>=needWins){ stageLost(); }\n      else{ roundN++;startRound(); }\n    }\n  },2200);\n}
+function roundEnd(winner){
+  roundActive=false;
+  const res=document.getElementById('rnd-result');
+  const stage=vsMode?{rounds:3}:STAGES[arcadeStage];
+  const maxRounds=stage.rounds;
+  if(winner==='p1'){
+    p1StageWins++;
+    res.style.color='var(--blue)';res.textContent='🏆 P1 WIN!';
+    if(!vsMode&&P1.hp===P1.maxHp){arcadeScore+=500;arcadePerfects++;}
+    if(!vsMode)arcadeScore+=200+Math.round((P1.hp/P1.maxHp)*300);
+  }else{
+    cpuStageWins++;
+    res.style.color='var(--red)';res.textContent=vsMode?'🏆 P2 WIN!':'CPU WIN!';
+  }
+  res.style.opacity='1';
+  setTimeout(()=>{
+    res.style.opacity='0';
+    const needWins=Math.ceil(maxRounds/2+.5);
+    if(vsMode){
+      if(p1StageWins>=needWins||cpuStageWins>=needWins){ showVSResult(); }
+      else{ roundN++;startRound(); }
+    }else{
+      if(p1StageWins>=needWins){ stageWon(); }
+      else if(cpuStageWins>=needWins){ stageLost(); }
+      else{ roundN++;startRound(); }
+    }
+  },2200);
+}
 
 // ── VS 2P 결과 ──
 function showVSResult(){
