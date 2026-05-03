@@ -199,8 +199,63 @@ let selCar = 0;
 let G={}, raf=null, floats=[], particles=[], uid=0;
 let lastL=false, lastR=false;
 
+// ── 고스트 레이싱 ───────────────────────────────────────
+const GHOST_KEY = 'neon_ghost_v1';
+let ghostFrames = [];    // 녹화 버퍼 (현재 판)
+let ghostBest   = null;  // localStorage에서 불러온 최고기록 고스트
+let ghostX = 0, ghostAlpha = 0;
+
+function ghostSave(){
+  if(!ghostFrames.length) return;
+  try{ localStorage.setItem(GHOST_KEY, JSON.stringify({frames: ghostFrames, score: G.score, dist: G.dist.toFixed(1)})); }catch(e){}
+}
+
+function ghostLoad(){
+  try{
+    const raw = localStorage.getItem(GHOST_KEY);
+    if(raw){ ghostBest = JSON.parse(raw); return; }
+  }catch(e){}
+  ghostBest = null;
+}
+
+function ghostRecord(){
+  ghostFrames.push(G.laneX);
+}
+
+function ghostDraw(ctx, frame){
+  if(!ghostBest || !ghostBest.frames || !ghostBest.frames.length) return;
+  const gx = ghostBest.frames[Math.min(frame, ghostBest.frames.length-1)];
+  ghostX += (gx - ghostX) * 0.35;
+  const car = CARS[selCar];
+  const cx = canvas.width/2, cy = canvas.height, ch = cy;
+  const carH = 72, carW = 32;
+  const PLAYER_Y = ch * 0.75;
+  ctx.save();
+  ctx.globalAlpha = 0.38 + Math.sin(G.frame*.1)*.08;
+  // Ghost outline
+  ctx.strokeStyle = '#00ffff';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#00ffff';
+  ctx.shadowBlur = 16;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(ghostX - carW/2, PLAYER_Y - carH/2, carW, carH, 6)
+    : ctx.rect(ghostX - carW/2, PLAYER_Y - carH/2, carW, carH);
+  ctx.stroke();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = '#00ffff';
+  ctx.fill();
+  ctx.globalAlpha = 0.7;
+  ctx.fillStyle = '#00ffff';
+  ctx.font = 'bold 9px Orbitron,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('GHOST', ghostX, PLAYER_Y - carH/2 - 5);
+  ctx.restore();
+}
+
 function initGame(){
   const car = CARS[selCar];
+  ghostFrames = [];
+  ghostLoad();
   G = {
     run:true, dead:false, frame:0,
     score:0, dist:0,
@@ -328,6 +383,7 @@ function showCombo(n){
 function update(){
   if(!G.run||G.dead) return;
   G.frame++;
+  ghostRecord();
 
   const L = KEYS.ArrowLeft||KEYS.KeyA||G._tL||G._swL;
   const R = KEYS.ArrowRight||KEYS.KeyD||G._tR||G._swR;
@@ -886,6 +942,7 @@ function render(){
   // Draw player (flash on hit)
   ctx.save();
   if(G.flashT>0&&Math.floor(G.flashT*10)%2===0) ctx.filter='brightness(6) saturate(0)';
+  ghostDraw(ctx, G.frame);
   drawCar(G.laneX, PLAYER_Y, 54, 90, car.col, lighten(car.col), true, false, 0, tilt);
   ctx.restore();
 
@@ -1005,6 +1062,8 @@ function showGameOver(){
   const best=Math.max(G.score,parseInt(localStorage.getItem('nrv5')||'0'));
   localStorage.setItem('nrv5',best);
   const isRec=G.score>=best&&G.score>0;
+  if(isRec) ghostSave(); // 최고 기록 갱신 시 고스트 저장
+  const ghostInfo = ghostBest ? `<div class="brow" style="color:#00ffcc;font-size:11px;">👻 고스트: 이전 최고 ${ghostBest.score?.toLocaleString()}점 기록 저장됨</div>` : '';
   const oi=document.getElementById('oi');
   oi.innerHTML=`
     <div class="obadge">${isRec?'🏆 NEW RECORD!':'GAME OVER'}</div>
@@ -1016,6 +1075,7 @@ function showGameOver(){
       <div class="sbox"><div class="snum" style="color:#cc44ff">×${G.maxCombo}</div><div class="slbl">COMBO</div></div>
     </div>
     <div class="brow">🏆 최고기록: <span class="bnum">${best.toLocaleString()}</span></div>
+    ${ghostInfo}
     <div class="sbtn" id="sbtn">다시 도주 🏎️</div>
     <br><div class="s2btn" id="s2btn">차량 변경</div>`;
   document.getElementById('sbtn').onclick=startGame;
