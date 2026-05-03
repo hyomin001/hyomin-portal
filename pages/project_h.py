@@ -51,7 +51,7 @@ html,body{width:100%;height:728px;overflow:hidden;background:var(--bg);font-fami
 #stage-lbl{font-size:9px;color:var(--gold);letter-spacing:2px;font-weight:900;}
 
 /* CANVAS */
-#canvas-wrap{flex:1;position:relative;overflow:hidden;}
+#canvas-wrap{flex:1;position:relative;overflow:hidden;min-height:560px;}
 #gc{position:absolute;top:0;left:0;width:100%;height:100%;}
 
 /* RESULT OVERLAY (mid-battle) */
@@ -209,8 +209,12 @@ function resize(){
   canvas.style.width=(CW*SC)+'px';canvas.style.height=(CH*SC)+'px';
   canvas.style.left=((w-CW*SC)/2)+'px';canvas.style.top=((h-CH*SC)/2)+'px';
 }
-setTimeout(resize,100);setTimeout(resize,500);
-resize();window.addEventListener('resize',resize);
+resize();
+window.addEventListener('resize',resize);
+setTimeout(resize,50);
+setTimeout(resize,200);
+setTimeout(resize,600);
+setTimeout(resize,1500);
 
 const KEYS={};
 window.addEventListener('keydown',e=>{
@@ -619,7 +623,7 @@ function updateProjs(){
 // ================================================================
 //  ROUND / STAGE SYSTEM
 // ================================================================
-function startRound(){
+function startRound(){resize();
   const stage=vsMode?{cpuIdx:selChar2,ruleKey:'normal',rounds:3}:STAGES[arcadeStage];
   const cpuChar=CHARS[stage.cpuIdx];
   P1=makeF(selChar,false);P2=makeF(stage.cpuIdx,true);P2.facing=-1;
@@ -666,7 +670,7 @@ window.startVS=function(){
   arcadeScore=0;arcadePerfects=0;arcadeMaxCombo=0;
   superChargeMode=false;PROJS=[];PARTS=[];HITS=[];
   initStars(); updateProgress();
-  G={running:true}; startRound(); requestAnimationFrame(loop);
+  resize(); G={running:true}; startRound(); requestAnimationFrame(loop);
 };
 
 function stageWon(){
@@ -824,7 +828,7 @@ function comboOff(){document.getElementById('combo-display').style.opacity='0';}
 let bgStars=[];
 function initStars(){bgStars=[];for(let i=0;i<80;i++)bgStars.push({x:Math.random()*CW,y:Math.random()*CH*.45,r:Math.random()<.05?1.2:.6,a:.2+Math.random()*.7});}
 
-function drawBg(){
+function drawBg(){if(canvas.width===0||canvas.height===0)resize();
   // Sky
   const st=STAGES[arcadeStage];
   const bgCols={
@@ -920,6 +924,7 @@ function drawParts(){
 // ================================================================
 function loop(){
   if(!G.running)return;
+  if(canvas.width<10)resize();
   gFrame++;
   if(comboDT>0){comboDT--;if(comboDT===0)comboOff();}
   ctx.clearRect(0,0,CW,CH);
