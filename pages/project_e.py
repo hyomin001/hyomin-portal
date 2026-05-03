@@ -147,6 +147,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 /* COMBO */
 #combo{position:absolute;bottom:68px;right:14px;text-align:right;pointer-events:none;
   opacity:0;transition:opacity .3s;z-index:60;}
+
+/* RELIC SELECT OVERLAY */
+#relic-overlay{position:absolute;inset:0;z-index:260;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.88);}
+.relic-box{background:rgba(10,8,22,.98);border:1px solid rgba(245,200,66,.4);border-radius:14px;padding:28px 24px;text-align:center;max-width:520px;width:96vw;}
+.relic-title{font-family:'Black Han Sans',sans-serif;font-size:22px;color:#ffcc00;letter-spacing:4px;margin-bottom:4px;}
+.relic-sub{font-size:10px;color:#554400;margin-bottom:18px;letter-spacing:2px;}
+.relic-row{display:flex;gap:12px;justify-content:center;}
+.rcard{width:140px;background:rgba(255,255,255,.03);border:1px solid rgba(245,200,66,.2);border-radius:10px;
+  padding:16px 10px;cursor:pointer;transition:all .18s;text-align:center;}
+.rcard:hover{border-color:rgba(245,200,66,.8);background:rgba(245,200,66,.08);transform:translateY(-4px);
+  box-shadow:0 10px 30px rgba(245,200,66,.15);}
+.rcard-ico{font-size:30px;margin-bottom:8px;}
+.rcard-name{font-family:'Black Han Sans',sans-serif;font-size:12px;color:var(--gold);letter-spacing:1px;}
+.rcard-desc{font-size:10px;color:#443300;margin-top:5px;line-height:1.5;}
 #combo-n{font-family:'Black Han Sans',sans-serif;font-size:44px;color:var(--gold);
   text-shadow:0 0 22px rgba(245,200,66,.8),2px 2px 0 rgba(0,0,0,.8);line-height:1;}
 #combo-l{font-size:10px;color:#ff8800;letter-spacing:4px;}
@@ -216,6 +231,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <div id="toast"><div id="toast-ico">🏆</div><div><div id="toast-t">—</div><div id="toast-s">—</div></div></div>
 
   <div id="unlock-banner"><div class="ub-inner"><div class="ub-ico" id="ub-ico">⚔️</div><div class="ub-name" id="ub-name">새 무기 획득!</div><div class="ub-desc" id="ub-desc">—</div></div></div>
+
+  <div id="relic-overlay">
+    <div class="relic-box">
+      <div class="relic-title">⚗️ 유물 선택</div>
+      <div class="relic-sub">보스 처치 보상 — 3개 중 1개를 선택하세요</div>
+      <div class="relic-row" id="relic-cards"></div>
+    </div>
+  </div>
 
   <div id="lvlup">
     <div class="lvlup-box">
@@ -452,6 +475,57 @@ const WEAPON_DEFS = {
   timeStop: { name:'시간 정지', icon:'⏱️', type:'active', key:'R', desc:'3초 간 모든 적 정지', maxLv:3 },
 };
 
+// ── RELIC SYSTEM (보스 처치 시 유물 3개 중 1개 선택) ─────
+const RELIC_POOL = [
+  { id:'r_atk',    name:'피의 검',     emoji:'🗡️',  desc:'공격력 +25%',          apply: p => { p.atk = Math.round(p.atk * 1.25); } },
+  { id:'r_hp',     name:'철의 심장',   emoji:'❤️',  desc:'최대 HP +80',           apply: p => { p.maxHp += 80; p.hp = Math.min(p.hp + 80, p.maxHp); } },
+  { id:'r_spd',    name:'바람의 신발', emoji:'👟',  desc:'이동속도 +30%',         apply: p => { p.spd = Math.round(p.spd * 1.30); } },
+  { id:'r_vamp',   name:'흡혈의 반지', emoji:'💍',  desc:'처치 시 HP+8 회복',     apply: p => { p.passives.vampire = (p.passives.vampire||0) + 2; } },
+  { id:'r_gold',   name:'황금 주머니', emoji:'💰',  desc:'골드 +250 즉시 획득',   apply: p => { p.gold += 250; } },
+  { id:'r_range',  name:'독수리 눈',   emoji:'🦅',  desc:'공격 사거리 +30%',      apply: p => { p.atkRange = Math.round((p.atkRange||200) * 1.30); } },
+  { id:'r_xp',     name:'고대 서적',   emoji:'📚',  desc:'XP 획득 +40%',          apply: p => { p._xpBonus = (p._xpBonus||1) * 1.40; } },
+  { id:'r_crit',   name:'예리한 날',   emoji:'⚡',  desc:'치명타율 +25%',         apply: p => { p.passives.crit = Math.min(95, ((p.passives.crit||0) + 25)); } },
+  { id:'r_mp',     name:'마나의 돌',   emoji:'🔮',  desc:'MP 최대치 +120',        apply: p => { p.maxMp += 120; p.mp = Math.min(p.mp + 120, p.maxMp); } },
+  { id:'r_tradeoff',name:'악마의 계약',emoji:'😈',  desc:'공격력 +40% / 최대HP -20%', apply: p => { p.atk = Math.round(p.atk * 1.40); p.maxHp = Math.max(30, Math.round(p.maxHp * 0.80)); p.hp = Math.min(p.hp, p.maxHp); } },
+  { id:'r_shield', name:'수호의 방패', emoji:'🛡️',  desc:'방어력 +20',            apply: p => { p.def = (p.def||0) + 20; } },
+  { id:'r_nova',   name:'폭발의 룬',   emoji:'💥',  desc:'마법 폭발 데미지 +50%', apply: p => { p._novaBonus = (p._novaBonus||1) * 1.50; } },
+];
+
+function showRelicChoice() {
+  if (!G || G.phase !== 'play') return;
+  G.paused = true;
+  // 이미 획득한 유물 제외한 풀에서 3개 랜덤 선택
+  const available = RELIC_POOL.filter(r => !G.player.relics.includes(r.id));
+  const shuffled = available.sort(() => Math.random() - .5).slice(0, Math.min(3, available.length));
+  if (!shuffled.length) { G.paused = false; return; }
+
+  const overlay = document.getElementById('relic-overlay');
+  const cards = document.getElementById('relic-cards');
+  cards.innerHTML = shuffled.map((r, i) => `
+    <div class="rcard" onclick="pickRelic(${i})">
+      <div class="rcard-ico">${r.emoji}</div>
+      <div class="rcard-name">${r.name}</div>
+      <div class="rcard-desc">${r.desc}</div>
+    </div>`).join('');
+  overlay.dataset.relics = JSON.stringify(shuffled.map(r => r.id));
+  overlay.style.display = 'flex';
+}
+
+function pickRelic(idx) {
+  const overlay = document.getElementById('relic-overlay');
+  const ids = JSON.parse(overlay.dataset.relics || '[]');
+  const rid = ids[idx];
+  const relic = RELIC_POOL.find(r => r.id === rid);
+  if (!relic || !G) return;
+  relic.apply(G.player);
+  G.player.relics.push(rid);
+  overlay.style.display = 'none';
+  G.paused = false;
+  // 유물 획득 토스트
+  showToast(relic.emoji, `유물 획득: ${relic.name}`, relic.desc);
+  sfx_lvlup();
+}
+
 // ── ENEMY TYPES ──────────────────────────────────────────
 const ETYPES = {
   slime:    { name:'슬라임',   col:'#2ecc71', col2:'#1a8a4a', radius:18, baseHp:60,  baseAtk:8,  baseSpd:55,  xp:12, gold:4,  ai:'bounce', draw:drawSlime },
@@ -513,6 +587,7 @@ function mkPlayer(clsId) {
     // derived passives (computed)
     _spdMult: 1, _atkMult: 1, _pickup: 60,
     // init default weapon
+    relics: [],  // 획득한 유물 ID 목록
   };
 }
 
@@ -695,6 +770,8 @@ function killEnemy(e) {
     spawnWave(e.x, e.y, '#ffcc00', 200);
     shakeScreen(18, 70); sfx_clear();
     showToast('🏆', '보스 처치!', `+200 골드 +${e.xp} XP`);
+    // ── 유물 선택 트리거 ──
+    setTimeout(() => showRelicChoice(), 900);
   } else {
     spawnP(e.x, e.y, { n:10, col:[e.col,'#ffcc44'], sMin:2, sMax:6 });
     // Vampire passive
