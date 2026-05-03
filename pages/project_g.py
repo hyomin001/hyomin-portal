@@ -157,6 +157,22 @@ canvas{position:absolute;top:0;left:0;}
   <div id="vignette"></div>
   <div id="shield-ov"></div>
 
+  <!-- 특수 스킬바 -->
+  <div id="skill-hud" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:90;pointer-events:none;">
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;background:rgba(255,100,0,.15);border:1px solid rgba(255,100,0,.5);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;position:relative;">🔥<div id="sk-cd-fire" style="position:absolute;inset:0;border-radius:8px;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#ff8800;"></div></div>
+      <div style="font-size:9px;color:#884400;margin-top:2px;">Q 화염탄</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;background:rgba(255,255,0,.1);border:1px solid rgba(255,255,0,.4);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;position:relative;">💥<div id="sk-cd-flash" style="position:absolute;inset:0;border-radius:8px;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#ffff44;"></div></div>
+      <div style="font-size:9px;color:#888800;margin-top:2px;">E 섬광탄</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;background:rgba(255,50,50,.12);border:1px solid rgba(255,50,50,.4);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;position:relative;">💣<div id="sk-cd-airstrike" style="position:absolute;inset:0;border-radius:8px;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#ff4444;"></div></div>
+      <div style="font-size:9px;color:#882222;margin-top:2px;">T 폭격</div>
+    </div>
+  </div>
+
   <div id="shop">
     <div class="shop-box">
       <div class="shop-title">🛒 무기 상점</div>
@@ -233,6 +249,111 @@ const DROP_DEFS=[
 let G={running:false};
 let PARTS=[],BLOODPOOL=[],HNS=[],DROPS=[];
 
+// ================================================================
+//  특수 탄약 스킬 (Q=화염탄, E=섬광탄, T=공중폭격)
+// ================================================================
+const SKILL_CD = { fire:0, flash:0, airstrike:0 };
+const SKILL_MAX_CD = { fire:12*60, flash:15*60, airstrike:20*60 };
+
+function useSkill(type){
+  if(!G||!G.running)return;
+  if(SKILL_CD[type]>0){ spawnHN(G.player.x,G.player.y-40,'쿨타임!','#888'); return; }
+  SKILL_CD[type]=SKILL_MAX_CD[type];
+  const p=G.player;
+  if(type==='fire'){
+    // 화염탄: 마우스 방향 화염 범위 공격
+    const ang=Math.atan2(G.mouse.y-p.y,G.mouse.x-p.x);
+    for(let i=-2;i<=2;i++){
+      const a=ang+i*0.2;
+      G.bullets.push({x:p.x,y:p.y,vx:Math.cos(a)*9,vy:Math.sin(a)*9,dmg:60,col:'#ff7700',r:8,pierce:true,hitIds:[],life:55,special:'fire'});
+    }
+    spawnP(p.x,p.y,{n:20,col:['#ff4400','#ff8800','#ffaa00'],glow:true,vMax:7,szMax:9});
+    spawnHN(p.x,p.y-40,'🔥 화염탄!','#ff7700');
+  } else if(type==='flash'){
+    // 섬광탄: 전방 적 2초 스턴
+    G.zombies.forEach(z=>{if(!z.alive)return;const dx=G.mouse.x-z.x,dy=G.mouse.y-z.y;if(dx*dx+dy*dy<90000){z.frozen=2;}});
+    spawnP(G.mouse.x,G.mouse.y,{n:30,col:['#fff','#ffff88','#aaffff'],glow:true,vMax:8,szMax:10});
+    spawnHN(G.mouse.x,G.mouse.y-40,'💥 섬광탄!','#ffff44');
+  } else if(type==='airstrike'){
+    // 공중폭격: 마우스 위치 폭발
+    setTimeout(()=>{
+      spawnExplosion(G.mouse.x,G.mouse.y);
+      G.zombies.forEach(z=>{if(!z.alive)return;const dx=z.x-G.mouse.x,dy=z.y-G.mouse.y;if(dx*dx+dy*dy<14000)hitZombie(z,120);});
+      spawnP(G.mouse.x,G.mouse.y,{n:50,col:['#ff4400','#ff8800','#ffdd00','#fff'],glow:true,vMax:12,szMax:14});
+      spawnHN(G.mouse.x,G.mouse.y-50,'💣 공중폭격!','#ff4400');
+    },600);
+    spawnHN(G.mouse.x,G.mouse.y-30,'⚠️ 폭격 예정','#ff8800');
+  }
+  updateSkillBar();
+}
+
+function updateSkillBar(){
+  ['fire','flash','airstrike'].forEach((sk,i)=>{
+    const el=document.getElementById('sk-cd-'+sk);if(!el)return;
+    if(SKILL_CD[sk]>0) el.textContent=Math.ceil(SKILL_CD[sk]/60)+'s';
+    else el.textContent='';
+  });
+}
+
+// ── 보급 상자 시스템 ─────────────────────────────────────
+let SUPPLY_BOXES=[];
+function spawnSupplyBox(){
+  if(!G||!G.running)return;
+  const W=canvas.width,H=canvas.height;
+  const x=60+Math.random()*(W-120),y=60+Math.random()*(H-120);
+  SUPPLY_BOXES.push({x,y,life:600,rot:0,alive:true});
+  spawnHN(x,y-30,'📦 보급 상자 도착!','#00ffcc');
+}
+
+function updateSupplyBoxes(){
+  if(!G)return;
+  // 매 30초마다 스폰
+  if(G.frame%1800===900) spawnSupplyBox();
+  // 쿨타임 카운트다운
+  for(const sk in SKILL_CD) if(SKILL_CD[sk]>0) SKILL_CD[sk]--;
+  updateSkillBar();
+  const p=G.player;
+  for(let i=SUPPLY_BOXES.length-1;i>=0;i--){
+    const b=SUPPLY_BOXES[i];
+    b.rot+=0.02;b.life--;
+    if(b.life<=0){SUPPLY_BOXES.splice(i,1);continue;}
+    const dx=p.x-b.x,dy=p.y-b.y;
+    if(dx*dx+dy*dy<900){
+      // 먹기
+      const roll=Math.random();
+      if(roll<0.4){G.hp=Math.min(G.maxHp,G.hp+35);spawnHN(b.x,b.y-30,'+35 HP 💊','#00ff88');}
+      else if(roll<0.75){const w=G.weapons[G.wIdx];if(w)w.ammo=w.maxMag;spawnHN(b.x,b.y-30,'🔫 탄약 보충!','#ffaa00');}
+      else{G.score+=500;spawnHN(b.x,b.y-30,'+500점 🎁','#ff00ff');}
+      spawnP(b.x,b.y,{n:18,col:['#00ffcc','#ffcc00','#ff88ff'],glow:true,vMax:7,szMax:8});
+      SUPPLY_BOXES.splice(i,1);
+    }
+  }
+}
+
+function drawSupplyBoxes(){
+  for(const b of SUPPLY_BOXES){
+    const alpha=Math.min(1,b.life/60);
+    ctx.save();ctx.globalAlpha=alpha;
+    ctx.translate(b.x,b.y);ctx.rotate(b.rot);
+    // 상자 본체
+    ctx.fillStyle='#3a2a0a';ctx.fillRect(-14,-12,28,24);
+    ctx.strokeStyle='#c8a800';ctx.lineWidth=2;ctx.strokeRect(-14,-12,28,24);
+    // 십자 리본
+    ctx.strokeStyle='#ffcc00';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(0,-12);ctx.lineTo(0,12);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-14,0);ctx.lineTo(14,0);ctx.stroke();
+    // 아이콘
+    ctx.font='14px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('📦',0,0);
+    ctx.restore();
+    // 펄스 링
+    ctx.save();ctx.globalAlpha=alpha*0.4;
+    ctx.strokeStyle='#00ffcc';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(b.x,b.y,18+Math.sin(b.life*0.08)*4,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function initGame(){
   G={
     running:true,shopOpen:false,
@@ -252,7 +373,7 @@ function initGame(){
     shieldT:0,poisonT:0,
     upgrades:{pierce:false},
   };
-  PARTS=[];BLOODPOOL=[];HNS=[];DROPS=[];
+  PARTS=[];BLOODPOOL=[];HNS=[];DROPS=[];SUPPLY_BOXES=[];
   drawBg();rebuildWeaponBar();buildAmmoDisplay();
   nextWave();
 }
@@ -433,6 +554,8 @@ function update(){
   if(!G.running||G.shopOpen)return;
   G.frame++;
   const p=G.player;
+  // ── 보급 상자 & 스킬 쿨타임 ──
+  updateSupplyBoxes();
 
   // Timers
   if(G.fireT>0)G.fireT--;
@@ -789,7 +912,7 @@ function drawCrosshair(){
 function loop(){
   if(!G.running)return;
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawBullets();drawDrops();drawZombies();drawPlayer();drawParts();drawHNs();drawCrosshair();
+  drawBullets();drawDrops();drawSupplyBoxes();drawZombies();drawPlayer();drawParts();drawHNs();drawCrosshair();
   update();requestAnimationFrame(loop);
 }
 
@@ -851,6 +974,10 @@ document.addEventListener('keydown',e=>{
   if(e.key==='r'||e.key==='R')startReload();
   if(e.key==='1')switchWeapon(0);if(e.key==='2')switchWeapon(1);
   if(e.key==='3')switchWeapon(2);if(e.key==='4')switchWeapon(3);if(e.key==='5')switchWeapon(4);
+  // ── 특수 탄약 스킬 ──
+  if(e.key==='q'||e.key==='Q')useSkill('fire');
+  if(e.key==='e'||e.key==='E')useSkill('flash');
+  if((e.key==='t'||e.key==='T'))useSkill('airstrike');
 });
 document.addEventListener('keyup',e=>{
   if(e.key==='w'||e.key==='W'||e.key==='ArrowUp')G.keys.w=false;
