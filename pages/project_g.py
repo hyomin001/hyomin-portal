@@ -145,6 +145,7 @@ canvas{position:absolute;top:0;left:0;}
   <div id="streak-box"><div id="streak-num">🔥×5</div><div id="streak-lbl">STREAK</div></div>
   <div id="boss-bar"><div id="boss-lbl">👹 BOSS</div><div id="boss-bg"><div id="boss-fill" style="width:100%"></div></div></div>
   <div id="wave-ann"><div id="wa-big" style="color:var(--red)">WAVE!</div><div id="wa-sub"></div></div>
+  <div id="barricade-hint" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:250;background:rgba(0,0,0,.85);border:1.5px solid #c8860a;border-radius:8px;padding:8px 18px;font-size:11px;color:#c8860a;letter-spacing:1px;pointer-events:none;"></div>
 
   <div id="ammo-bar"><div class="ammo-col" id="ammo-col"></div><div id="ammo-label">AMMO</div></div>
   <div id="rl-ring"><canvas id="rl-cv" width="52" height="52"></canvas><div id="rl-text">장전중...</div></div>
@@ -372,6 +373,8 @@ function initGame(){
     touchFire:false,frame:0,
     shieldT:0,poisonT:0,
     upgrades:{pierce:false},
+    barricades:[],  // 바리케이드 목록
+    barricadePlacing:false, // 배치 모드 여부
   };
   PARTS=[];BLOODPOOL=[];HNS=[];DROPS=[];SUPPLY_BOXES=[];
   drawBg();rebuildWeaponBar();buildAmmoDisplay();
@@ -551,11 +554,12 @@ function switchWeapon(i){
 //  UPDATE
 // ================================================================
 function update(){
-  if(!G.running||G.shopOpen)return;
+  if(!G.running||G.shopOpen||G.barricadePlacing)return;
   G.frame++;
   const p=G.player;
   // ── 보급 상자 & 스킬 쿨타임 ──
   updateSupplyBoxes();
+  updateBarricades();
 
   // Timers
   if(G.fireT>0)G.fireT--;
@@ -752,7 +756,53 @@ function openShop(){
     d.onclick=()=>buyUpgrade(item,d);
     ug.appendChild(d);
   });
+
+  // ── 바리케이드 구매 섹션 ──
+  const barSection = document.createElement('div');
+  barSection.innerHTML = `
+    <div class="shop-section" style="margin-top:10px;">🧱 바리케이드 설치</div>
+    <div style="font-size:9px;color:#446;margin-bottom:8px;line-height:1.7;">
+      웨이브 사이 인터미션에 바리케이드를 배치해 좀비의 접근 경로를 막을 수 있습니다.<br>
+      최대 5개 설치 가능 (현재: ${G.barricades.length}/5)
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="si" id="buy-barricade-light">
+        <div class="si-ico">🪵</div>
+        <div class="si-name" style="color:#c8860a">나무 바리케이드</div>
+        <div class="si-desc">HP 80 · 좀비 3마리 차단</div>
+        <div class="si-cost">💰 40</div>
+      </div>
+      <div class="si" id="buy-barricade-heavy">
+        <div class="si-ico">🧱</div>
+        <div class="si-name" style="color:#88aacc">강화 바리케이드</div>
+        <div class="si-desc">HP 200 · 좀비 8마리 차단</div>
+        <div class="si-cost">💰 90</div>
+      </div>
+    </div>`;
+  document.getElementById('shop').querySelector('.shop-box').insertBefore(barSection, document.getElementById('shop-cont'));
+
+  document.getElementById('buy-barricade-light').onclick=()=>buyBarricade('light',40,80);
+  document.getElementById('buy-barricade-heavy').onclick=()=>buyBarricade('heavy',90,200);
+
   document.getElementById('shop').style.display='flex';
+}
+
+function buyBarricade(type, cost, hp){
+  if(G.barricades.length>=5){alert('바리케이드는 최대 5개까지 설치 가능합니다.');return;}
+  if(G.coins<cost){
+    const btn=document.getElementById(`buy-barricade-${type}`);
+    if(btn){btn.style.borderColor='var(--red)';setTimeout(()=>btn.style.borderColor='',600);}
+    return;
+  }
+  G.coins-=cost;
+  document.getElementById('shop-coins-txt').textContent=`💰 보유 코인: ${G.coins}`;
+  // 닫고 배치 모드 진입
+  document.getElementById('shop').style.display='none';
+  G.shopOpen=false;
+  G.barricadePlacing={type, hp, maxHp:hp};
+  // 안내 HUD 표시
+  const hint=document.getElementById('barricade-hint');
+  if(hint){hint.style.display='block';hint.textContent='🧱 클릭해서 바리케이드를 배치하세요 (ESC: 취소)';}
 }
 function buyWeapon(wd,el){
   if(G.coins<wd.cost){el.style.borderColor='var(--red)';setTimeout(()=>el.style.borderColor='',600);return;}
@@ -779,7 +829,76 @@ document.getElementById('shop-cont').onclick=()=>{
 };
 
 // ================================================================
-//  WEAPON BAR + AMMO
+//  BARRICADES
+// ================================================================
+function drawBarricades(){
+  for(const b of G.barricades){
+    const pct=b.hp/b.maxHp;
+    const col=b.type==='heavy'?'#5588cc':'#c8860a';
+    const crackedAlpha=1-pct;
+    ctx.save();
+    ctx.fillStyle=col;
+    ctx.globalAlpha=0.82;
+    ctx.shadowColor=col;ctx.shadowBlur=8;
+    ctx.fillRect(b.x-b.w/2,b.y-b.h/2,b.w,b.h);
+    // HP bar
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(0,0,0,.5)';
+    ctx.fillRect(b.x-b.w/2,b.y-b.h/2-7,b.w,4);
+    ctx.fillStyle=pct>0.5?'#2fc':pct>0.25?'#ffaa00':'#ff2244';
+    ctx.fillRect(b.x-b.w/2,b.y-b.h/2-7,b.w*pct,4);
+    // Crack overlay at low HP
+    if(crackedAlpha>0.4){
+      ctx.globalAlpha=crackedAlpha*0.6;
+      ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(b.x-b.w*.3,b.y-b.h*.4);ctx.lineTo(b.x+b.w*.1,b.y+b.h*.4);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(b.x+b.w*.25,b.y-b.h*.5);ctx.lineTo(b.x-b.w*.1,b.y+b.h*.5);ctx.stroke();
+    }
+    // Emoji icon
+    ctx.globalAlpha=0.9;
+    ctx.font=`${b.type==='heavy'?14:12}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(b.type==='heavy'?'🧱':'🪵',b.x,b.y);
+    ctx.restore();
+  }
+
+  // 배치 미리보기
+  if(G.barricadePlacing){
+    const bp=G.barricadePlacing;
+    const col=bp.type==='heavy'?'#5588cc':'#c8860a';
+    const w=bp.type==='heavy'?64:48, h=bp.type==='heavy'?24:18;
+    ctx.save();
+    ctx.globalAlpha=0.5;ctx.strokeStyle=col;ctx.lineWidth=2;ctx.setLineDash([4,4]);
+    ctx.strokeRect(G.mouse.x-w/2,G.mouse.y-h/2,w,h);
+    ctx.fillStyle=col;ctx.globalAlpha=0.2;
+    ctx.fillRect(G.mouse.x-w/2,G.mouse.y-h/2,w,h);
+    ctx.restore();
+  }
+}
+
+function updateBarricades(){
+  for(let bi=G.barricades.length-1;bi>=0;bi--){
+    const b=G.barricades[bi];
+    if(b.hp<=0){G.barricades.splice(bi,1);continue;}
+    // 좀비 충돌: 바리케이드에 접촉한 좀비는 이동 차단 + HP 소모
+    for(const z of G.zombies){
+      if(!z.alive)continue;
+      const dx=z.x-b.x, dy=z.y-b.y;
+      if(Math.abs(dx)<b.w/2+z.radius&&Math.abs(dy)<b.h/2+z.radius){
+        // 방향 반발
+        const norm=Math.hypot(dx,dy)||1;
+        z.x+=dx/norm*1.8; z.y+=dy/norm*1.8;
+        // 바리케이드 피해 (매 60프레임)
+        if(G.frame%60===0){
+          b.hp-=z.dmg||8;
+          // 파티클
+          spawnP(b.x+(Math.random()-.5)*b.w,b.y+(Math.random()-.5)*b.h,4,'#c8860a',2);
+        }
+      }
+    }
+  }
+}
+
+function drawBarricadePlacingHint(){}
 // ================================================================
 function rebuildWeaponBar(){
   const bar=document.getElementById('weapbar');bar.innerHTML='';
@@ -912,7 +1031,7 @@ function drawCrosshair(){
 function loop(){
   if(!G.running)return;
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawBullets();drawDrops();drawSupplyBoxes();drawZombies();drawPlayer();drawParts();drawHNs();drawCrosshair();
+  drawBullets();drawDrops();drawSupplyBoxes();drawBarricades();drawZombies();drawPlayer();drawParts();drawHNs();drawCrosshair();
   update();requestAnimationFrame(loop);
 }
 
@@ -967,6 +1086,12 @@ function showTitle(){
 //  INPUT
 // ================================================================
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&G.barricadePlacing){
+    G.barricadePlacing=false;
+    const hint=document.getElementById('barricade-hint');
+    if(hint)hint.style.display='none';
+    openShop();
+  }
   if(e.key==='w'||e.key==='W'||e.key==='ArrowUp')G.keys.w=true;
   if(e.key==='s'||e.key==='S'||e.key==='ArrowDown')G.keys.s=true;
   if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft')G.keys.a=true;
@@ -986,7 +1111,23 @@ document.addEventListener('keyup',e=>{
   if(e.key==='d'||e.key==='D'||e.key==='ArrowRight')G.keys.d=false;
 });
 canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();G.mouse.x=e.clientX-r.left;G.mouse.y=e.clientY-r.top;});
-canvas.addEventListener('mousedown',()=>{G.mouse.down=true;if(G.running)shoot();});
+canvas.addEventListener('mousedown',()=>{
+  if(G.barricadePlacing){
+    // 바리케이드 배치
+    const bp=G.barricadePlacing;
+    G.barricades.push({
+      x:G.mouse.x,y:G.mouse.y,
+      type:bp.type, hp:bp.hp, maxHp:bp.maxHp,
+      w:bp.type==='heavy'?64:48, h:bp.type==='heavy'?24:18,
+    });
+    G.barricadePlacing=false;
+    const hint=document.getElementById('barricade-hint');
+    if(hint)hint.style.display='none';
+    openShop(); // 상점으로 복귀
+    return;
+  }
+  G.mouse.down=true;if(G.running)shoot();
+});
 canvas.addEventListener('mouseup',()=>G.mouse.down=false);
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[e.touches.length-1];const r=canvas.getBoundingClientRect();G.mouse.x=t.clientX-r.left;G.mouse.y=t.clientY-r.top;},{passive:false});
