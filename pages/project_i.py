@@ -11,8 +11,8 @@ GAME_HTML = r"""<!DOCTYPE html>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{--red:#ff2244;--green:#00ff88;--gold:#f5c518;--cyan:#00d4ff;--purple:#c04fff;--orange:#ff7700;--bg:#04080a;--glass:rgba(255,255,255,.04);--border:rgba(255,255,255,.07);}
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;cursor:crosshair;}
-#root{position:relative;width:100vw;height:100vh;overflow:hidden;}
+html,body{width:100%;height:728px;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;cursor:crosshair;}
+#root{position:relative;width:100%;height:728px;overflow:hidden;}
 canvas{position:absolute;top:0;left:0;}
 
 /* ── HUD ── */
@@ -133,9 +133,22 @@ canvas{position:absolute;top:0;left:0;}
 .tpill.g{color:var(--gold);border-color:rgba(245,197,24,.3);}
 .tpill.r{color:var(--red);border-color:rgba(255,34,68,.3);}
 .tpill.p{color:var(--purple);border-color:rgba(192,79,255,.3);}
+
+#ctrl-bar{position:absolute;top:0;left:0;right:0;z-index:200;background:rgba(0,0,0,0.82);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;gap:16px;padding:5px 12px;font-size:10px;color:#778;letter-spacing:1px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.06);}
+#ctrl-bar span{color:#aab;}
+#ctrl-bar b{color:#22d3ee;font-weight:700;}
 </style>
 </head>
 <body>
+  <div id="ctrl-bar">
+    <span><b>마우스</b> 조준  <b>클릭 / Space</b> 발사</span>
+    <span>|</span>
+    <span><b>Z / Esc</b> 스코프 토글</span>
+    <span>|</span>
+    <span><b>Shift</b> 숨참기(정확도↑)</span>
+    <span>|</span>
+    <span><b>R</b> 재장전  <b>1~4</b> 무기교체</span>
+  </div>
 <div id="root">
   <canvas id="bgc"></canvas>
   <canvas id="gc"></canvas>
@@ -254,10 +267,11 @@ const crCtx = crossCV.getContext('2d');
 const root  = document.getElementById('root');
 
 function resize(){
-  canvas.width = bgc.width = crossCV.width = root.clientWidth;
-  canvas.height= bgc.height= crossCV.height= root.clientHeight;
+  canvas.width = bgc.width = crossCV.width = root.clientWidth||window.innerWidth||730;
+  canvas.height= bgc.height= crossCV.height= root.clientHeight||window.innerHeight||560;
 }
 resize(); window.addEventListener('resize', ()=>{ resize(); drawStaticBg(); });
+setTimeout(()=>{resize();drawStaticBg();},100);setTimeout(()=>{resize();drawStaticBg();},500);
 
 // ================================================================
 //  WEAPON DEFS
