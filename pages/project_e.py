@@ -14,8 +14,8 @@ GAME_HTML = r"""<!DOCTYPE html>
   --gold:#f5c518;--red:#ff2244;--blue:#3af;--green:#2fc;
   --purple:#c04fff;--orange:#ff7700;--bg:#07050f;
 }
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Noto Sans KR',sans-serif;touch-action:none;}
-#root{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+html,body{width:100%;height:838px;overflow:hidden;background:var(--bg);font-family:'Noto Sans KR',sans-serif;touch-action:none;}
+#root{position:relative;width:100%;height:838px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 #gc{display:block;image-rendering:pixelated;}
 
 /* HUD */
@@ -185,9 +185,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .ub-name{font-family:'Black Han Sans',sans-serif;font-size:18px;color:var(--gold);letter-spacing:3px;}
 .ub-desc{font-size:10px;color:#665500;margin-top:4px;}
 @keyframes ubAnim{0%{opacity:0;transform:scale(.8);}15%,75%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(.95);}}
+
+#ctrl-bar{position:absolute;top:0;left:0;right:0;z-index:200;background:rgba(0,0,0,0.82);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;gap:16px;padding:5px 12px;font-size:10px;color:#778;letter-spacing:1px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.06);}
+#ctrl-bar span{color:#aab;}
+#ctrl-bar b{color:#ffcc44;font-weight:700;}
 </style>
 </head>
 <body>
+  <div id="ctrl-bar">
+    <span><b>W A S D</b> / 방향키 이동</span>
+    <span>|</span>
+    <span><b>Q</b> 돌진  <b>E</b> 폭발  <b>R</b> 시간정지</span>
+    <span>|</span>
+    <span>자동 공격</span>
+  </div>
 <div id="root">
   <canvas id="gc"></canvas>
 
@@ -285,7 +296,7 @@ const ctx = canvas.getContext('2d');
 let GW = 800, GH = 560, scale = 1;
 function resize() {
   const root = document.getElementById('root');
-  const rw = root.clientWidth, rh = root.clientHeight;
+  const rw = root.clientWidth||window.innerWidth||800, rh = root.clientHeight||window.innerHeight||560;
   scale = Math.min(rw / GW, rh / GH);
   canvas.width = GW; canvas.height = GH;
   canvas.style.width = (GW * scale) + 'px';
@@ -293,6 +304,7 @@ function resize() {
 }
 resize();
 window.addEventListener('resize', resize);
+setTimeout(resize,100);setTimeout(resize,500);
 
 // ── INPUT ──────────────────────────────────────────────────
 const KEYS = {}, JKEYS = {};
