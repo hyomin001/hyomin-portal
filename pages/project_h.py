@@ -167,9 +167,9 @@ html,body{width:100%;height:728px;overflow:hidden;background:var(--bg);font-fami
   </div>
 
   <div id="keys-hint">
-    <div>← → 이동 | ↑/Z 점프 | ↓ 가드</div>
-    <div>X/J 펀치 | C/K 킥 | B 강공격 | V/L 필살기</div>
-    <div>M 슈퍼기술(게이지MAX)</div>
+    <div>P1: A D 이동 | W 점프 | S 가드</div>
+    <div>P1: Z 펀치 | X 킥 | C 강공격 | V 필살기 | F 슈퍼</div>
+    <div>P2: ← → 이동 | ↑ 점프 | ↓ 가드 | 1 펀치 | 2 킥 | 3 강공격 | 4 필살기 | 5 슈퍼</div>
   </div>
 
   <div id="dpad">
@@ -221,18 +221,18 @@ window.addEventListener('keydown',e=>{
   KEYS[e.code]=true;
   if(!G.running)return;
   // P1 attacks
-  if(e.code==='KeyX'||e.code==='KeyJ')doAtk(P1,'punch',P2);
-  if(e.code==='KeyC'||e.code==='KeyK')doAtk(P1,'kick',P2);
-  if(e.code==='KeyB')doAtk(P1,'heavy',P2);
-  if(e.code==='KeyV'||e.code==='KeyL')doAtk(P1,'special',P2);
-  if(e.code==='KeyM')doAtk(P1,'super',P2);
+  if(e.code==='KeyZ')doAtk(P1,'punch',P2);
+  if(e.code==='KeyX')doAtk(P1,'kick',P2);
+  if(e.code==='KeyC')doAtk(P1,'heavy',P2);
+  if(e.code==='KeyV')doAtk(P1,'special',P2);
+  if(e.code==='KeyF')doAtk(P1,'super',P2);
   // P2 attacks (VS 2P 모드)
   if(vsMode){
-    if(e.code==='Numpad1'||e.code==='KeyU')doAtk(P2,'punch',P1);
-    if(e.code==='Numpad2'||e.code==='KeyI')doAtk(P2,'kick',P1);
-    if(e.code==='Numpad3'||e.code==='KeyO')doAtk(P2,'heavy',P1);
-    if(e.code==='Numpad0'||e.code==='KeyP')doAtk(P2,'special',P1);
-    if(e.code==='NumpadEnter'||e.code==='BracketLeft')doAtk(P2,'super',P1);
+    if(e.code==='Digit1'||e.code==='Numpad1')doAtk(P2,'punch',P1);
+    if(e.code==='Digit2'||e.code==='Numpad2')doAtk(P2,'kick',P1);
+    if(e.code==='Digit3'||e.code==='Numpad3')doAtk(P2,'heavy',P1);
+    if(e.code==='Digit4'||e.code==='Numpad4')doAtk(P2,'special',P1);
+    if(e.code==='Digit5'||e.code==='Numpad5')doAtk(P2,'super',P1);
   }
   ['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&e.preventDefault();
 });
@@ -570,10 +570,10 @@ function updateFighter(f,opp){
 
 function handlePlayerInput(p,opp){
   if(p.hitstop>0)return;
-  const gl=KEYS['ArrowLeft']||KEYS['KeyA']||p._tL;
-  const gr=KEYS['ArrowRight']||KEYS['KeyD']||p._tR;
-  const gj=KEYS['ArrowUp']||KEYS['KeyZ']||p._tJ;
-  const gd=KEYS['ArrowDown']||KEYS['KeyS']||p._tDown;
+  const gl=KEYS['KeyA']||p._tL;
+  const gr=KEYS['KeyD']||p._tR;
+  const gj=KEYS['KeyW']||p._tJ;
+  const gd=KEYS['KeyS']||p._tDown;
   const holdBack=(p.facing===1&&gl)||(p.facing===-1&&gr);
   if(gd&&holdBack){p.blocking=true;p.blockT=4;p.blockLow=true;}
   else if(holdBack&&p.onGround){p.blocking=true;p.blockT=4;p.blockLow=false;}
@@ -589,10 +589,10 @@ function handlePlayerInput(p,opp){
 function handleP2Input(p,opp){
   if(p.hitstop>0)return;
   // P2: WASD 이동, E 점프
-  const gl=KEYS['KeyA']||p._tL;
-  const gr=KEYS['KeyD']||p._tR;
-  const gj=KEYS['KeyW']||KEYS['KeyE']||p._tJ;
-  const gd=KEYS['KeyS']||p._tDown;
+  const gl=KEYS['ArrowLeft']||p._tL;
+  const gr=KEYS['ArrowRight']||p._tR;
+  const gj=KEYS['ArrowUp']||p._tJ;
+  const gd=KEYS['ArrowDown']||p._tDown;
   const holdBack=(p.facing===1&&gl)||(p.facing===-1&&gr);
   if(gd&&holdBack){p.blocking=true;p.blockT=4;p.blockLow=true;}
   else if(holdBack&&p.onGround){p.blocking=true;p.blockT=4;p.blockLow=false;}
@@ -997,8 +997,8 @@ function showTitle(){
       <div style="font-size:9px;color:var(--red);letter-spacing:2px;margin-bottom:6px;margin-top:10px;font-weight:700">🎮 P2 캐릭터 선택</div>
       <div class="char-grid" id="cg2"></div>
       <div style="font-size:8px;color:#446;line-height:2.2;margin:10px 0;background:rgba(255,34,68,.06);border:1px solid rgba(255,34,68,.18);border-radius:8px;padding:8px 12px;text-align:left">
-        P1: ← → 이동 | ↑/Z 점프 | ↓ 가드 | X 펀치 | C 킥 | B 강공격 | V 필살기 | M 슈퍼기술<br>
-        P2: A D 이동 | W 점프 | S 가드 | U 펀치 | I 킥 | O 강공격 | P 필살기 | [ 슈퍼기술
+        P1: A D 이동 | W 점프 | S 가드 | Z 펀치 | X 킥 | C 강공격 | V 필살기 | F 슈퍼기술<br>
+        P2: ← → 이동 | ↑ 점프 | ↓ 가드 | 1 펀치 | 2 킥 | 3 강공격 | 4 필살기 | 5 슈퍼기술
       </div>
       <button class="ov-btn" style="background:linear-gradient(135deg,rgba(255,34,68,.22),rgba(192,79,255,.14));border-color:rgba(255,34,68,.55);color:var(--red)" onclick="window.startVS()">2P 대전 시작 🥊</button>
     </div>
@@ -1006,8 +1006,8 @@ function showTitle(){
       <div style="font-size:8px;color:#336;margin-bottom:8px;letter-spacing:2px">CPU 난이도</div>
       <div class="diff-row">${dnames.map((n,i)=>`<div class="dt${i===diffLv?' sel':''}" onclick="setDiff(${i})"><div>${n}</div><div style="font-size:7px;color:#446;margin-top:1px">${ddesc[i]}</div></div>`).join('')}</div>
       <div style="font-size:8px;color:#334;line-height:2.3;margin-bottom:12px">
-        ← → 이동 | ↑/Z 점프 | ↓ 가드<br>
-        X/J 펀치 | C/K 킥 | B 강공격 | V/L 필살기 | M 슈퍼기술
+        A D 이동 | W 점프 | S 가드<br>
+        Z 펀치 | X 킥 | C 강공격 | V 필살기 | F 슈퍼기술
       </div>
       <button class="ov-btn" onclick="startArcade()">아케이드 시작 🏆</button>
       <br><button class="ov-btn" style="margin-top:8px;background:linear-gradient(135deg,rgba(255,34,68,.18),rgba(100,80,200,.1));border-color:rgba(255,34,68,.4);color:var(--red)" onclick="toggleVSMode()">👥 2P 대전 모드</button>
