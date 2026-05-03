@@ -134,10 +134,26 @@ html,body{width:100%;height:728px;overflow:hidden;background:var(--bg);font-fami
 
 @keyframes shake{0%,100%{transform:translate(0,0);}20%{transform:translate(-5px,3px);}40%{transform:translate(5px,-3px);}60%{transform:translate(-3px,2px);}80%{transform:translate(3px,-2px);}}
 .shaking{animation:shake .18s ease;}
+
+#ctrl-bar{position:absolute;top:0;left:0;right:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;gap:14px;padding:4px 12px;font-size:9px;color:#556;letter-spacing:1px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.06);}
+#ctrl-bar span{color:#889;}
+#ctrl-bar b{color:#c04fff;font-weight:700;}
+#ctrl-bar .p2k b{color:#ff2244;}
 </style>
 </head>
 <body>
-<div id="root">
+  <div id="ctrl-bar">
+    <span><b>P1</b></span>
+    <span><b>A D</b> 이동 · <b>W</b> 점프 · <b>S</b> 가드</span>
+    <span>|</span>
+    <span><b>Z</b> 펀치 · <b>X</b> 킥 · <b>C</b> 강공격 · <b>V</b> 필살기 · <b>F</b> 슈퍼</span>
+    <span style="color:rgba(255,255,255,0.15)">┃</span>
+    <span class="p2k"><b>P2</b></span>
+    <span class="p2k"><b>← →</b> 이동 · <b>↑</b> 점프 · <b>↓</b> 가드</span>
+    <span>|</span>
+    <span class="p2k"><b>1</b> 펀치 · <b>2</b> 킥 · <b>3</b> 강공격 · <b>4</b> 필살기 · <b>5</b> 슈퍼</span>
+  </div>
+  <div id="root">
   <div id="hud">
     <div class="hp-col">
       <div class="fn" id="fn-p1">P1</div>
