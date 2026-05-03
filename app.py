@@ -763,6 +763,18 @@ if st.session_state.page_view == "portal":
         새로운 시즌의 시작을 기념하여 모든 시민께 <b>초기 정착금 5억 원</b>을 즉시 지급합니다!
     </p>
 </div>
+<div class="arch-highlight" style="border-left-color:#c04fff; background: linear-gradient(90deg, rgba(192,79,255,0.08), rgba(108,99,255,0.06));">
+    <p style="color:#c04fff !important;">🎮 게임 패치노트 (2026.05.03)</p>
+    <p class="sub">
+        <b>🥊 스트리트 파이터 EX</b><br>
+        · <b>2P 대전 모드 추가</b> — 같은 PC에서 두 명이 동시에 플레이 가능<br>
+        · <b>조작키 전면 개편</b> — P1(A/D/W/S + Z/X/C/V/F) / P2(방향키 + 숫자 1~5) 완전 분리<br>
+        · 게임 화면 블랙스크린 렌더링 버그 수정<br><br>
+        <b>🎮 전체 게임 공통</b><br>
+        · 게임 상단 <b>조작키 힌트 바</b> 상시 표시 추가 (스트리트 파이터·던전 런·레이싱·좀비·스나이퍼)<br>
+        · Streamlit iframe 내 화면 렌더링 안정성 개선
+    </p>
+</div>
         """, unsafe_allow_html=True)
 
         st.markdown("### 🏗️ SYSTEM ARCHITECTURE & MODULES")
@@ -1184,15 +1196,28 @@ if st.session_state.page_view == "portal":
         <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">⚡ 슈퍼 게이지</span>
         <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">🔥 필살기 파이니슬</span>
         <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">🏆 3라운드 선승</span>
+        <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">👥 2P 대전 모드</span>
+        <span class="arch-badge" style="color:#c04fff !important;background:rgba(192,79,255,0.12);border-color:rgba(192,79,255,0.35);">🗺️ 8스테이지 아케이드</span>
     </div>
     <div style="margin-top:10px;background:rgba(192,79,255,0.08);border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:#c04fff !important;font-weight:700;">💡 컨트롤</p>
         <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
-            PC: <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">WASD/화살표</code> 이동 &nbsp;
-            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">J</code> 펀치 &nbsp;
-            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">K</code> 킥 &nbsp;
-            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">U</code> 점프 &nbsp;
-            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">I</code> 스페셔이얼 &nbsp;|&nbsp; 모바일: D-PAD + 에행버튼
+            🎮 <b>P1:</b> <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">A D</code> 이동 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">W</code> 점프 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">S</code> 가드 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">Z</code> 펀치 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">X</code> 킥 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">C</code> 강공격 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">V</code> 필살기 &nbsp;
+            <code style="background:rgba(192,79,255,0.2);padding:1px 5px;border-radius:3px;">F</code> 슈퍼기술<br>
+            🕹️ <b>P2:</b> <code style="background:rgba(255,34,68,0.2);padding:1px 5px;border-radius:3px;">← →</code> 이동 &nbsp;
+            <code style="background:rgba(255,34,68,0.2);padding:1px 5px;border-radius:3px;">↑</code> 점프 &nbsp;
+            <code style="background:rgba(255,34,68,0.2);padding:1px 5px;border-radius:3px;">↓</code> 가드 &nbsp;
+            <code style="background:rgba(255,34,68,0.2);padding:1px 5px;border-radius:3px;">1</code> 펀치 &nbsp;
+            <code style="background:rgba(255,34,68,0.2);padding:1px 5px;border-radius:3px;">2</code> 킥 &nbsp;
+            <code style="background:rgba(255,34,68,0.2);padding:1px 5px;border-radius:3px;">3</code> 강공격 &nbsp;
+            <code style="background:rgba(255,34,68,0.2);padding:1px 5px;border-radius:3px;">4</code> 필살기 &nbsp;
+            <code style="background:rgba(255,34,68,0.2);padding:1px 5px;border-radius:3px;">5</code> 슈퍼기술 &nbsp;|&nbsp; 모바일: D-PAD + 공격버튼
         </p>
     </div>
 </div>
