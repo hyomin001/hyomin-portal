@@ -148,7 +148,9 @@ const BW = 420, BH = 740;
 let scale = 1;
 
 function resize() {
-  const rw = innerWidth||760, rh = innerHeight||560;
+  const wrap = document.getElementById('wrap');
+  const rw = (wrap ? wrap.clientWidth : 0) || document.documentElement.clientWidth || innerWidth || 420;
+  const rh = (wrap ? wrap.clientHeight : 0) || document.documentElement.clientHeight || innerHeight || 740;
   scale = Math.min(rw/BW, rh/BH);
   gc.width  = BW; gc.height = BH;
   const pw = BW*scale, ph = BH*scale;
@@ -156,7 +158,7 @@ function resize() {
   ui.style.cssText  = `position:absolute;left:${(rw-pw)/2}px;top:${(rh-ph)/2}px;width:${pw}px;height:${ph}px;pointer-events:none;`;
 }
 resize(); addEventListener('resize', resize);
-setTimeout(resize,100);setTimeout(resize,500);
+setTimeout(resize,100);setTimeout(resize,400);setTimeout(resize,800);
 
 // ═══════════════════════════════════════════════════════
 //  DATA
@@ -1140,9 +1142,25 @@ document.getElementById('gc').addEventListener('touchend',e=>{
 // ═══════════════════════════════════════════════════════
 //  BOOT
 // ═══════════════════════════════════════════════════════
-initGame();
-G.run = true;
-requestAnimationFrame(loop);
+// 배경만 그리고 타이틀 화면 표시 (게임은 START 버튼 후 시작)
+G = { run: false, dead: false, frame: 0, score: 0, dist: 0,
+      lane: 2, laneX: LANE_CX[2], targetX: LANE_CX[2],
+      laneMoving: false, laneDir: 0,
+      speed: 0, baseSpd: 420, maxSpd: 980,
+      nitro: 100, nitroOn: false,
+      hp: 3, maxHp: 3, shieldT: 0, boostT: 0, magnetT: 0, flashT: 0,
+      combo: 1, comboD: 0, maxCombo: 1,
+      wanted: 0, wantedCool: 0,
+      wave: 1, waveKills: 0, waveTarget: 7,
+      totalKills: 0, traffic: [], powers: [],
+      spawnT: 0, pwrT: 0,
+      roadY: 0, bgY: 0, dashOff: 0,
+      shake: 0, shakeX: 0, shakeY: 0,
+      _tL: false, _tR: false, _tN: false,
+      _swL: false, _swR: false,
+};
+ctx.fillStyle='#060a14'; ctx.fillRect(0,0,BW,BH);
+showTitle();
 </script>
 </body>
 </html>"""
