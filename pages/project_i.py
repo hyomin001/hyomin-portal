@@ -1175,5 +1175,41 @@ showTitle();
 </html>"""
 
 def render():
+    import streamlit.components.v1 as _cv1
+    from utils.core import sync_user_data
+
+    # ── 결과 처리 ──
+    qp = st.query_params
+    if qp.get('sniper_score'):
+        try:
+            uid = st.session_state.get('logged_in_user', '')
+            s_score = int(qp.get('sniper_score', 0))
+            s_grade = qp.get('sniper_grade', '')
+            if uid and s_score > 0:
+                cur_rec = st.session_state.get('game_records', {})
+                if s_score > cur_rec.get('sniper', {}).get('score', 0):
+                    cur_rec.setdefault('sniper', {}).update({'score': s_score, 'grade': s_grade})
+                    st.session_state.game_records = cur_rec
+                    sync_user_data()
+                    st.toast(f"🏆 스나이퍼 최고기록 갱신! {s_score:,}점 ({s_grade}등급)", icon="🎯")
+        except Exception:
+            pass
+        st.query_params.clear()
+
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
+    st.caption("🎯 마우스: 조준 | SPACE/클릭: 발사 | Z/ESC: 스코프 | R: 재장전 | SHIFT: 숨참기 | 1~4: 무기전환")
+
+    listener_html = """
+    <script>
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'sniper_result') {
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set('sniper_score', e.data.score);
+        url.searchParams.set('sniper_grade', e.data.grade);
+        window.parent.location.href = url.toString();
+      }
+    });
+    </script>
+    """
+    _cv1.html(listener_html, height=0)
     components.html(GAME_HTML, height=730, scrolling=False)
