@@ -1193,6 +1193,7 @@ def render():
         except Exception:
             pass
         st.query_params.clear()
+    st.rerun()
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🧟 WASD/조이스틱: 이동 | 마우스/터치: 조준·사격 | 1~5: 무기 전환 | Q: 화염탄 E: 섬광 T: 공습")
