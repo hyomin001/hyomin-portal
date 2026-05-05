@@ -592,33 +592,22 @@ if st.session_state.page_view == "portal":
         ("🥊", "스트리트 파이터", _lb['fighter']['uid'], _lb['fighter']['label'] or "기록 없음"),
         ("🎯", "스나이퍼 엘리트", _lb['sniper']['uid'],  _lb['sniper']['label']  or "기록 없음"),
     ]
-    _lb_items_html = ""
+    _lb_parts = [
+        """<div style='background:linear-gradient(135deg,rgba(10,16,32,0.95),rgba(15,24,48,0.9));border:1px solid rgba(108,99,255,0.25);border-radius:16px;padding:0 0 4px 0;margin:16px 0 20px 0;overflow:hidden;'><div style='padding:12px 16px 8px;border-bottom:1px solid rgba(108,99,255,0.2);display:flex;align-items:center;gap:8px;'><span style='font-size:1.1rem;'>🏆</span><span style='font-family:"Orbitron",sans-serif;font-size:0.82rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;'>GAME LEADERBOARD</span><span style='margin-left:auto;font-size:0.7rem;color:var(--text2);'>게임별 전서버 1위</span></div>"""
+    ]
     for _ico, _gname, _guser, _glabel in _lb_rows:
         _uid_display = _guser if _guser != "—" else "기록 없음"
-        _lb_items_html += f"""
-        <div style='display:flex;align-items:center;gap:10px;padding:7px 10px;
-          border-bottom:1px solid rgba(255,255,255,0.05);'>
-          <span style='font-size:1.2rem;width:26px;text-align:center;'>{_ico}</span>
-          <span style='color:var(--text2);font-size:0.78rem;width:100px;flex-shrink:0;'>{_gname}</span>
-          <span style='color:var(--cyan);font-weight:700;font-size:0.82rem;flex:1;'>{_uid_display}</span>
-          <span style='color:var(--gold);font-size:0.75rem;text-align:right;'>{_glabel}</span>
-        </div>"""
-    st.markdown(f"""
-    <div style='background:linear-gradient(135deg,rgba(10,16,32,0.95),rgba(15,24,48,0.9));
-      border:1px solid rgba(108,99,255,0.25);border-radius:16px;padding:0 0 4px 0;
-      margin:16px 0 20px 0;overflow:hidden;'>
-      <div style='padding:12px 16px 8px;border-bottom:1px solid rgba(108,99,255,0.2);
-        display:flex;align-items:center;gap:8px;'>
-        <span style='font-size:1.1rem;'>🏆</span>
-        <span style='font-family:"Orbitron",sans-serif;font-size:0.82rem;font-weight:900;
-          background:linear-gradient(135deg,var(--gold),var(--cyan));
-          -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-          letter-spacing:2px;'>GAME LEADERBOARD</span>
-        <span style='margin-left:auto;font-size:0.7rem;color:var(--text2);'>게임별 전서버 1위</span>
-      </div>
-      {_lb_items_html}
-    </div>
-    """, unsafe_allow_html=True)
+        _lbl_display = _glabel if _glabel else "기록 없음"
+        _lb_parts.append(
+            "<div style='display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);'>"
+            + "<span style='font-size:1.2rem;width:26px;text-align:center;'>" + _ico + "</span>"
+            + "<span style='color:var(--text2);font-size:0.78rem;width:100px;flex-shrink:0;'>" + _gname + "</span>"
+            + "<span style='color:var(--cyan);font-weight:700;font-size:0.82rem;flex:1;'>" + _uid_display + "</span>"
+            + "<span style='color:var(--gold);font-size:0.75rem;text-align:right;'>" + _lbl_display + "</span>"
+            + "</div>"
+        )
+    _lb_parts.append("</div>")
+    st.markdown("".join(_lb_parts), unsafe_allow_html=True)
 
     st.markdown("<div class='game-section-title'>🎮 서비스 입장</div>", unsafe_allow_html=True)
 
