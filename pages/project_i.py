@@ -1195,6 +1195,7 @@ def render():
         except Exception:
             pass
         st.query_params.clear()
+    st.rerun()
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🎯 마우스: 조준 | SPACE/클릭: 발사 | Z/ESC: 스코프 | R: 재장전 | SHIFT: 숨참기 | 1~4: 무기전환")
