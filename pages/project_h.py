@@ -664,8 +664,8 @@ function roundEnd(winner){
   if(winner==='p1'){
     p1StageWins++;
     res.style.color='var(--blue)';res.textContent='🏆 P1 WIN!';
-    if(!vsMode&&P1.hp===P1.maxHp){arcadeScore+=500;arcadePerfects++;}
-    if(!vsMode)arcadeScore+=200+Math.round((P1.hp/P1.maxHp)*300);
+    if(P1.hp===P1.maxHp){arcadeScore+=500;if(!vsMode)arcadePerfects++;}
+    arcadeScore+=200+Math.round((P1.hp/P1.maxHp)*300);
   }else{
     cpuStageWins++;
     res.style.color='var(--red)';res.textContent=vsMode?'🏆 P2 WIN!':'CPU WIN!';
@@ -713,7 +713,7 @@ window.startVS=function(){
   arcadeScore=0;arcadePerfects=0;arcadeMaxCombo=0;
   superChargeMode=false;PROJS=[];PARTS=[];HITS=[];
   initStars(); updateProgress();
-  resize(); G={running:true}; startRound(); requestAnimationFrame(loop);
+  resize(); if(_RAF_h){cancelAnimationFrame(_RAF_h);_RAF_h=null;}G={running:true}; startRound(); _RAF_h=requestAnimationFrame(loop);
 };
 
 function stageWon(){
@@ -782,12 +782,12 @@ function showStageScreen(type){
 
 window.continueArcade=function(){
   document.getElementById('stage-screen').style.display='none';
-  G.running=true;startRound();requestAnimationFrame(loop);
+  if(_RAF_h){cancelAnimationFrame(_RAF_h);_RAF_h=null;}G.running=true;startRound();_RAF_h=requestAnimationFrame(loop);
 };
 window.retryStage=function(){
   p1StageWins=0;cpuStageWins=0;roundN=1;
   document.getElementById('stage-screen').style.display='none';
-  G.running=true;startRound();requestAnimationFrame(loop);
+  if(_RAF_h){cancelAnimationFrame(_RAF_h);_RAF_h=null;}G.running=true;startRound();_RAF_h=requestAnimationFrame(loop);
 };
 
 // ================================================================
@@ -967,6 +967,7 @@ function drawParts(){
 // ================================================================
 //  MAIN LOOP
 // ================================================================
+let _RAF_h = null;
 function loop(){
   if(!G.running)return;
   if(canvas.width<10)resize();
@@ -1133,7 +1134,7 @@ def render():
         except Exception:
             pass
         st.query_params.clear()
-    st.rerun()
+        st.rerun()
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🥊 P1: A/D이동 W점프 Z펀치 X발차기 C필살 V슈퍼 | P2: ←→이동 ↑점프 1펀치 2발차기 3필살 4슈퍼")
