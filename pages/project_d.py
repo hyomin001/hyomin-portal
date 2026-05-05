@@ -1850,12 +1850,7 @@ def render():
         if net_worth > stats.get('best_net_worth', 0):
             stats['best_net_worth'] = net_worth
         st.session_state.marble_stats = stats
-
-        # DB 저장
-        users = load_db(USERS_FILE, {})
-        if uid in users:
-            users[uid]['marble_stats'] = stats
-            save_db(USERS_FILE, users)
+        # ✅ [BUG FIX] sync_user_data()가 marble_stats 포함하여 저장함 — 별도 save_db 불필요
         sync_user_data()
         st.rerun()
 
