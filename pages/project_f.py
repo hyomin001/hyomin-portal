@@ -1077,6 +1077,8 @@ function showGameOver(){
   localStorage.setItem('nrv5',best);
   const isRec=G.score>=best&&G.score>0;
   if(isRec) ghostSave(); // 최고 기록 갱신 시 고스트 저장
+  // ✅ [NEW] 게임 결과를 포털(Streamlit)에 전송 — DB 최고기록 저장용
+  try{window.parent.postMessage({type:'racing_result',score:G.score,dist:parseFloat(G.dist.toFixed(1))},'*');}catch(e){}
   const ghostInfo = ghostBest ? `<div class="brow" style="color:#00ffcc;font-size:11px;">👻 고스트: 이전 최고 ${ghostBest.score?.toLocaleString()}점 기록 저장됨</div>` : '';
   const oi=document.getElementById('oi');
   oi.innerHTML=`
@@ -1167,5 +1169,43 @@ showTitle();
 
 
 def render():
+    import streamlit.components.v1 as _cv1
+    from utils.database import load_db, save_db
+    from utils.core import sync_user_data
+
+    # ── 결과 처리 (query_params) ──
+    qp = st.query_params
+    if qp.get('racing_score'):
+        try:
+            uid = st.session_state.get('logged_in_user', '')
+            r_score = int(qp.get('racing_score', 0))
+            r_dist  = float(qp.get('racing_dist', 0.0))
+            if uid and r_score > 0:
+                cur_rec = st.session_state.get('game_records', {})
+                if r_score > cur_rec.get('racing', {}).get('score', 0):
+                    cur_rec.setdefault('racing', {})['score'] = r_score
+                    cur_rec.setdefault('racing', {})['dist']  = r_dist
+                    st.session_state.game_records = cur_rec
+                    sync_user_data()
+                    st.toast(f"🏆 레이싱 최고기록 갱신! {r_score:,}점", icon="🏎️")
+        except Exception:
+            pass
+        st.query_params.clear()
+
     st.markdown("<style>iframe{border:none!important;}</style>", unsafe_allow_html=True)
+    st.caption("🏎️ ← → / A D: 레인전환 | SPACE/⚡: 니트로 | 🏆 최고기록은 자동 저장됩니다")
+
+    listener_html = """
+    <script>
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'racing_result') {
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set('racing_score', e.data.score);
+        url.searchParams.set('racing_dist',  e.data.dist);
+        window.parent.location.href = url.toString();
+      }
+    });
+    </script>
+    """
+    _cv1.html(listener_html, height=0)
     components.html(GAME_HTML, height=900, scrolling=False)
