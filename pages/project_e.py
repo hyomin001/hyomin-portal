@@ -1147,14 +1147,15 @@ function updatePlayer(dt) {
     if (it.life <= 0) return false;
     const d = Math.hypot(it.x - p.x, it.y - p.y);
     if (d < pickupR) {
-      if (d < 32) {
+      if (d < 28) {
         if (it.type === 'hp') { p.hp = Math.min(p.maxHp, p.hp + 30); dnum(it.x, it.y - 10, '+30 HP', false, '#22ff88'); }
         else { p.mp = Math.min(p.maxMp, p.mp + 28); dnum(it.x, it.y - 10, '+28 MP', false, '#44aaff'); }
         sfx_item(); it.alive = false; return false;
       }
-      // Magnet: pull toward player
-      const pull = (pickupR - 60) > 0 ? 200 : 0;
-      if (pull > 0) { it.x += (p.x - it.x) / d * pull * dt; it.y += (p.y - it.y) / d * pull * dt; }
+      // 자석 여부와 무관하게 항상 아이템을 플레이어 방향으로 끌어당김
+      const pullSpd = (pickupR > 60) ? 280 : 160;
+      it.x += (p.x - it.x) / d * pullSpd * dt;
+      it.y += (p.y - it.y) / d * pullSpd * dt;
     }
     return true;
   });
@@ -1375,6 +1376,8 @@ function updateWave(dt) {
   }
 
   G.waveTimer -= dt;
+  // Kill goal 달성 시 웨이브 타이머 단축 (보스 없는 웨이브)
+  if (!wd.boss && G.totalWaveKills >= G.waveKillGoal && G.waveTimer > 3) G.waveTimer = 3;
   // Wave end: when time is up AND no boss alive AND boss hasn't spawned yet
   if (G.waveTimer <= 0 && !G.bossAlive) {
     if (wd.boss && !G.bossSpawned) {
@@ -1393,7 +1396,7 @@ function updateWave(dt) {
 // ── MAIN GAME TICK ────────────────────────────────────────
 function tick(dt) {
   if (G.phase !== 'play' || G.paused) return;
-  if (G.hitStop > 0) { G.hitStop -= dt; return; }
+  if (G.hitStop > 0) { G.hitStop -= dt; if (G.hitStop > 0) return; }
 
   G.elapsed += dt;
   updatePlayer(dt);
@@ -2097,8 +2100,9 @@ def render():
     import streamlit as st
     import streamlit.components.v1 as components
     from utils.database import load_db, save_db, log_tx, atomic_add_cash
-    from utils.config import USERS_FILE
+    from utils.config import USERS_FILE, KST
     from utils.core import sync_user_data
+    from datetime import datetime, timedelta
 
     uid = st.session_state.get('logged_in_user', '')
 
@@ -2130,7 +2134,6 @@ def render():
             dstats['best_kills'] = kills
 
         # ── 주간 랭킹 저장 ──
-        from datetime import timedelta
         now_kst = datetime.now(KST)
         week_start_str = (now_kst - timedelta(days=now_kst.weekday())).replace(
             hour=0,minute=0,second=0,microsecond=0).strftime('%Y-%m-%d')
@@ -2162,7 +2165,6 @@ def render():
 
         # ── dungeon_weekly를 users DB에 직접 반영 ──
         from utils.database import load_db, save_db
-        from utils.config import USERS_FILE
         _users = load_db(USERS_FILE, {})
         if uid in _users:
             _users[uid]['dungeon_stats'] = dstats
