@@ -237,7 +237,7 @@ function ghostRecord(){
 }
 
 function ghostDraw(ctx, frame){
-  if(!ghostBest || !ghostBest.frames || !ghostBest.frames.length) return;
+  if(!ghostBest || !ghostBest.frames || !ghostBest.frames.length || !G.run) return;
   const gx = ghostBest.frames[Math.min(frame, ghostBest.frames.length-1)];
   ghostX += (gx - ghostX) * 0.35;
   const car = CARS[selCar];
@@ -1021,7 +1021,7 @@ function lighten(hex){
 // ═══════════════════════════════════════════════════════
 function loop(){
   if(!G.run) return;
-  render(); update();
+  update(); render();
   raf=requestAnimationFrame(loop);
 }
 
@@ -1191,7 +1191,7 @@ def render():
         except Exception:
             pass
         st.query_params.clear()
-    st.rerun()
+        st.rerun()
 
     st.markdown("<style>iframe{border:none!important;}</style>", unsafe_allow_html=True)
     st.caption("🏎️ ← → / A D: 레인전환 | SPACE/⚡: 니트로 | 🏆 최고기록은 자동 저장됩니다")
