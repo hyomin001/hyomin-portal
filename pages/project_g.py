@@ -1042,11 +1042,12 @@ function drawCrosshair(){
 // ================================================================
 //  MAIN LOOP
 // ================================================================
+let _RAF_g=null;
 function loop(){
   if(!G.running)return;
   ctx.clearRect(0,0,canvas.width,canvas.height);
   drawBullets();drawDrops();drawSupplyBoxes();drawBarricades();drawZombies();drawPlayer();drawParts();drawHNs();drawCrosshair();
-  update();requestAnimationFrame(loop);
+  update();_RAF_g=requestAnimationFrame(loop);
 }
 
 // ================================================================
@@ -1165,7 +1166,7 @@ function addT(id,dn,up){
 addT('fire-btn',()=>{G.touchFire=true;if(G.running)shoot();},()=>G.touchFire=false);
 addT('rl-btn',()=>startReload(),null);
 
-window.startGame=()=>{document.getElementById('overlay').style.display='none';initGame();requestAnimationFrame(loop);};
+window.startGame=()=>{document.getElementById('overlay').style.display='none';if(_RAF_g){cancelAnimationFrame(_RAF_g);_RAF_g=null;}G={running:false};initGame();_RAF_g=requestAnimationFrame(loop);};
 showTitle();
 </script>
 </body>
@@ -1193,7 +1194,7 @@ def render():
         except Exception:
             pass
         st.query_params.clear()
-    st.rerun()
+        st.rerun()
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🧟 WASD/조이스틱: 이동 | 마우스/터치: 조준·사격 | 1~5: 무기 전환 | Q: 화염탄 E: 섬광 T: 공습")
