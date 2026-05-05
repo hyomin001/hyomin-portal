@@ -1133,6 +1133,7 @@ def render():
         except Exception:
             pass
         st.query_params.clear()
+    st.rerun()
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🥊 P1: A/D이동 W점프 Z펀치 X발차기 C필살 V슈퍼 | P2: ←→이동 ↑점프 1펀치 2발차기 3필살 4슈퍼")
