@@ -1191,6 +1191,7 @@ def render():
         except Exception:
             pass
         st.query_params.clear()
+    st.rerun()
 
     st.markdown("<style>iframe{border:none!important;}</style>", unsafe_allow_html=True)
     st.caption("🏎️ ← → / A D: 레인전환 | SPACE/⚡: 니트로 | 🏆 최고기록은 자동 저장됩니다")
