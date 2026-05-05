@@ -1078,6 +1078,7 @@ function buildAmmoDisplay(){
 // ================================================================
 //  MAIN LOOP
 // ================================================================
+let _RAF_i=null;
 function loop(){
   if(!G.running) return;
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -1087,7 +1088,7 @@ function loop(){
   drawScope();
   drawCrosshair();
   update();
-  requestAnimationFrame(loop);
+  _RAF_i=requestAnimationFrame(loop);
 }
 
 // ================================================================
@@ -1125,7 +1126,8 @@ function showTitle(){
 window.setDiff=d=>{G.diffLv=d;document.querySelectorAll('.dt').forEach((t,i)=>t.classList.toggle('sel',i===d));};
 window.startGame=()=>{
   document.getElementById('overlay').style.display='none';
-  initGame(); requestAnimationFrame(loop);
+  if(_RAF_i){cancelAnimationFrame(_RAF_i);_RAF_i=null;}
+  initGame(); _RAF_i=requestAnimationFrame(loop);
 };
 window.showTitle=showTitle;
 
@@ -1195,7 +1197,7 @@ def render():
         except Exception:
             pass
         st.query_params.clear()
-    st.rerun()
+        st.rerun()
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🎯 마우스: 조준 | SPACE/클릭: 발사 | Z/ESC: 스코프 | R: 재장전 | SHIFT: 숨참기 | 1~4: 무기전환")
