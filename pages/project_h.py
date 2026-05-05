@@ -796,6 +796,8 @@ window.retryStage=function(){
 function showArcadeClear(){
   const best=Math.max(arcadeScore,parseInt(localStorage.getItem('sfBest')||'0'));
   localStorage.setItem('sfBest',best);
+  // ✅ [NEW] 아케이드 클리어 결과 포털 전송
+  try{window.parent.postMessage({type:'fighter_result',score:arcadeScore,perfects:arcadePerfects},'*');}catch(e){}
   document.getElementById('stage-screen').style.display='none';
   const ov=document.getElementById('overlay');
   ov.innerHTML=`<div class="ov-box">
@@ -1111,5 +1113,41 @@ showTitle();
 </html>"""
 
 def render():
+    import streamlit.components.v1 as _cv1
+    from utils.core import sync_user_data
+
+    # ── 결과 처리 ──
+    qp = st.query_params
+    if qp.get('fighter_score'):
+        try:
+            uid = st.session_state.get('logged_in_user', '')
+            f_score    = int(qp.get('fighter_score', 0))
+            f_perfects = int(qp.get('fighter_perfects', 0))
+            if uid and f_score > 0:
+                cur_rec = st.session_state.get('game_records', {})
+                if f_score > cur_rec.get('fighter', {}).get('score', 0):
+                    cur_rec.setdefault('fighter', {}).update({'score': f_score, 'perfects': f_perfects})
+                    st.session_state.game_records = cur_rec
+                    sync_user_data()
+                    st.toast(f"🏆 격투 최고기록 갱신! {f_score:,}점", icon="🥊")
+        except Exception:
+            pass
+        st.query_params.clear()
+
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
+    st.caption("🥊 P1: A/D이동 W점프 Z펀치 X발차기 C필살 V슈퍼 | P2: ←→이동 ↑점프 1펀치 2발차기 3필살 4슈퍼")
+
+    listener_html = """
+    <script>
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'fighter_result') {
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set('fighter_score',    e.data.score);
+        url.searchParams.set('fighter_perfects',  e.data.perfects);
+        window.parent.location.href = url.toString();
+      }
+    });
+    </script>
+    """
+    _cv1.html(listener_html, height=0)
     components.html(GAME_HTML, height=730, scrolling=False)
