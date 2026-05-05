@@ -34,7 +34,6 @@ def is_legacy_hash(h: str) -> bool:
 
 def verify_pw(pw: str, stored_hash: str) -> bool:
     """저장된 해시가 bcrypt든 SHA-256이든 자동으로 검증."""
-    # stored_hash가 None이거나 문자열이 아닌 경우 방어
     if not stored_hash or not isinstance(stored_hash, str):
         return False
     try:
@@ -79,6 +78,21 @@ def get_net_worth(uid, market_data):
     if w_lv > 0 and w_lv in FORGE_DATA: w += FORGE_DATA[w_lv]['sell']
     return w
 
+def _default_marble_stats():
+    return {'wins': 0, 'losses': 0, 'games_played': 0, 'best_net_worth': 0}
+
+def _default_dungeon_stats():
+    return {'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0}
+
+def _default_game_records():
+    """각 standalone 게임의 최고 점수 레코드 기본값"""
+    return {
+        'racing':  {'score': 0, 'dist': 0.0},
+        'zombie':  {'wave': 0, 'score': 0, 'kills': 0},
+        'fighter': {'score': 0, 'perfects': 0},
+        'sniper':  {'score': 0, 'grade': ''},
+    }
+
 def sync_user_data():
     if 'logged_in_user' not in st.session_state: return
     users = load_db(USERS_FILE, {})
@@ -101,10 +115,11 @@ def sync_user_data():
         'last_estate_reset': st.session_state.get('last_estate_reset', 0),
         'terminal_cleared': list(st.session_state.get('terminal_cleared', set())),
         'gacha_pity': st.session_state.get('gacha_pity', 0),
-        # ✅ [BUG FIX] dungeon_stats가 sync_user_data에 누락되어 있었음
-        'dungeon_stats': st.session_state.get('dungeon_stats', {
-            'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0
-        }),
+        'dungeon_stats': st.session_state.get('dungeon_stats', _default_dungeon_stats()),
+        # ✅ [BUG FIX] marble_stats도 sync에 포함 — save_db 후 sync 덮어쓰기 방지
+        'marble_stats': st.session_state.get('marble_stats', _default_marble_stats()),
+        # ✅ [NEW] standalone 게임 최고기록 동기화
+        'game_records': st.session_state.get('game_records', _default_game_records()),
     })
     save_db(USERS_FILE, users)
 
@@ -134,10 +149,11 @@ def pull_user_data():
         st.session_state.last_estate_reset = u.get('last_estate_reset', 0)
         st.session_state.terminal_cleared = set(u.get('terminal_cleared', []))
         st.session_state.gacha_pity = u.get('gacha_pity', 0)
-        # ✅ [BUG FIX] pull_user_data에도 dungeon_stats 복원 추가
-        st.session_state.dungeon_stats = u.get('dungeon_stats', {
-            'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0
-        })
+        st.session_state.dungeon_stats = u.get('dungeon_stats', _default_dungeon_stats())
+        # ✅ [BUG FIX] marble_stats pull 추가
+        st.session_state.marble_stats = u.get('marble_stats', _default_marble_stats())
+        # ✅ [NEW] standalone 게임 최고기록 pull
+        st.session_state.game_records = u.get('game_records', _default_game_records())
 
 def get_market():
     def init_m():
@@ -197,3 +213,60 @@ def get_online_users() -> int:
         return sum(1 for u in users.values() if now - u.get('last_seen', 0) < 300)
     except Exception:
         return 0
+
+def get_game_leaderboard(users_db: dict) -> dict:
+    """
+    각 게임 카테고리별 1위 유저를 반환합니다.
+    반환 형태: {game_key: {'uid': str, 'value': int/float, 'extra': str}}
+    """
+    result = {
+        'nw':      {'uid': '—', 'value': 0, 'label': ''},          # 순자산 1위 (기존)
+        'dungeon': {'uid': '—', 'value': 0, 'label': ''},           # 던전 최고점
+        'marble':  {'uid': '—', 'value': 0, 'label': ''},           # 마블 최고자산
+        'terminal':{'uid': '—', 'value': 0, 'label': ''},           # 터미널 클리어 스테이지
+        'racing':  {'uid': '—', 'value': 0, 'label': ''},           # 레이싱 최고점
+        'zombie':  {'uid': '—', 'value': 0, 'label': ''},           # 좀비 최고 웨이브
+        'fighter': {'uid': '—', 'value': 0, 'label': ''},           # 격투 최고점
+        'sniper':  {'uid': '—', 'value': 0, 'label': ''},           # 스나이퍼 최고점
+    }
+    for uid, u in users_db.items():
+        if uid == 'admin':
+            continue
+
+        # 던전
+        ds = u.get('dungeon_stats', {})
+        if ds.get('best_score', 0) > result['dungeon']['value']:
+            result['dungeon'] = {'uid': uid, 'value': ds['best_score'], 'label': f"{ds['best_score']:,}점"}
+
+        # 마블
+        ms = u.get('marble_stats', {})
+        if ms.get('best_net_worth', 0) > result['marble']['value']:
+            result['marble'] = {'uid': uid, 'value': ms['best_net_worth'], 'label': f"최고자산 {format_korean_money(ms['best_net_worth'])}"}
+
+        # 터미널 — terminal_cleared 리스트 길이
+        tc = len(u.get('terminal_cleared', []))
+        if tc > result['terminal']['value']:
+            result['terminal'] = {'uid': uid, 'value': tc, 'label': f"{tc}/10 스테이지"}
+
+        # 게임 레코드 (F/G/H/I)
+        gr = u.get('game_records', {})
+
+        racing_score = gr.get('racing', {}).get('score', 0)
+        if racing_score > result['racing']['value']:
+            dist = gr.get('racing', {}).get('dist', 0.0)
+            result['racing'] = {'uid': uid, 'value': racing_score, 'label': f"{racing_score:,}점 / {dist:.1f}km"}
+
+        zb_wave = gr.get('zombie', {}).get('wave', 0)
+        if zb_wave > result['zombie']['value']:
+            result['zombie'] = {'uid': uid, 'value': zb_wave, 'label': f"Wave {zb_wave}"}
+
+        fg_score = gr.get('fighter', {}).get('score', 0)
+        if fg_score > result['fighter']['value']:
+            result['fighter'] = {'uid': uid, 'value': fg_score, 'label': f"{fg_score:,}점"}
+
+        sn_score = gr.get('sniper', {}).get('score', 0)
+        if sn_score > result['sniper']['value']:
+            grade = gr.get('sniper', {}).get('grade', '')
+            result['sniper'] = {'uid': uid, 'value': sn_score, 'label': f"{sn_score:,}점 ({grade}등급)" if grade else f"{sn_score:,}점"}
+
+    return result
