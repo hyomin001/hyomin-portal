@@ -10,7 +10,7 @@ from datetime import datetime
 # ==============================
 from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA
 from utils.database import load_db, save_db, load_stats, save_stats
-from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
+from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users, get_game_leaderboard
 from utils.database import get_login_lock, set_login_lock, clear_login_lock, save_db
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
@@ -63,9 +63,16 @@ def _do_login(uid: str, users: dict, device_mode: str):
         'daily_quests':      u.get('daily_quests', {}),
         'weapon_level':      u.get('weapon_level', 0),
         'bulk_trade_count':  u.get('bulk_trade_count', 0),
+        'bulk_trade_date':   u.get('bulk_trade_date', ''),
         'last_estate_reset': u.get('last_estate_reset', 0),
         'login_fails':       0,
         '_last_seen_write':  0,
+        # ✅ [BUG FIX] 로그인 시 누락된 세션 필드 보완
+        'gacha_pity':        u.get('gacha_pity', 0),
+        'terminal_cleared':  set(u.get('terminal_cleared', [])),
+        'dungeon_stats':     u.get('dungeon_stats', {'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0}),
+        'marble_stats':      u.get('marble_stats', {'wins': 0, 'losses': 0, 'games_played': 0, 'best_net_worth': 0}),
+        'game_records':      u.get('game_records', {'racing': {'score': 0, 'dist': 0.0}, 'zombie': {'wave': 0, 'score': 0, 'kills': 0}, 'fighter': {'score': 0, 'perfects': 0}, 'sniper': {'score': 0, 'grade': ''}}),
     })
     stats    = load_stats()
     today    = datetime.now(KST).strftime("%Y-%m-%d")
@@ -523,10 +530,11 @@ if st.session_state.page_view == "portal":
         tags_html += f"<span class='scroll-tag {cls}'>{label}</span>"
     st.markdown(f"<div class='banner-scroll-wrap'><div class='banner-scroll-track'>{tags_html}</div></div>", unsafe_allow_html=True)
 
-    # ── 실시간 통계 위젯 ──
+    # ── 실시간 통계 위젯 + 게임별 1위 리더보드 ──
     try:
-        _top_uid, _top_nw = "없음", 0
+        _lb = get_game_leaderboard(_users_db_for_stats)
         _prices = {k: v['price'] for k, v in market.get('stock_data', {}).items()}
+        _top_nw = 0
         for _u, _udata in _users_db_for_stats.items():
             if _u == "admin": continue
             _w = _udata.get('cash', 0) - _udata.get('loan', 0)
@@ -538,10 +546,16 @@ if st.session_state.page_view == "portal":
                 if _eid in estate_config: _w += estate_config[_eid]['base_price'] * _cnt * 0.8
             _wlv = _udata.get('weapon_level', 0)
             if _wlv > 0 and _wlv in FORGE_DATA: _w += FORGE_DATA[_wlv]['sell']
-            if _w > _top_nw: _top_nw, _top_uid = _w, _u
+            if _w > _top_nw:
+                _top_nw = _w
+                _lb['nw'] = {'uid': _u, 'value': _w, 'label': format_korean_money(_w)}
         _nw_str = format_korean_money(_top_nw) if _top_nw > 0 else "0원"
+        _top_uid = _lb['nw']['uid']
     except:
         _top_uid, _nw_str = "집계 중", "—"
+        _lb = {'nw':{'uid':'—','label':''},'dungeon':{'uid':'—','label':''},'marble':{'uid':'—','label':''},
+               'terminal':{'uid':'—','label':''},'racing':{'uid':'—','label':''},'zombie':{'uid':'—','label':''},
+               'fighter':{'uid':'—','label':''},'sniper':{'uid':'—','label':''}}
 
     st.markdown(f"""
     <div class="stat-grid">
@@ -563,8 +577,46 @@ if st.session_state.page_view == "portal":
       <div class="stat-card volume">
         <div class="stat-icon">👑</div>
         <div class="stat-value">{_nw_str}</div>
-        <div class="stat-label">1위: {_top_uid}</div>
+        <div class="stat-label">자산1위: {_top_uid}</div>
       </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── 게임별 1위 리더보드 위젯 ──
+    _lb_rows = [
+        ("⚔️", "던전 런",      _lb['dungeon']['uid'],  _lb['dungeon']['label']  or "기록 없음"),
+        ("🎲", "인베스트마블",  _lb['marble']['uid'],   _lb['marble']['label']   or "기록 없음"),
+        ("💻", "THE TERMINAL", _lb['terminal']['uid'], _lb['terminal']['label'] or "기록 없음"),
+        ("🏎️", "네온 레이싱",  _lb['racing']['uid'],   _lb['racing']['label']   or "기록 없음"),
+        ("🧟", "좀비 아포칼립스", _lb['zombie']['uid'], _lb['zombie']['label']  or "기록 없음"),
+        ("🥊", "스트리트 파이터", _lb['fighter']['uid'], _lb['fighter']['label'] or "기록 없음"),
+        ("🎯", "스나이퍼 엘리트", _lb['sniper']['uid'],  _lb['sniper']['label']  or "기록 없음"),
+    ]
+    _lb_items_html = ""
+    for _ico, _gname, _guser, _glabel in _lb_rows:
+        _uid_display = _guser if _guser != "—" else "기록 없음"
+        _lb_items_html += f"""
+        <div style='display:flex;align-items:center;gap:10px;padding:7px 10px;
+          border-bottom:1px solid rgba(255,255,255,0.05);'>
+          <span style='font-size:1.2rem;width:26px;text-align:center;'>{_ico}</span>
+          <span style='color:var(--text2);font-size:0.78rem;width:100px;flex-shrink:0;'>{_gname}</span>
+          <span style='color:var(--cyan);font-weight:700;font-size:0.82rem;flex:1;'>{_uid_display}</span>
+          <span style='color:var(--gold);font-size:0.75rem;text-align:right;'>{_glabel}</span>
+        </div>"""
+    st.markdown(f"""
+    <div style='background:linear-gradient(135deg,rgba(10,16,32,0.95),rgba(15,24,48,0.9));
+      border:1px solid rgba(108,99,255,0.25);border-radius:16px;padding:0 0 4px 0;
+      margin:16px 0 20px 0;overflow:hidden;'>
+      <div style='padding:12px 16px 8px;border-bottom:1px solid rgba(108,99,255,0.2);
+        display:flex;align-items:center;gap:8px;'>
+        <span style='font-size:1.1rem;'>🏆</span>
+        <span style='font-family:"Orbitron",sans-serif;font-size:0.82rem;font-weight:900;
+          background:linear-gradient(135deg,var(--gold),var(--cyan));
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+          letter-spacing:2px;'>GAME LEADERBOARD</span>
+        <span style='margin-left:auto;font-size:0.7rem;color:var(--text2);'>게임별 전서버 1위</span>
+      </div>
+      {_lb_items_html}
     </div>
     """, unsafe_allow_html=True)
 
