@@ -1056,6 +1056,8 @@ function showGO(){
   G.running=false;
   const best=parseInt(localStorage.getItem('zbBest')||'0');
   if(G.wave>best)localStorage.setItem('zbBest',G.wave);
+  // ✅ [NEW] 게임 결과 포털 전송
+  try{window.parent.postMessage({type:'zombie_result',wave:G.wave,score:G.score,kills:G.totalKills},'*');}catch(e){}
   const ov=document.getElementById('overlay');
   ov.innerHTML=`<div class="ov-box">
     <div class="ov-eye">GAME OVER</div>
@@ -1170,5 +1172,43 @@ showTitle();
 </html>"""
 
 def render():
+    import streamlit.components.v1 as _cv1
+    from utils.core import sync_user_data
+
+    # ── 결과 처리 ──
+    qp = st.query_params
+    if qp.get('zombie_wave'):
+        try:
+            uid = st.session_state.get('logged_in_user', '')
+            z_wave  = int(qp.get('zombie_wave', 0))
+            z_score = int(qp.get('zombie_score', 0))
+            z_kills = int(qp.get('zombie_kills', 0))
+            if uid and z_wave > 0:
+                cur_rec = st.session_state.get('game_records', {})
+                if z_wave > cur_rec.get('zombie', {}).get('wave', 0):
+                    cur_rec.setdefault('zombie', {}).update({'wave': z_wave, 'score': z_score, 'kills': z_kills})
+                    st.session_state.game_records = cur_rec
+                    sync_user_data()
+                    st.toast(f"🏆 좀비 최고기록 갱신! Wave {z_wave}", icon="🧟")
+        except Exception:
+            pass
+        st.query_params.clear()
+
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
+    st.caption("🧟 WASD/조이스틱: 이동 | 마우스/터치: 조준·사격 | 1~5: 무기 전환 | Q: 화염탄 E: 섬광 T: 공습")
+
+    listener_html = """
+    <script>
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'zombie_result') {
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set('zombie_wave',  e.data.wave);
+        url.searchParams.set('zombie_score', e.data.score);
+        url.searchParams.set('zombie_kills', e.data.kills);
+        window.parent.location.href = url.toString();
+      }
+    });
+    </script>
+    """
+    _cv1.html(listener_html, height=0)
     components.html(GAME_HTML, height=730, scrolling=False)
