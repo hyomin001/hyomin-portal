@@ -32,7 +32,7 @@ canvas{position:absolute;top:0;left:0;}
 #mission-box{position:absolute;top:65px;left:50%;transform:translateX(-50%);z-index:100;pointer-events:none;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:7px 16px;text-align:center;min-width:200px;}
 #ms-num{font-size:7px;color:#446;letter-spacing:3px;margin-bottom:2px;}
 #ms-name{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--gold);letter-spacing:1px;}
-#ms-desc{font-size:8px;color:#556;margin-top:2px;}
+#ms-desc{font-size:9px;color:#8899bb;margin-top:2px;font-weight:700;}
 #ms-prog{font-size:9px;color:var(--green);margin-top:3px;font-weight:700;letter-spacing:1px;}
 
 /* AMMO + WEAPON */
@@ -773,12 +773,12 @@ function update(){
   if(alertLevel>=3 && G.frame%600===0 && _totalReinforced<3){
     const W=canvas.width,H=canvas.height;
     const t_extra=TTYPES[Math.floor(Math.random()*TTYPES.length)];
-    const side=Math.floor(Math.random()*4);
+    // ✅ [BUG FIX] 화면 위/아래에서 스폰하면 Y이동이 없어서 영원히 안보임
+    // 좌/우에서만 스폰하도록 수정 (side 1, 3만 사용)
+    const side=Math.random()<0.5 ? 1 : 3;
     let rx,ry;
-    if(side===0){rx=W*.1+Math.random()*W*.8;ry=-40;}
-    else if(side===1){rx=W+40;ry=H*.2+Math.random()*H*.6;}
-    else if(side===2){rx=W*.1+Math.random()*W*.8;ry=H+40;}
-    else{rx=-40;ry=H*.2+Math.random()*H*.6;}
+    if(side===1){rx=W+40;ry=H*.2+Math.random()*H*.5;}
+    else{rx=-40;ry=H*.2+Math.random()*H*.5;}
     G.targets.push({
       x:rx,y:ry,baseX:rx,baseY:ry,
       sz:t_extra.sz+4,emoji:'🪖',pts:t_extra.pts,head:t_extra.head,body:t_extra.body,label:'증원병',
@@ -860,6 +860,9 @@ function update(){
         t.phase = -t.phase;
       }
       t.x = t.baseX + Math.sin(t.phase)*t.amp;
+      // ✅ [BUG FIX] 화면 밖에서 진입한 증원병은 화면 안으로 당겨지도록
+      if(t.x < -20) { t.baseX = canvas.width*.15; t.phase = 0; }
+      if(t.x > canvas.width+20) { t.baseX = canvas.width*.85; t.phase = Math.PI; }
       // VIP escort: enemies slowly advance toward center
       if(MISSIONS[G.mIdx].escort){
         t.y = Math.min(canvas.height*.75, t.y + .3);
@@ -896,7 +899,8 @@ function updateMissionHUD(){
   const alive=G.targets.filter(t=>t.alive).length;
   document.getElementById('ms-kills-v').textContent=`${ms.n-alive}/${ms.n}`;
   document.getElementById('time-v').textContent=Math.max(0,Math.ceil(G.timer/60));
-  document.getElementById('ms-prog').textContent=alive===0?'✅ 완료!':G.killChain>=2?`🔥 킬체인 ×${G.killChain}`:'';
+  const _killed=MISSIONS[G.mIdx].n-alive;
+  document.getElementById('ms-prog').textContent=alive===0?'✅ 완료!':G.killChain>=2?`🔥 킬체인 ×${G.killChain} | 처치 ${_killed}/${MISSIONS[G.mIdx].n}`:`처치 ${_killed}/${MISSIONS[G.mIdx].n} — 표적 제거!`;
 }
 
 // ================================================================
@@ -1119,7 +1123,8 @@ function showTitle(){
       1~4 키/🔀 — 무기 변경 &nbsp;|&nbsp; 바람 방향 보정 후 저격!
     </div>
     ${best>0?`<div style="font-size:9px;color:#446;margin-bottom:12px">🏆 최고기록: <span style="color:var(--gold)">${best.toLocaleString()}</span> PT</div>`:''}
-    <button class="ov-btn" onclick="startGame()">임무 시작 🎯</button>`;
+    <button class="ov-btn" onclick="startGame()">임무 시작 🎯</button>
+    <div style="font-size:9px;color:#445;margin-top:12px;line-height:2;text-align:left;">📖 <b style="color:#00ff88">게임 방법:</b><br>· 화면에 나타나는 표적(이모지)을 마우스로 조준 후 발사<br>· Z키 또는 우클릭으로 4배율 조준경(스코프) 사용<br>· Shift키로 호흡 안정화 → 정확도 향상<br>· 6개 미션 전부 클리어하면 보상 지급!</div>`;
   document.getElementById('overlay').style.display='flex';
 }
 
@@ -1204,7 +1209,7 @@ def render():
 
     listener_html = """
     <script>
-    window.addEventListener('message', function(e) {
+    window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'sniper_result') {
         const url = new URL(window.parent.location.href);
         url.searchParams.set('sniper_score', e.data.score);
