@@ -1801,27 +1801,20 @@ function resetToChar() {
   _origResetToChar();
 }
 
-function doInit() {
-  if (window._initDone) return;
-  window._initDone = true;
+window.addEventListener('DOMContentLoaded',()=>{
   initStars();
-  setTimeout(() => {
-    renderCharGrid();
-    // 저장된 게임이 있으면 이어하기 팝업 표시
-    if (hasSave()) {
-      try {
-        const snap = JSON.parse(localStorage.getItem(SAVE_KEY));
-        const ageMin = Math.round((Date.now() - (snap.ts || 0)) / 60000);
-        const p0 = snap.G && snap.G.players ? snap.G.players[0] : null;
-        const infoTxt = p0 ? `${p0.char.emoji} ${p0.name} · ₩${(p0.money||0).toLocaleString()} · ${ageMin}분 전` : '이전 게임';
-        document.getElementById('resume-info').textContent = infoTxt;
-        document.getElementById('resume-popup').style.display = 'flex';
-      } catch(e) { deleteSave(); }
-    }
-  }, 50);
-}
-window.addEventListener('DOMContentLoaded', doInit);
-window.addEventListener('load', doInit);
+  renderCharGrid();
+  if (hasSave()) {
+    try {
+      const snap = JSON.parse(localStorage.getItem(SAVE_KEY));
+      const ageMin = Math.round((Date.now() - (snap.ts || 0)) / 60000);
+      const p0 = snap.G && snap.G.players ? snap.G.players[0] : null;
+      const infoTxt = p0 ? `${p0.char.emoji} ${p0.name} · ₩${(p0.money||0).toLocaleString()} · ${ageMin}분 전` : '이전 게임';
+      document.getElementById('resume-info').textContent = infoTxt;
+      document.getElementById('resume-popup').style.display = 'flex';
+    } catch(e) { deleteSave(); }
+  }
+});
 </script>
 </body>
 </html>
@@ -1836,7 +1829,6 @@ def render():
     uid = st.session_state.get('logged_in_user', '')
 
     # ── 마블 통계 로드 ──
-    # [BUG FIX] 항상 DB에서 최신값 로드 (세션 캐시로 인한 0 표시 방지)
     _fresh_users = load_db(USERS_FILE, {})
     _fresh_u = _fresh_users.get(uid, {})
     if 'marble_stats' in _fresh_u:
@@ -1850,7 +1842,6 @@ def render():
 
     # ── 게임 결과 수신 처리 (URL query param 방식) ──
     qp = st.query_params
-    # [BUG FIX] query param 없으면 잔류 플래그 초기화 (포털 이동 후 재진입 시 버그 방지)
     if not qp.get('marble_win'):
         st.session_state.pop('marble_result_processed', None)
     if qp.get('marble_win') and not st.session_state.get('marble_result_processed'):
@@ -1872,40 +1863,31 @@ def render():
         if net_worth > stats.get('best_net_worth', 0):
             stats['best_net_worth'] = net_worth
         st.session_state.marble_stats = stats
-        # [BUG FIX] DB에 직접 저장 후 sync (세션-DB 불일치 방지)
         _save_users = load_db(USERS_FILE, {})
         if uid in _save_users:
             _save_users[uid]['marble_stats'] = stats
             save_db(USERS_FILE, _save_users)
         sync_user_data()
-        # ✅ [BUG FIX] 처리 플래그 삭제 → 다음 판도 정상 저장됨 (없으면 2판째부터 저장 안됨)
         del st.session_state['marble_result_processed']
         st.query_params.clear()
         st.rerun()
 
-    # 게임 헤더 UI
-    st.markdown(f"""
-    <div style='background:linear-gradient(135deg,#0c1020,#111828);border:1px solid rgba(108,99,255,0.25);
-      border-radius:16px;padding:16px 24px;margin-bottom:12px;display:flex;align-items:center;gap:16px;'>
-      <div style='font-size:2rem;'>🎲</div>
-      <div>
-        <div style='font-family:"Black Han Sans",sans-serif;font-size:1.1rem;color:#e8f0ff;'>🎲 인베스트 마블 REMASTERED</div>
-        <div style='font-size:0.82rem;color:#8899bb;margin-top:2px;'>모노폴리 기반 투자 보드게임. AI 봇과 세계 랜드마크를 독점하여 최고 부자가 되세요!</div>
-        <div style='font-size:0.76rem;color:#6c63ff;margin-top:4px;'>🎮 주사위 굴리기 → 부지 매입 → 집/호텔 건설 → 임대료 수익 | 같은 색 독점 시 임대료 2배!</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
     st.markdown("""
     <style>
-    #MainMenu{visibility:hidden;}footer{visibility:hidden;}header{visibility:hidden;}
+    #MainMenu{visibility:hidden;}
+    footer{visibility:hidden;}
+    header{visibility:hidden;}
     .block-container{padding:0 !important;max-width:100% !important;}
     iframe{border:none;}
     </style>
     """, unsafe_allow_html=True)
-    st.caption("📱 모바일: 가로 화면 권장 | 🖥️ 권장: 1280px 이상 | 🏆 우승 시 1억원 보상!")
 
-    # postMessage 수신 리스너 (게임 결과 → query param으로 전달)
+    col_info, col_tip = st.columns([3, 1])
+    with col_info:
+        st.caption("📱 모바일: 화면을 가로로 돌리면 더 편합니다 | 💡 게임이 잘리면 아래로 스크롤하세요")
+    with col_tip:
+        st.caption("🖥️ 권장: 1280px 이상 화면")
+
     listener_html = """
     <script>
     window.parent.addEventListener('message', function(e) {
