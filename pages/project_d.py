@@ -1830,17 +1830,23 @@ def render():
     uid = st.session_state.get('logged_in_user', '')
 
     # ── 마블 통계 로드 ──
-    if 'marble_stats' not in st.session_state:
-        users = load_db(USERS_FILE, {})
-        u_data = users.get(uid, {})
-        st.session_state.marble_stats = u_data.get('marble_stats', {
+    # [BUG FIX] 항상 DB에서 최신값 로드 (세션 캐시로 인한 0 표시 방지)
+    _fresh_users = load_db(USERS_FILE, {})
+    _fresh_u = _fresh_users.get(uid, {})
+    if 'marble_stats' in _fresh_u:
+        st.session_state.marble_stats = _fresh_u['marble_stats']
+    elif 'marble_stats' not in st.session_state:
+        st.session_state.marble_stats = {
             'wins': 0, 'losses': 0, 'best_net_worth': 0, 'games_played': 0
-        })
+        }
 
     stats = st.session_state.marble_stats
 
     # ── 게임 결과 수신 처리 (URL query param 방식) ──
     qp = st.query_params
+    # [BUG FIX] query param 없으면 잔류 플래그 초기화 (포털 이동 후 재진입 시 버그 방지)
+    if not qp.get('marble_win'):
+        st.session_state.pop('marble_result_processed', None)
     if qp.get('marble_win') and not st.session_state.get('marble_result_processed'):
         st.session_state.marble_result_processed = True
         is_win     = qp.get('marble_win') == 'true'
@@ -1860,7 +1866,11 @@ def render():
         if net_worth > stats.get('best_net_worth', 0):
             stats['best_net_worth'] = net_worth
         st.session_state.marble_stats = stats
-        # ✅ [BUG FIX] sync_user_data()가 marble_stats 포함하여 저장함 — 별도 save_db 불필요
+        # [BUG FIX] DB에 직접 저장 후 sync (세션-DB 불일치 방지)
+        _save_users = load_db(USERS_FILE, {})
+        if uid in _save_users:
+            _save_users[uid]['marble_stats'] = stats
+            save_db(USERS_FILE, _save_users)
         sync_user_data()
         # ✅ [BUG FIX] 처리 플래그 삭제 → 다음 판도 정상 저장됨 (없으면 2판째부터 저장 안됨)
         del st.session_state['marble_result_processed']
