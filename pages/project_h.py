@@ -1116,6 +1116,8 @@ showTitle();
 def render():
     import streamlit.components.v1 as _cv1
     from utils.core import sync_user_data
+    from utils.database import load_db, save_db
+    from utils.config import USERS_FILE
 
     # ── 결과 처리 ──
     qp = st.query_params
@@ -1125,10 +1127,16 @@ def render():
             f_score    = int(qp.get('fighter_score', 0))
             f_perfects = int(qp.get('fighter_perfects', 0))
             if uid and f_score > 0:
-                cur_rec = st.session_state.get('game_records', {})
+                # [BUG FIX] DB에서 최신 game_records 로드 후 비교
+                _users = load_db(USERS_FILE, {})
+                cur_rec = _users.get(uid, {}).get('game_records', st.session_state.get('game_records', {}))
                 if f_score > cur_rec.get('fighter', {}).get('score', 0):
                     cur_rec.setdefault('fighter', {}).update({'score': f_score, 'perfects': f_perfects})
                     st.session_state.game_records = cur_rec
+                    # [BUG FIX] DB에 직접 저장
+                    if uid in _users:
+                        _users[uid]['game_records'] = cur_rec
+                        save_db(USERS_FILE, _users)
                     sync_user_data()
                     st.toast(f"🏆 격투 최고기록 갱신! {f_score:,}점", icon="🥊")
         except Exception:
