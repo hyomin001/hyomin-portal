@@ -10,7 +10,7 @@ from datetime import datetime
 # ==============================
 from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA
 from utils.database import load_db, save_db, load_stats, save_stats
-from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users, get_game_leaderboard
+from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
 from utils.database import get_login_lock, set_login_lock, clear_login_lock, save_db
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
@@ -530,11 +530,11 @@ if st.session_state.page_view == "portal":
         tags_html += f"<span class='scroll-tag {cls}'>{label}</span>"
     st.markdown(f"<div class='banner-scroll-wrap'><div class='banner-scroll-track'>{tags_html}</div></div>", unsafe_allow_html=True)
 
-    # ── 실시간 통계 위젯 + 게임별 1위 리더보드 ──
+    # ── 실시간 통계 위젯 ──
     try:
-        _lb = get_game_leaderboard(_users_db_for_stats)
         _prices = {k: v['price'] for k, v in market.get('stock_data', {}).items()}
         _top_nw = 0
+        _top_uid = "—"
         for _u, _udata in _users_db_for_stats.items():
             if _u == "admin": continue
             _w = _udata.get('cash', 0) - _udata.get('loan', 0)
@@ -548,14 +548,10 @@ if st.session_state.page_view == "portal":
             if _wlv > 0 and _wlv in FORGE_DATA: _w += FORGE_DATA[_wlv]['sell']
             if _w > _top_nw:
                 _top_nw = _w
-                _lb['nw'] = {'uid': _u, 'value': _w, 'label': format_korean_money(_w)}
+                _top_uid = _u
         _nw_str = format_korean_money(_top_nw) if _top_nw > 0 else "0원"
-        _top_uid = _lb['nw']['uid']
     except:
         _top_uid, _nw_str = "집계 중", "—"
-        _lb = {'nw':{'uid':'—','label':''},'dungeon':{'uid':'—','label':''},'marble':{'uid':'—','label':''},
-               'terminal':{'uid':'—','label':''},'racing':{'uid':'—','label':''},'zombie':{'uid':'—','label':''},
-               'fighter':{'uid':'—','label':''},'sniper':{'uid':'—','label':''}}
 
     st.markdown(f"""
     <div class="stat-grid">
@@ -581,33 +577,6 @@ if st.session_state.page_view == "portal":
       </div>
     </div>
     """, unsafe_allow_html=True)
-
-    # ── 게임별 1위 리더보드 위젯 ──
-    _lb_rows = [
-        ("⚔️", "던전 런",      _lb['dungeon']['uid'],  _lb['dungeon']['label']  or "기록 없음"),
-        ("🎲", "인베스트마블",  _lb['marble']['uid'],   _lb['marble']['label']   or "기록 없음"),
-        ("💻", "THE TERMINAL", _lb['terminal']['uid'], _lb['terminal']['label'] or "기록 없음"),
-        ("🏎️", "네온 레이싱",  _lb['racing']['uid'],   _lb['racing']['label']   or "기록 없음"),
-        ("🧟", "좀비 아포칼립스", _lb['zombie']['uid'], _lb['zombie']['label']  or "기록 없음"),
-        ("🥊", "스트리트 파이터", _lb['fighter']['uid'], _lb['fighter']['label'] or "기록 없음"),
-        ("🎯", "스나이퍼 엘리트", _lb['sniper']['uid'],  _lb['sniper']['label']  or "기록 없음"),
-    ]
-    _lb_parts = [
-        """<div style='background:linear-gradient(135deg,rgba(10,16,32,0.95),rgba(15,24,48,0.9));border:1px solid rgba(108,99,255,0.25);border-radius:16px;padding:0 0 4px 0;margin:16px 0 20px 0;overflow:hidden;'><div style='padding:12px 16px 8px;border-bottom:1px solid rgba(108,99,255,0.2);display:flex;align-items:center;gap:8px;'><span style='font-size:1.1rem;'>🏆</span><span style='font-family:"Orbitron",sans-serif;font-size:0.82rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;'>GAME LEADERBOARD</span><span style='margin-left:auto;font-size:0.7rem;color:var(--text2);'>게임별 전서버 1위</span></div>"""
-    ]
-    for _ico, _gname, _guser, _glabel in _lb_rows:
-        _uid_display = _guser if _guser != "—" else "기록 없음"
-        _lbl_display = _glabel if _glabel else "기록 없음"
-        _lb_parts.append(
-            "<div style='display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);'>"
-            + "<span style='font-size:1.2rem;width:26px;text-align:center;'>" + _ico + "</span>"
-            + "<span style='color:var(--text2);font-size:0.78rem;width:100px;flex-shrink:0;'>" + _gname + "</span>"
-            + "<span style='color:var(--cyan);font-weight:700;font-size:0.82rem;flex:1;'>" + _uid_display + "</span>"
-            + "<span style='color:var(--gold);font-size:0.75rem;text-align:right;'>" + _lbl_display + "</span>"
-            + "</div>"
-        )
-    _lb_parts.append("</div>")
-    st.markdown("".join(_lb_parts), unsafe_allow_html=True)
 
     st.markdown("<div class='game-section-title'>🎮 서비스 입장</div>", unsafe_allow_html=True)
 
