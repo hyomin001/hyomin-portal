@@ -246,7 +246,7 @@ def get_game_leaderboard(users_db: dict) -> dict:
         # 터미널 — terminal_cleared 리스트 길이
         tc = len(u.get('terminal_cleared', []))
         if tc > result['terminal']['value']:
-            result['terminal'] = {'uid': uid, 'value': tc, 'label': f"{tc}/10 스테이지"}
+            result['terminal'] = {'uid': uid, 'value': tc, 'label': f"{tc}/14 스테이지"}
 
         # 게임 레코드 (F/G/H/I)
         gr = u.get('game_records', {})
