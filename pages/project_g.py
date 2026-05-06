@@ -1175,6 +1175,8 @@ showTitle();
 def render():
     import streamlit.components.v1 as _cv1
     from utils.core import sync_user_data
+    from utils.database import load_db, save_db
+    from utils.config import USERS_FILE
 
     # ── 결과 처리 ──
     qp = st.query_params
@@ -1185,10 +1187,16 @@ def render():
             z_score = int(qp.get('zombie_score', 0))
             z_kills = int(qp.get('zombie_kills', 0))
             if uid and z_wave > 0:
-                cur_rec = st.session_state.get('game_records', {})
+                # [BUG FIX] DB에서 최신 game_records 로드 후 비교
+                _users = load_db(USERS_FILE, {})
+                cur_rec = _users.get(uid, {}).get('game_records', st.session_state.get('game_records', {}))
                 if z_wave > cur_rec.get('zombie', {}).get('wave', 0):
                     cur_rec.setdefault('zombie', {}).update({'wave': z_wave, 'score': z_score, 'kills': z_kills})
                     st.session_state.game_records = cur_rec
+                    # [BUG FIX] DB에 직접 저장
+                    if uid in _users:
+                        _users[uid]['game_records'] = cur_rec
+                        save_db(USERS_FILE, _users)
                     sync_user_data()
                     st.toast(f"🏆 좀비 최고기록 갱신! Wave {z_wave}", icon="🧟")
         except Exception:
