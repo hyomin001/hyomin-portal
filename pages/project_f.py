@@ -233,7 +233,8 @@ function ghostLoad(){
 }
 
 function ghostRecord(){
-  ghostFrames.push(G.laneX);
+  // ✅ [BUG FIX] 2프레임마다만 기록 → 배열 크기 절반 감소
+  if(G.frame%2===0) ghostFrames.push(G.laneX);
 }
 
 function ghostDraw(ctx, frame){
@@ -432,7 +433,9 @@ function update(){
   // Speed (px/s equivalent; we multiply by dt=1/60 in movement)
   const nitroM = G.nitroOn?2.0:(G.boostT>0?1.5:1);
   const tSpd   = G.baseSpd * nitroM;
-  G.speed += (tSpd-G.speed)*(0.04+car.acc*0.015);
+  // ✅ [BUG FIX] 니트로 가속을 즉각적으로 — 니트로 시 lerp factor 3배 향상
+  const lerpF = G.nitroOn ? (0.04+car.acc*0.015)*3 : (0.04+car.acc*0.015);
+  G.speed += (tSpd-G.speed)*lerpF;
 
   // Timers
   if(G.shieldT>0) G.shieldT-=1/60;
@@ -934,21 +937,28 @@ function render(){
     ctx.restore();
   }
 
-  // Nitro flames
+  // Nitro flames — ✅ [BUG FIX] 이모지 대신 캔버스 원 사용 (렉 감소)
   if(G.nitroOn){
+    const ft=G.frame*.18;
     for(let j=0;j<3;j++){
+      const fx=G.laneX+(j-1)*14;
+      const fy=PLAYER_Y+48+Math.sin(ft+j)*5;
+      const fs=8+Math.sin(ft*1.3+j*2.1)*3;
       ctx.save();
-      ctx.globalAlpha=.55+Math.random()*.4;
-      ctx.font=(16+Math.random()*10)+'px serif'; ctx.textAlign='center';
-      ctx.shadowColor=car.col; ctx.shadowBlur=18;
-      ctx.fillText('🔥',G.laneX+(j-1)*14,PLAYER_Y+50+Math.random()*8); ctx.restore();
+      ctx.globalAlpha=0.7;
+      ctx.shadowColor='#ff8800'; ctx.shadowBlur=12;
+      const fg=ctx.createRadialGradient(fx,fy,0,fx,fy,fs);
+      fg.addColorStop(0,'#ffee44'); fg.addColorStop(1,'#ff4400');
+      ctx.fillStyle=fg;
+      ctx.beginPath(); ctx.arc(fx,fy,fs,0,Math.PI*2); ctx.fill();
+      ctx.restore();
     }
-    // Speed lines
+    // Speed lines — limit to avoid GC
     ctx.save(); ctx.globalAlpha=0.07; ctx.strokeStyle=car.col; ctx.lineWidth=1;
-    for(let k=0;k<8;k++){
-      const lx=ROAD_X+Math.random()*ROAD_W;
-      const ly=PLAYER_Y+30+Math.random()*200;
-      ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx,ly+60); ctx.stroke();
+    const slx=[ROAD_X+50,ROAD_X+120,ROAD_X+190,ROAD_X+260];
+    for(const lx of slx){
+      const ly=PLAYER_Y+30+(G.frame*2+lx)%150;
+      ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx,ly+50); ctx.stroke();
     }
     ctx.restore();
   }
@@ -1198,7 +1208,7 @@ def render():
 
     listener_html = """
     <script>
-    window.addEventListener('message', function(e) {
+    window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'racing_result') {
         const url = new URL(window.parent.location.href);
         url.searchParams.set('racing_score', e.data.score);
