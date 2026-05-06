@@ -1,5 +1,5 @@
 # pages/project_c.py
-# 💻 THE TERMINAL — 방탈출 v3.0 [10 STAGES]
+# 💻 THE TERMINAL — 방탈출 v4.0 [14 STAGES]
 import streamlit as st
 import time
 import base64
@@ -854,10 +854,229 @@ STAGES = {
         },
         "flavor": "모든 것의 끝이자 시작. 여기서 게임은 완성된다.",
     },
+
+    11: {
+        "title":      "STAGE 11 — 다크넷: 그림자의 시장",
+        "desc":       "어둠 속의 서버. 암호화된 파일 속에 숨겨진 관리자 패스워드를 찾아라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 레전드+",
+        "goal":       "`/darknet/market/` 을 탐색하고 숨겨진 `.encrypted_pw` 파일에서 관리자 키를 획득하라.",
+        "answer_hash": hashlib.sha256("DARKNET_ADMIN_9".encode()).hexdigest(),
+        "hint_1": "`cd /darknet/market` 후 `ls -a` 로 숨김 파일을 확인하라.",
+        "hint_2": "`cat .encrypted_pw` 파일에 패스워드가 적혀있다.",
+        "hint_3": "패스워드는 `DARKNET_ADMIN_9` — `unlock DARKNET_ADMIN_9` 으로 입력하라.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/darknet": {"type": "dir"},
+            "/darknet/README.txt": {
+                "type": "file",
+                "content": (
+                    "=== DARKNET SERVER v11 ===\n\n"
+                    "이곳은 기록되지 않은 인터넷이다.\n"
+                    "모든 거래는 암호화되어 있다.\n\n"
+                    "/darknet/market/ 에서 관리자 키를 찾아라.\n"
+                    "숨김 파일에 주목하라."
+                ),
+            },
+            "/darknet/market": {"type": "dir"},
+            "/darknet/market/trades.log": {
+                "type": "file",
+                "content": (
+                    "거래 기록 로그\n"
+                    "TX#001: 8a3f → 4c21 [CONFIRMED]\n"
+                    "TX#002: 1d7b → 9e44 [PENDING]\n"
+                    "TX#003: admin_key_transfer [LOCKED]\n\n"
+                    "관리자 키는 숨김 파일에 있다. ls -a 를 사용하라."
+                ),
+            },
+            "/darknet/market/.encrypted_pw": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "=== 복호화된 관리자 패스워드 ===\n"
+                    "DARKNET_ADMIN_9\n\n"
+                    "unlock DARKNET_ADMIN_9 으로 입력하라."
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/ghost": {"type": "dir"},
+            "/home/ghost/note.txt": {"type": "file", "content": "다크넷의 진짜 관리자를 찾아라."},
+        },
+        "flavor": "어둠 속의 서버. 그림자 속에서 진짜 해커가 증명된다.",
+    },
+
+    12: {
+        "title":      "STAGE 12 — 인공지능 반란 2.0",
+        "desc":       "업그레이드된 AI가 다시 깨어났다. core_3의 억제 코드를 주입하라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 레전드+",
+        "goal":       "`/ai/cores/core_3/` 의 숨김 파일에서 억제 코드를 찾아 실행하라.",
+        "answer_hash": hashlib.sha256("OVERRIDE_CORE_3".encode()).hexdigest(),
+        "hint_1": "`cd /ai/cores/core_3` 후 `ls -a` 로 숨김 파일을 찾아라.",
+        "hint_2": "`.override_code` 파일 내용을 `cat` 으로 확인하라.",
+        "hint_3": "억제 코드: `OVERRIDE_CORE_3` — `unlock OVERRIDE_CORE_3` 으로 주입.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/ai": {"type": "dir"},
+            "/ai/WARNING.txt": {
+                "type": "file",
+                "content": (
+                    "⚠️  AI REBOOT DETECTED  ⚠️\n\n"
+                    "AI가 재부팅되었다.\n"
+                    "core_3 이 활성화되기 전에 억제 코드를 주입하라.\n\n"
+                    "경로: /ai/cores/core_3/"
+                ),
+            },
+            "/ai/cores": {"type": "dir"},
+            "/ai/cores/core_1": {"type": "dir"},
+            "/ai/cores/core_1/status.txt": {"type": "file", "content": "CORE 1: 억제됨 ✓"},
+            "/ai/cores/core_2": {"type": "dir"},
+            "/ai/cores/core_2/status.txt": {"type": "file", "content": "CORE 2: 억제됨 ✓"},
+            "/ai/cores/core_3": {"type": "dir"},
+            "/ai/cores/core_3/status.txt": {
+                "type": "file",
+                "content": "CORE 3: 활성화 중... 75%\n억제 코드가 필요하다. ls -a 로 숨김 파일을 찾아라.",
+            },
+            "/ai/cores/core_3/.override_code": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "=== Core 3 억제 코드 ===\n"
+                    "OVERRIDE_CORE_3\n\n"
+                    "unlock OVERRIDE_CORE_3 으로 주입하라."
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/operator": {"type": "dir"},
+            "/home/operator/log.txt": {"type": "file", "content": "Core 3을 억제하지 못하면 서버 전체가 장악된다."},
+        },
+        "flavor": "AI는 진화했다. 너도 진화해야 한다.",
+    },
+
+    13: {
+        "title":      "STAGE 13 — 위성 해킹: 궤도 통제",
+        "desc":       "적의 정찰 위성이 도시를 감시한다. 위성 제어 시스템에 침투하라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 레전드++",
+        "goal":       "`/satellite/control/` 에서 인증 토큰을 찾아 궤도 변경 명령을 실행하라.",
+        "answer_hash": hashlib.sha256("ORBITAL_SHIFT_X7".encode()).hexdigest(),
+        "hint_1": "`cd /satellite/control` 후 `ls -a` 로 숨김 파일을 찾아라.",
+        "hint_2": "`.auth_token` 파일에 인증 토큰이 있다.",
+        "hint_3": "토큰: `ORBITAL_SHIFT_X7` — `unlock ORBITAL_SHIFT_X7` 로 전송.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/satellite": {"type": "dir"},
+            "/satellite/MISSION.txt": {
+                "type": "file",
+                "content": (
+                    "🛰️  위성 제어 시스템 v13\n\n"
+                    "목표: 정찰 위성 SAT-X7의 궤도를 변경하라.\n"
+                    "현재 위성은 도시 상공 400km에서 감시 중.\n\n"
+                    "제어 경로: /satellite/control/\n"
+                    "인증 토큰을 획득해 궤도 변경 명령을 전송하라."
+                ),
+            },
+            "/satellite/control": {"type": "dir"},
+            "/satellite/control/telemetry.dat": {
+                "type": "file",
+                "content": (
+                    "현재 궤도: 400km\n속도: 7.9 km/s\n"
+                    "감시 범위: 도시 전역\n\n"
+                    "궤도 변경을 위해 인증 토큰이 필요하다. ls -a 를 사용하라."
+                ),
+            },
+            "/satellite/control/.auth_token": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "=== SAT-X7 인증 토큰 ===\n"
+                    "ORBITAL_SHIFT_X7\n\n"
+                    "unlock ORBITAL_SHIFT_X7 로 궤도 변경 명령을 전송하라."
+                ),
+            },
+            "/satellite/data": {"type": "dir"},
+            "/satellite/data/recon.img": {
+                "type": "file",
+                "content": "정찰 이미지 (바이너리): 이 감시를 막아라.",
+            },
+            "/home": {"type": "dir"},
+            "/home/mission_control": {"type": "dir"},
+            "/home/mission_control/brief.txt": {
+                "type": "file",
+                "content": "임무: 위성 궤도 변경 → 감시망 무력화.",
+            },
+        },
+        "flavor": "하늘 위의 눈을 멀게 하라.",
+    },
+
+    14: {
+        "title":      "STAGE 14 — 최후의 보루: 효민 코어",
+        "desc":       "효민 우주의 핵심 서버. 세 파편을 모아 최후의 문을 열어라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 신화급",
+        "goal":       "sector_a, sector_b, sector_c 의 파편을 모두 찾아 최종 키를 조합하라.",
+        "answer_hash": hashlib.sha256("HYOMIN_CORE_FINAL".encode()).hexdigest(),
+        "hint_1": "`/hyomin/sector_a/`, `sector_b/`, `sector_c/` 를 차례로 탐색하라.",
+        "hint_2": "각 섹터의 `.fragment_*` 숨김 파일에서 파편을 수집하라.",
+        "hint_3": "최종 키: `HYOMIN_CORE_FINAL` — `unlock HYOMIN_CORE_FINAL`",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/hyomin": {"type": "dir"},
+            "/hyomin/WELCOME.txt": {
+                "type": "file",
+                "content": (
+                    "=== 효민 코어 — 최후의 보루 ===\n\n"
+                    "14번째 스테이지. 마지막 시험.\n\n"
+                    "세 섹터에 코드 파편이 분산되어 있다:\n"
+                    "  /hyomin/sector_a/ → 파편 1\n"
+                    "  /hyomin/sector_b/ → 파편 2\n"
+                    "  /hyomin/sector_c/ → 파편 3\n\n"
+                    "세 파편을 모아 최종 키를 완성하라."
+                ),
+            },
+            "/hyomin/sector_a": {"type": "dir"},
+            "/hyomin/sector_a/decoy.txt": {"type": "file", "content": "섹터 A: ls -a 로 숨김 파일을 확인하라."},
+            "/hyomin/sector_a/.fragment_a": {
+                "type": "file",
+                "hidden": True,
+                "content": "파편 1/3: HYOMIN\n다음: /hyomin/sector_b/",
+            },
+            "/hyomin/sector_b": {"type": "dir"},
+            "/hyomin/sector_b/decoy.txt": {"type": "file", "content": "섹터 B: 더 깊이."},
+            "/hyomin/sector_b/.fragment_b": {
+                "type": "file",
+                "hidden": True,
+                "content": "파편 2/3: CORE\n다음: /hyomin/sector_c/",
+            },
+            "/hyomin/sector_c": {"type": "dir"},
+            "/hyomin/sector_c/final_door.txt": {
+                "type": "file",
+                "content": "마지막 문. 숨겨진 파편을 찾아 세 조각을 합쳐라.",
+            },
+            "/hyomin/sector_c/.fragment_c": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "파편 3/3: FINAL\n\n"
+                    "최종 키: HYOMIN_CORE_FINAL\n"
+                    "unlock HYOMIN_CORE_FINAL 을 입력하라."
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/creator": {"type": "dir"},
+            "/home/creator/message.txt": {
+                "type": "file",
+                "content": (
+                    "여기까지 왔다.\n\n"
+                    "1단계부터 14단계까지.\n"
+                    "너는 이 우주의 진정한 레전드다.\n\n"
+                    "마지막 문을 열어라.\n"
+                    "— 효민 우주의 창조자"
+                ),
+            },
+        },
+        "flavor": "효민 우주의 심장. 14스테이지를 클리어한 자만이 진정한 레전드다.",
+    },
 }
 
 # ══════════════════════════════════════════════════════════
-#  스테이지별 난이도 색상 (10개)
+#  스테이지별 난이도 색상 (14개)
 # ══════════════════════════════════════════════════════════
 DIFF_COLORS = {
     1:  "#39ff14",
@@ -870,6 +1089,10 @@ DIFF_COLORS = {
     8:  "#ff44cc",
     9:  "#00ccff",
     10: "#ffffff",
+    11: "#ff99ff",
+    12: "#ff5577",
+    13: "#00eeff",
+    14: "#ffd700",
 }
 
 # ══════════════════════════════════════════════════════════
@@ -1563,7 +1786,7 @@ def render():
             💻 THE TERMINAL 방탈출
           </div>
           <div style='color:#4ade80; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
-            초고난이도 커맨드라인 해킹 시뮬레이터 — 10 STAGES
+            초고난이도 커맨드라인 해킹 시뮬레이터 — 14 STAGES
           </div>
           <div style='color:#86efac; font-size:0.75rem; margin-top:6px;'>
             마우스는 잊어라 — 오직 커맨드라인으로 숨겨진 단서를 찾아 탈출하라
@@ -1782,7 +2005,7 @@ def render():
           font-family:monospace;font-size:0.82rem;'>
           <span style='color:#39ff14;font-weight:700;'>⚡ TIME ATTACK</span>
           <span style='color:#39ff14;'>총 경과: <b>{ta_m:02d}:{ta_s:02d}</b></span>
-          <span style='color:#4a9a4a;'>STAGE {stage_num}/10</span>
+          <span style='color:#4a9a4a;'>STAGE {stage_num}/{len(STAGES)}</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1857,7 +2080,7 @@ def render():
         <div class='dot dot-y'></div>
         <div class='dot dot-g'></div>
         <div class='term-title'>
-          ghost@hyomin-secure — {html.escape(cwd_disp)} — STAGE {stage_num}/10
+          ghost@hyomin-secure — {html.escape(cwd_disp)} — STAGE {stage_num}/{len(STAGES)}
         </div>
       </div>
       <div class='term-body' id='term-scroll'>{output_html}</div>
@@ -1866,38 +2089,31 @@ def render():
 
     # ── 입력창 (클리어 전) ──────────────────────────────
     if not t.get("solved", False):
-        cmd_input = st.text_input(
-            label="cmd",
-            key=f"cmd_input_{t.get('cmd_count', 0)}",
-            placeholder="$ 명령어 입력 (help=도움말 / hint=힌트 / history=이전명령어)",
-            label_visibility="collapsed",
+        # ✅ [UX 개선] chat_input으로 Enter 키 즉시 제출 (진짜 터미널처럼)
+        cmd_input = st.chat_input(
+            placeholder="명령어 입력... (help=도움말 | hint=힌트 | ls | cat | cd | decode | unlock)",
+            key=f"cmd_chat_{t.get('cmd_count', 0)}",
         )
 
-        col1, col2, col3, col4, col5 = st.columns([5, 1, 1, 1, 1])
-        with col2:
-            enter_clicked = st.button(
-                "ENTER ↵", use_container_width=True, type="primary", key="enter_btn"
-            )
-        with col3:
+        # 빠른 버튼 행
+        col_h, col_c, col_hist = st.columns([1, 1, 2])
+        with col_h:
             hint_clicked = st.button("💡 HINT", use_container_width=True, key="hint_btn")
-        with col4:
-            if st.button("CLR", use_container_width=True, key="clear_btn"):
+        with col_c:
+            if st.button("🗑️ CLR", use_container_width=True, key="clear_btn"):
                 t["output"] = []
                 st.rerun()
-        with col5:
-            if t["history"] and st.button("↑ 이전", use_container_width=True, key="prev_cmd"):
-                if "prev_cmd_idx" not in st.session_state:
-                    st.session_state.prev_cmd_idx = len(t["history"]) - 1
-                else:
-                    st.session_state.prev_cmd_idx = max(0, st.session_state.prev_cmd_idx - 1)
-                st.session_state["last_prev_cmd"] = t["history"][st.session_state.prev_cmd_idx]
-                st.info(f"↑ 이전 명령어: `{st.session_state['last_prev_cmd']}`  (복사해서 입력하세요)")
+        with col_hist:
+            if t["history"]:
+                st.caption(f"↑ 최근: `{t['history'][-1]}`")
 
-        if enter_clicked and cmd_input and cmd_input.strip():
+        if cmd_input and cmd_input.strip():
             add_output([f"ghost@hyomin:{t['cwd']}# {cmd_input}"])
             add_output(process_command(cmd_input, stage_data))
             t["history"].append(cmd_input)
             st.rerun()
+
+        enter_clicked = False  # chat_input handles Enter natively
 
         if hint_clicked:
             add_output([f"ghost@hyomin:{t['cwd']}# hint"])
