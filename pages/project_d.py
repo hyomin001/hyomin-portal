@@ -34,7 +34,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 @keyframes twinkle{0%,100%{opacity:0;transform:scale(0.5);}50%{opacity:var(--op,0.7);transform:scale(1);}}
 
 /* ── CHARACTER SELECT ── */
-#char-select{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+#char-select{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:20px 10px;}
 .char-header{text-align:center;margin-bottom:20px;}
 .char-title-main{font-family:'Black Han Sans',sans-serif;font-size:clamp(2rem,5vw,3.8rem);
   background:linear-gradient(135deg,#ffd700 0%,#ff8c00 35%,#ff4d6d 65%,#c026d3 100%);
@@ -1801,21 +1801,27 @@ function resetToChar() {
   _origResetToChar();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+function doInit() {
+  if (window._initDone) return;
+  window._initDone = true;
   initStars();
-  renderCharGrid();
-  // 저장된 게임이 있으면 이어하기 팝업 표시
-  if (hasSave()) {
-    try {
-      const snap = JSON.parse(localStorage.getItem(SAVE_KEY));
-      const ageMin = Math.round((Date.now() - (snap.ts || 0)) / 60000);
-      const p0 = snap.G && snap.G.players ? snap.G.players[0] : null;
-      const infoTxt = p0 ? `${p0.char.emoji} ${p0.name} · ₩${(p0.money||0).toLocaleString()} · ${ageMin}분 전` : '이전 게임';
-      document.getElementById('resume-info').textContent = infoTxt;
-      document.getElementById('resume-popup').style.display = 'flex';
-    } catch(e) { deleteSave(); }
-  }
-});
+  setTimeout(() => {
+    renderCharGrid();
+    // 저장된 게임이 있으면 이어하기 팝업 표시
+    if (hasSave()) {
+      try {
+        const snap = JSON.parse(localStorage.getItem(SAVE_KEY));
+        const ageMin = Math.round((Date.now() - (snap.ts || 0)) / 60000);
+        const p0 = snap.G && snap.G.players ? snap.G.players[0] : null;
+        const infoTxt = p0 ? `${p0.char.emoji} ${p0.name} · ₩${(p0.money||0).toLocaleString()} · ${ageMin}분 전` : '이전 게임';
+        document.getElementById('resume-info').textContent = infoTxt;
+        document.getElementById('resume-popup').style.display = 'flex';
+      } catch(e) { deleteSave(); }
+    }
+  }, 50);
+}
+window.addEventListener('DOMContentLoaded', doInit);
+window.addEventListener('load', doInit);
 </script>
 </body>
 </html>
@@ -1886,34 +1892,6 @@ def render():
         <div style='font-family:"Black Han Sans",sans-serif;font-size:1.1rem;color:#e8f0ff;'>🎲 인베스트 마블 REMASTERED</div>
         <div style='font-size:0.82rem;color:#8899bb;margin-top:2px;'>모노폴리 기반 투자 보드게임. AI 봇과 세계 랜드마크를 독점하여 최고 부자가 되세요!</div>
         <div style='font-size:0.76rem;color:#6c63ff;margin-top:4px;'>🎮 주사위 굴리기 → 부지 매입 → 집/호텔 건설 → 임대료 수익 | 같은 색 독점 시 임대료 2배!</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── 내 전적 표시 ──
-    wins   = stats.get('wins', 0)
-    losses = stats.get('losses', 0)
-    played = stats.get('games_played', 0)
-    best   = stats.get('best_net_worth', 0)
-    win_rate = int(wins / played * 100) if played > 0 else 0
-
-    st.markdown(f"""
-    <div style='display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;'>
-      <div style='background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
-        <div style='color:#888;font-size:0.72rem;'>전적</div>
-        <div style='color:#00FF88;font-weight:900;font-size:1rem;'>{wins}승 {losses}패</div>
-      </div>
-      <div style='background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
-        <div style='color:#888;font-size:0.72rem;'>승률</div>
-        <div style='color:#FFD600;font-weight:900;font-size:1rem;'>{win_rate}%</div>
-      </div>
-      <div style='background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
-        <div style='color:#888;font-size:0.72rem;'>최고 자산</div>
-        <div style='color:#00E5FF;font-weight:900;font-size:1rem;'>₩{best:,}</div>
-      </div>
-      <div style='background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
-        <div style='color:#888;font-size:0.72rem;'>총 게임</div>
-        <div style='color:#E2E8F0;font-weight:900;font-size:1rem;'>{played}판</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
