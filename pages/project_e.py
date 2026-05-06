@@ -504,7 +504,12 @@ const RELIC_POOL = [
 ];
 
 function showRelicChoice() {
-  if (!G || G.phase !== 'play') return;
+  if (!G) return;
+  // ✅ [BUG FIX] 레벨업 모달이 열려있으면 0.6초 후 재시도 (보스 처치 후 레벨업이 동시 발생하는 경우)
+  if (G.phase !== 'play') {
+    setTimeout(() => showRelicChoice(), 600);
+    return;
+  }
   G.paused = true;
   // 이미 획득한 유물 제외한 풀에서 3개 랜덤 선택
   const available = RELIC_POOL.filter(r => !G.player.relics.includes(r.id));
@@ -525,14 +530,15 @@ function showRelicChoice() {
 
 function pickRelic(idx) {
   const overlay = document.getElementById('relic-overlay');
+  // ✅ [BUG FIX] 항상 오버레이 숨기고 paused 해제 먼저 → 유물을 못 찾아도 게임이 동결되지 않음
+  overlay.style.display = 'none';
+  if (G) G.paused = false;
   const ids = JSON.parse(overlay.dataset.relics || '[]');
   const rid = ids[idx];
   const relic = RELIC_POOL.find(r => r.id === rid);
   if (!relic || !G) return;
   relic.apply(G.player);
   G.player.relics.push(rid);
-  overlay.style.display = 'none';
-  G.paused = false;
   // 유물 획득 토스트
   showToast(relic.emoji, `유물 획득: ${relic.name}`, relic.desc);
   sfx_lvlup();
@@ -2238,7 +2244,7 @@ def render():
     # 안전하게 게임 결과 수신 시 dungeon_result_processed 플래그도 초기화
     listener_html = """
     <script>
-    window.addEventListener('message', function(e) {
+    window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'dungeon_result') {
         const d = e.data;
         const url = new URL(window.parent.location.href);
