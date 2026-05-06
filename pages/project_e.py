@@ -2113,20 +2113,26 @@ def render():
     uid = st.session_state.get('logged_in_user', '')
 
     # ── 던전 통계 로드 ──
-    if 'dungeon_stats' not in st.session_state:
-        users = load_db(USERS_FILE, {})
-        u_data = users.get(uid, {})
-        st.session_state.dungeon_stats = u_data.get('dungeon_stats', {
+    # [BUG FIX] 항상 DB에서 최신 dungeon_stats를 읽어옴
+    # 문제: 세션에 이미 dungeon_stats가 있으면 DB 저장 후에도 이전 값이 표시됨
+    _fresh_users = load_db(USERS_FILE, {})
+    _fresh_u = _fresh_users.get(uid, {})
+    if 'dungeon_stats' in _fresh_u:
+        st.session_state.dungeon_stats = _fresh_u['dungeon_stats']
+    elif 'dungeon_stats' not in st.session_state:
+        st.session_state.dungeon_stats = {
             'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0
-        })
+        }
 
     dstats = st.session_state.dungeon_stats
 
     # ── 게임 결과 수신 처리 ──
     qp = st.query_params
-    # ✅ [BUG FIX] dungeon_result_processed 플래그를 query param 존재 여부 기반으로 판단
-    # 이전: 세션이 살아있는 동안 두 번째 판부터 결과가 무시됨
-    # 수정: query param이 있을 때만 처리하고, 처리 직후 query param을 클리어
+    # [BUG FIX] query param이 없으면 잔류 플래그를 항상 초기화
+    # 문제: 포털 메인으로 나갔다가 다시 들어오면 dungeon_result_processed 플래그가
+    #       세션에 남아있어서 다음 게임 결과가 영원히 처리되지 않음
+    if not qp.get('dungeon_score'):
+        st.session_state.pop('dungeon_result_processed', None)
     if qp.get('dungeon_score') and not st.session_state.get('dungeon_result_processed'):
         st.session_state.dungeon_result_processed = True
         is_win = qp.get('dungeon_win') == 'true'
