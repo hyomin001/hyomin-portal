@@ -1201,7 +1201,7 @@ def render():
 
     listener_html = """
     <script>
-    window.addEventListener('message', function(e) {
+    window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'zombie_result') {
         const url = new URL(window.parent.location.href);
         url.searchParams.set('zombie_wave',  e.data.wave);
