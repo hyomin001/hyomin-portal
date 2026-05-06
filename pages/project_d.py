@@ -1200,9 +1200,18 @@ function doRoll(){
         // 하이라이트 제거
         document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));
         // 도착 토큰 랜딩 애니메이션
-        const destTc=document.getElementById('tc-'+((from+total)%40));
+        const dest=(from+total)%40;
+        const destTc=document.getElementById('tc-'+dest);
         if(destTc){const tk=destTc.querySelector('.token');if(tk)tk.classList.add('landed');}
-        movePlayer(G.turn,total);landCell(G.turn,total);
+        // ✅ [BUG FIX] animateMove가 이미 pos를 최종 위치로 설정함. movePlayer 재호출 시 이중이동 버그 발생.
+        // movePlayer 대신 출발 통과 보너스만 직접 처리
+        const _p=G.players[G.turn];
+        if(total>0 && dest<=from && dest!==from){
+          _p.money+=PASS_GO;log(`🚩 ${_p.name} 출발 통과! +₩${PASS_GO}`,'gain');
+          if(!_p.is_bot)butler('go_pass');toast(`+₩${PASS_GO} 출발 통과!`,'gain');
+        }
+        _p.pos=dest;
+        landCell(G.turn,total);
         animating=false;
         if(!isDouble&&G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='auction'&&G.phase!=='trade_offer'&&G.phase!=='gameover')nextTurn();
         renderAll();
@@ -1239,10 +1248,10 @@ function doJail(payBail){
     G.d1=d1;G.d2=d2;renderDiceCenter();
     animateDice(d1,d2,()=>{
       if(isDouble){p.jail_turns=0;log(`🎉 더블 탈출!`);toast('🎉 더블 탈출!','gain');
-        animateMove(G.turn,p.pos,(p.pos+total)%40,()=>{document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));movePlayer(G.turn,total);landCell(G.turn,total);if(G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='gameover')nextTurn();animating=false;renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});
+        function(){const _jf=p.pos;animateMove(G.turn,_jf,(_jf+total)%40,()=>{document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));const _jd=(_jf+total)%40;if(total>0&&_jd<=_jf&&_jd!==_jf){p.money+=PASS_GO;log(`🚩 ${p.name} 출발 통과! +₩${PASS_GO}`,"gain");toast(`+₩${PASS_GO} 출발 통과!`,"gain");}p.pos=_jd;landCell(G.turn,total);if(G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='gameover')nextTurn();animating=false;renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}();
       }else{
         p.jail_turns--;log(`😔 더블 실패 (${p.jail_turns}턴 남음)`);
-        if(p.jail_turns<=0){p.jail_turns=0;animateMove(G.turn,p.pos,(p.pos+total)%40,()=>{document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));movePlayer(G.turn,total);landCell(G.turn,total);if(G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='gameover')nextTurn();animating=false;renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}
+        if(p.jail_turns<=0){p.jail_turns=0;function(){const _jf=p.pos;animateMove(G.turn,_jf,(_jf+total)%40,()=>{document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));const _jd=(_jf+total)%40;if(total>0&&_jd<=_jf&&_jd!==_jf){p.money+=PASS_GO;log(`🚩 ${p.name} 출발 통과! +₩${PASS_GO}`,"gain");toast(`+₩${PASS_GO} 출발 통과!`,"gain");}p.pos=_jd;landCell(G.turn,total);if(G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='gameover')nextTurn();animating=false;renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}();}
         else{nextTurn();animating=false;renderAll();setTimeout(checkBotTurn,500);}
       }
     });
@@ -1273,7 +1282,7 @@ function doBotTurn(){
     if(!p.ability_used&&Math.random()<0.3){const key=p.char.abilityKey;if(key==='tax_immune')p._tax_immune=true;if(key==='card_immune')p._card_immune=true;if(key==='speed_boost')p._speed_boost=true;p.ability_used=true;}
     if(p.jail_turns>0&&G.phase==='roll'){
       if(G.diff==='hard'&&p.money>=JAIL_BAIL){p.money-=JAIL_BAIL;p.jail_turns=0;log(`💰 ${p.name} 보석금!`,'lose');renderAll();setTimeout(()=>doBotRoll(pidx),400);}
-      else{const{d1,d2}=rollDice();const total=d1+d2;const isDouble=d1===d2;G.d1=d1;G.d2=d2;if(isDouble){p.jail_turns=0;log(`🎉 ${p.name} 더블 탈출!`);renderAll();animateMove(pidx,p.pos,(p.pos+total)%40,()=>{document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}else{p.jail_turns--;log(`😔 ${p.name} 더블 실패`);if(p.jail_turns<=0){p.jail_turns=0;renderAll();animateMove(pidx,p.pos,(p.pos+total)%40,()=>{document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}else{nextTurn();renderAll();setTimeout(checkBotTurn,500);}}}
+      else{const{d1,d2}=rollDice();const total=d1+d2;const isDouble=d1===d2;G.d1=d1;G.d2=d2;if(isDouble){p.jail_turns=0;log(`🎉 ${p.name} 더블 탈출!`);renderAll();function(){const _bf=p.pos;animateMove(pidx,_bf,(_bf+total)%40,()=>{document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));const _bd=(_bf+total)%40;if(total>0&&_bd<=_bf&&_bd!==_bf){p.money+=PASS_GO;log(`🚩 ${p.name} 출발 통과! +₩${PASS_GO}`,"gain");}p.pos=_bd;landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}();}else{p.jail_turns--;log(`😔 ${p.name} 더블 실패`);if(p.jail_turns<=0){p.jail_turns=0;renderAll();function(){const _bf=p.pos;animateMove(pidx,_bf,(_bf+total)%40,()=>{document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));const _bd=(_bf+total)%40;if(total>0&&_bd<=_bf&&_bd!==_bf){p.money+=PASS_GO;log(`🚩 ${p.name} 출발 통과! +₩${PASS_GO}`,"gain");}p.pos=_bd;landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}();}else{nextTurn();renderAll();setTimeout(checkBotTurn,500);}}}
       return;
     }
     if(G.phase==='buy'||G.phase==='card'){botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,500);return;}
@@ -1293,7 +1302,8 @@ function doBotRoll(pidx){
   setTimeout(()=>{
     animateMove(pidx,from,(from+total)%40,()=>{
       document.querySelectorAll('.path-highlight').forEach(el=>el.classList.remove('path-highlight'));
-      movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);
+      const _bbd=(from+total)%40;if(total>0&&_bbd<=from&&_bbd!==from){const _bp2=G.players[pidx];_bp2.money+=PASS_GO;log(`🚩 ${_bp2.name} 출발 통과! +₩${PASS_GO}`,"gain");}G.players[pidx].pos=_bbd;
+      landCell(pidx,total);botDecide(pidx);
       if(!isDouble&&G.phase!=='gameover')nextTurn();renderAll();
       if(G.phase==='gameover')showGameOver();
       else if(isDouble&&G.phase==='roll')setTimeout(()=>doBotRoll(pidx),800);
@@ -1852,6 +1862,9 @@ def render():
         st.session_state.marble_stats = stats
         # ✅ [BUG FIX] sync_user_data()가 marble_stats 포함하여 저장함 — 별도 save_db 불필요
         sync_user_data()
+        # ✅ [BUG FIX] 처리 플래그 삭제 → 다음 판도 정상 저장됨 (없으면 2판째부터 저장 안됨)
+        del st.session_state['marble_result_processed']
+        st.query_params.clear()
         st.rerun()
 
     # 게임 헤더 UI
@@ -1907,7 +1920,7 @@ def render():
     # postMessage 수신 리스너 (게임 결과 → query param으로 전달)
     listener_html = """
     <script>
-    window.addEventListener('message', function(e) {
+    window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'marble_result') {
         const d = e.data;
         const url = new URL(window.parent.location.href);
