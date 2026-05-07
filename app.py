@@ -743,7 +743,7 @@ if st.session_state.page_view == "portal":
           <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.35);'>🎯 ELITE</div>
           <div class='card-icon'>🎯</div>
           <div class='card-title'>스나이퍼 엘리트</div>
-          <div class='card-desc'>저격수 · 암살 br>바람 탄도 ·아군 전선방</div>
+          <div class='card-desc'>저격수 · 암살 <br>바람 탄도 ·아군 전선방</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("임무 입장 🎯", use_container_width=True, key="btn_i"):
