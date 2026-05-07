@@ -1442,8 +1442,18 @@ function landCell(pidx,roll) {
   if(G.phase!=='gameover')G.phase='roll';
 }
 
+// 🔥 봇 턴 무한 대기 방지용 타이머 변수 추가
+let botWatchdog = null;
+
 function nextTurn() {
   if(G.phase==='gameover')return;
+  
+  // 턴이 넘어가면 무조건 타이머 초기화 (안전장치 해제)
+  if(botWatchdog) { 
+    clearTimeout(botWatchdog); 
+    botWatchdog = null; 
+  }
+  
   const n=G.players.length;
   let nxt=(G.turn+1)%n,att=0;
   while(G.players[nxt].bankrupt&&att<n){nxt=(nxt+1)%n;att++;}
@@ -1967,7 +1977,23 @@ function doCasino(bet) {
 function checkBotTurn() {
   if(!G||G.phase==='gameover')return;
   const p=G.players[G.turn];
-  if(p.is_bot&&!p.bankrupt)doBotTurn();
+  
+  if(p.is_bot&&!p.bankrupt) {
+    // 🔥 워치독 가동: 10초(10000ms)가 지나도 봇 턴이면 강제로 턴 종료시킴
+    botWatchdog = setTimeout(() => {
+      if (G && G.turn === G.players.indexOf(p) && G.phase !== 'gameover') {
+        G.trade = null;
+        G.auction = null;
+        G.pending_card = null;
+        log(`⚠️ ${p.name} 처리 지연으로 강제 턴 종료!`, 'lose'); // 로그창에 빨간 글씨로 띄움
+        nextTurn();
+        renderAll();
+        setTimeout(checkBotTurn, 500);
+      }
+    }, 10000);
+
+    doBotTurn();
+  }
 }
 
 function doBotTurn() {
