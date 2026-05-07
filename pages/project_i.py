@@ -6,1177 +6,584 @@ GAME_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>스나이퍼 엘리트</title>
+<title>스나이퍼 엘리트 - 전장의 저격수</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-:root{--red:#ff2244;--green:#00ff88;--gold:#f5c518;--cyan:#00d4ff;--purple:#c04fff;--orange:#ff7700;--bg:#04080a;--glass:rgba(255,255,255,.04);--border:rgba(255,255,255,.07);}
-html,body{width:100%;height:728px;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;cursor:crosshair;}
-#root{position:relative;width:100%;height:728px;overflow:hidden;}
-canvas{position:absolute;top:0;left:0;}
-
-/* ── HUD ── */
-#hud{position:absolute;top:0;left:0;right:0;z-index:100;padding:10px 14px;background:linear-gradient(180deg,rgba(0,0,0,.88)0%,transparent 100%);display:flex;align-items:flex-start;gap:8px;pointer-events:none;}
-.hb{background:rgba(0,0,0,.48);border:1px solid var(--border);border-radius:9px;padding:4px 10px;text-align:center;}
-.hv{font-family:'Rajdhani',sans-serif;font-size:19px;font-weight:900;color:#fff;letter-spacing:1px;line-height:1.1;}
-.hl{font-size:7px;color:#445;letter-spacing:2px;text-transform:uppercase;}
-#hud-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
-
-/* WIND BOX */
-#wind-box{background:rgba(0,0,0,.48);border:1px solid rgba(0,212,255,.15);border-radius:9px;padding:5px 10px;display:flex;align-items:center;gap:6px;pointer-events:none;}
-#wind-arrow{font-size:20px;transition:transform .6s;}
-#wind-spd{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:900;color:var(--cyan);}
-#wind-lbl{font-size:7px;color:#335;letter-spacing:2px;}
-
-/* MISSION BOX */
-#mission-box{position:absolute;top:65px;left:50%;transform:translateX(-50%);z-index:100;pointer-events:none;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:7px 16px;text-align:center;min-width:200px;}
-#ms-num{font-size:7px;color:#446;letter-spacing:3px;margin-bottom:2px;}
-#ms-name{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--gold);letter-spacing:1px;}
-#ms-desc{font-size:9px;color:#8899bb;margin-top:2px;font-weight:700;}
-#ms-prog{font-size:9px;color:var(--green);margin-top:3px;font-weight:700;letter-spacing:1px;}
-
-/* AMMO + WEAPON */
-#ammo-wrap{position:absolute;bottom:92px;right:14px;z-index:100;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:3px;}
-#weapon-name{font-family:'Black Han Sans',sans-serif;font-size:10px;color:var(--gold);letter-spacing:1px;margin-bottom:2px;text-align:center;}
-.ammo-col{display:flex;flex-direction:column;gap:2px;}
-.adot{width:9px;height:20px;border-radius:3px;background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.18);transition:all .1s;}
-.adot.live{background:var(--gold);box-shadow:0 0 5px rgba(245,197,24,.6);}
-#ammo-lbl{font-size:7px;color:#555;letter-spacing:2px;margin-top:3px;}
-
-/* BREATH BAR */
-#breath-wrap{position:absolute;bottom:92px;left:50%;transform:translateX(-50%);z-index:100;text-align:center;pointer-events:none;width:min(160px,40vw);}
-#breath-lbl{font-size:7px;color:#446;letter-spacing:2px;margin-bottom:3px;}
-#breath-track{height:7px;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.18);border-radius:99px;overflow:hidden;}
-#breath-fill{height:100%;background:linear-gradient(90deg,#004466,var(--cyan),#88ffff);border-radius:99px;transition:width .07s;}
-#breath-state{font-size:7px;margin-top:3px;letter-spacing:2px;}
-
-/* RELOAD RING */
-#rl-ring{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);z-index:100;pointer-events:none;text-align:center;display:none;}
-#rl-cv{display:block;margin:0 auto 2px;}
-#rl-txt{font-size:7px;color:var(--gold);letter-spacing:2px;}
-
-/* SCOPE */
-#scope-wrap{position:absolute;inset:0;z-index:50;pointer-events:none;display:none;}
-#scope-bg{position:absolute;inset:0;background:rgba(0,0,0,.9);}
-#scope-lens{position:absolute;border-radius:50%;overflow:hidden;left:50%;top:50%;transform:translate(-50%,-50%);border:3px solid rgba(0,200,0,.55);box-shadow:0 0 0 2000px rgba(0,0,0,.9);width:280px;height:280px;}
-/* 경보 레벨 */
-#alert-strip{position:absolute;top:0;left:0;right:0;height:5px;z-index:201;pointer-events:none;opacity:0;transition:opacity .3s,background .4s;}
-#alert-lbl{position:absolute;top:5px;left:50%;transform:translateX(-50%);z-index:201;pointer-events:none;font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:3px;padding:2px 14px;border-radius:0 0 6px 6px;background:rgba(0,0,0,.75);opacity:0;transition:opacity .3s;white-space:nowrap;}
-#scope-cv{display:block;}
-#scope-ui{position:absolute;inset:0;pointer-events:none;}
-/* Sway container */
-#sway-container{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
-
-/* SLOWMO */
-#slowmo-frame{position:absolute;inset:0;z-index:80;pointer-events:none;opacity:0;box-shadow:inset 0 0 0 5px rgba(255,215,0,.45);background:rgba(255,215,0,.03);transition:opacity .15s;}
-#slowmo-lbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:85;pointer-events:none;font-family:'Black Han Sans',sans-serif;font-size:clamp(20px,4vw,30px);color:var(--gold);letter-spacing:4px;text-shadow:0 0 20px rgba(245,197,24,.8);opacity:0;transition:opacity .15s;}
-
-/* KILL FEED */
-#killfeed{position:absolute;top:70px;right:14px;z-index:100;pointer-events:none;display:flex;flex-direction:column;gap:3px;max-width:210px;}
-.kfe{background:rgba(0,0,0,.55);border-left:3px solid var(--red);padding:4px 8px;font-size:9px;color:#ccc;border-radius:0 6px 6px 0;animation:kfs .22s ease;white-space:nowrap;}
-@keyframes kfs{from{opacity:0;transform:translateX(14px);}to{opacity:1;transform:none;}}
-
-/* CROSSHAIR */
-#crosshair{position:absolute;inset:0;z-index:55;pointer-events:none;}
-
-/* MISSION CLEAR BANNER */
-#mc-banner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;pointer-events:none;text-align:center;opacity:0;transition:opacity .25s;}
-#mc-big{font-family:'Black Han Sans',sans-serif;font-size:clamp(26px,5.5vw,40px);letter-spacing:4px;text-shadow:0 0 28px currentColor;}
-#mc-sub{font-size:11px;color:#bbb;letter-spacing:3px;margin-top:5px;}
-
-/* TOUCH BUTTONS */
-#touch-btns{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:9px;z-index:100;}
-.tch{padding:11px 18px;border-radius:10px;border:1.5px solid;font-family:'Black Han Sans',sans-serif;font-size:13px;cursor:pointer;user-select:none;touch-action:none;transition:all .1s;display:flex;flex-direction:column;align-items:center;gap:2px;}
-.tch:active{transform:scale(.9);}
-.tch-lbl{font-size:7px;letter-spacing:1px;}
-#tch-scope{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.38);color:var(--cyan);}
-#tch-hold{background:rgba(0,255,136,.07);border-color:rgba(0,255,136,.32);color:var(--green);}
-#tch-fire{background:rgba(255,34,68,.18);border-color:rgba(255,34,68,.5);color:var(--red);}
-#tch-reload{background:rgba(245,197,24,.08);border-color:rgba(245,197,24,.32);color:var(--gold);}
-#tch-weapon{background:rgba(192,79,255,.1);border-color:rgba(192,79,255,.35);color:var(--purple);}
-
-/* WEAPON SELECT */
-#weapon-bar{position:absolute;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:6px 12px 8px;display:flex;gap:6px;justify-content:center;pointer-events:auto;display:none;}
-.wslot{padding:6px 12px;background:rgba(0,0,0,.5);border:1.5px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;transition:all .18s;text-align:center;min-width:70px;}
-.wslot.active{border-color:var(--gold);box-shadow:0 0 12px rgba(245,197,24,.3);}
-.ws-name{font-family:'Black Han Sans',sans-serif;font-size:9px;letter-spacing:1px;}
-.ws-stats{font-size:7px;color:#446;margin-top:2px;}
-
-/* OVERLAY */
-#overlay{position:absolute;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.93);}
-.ov-box{text-align:center;padding:30px 22px;background:linear-gradient(160deg,#040809,#060d10);border:1px solid rgba(0,255,136,.18);border-radius:20px;min-width:320px;max-width:94vw;max-height:90vh;overflow-y:auto;}
-.ov-eye{font-size:7px;letter-spacing:4px;color:var(--green);background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:99px;padding:3px 12px;display:inline-block;margin-bottom:12px;}
-.ov-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(22px,5.5vw,34px);letter-spacing:3px;line-height:1.1;margin-bottom:4px;}
-.ov-sub{font-size:8px;color:#335;letter-spacing:4px;margin-bottom:14px;}
-.stats-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
-.sc{padding:6px 11px;background:var(--glass);border:1px solid var(--border);border-radius:8px;text-align:center;}
-.sv{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:900;color:#fff;}
-.sl{font-size:7px;color:#446;letter-spacing:2px;}
-.diff-row{display:flex;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;}
-.dt{padding:8px 14px;border-radius:99px;background:var(--glass);border:1px solid var(--border);font-size:9px;color:#556;cursor:pointer;transition:all .18s;text-align:center;}
-.dt.sel{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.08);}
-.ov-btn{display:inline-block;padding:12px 28px;background:linear-gradient(135deg,rgba(0,255,136,.16),rgba(0,212,255,.1));border:1px solid rgba(0,255,136,.42);border-radius:12px;font-family:'Black Han Sans',sans-serif;font-size:16px;color:var(--green);cursor:pointer;letter-spacing:2px;transition:all .2s;margin-top:4px;}
-.ov-btn:hover{background:linear-gradient(135deg,rgba(0,255,136,.3),rgba(0,212,255,.2));transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,255,136,.28);}
-.ov-btn2{display:inline-block;padding:9px 20px;background:var(--glass);border:1px solid var(--border);border-radius:10px;font-family:'Black Han Sans',sans-serif;font-size:12px;color:#556;cursor:pointer;letter-spacing:1px;transition:all .18s;margin-top:8px;}
-.mission-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;text-align:left;}
-.ml-item{padding:8px 12px;background:var(--glass);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:10px;}
-.ml-ico{font-size:20px;}
-.ml-info{flex:1;}
-.ml-name{font-family:'Black Han Sans',sans-serif;font-size:11px;color:#ccc;letter-spacing:1px;}
-.ml-desc{font-size:7px;color:#446;margin-top:2px;}
-.ml-cleared{font-size:9px;color:var(--green);margin-left:auto;}
-.tag-strip{overflow:hidden;margin-bottom:14px;}
-.tag-inner{display:flex;gap:8px;animation:tgs 16s linear infinite;width:max-content;}
-@keyframes tgs{0%{transform:translateX(0);}100%{transform:translateX(-50%)}}
-.tpill{font-size:8px;border:1px solid var(--border);border-radius:99px;padding:3px 11px;white-space:nowrap;letter-spacing:1px;color:#445;}
-.tpill.c{color:var(--cyan);border-color:rgba(0,212,255,.3);}
-.tpill.g{color:var(--gold);border-color:rgba(245,197,24,.3);}
-.tpill.r{color:var(--red);border-color:rgba(255,34,68,.3);}
-.tpill.p{color:var(--purple);border-color:rgba(192,79,255,.3);}
-
+:root{--red:#ff2244;--green:#00ff88;--gold:#f5c518;--cyan:#00d4ff;--bg:#060a06;}
+html,body{width:100%;height:780px;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;cursor:crosshair;}
+#root{position:relative;width:100%;height:780px;overflow:hidden;}
+canvas{display:block;}
 #ctrl-bar{position:absolute;top:0;left:0;right:0;z-index:200;background:rgba(0,0,0,0.82);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;gap:16px;padding:5px 12px;font-size:10px;color:#778;letter-spacing:1px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.06);}
 #ctrl-bar span{color:#aab;}
-#ctrl-bar b{color:#22d3ee;font-weight:700;}
+#ctrl-bar b{color:#f5c518;font-weight:700;}
+#hud{position:absolute;top:34px;left:0;right:0;z-index:100;pointer-events:none;display:flex;gap:6px;padding:6px 10px;align-items:center;}
+.hb{background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:4px 10px;text-align:center;min-width:54px;}
+.hv{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:900;color:var(--gold);}
+.hl{font-size:9px;color:#556;letter-spacing:.5px;}
+#battle-bar-wrap{flex:1;margin:0 8px;}
+#battle-label{display:flex;justify-content:space-between;font-size:9px;color:#556;margin-bottom:3px;}
+#battle-bg{height:10px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;position:relative;}
+#ally-fill{height:100%;background:linear-gradient(90deg,#1155ff,#3399ff);transition:width .3s;}
+#enemy-fill{position:absolute;top:0;right:0;height:100%;background:linear-gradient(270deg,#ff2244,#ff6600);transition:width .3s;}
+#scope-wrap{position:absolute;inset:0;z-index:50;pointer-events:none;display:none;}
+#scope-bg{position:absolute;inset:0;background:rgba(0,0,0,.94);}
+#scope-lens{position:absolute;border-radius:50%;overflow:hidden;left:50%;top:50%;transform:translate(-50%,-50%);border:3px solid rgba(0,255,100,.4);box-shadow:0 0 0 2000px rgba(0,0,0,.94),0 0 30px rgba(0,255,100,.3);width:300px;height:300px;}
+#scope-cv{display:block;width:300px;height:300px;}
+#scope-cross{position:absolute;inset:0;pointer-events:none;}
+#scope-info{position:absolute;bottom:18%;left:50%;transform:translateX(-50%);font-family:'Rajdhani',sans-serif;font-size:11px;color:#0f9;letter-spacing:2px;text-align:center;}
+#breath-bar{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);width:180px;}
+#breath-bg{height:5px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;}
+#breath-fill{height:100%;background:#00ff88;transition:width .05s;}
+#warning{position:absolute;inset:0;z-index:200;pointer-events:none;border:4px solid transparent;}
+#warning.show{border:4px solid rgba(255,0,50,.7);box-shadow:inset 0 0 70px rgba(255,0,50,.3);}
+#toast{position:absolute;top:52px;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(10,20,5,.97);border:1px solid rgba(245,197,24,.4);border-radius:6px;padding:7px 18px;z-index:280;pointer-events:none;transition:transform .25s;white-space:nowrap;font-size:11px;color:var(--gold);letter-spacing:1px;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#killfeed{position:absolute;top:60px;right:10px;z-index:200;pointer-events:none;display:flex;flex-direction:column;gap:3px;}
+.kf{background:rgba(0,0,0,.75);border-left:3px solid var(--red);border-radius:3px;padding:3px 9px;font-size:10px;color:#ccc;animation:kfIn .3s ease;}
+@keyframes kfIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+#ally-status{position:absolute;bottom:8px;left:10px;z-index:100;pointer-events:none;font-size:10px;color:#4488ff;font-family:'Rajdhani',sans-serif;letter-spacing:.5px;}
+#mission-ov{position:absolute;inset:0;z-index:300;background:rgba(0,0,0,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;}
+.mo-title{font-family:'Black Han Sans',sans-serif;font-size:2.4rem;color:var(--gold);letter-spacing:8px;text-shadow:0 0 30px rgba(245,197,24,.5);margin-bottom:6px;}
+.mo-sub{font-size:.73rem;color:#334;letter-spacing:4px;margin-bottom:24px;}
+.mission-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:560px;margin-bottom:20px;}
+.mis-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 10px;cursor:pointer;transition:all .2s;text-align:center;}
+.mis-card:hover,.mis-card.sel{border-color:rgba(245,197,24,.6);background:rgba(245,197,24,.05);}
+.mis-card.locked{opacity:.3;cursor:default;}
+.mc-num{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:900;color:var(--gold);}
+.mc-name{font-family:'Black Han Sans',sans-serif;font-size:11px;color:#aab;margin:4px 0 2px;}
+.mc-diff{font-size:9px;color:#445;}
+.mc-clr{font-size:9px;color:#0f9;margin-top:3px;}
+.mo-start{padding:12px 48px;background:linear-gradient(135deg,#1a3a00,#2a6600);border:1px solid #4a9a00;border-radius:6px;color:#88ff44;font-family:'Black Han Sans',sans-serif;font-size:14px;letter-spacing:4px;cursor:pointer;transition:all .2s;}
+.mo-start:hover{transform:scale(1.05);filter:brightness(1.2);}
+.mo-start:disabled{opacity:.3;cursor:default;transform:none;}
+#result-ov{position:absolute;inset:0;z-index:300;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.res-title{font-family:'Black Han Sans',sans-serif;font-size:2rem;letter-spacing:6px;}
+.res-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 22px;min-width:320px;}
+.rs{font-size:11px;color:#556;display:flex;justify-content:space-between;gap:16px;}
+.rs b{color:var(--gold);}
+.res-btns{display:flex;gap:10px;}
+.rbtn{padding:9px 28px;border:none;border-radius:5px;cursor:pointer;font-family:'Black Han Sans',sans-serif;font-size:13px;letter-spacing:2px;transition:all .18s;}
+.rbtn:hover{transform:translateY(-2px);filter:brightness(1.2);}
+.rbtn.retry{background:linear-gradient(135deg,#1a3a00,#2a6600);color:#88ff44;border:1px solid #4a9a00;}
+.rbtn.back{background:rgba(255,255,255,.06);color:#666;border:1px solid rgba(255,255,255,.1);}
+.dnum{position:fixed;pointer-events:none;font-family:'Black Han Sans',sans-serif;animation:dUp .9s ease forwards;z-index:300;text-shadow:1px 1px 4px rgba(0,0,0,.9);}
+@keyframes dUp{0%{opacity:1;transform:translateY(0) scale(1);}50%{opacity:1;transform:translateY(-30px) scale(1.1);}100%{opacity:0;transform:translateY(-60px) scale(.7);}}
 </style>
 </head>
 <body>
-  <div id="ctrl-bar">
-    <span><b>마우스</b> 조준  <b>클릭 / Space</b> 발사</span>
-    <span>|</span>
-    <span><b>Z / Esc</b> 스코프 토글</span>
-    <span>|</span>
-    <span><b>Shift</b> 숨참기(정확도↑)</span>
-    <span>|</span>
-    <span><b>R</b> 재장전  <b>1~4</b> 무기교체</span>
-  </div>
 <div id="root">
-  <canvas id="bgc"></canvas>
-  <canvas id="gc"></canvas>
-
-  <!-- HUD -->
-  <div id="hud">
-    <div class="hb"><div class="hv" id="score-v">0</div><div class="hl">SCORE</div></div>
-    <div class="hb"><div class="hv" id="ms-kills-v">0/0</div><div class="hl">TARGETS</div></div>
-    <div class="hb"><div class="hv" id="time-v">--</div><div class="hl">TIME</div></div>
-    <div id="hud-right">
-      <div id="wind-box">
-        <div id="wind-arrow">→</div>
-        <div><div id="wind-spd">0 m/s</div><div id="wind-lbl">WIND</div></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="mission-box">
-    <div id="ms-num">MISSION 1 / 6</div>
-    <div id="ms-name">정지 표적 사격</div>
-    <div id="ms-desc">표적을 저격하라</div>
-    <div id="ms-prog"></div>
-  </div>
-
-  <!-- Scope -->
-  <div id="scope-wrap">
-    <div id="scope-bg"></div>
-    <div id="sway-container">
-      <div id="scope-lens">
-        <canvas id="scope-cv" width="280" height="280"></canvas>
-        <svg id="scope-ui" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;">
-          <!-- Cross hairs -->
-          <line x1="50" y1="0" x2="50" y2="42" stroke="rgba(0,255,0,.65)" stroke-width=".7"/>
-          <line x1="50" y1="58" x2="50" y2="100" stroke="rgba(0,255,0,.65)" stroke-width=".7"/>
-          <line x1="0" y1="50" x2="42" y2="50" stroke="rgba(0,255,0,.65)" stroke-width=".7"/>
-          <line x1="58" y1="50" x2="100" y2="50" stroke="rgba(0,255,0,.65)" stroke-width=".7"/>
-          <!-- Center dot -->
-          <circle cx="50" cy="50" r="1.8" fill="none" stroke="rgba(0,255,0,.85)" stroke-width=".9"/>
-          <!-- Inner ring -->
-          <circle cx="50" cy="50" r="13" fill="none" stroke="rgba(0,255,0,.28)" stroke-width=".4"/>
-          <!-- Outer ring -->
-          <circle cx="50" cy="50" r="26" fill="none" stroke="rgba(0,255,0,.18)" stroke-width=".3"/>
-          <!-- Mil-dot scale marks -->
-          <line x1="50" y1="33" x2="50" y2="36" stroke="rgba(0,255,0,.5)" stroke-width=".6"/>
-          <line x1="50" y1="64" x2="50" y2="67" stroke="rgba(0,255,0,.5)" stroke-width=".6"/>
-          <line x1="33" y1="50" x2="36" y2="50" stroke="rgba(0,255,0,.5)" stroke-width=".6"/>
-          <line x1="64" y1="50" x2="67" y2="50" stroke="rgba(0,255,0,.5)" stroke-width=".6"/>
-          <!-- Range labels -->
-          <text x="52" y="32" fill="rgba(0,255,0,.4)" font-size="3" font-family="monospace">200</text>
-          <text x="52" y="67" fill="rgba(0,255,0,.4)" font-size="3" font-family="monospace">500</text>
-          <!-- Hold indicator -->
-          <rect x="2" y="92" width="44" height="4" fill="rgba(0,255,0,.1)" rx="2"/>
-          <rect id="hold-bar" x="2" y="92" width="44" height="4" fill="rgba(0,255,0,.6)" rx="2"/>
-        </svg>
-      </div>
-    </div>
-  </div>
-
-  <!-- Crosshair (free-aim mode) -->
-  <canvas id="crosshair-cv" style="position:absolute;inset:0;z-index:55;pointer-events:none;"></canvas>
-
-  <div id="ammo-wrap">
-    <div id="weapon-name">권총</div>
-    <div class="ammo-col" id="ammo-col"></div>
-    <div id="ammo-lbl">AMMO</div>
-  </div>
-  <div id="breath-wrap">
-    <div id="breath-lbl">호흡 (HOLD)</div>
-    <div id="breath-track"><div id="breath-fill" style="width:100%"></div></div>
-    <div id="breath-state" style="color:#446">안정</div>
-  </div>
-
-  <div id="rl-ring"><canvas id="rl-cv" width="52" height="52"></canvas><div id="rl-txt">장전중...</div></div>
-
-  <div id="killfeed"></div>
-  <div id="alert-strip"></div>
-  <div id="alert-lbl"></div>
-  <div id="slowmo-frame"></div>
-  <div id="slowmo-lbl">SLOW MOTION</div>
-
-  <div id="mc-banner">
-    <div id="mc-big" style="color:var(--gold)">✅ 클리어!</div>
-    <div id="mc-sub"></div>
-  </div>
-
-  <div id="touch-btns">
-    <div class="tch" id="tch-scope"><span>🔭</span><span class="tch-lbl">조준경</span></div>
-    <div class="tch" id="tch-hold"><span>🫁</span><span class="tch-lbl">호흡</span></div>
-    <div class="tch" id="tch-fire"><span>🔫</span><span class="tch-lbl">발사</span></div>
-    <div class="tch" id="tch-reload"><span>🔄</span><span class="tch-lbl">장전</span></div>
-    <div class="tch" id="tch-weapon"><span>🔀</span><span class="tch-lbl">무기</span></div>
-  </div>
-
-  <div id="overlay"><div class="ov-box" id="ovc"></div></div>
+<canvas id="gc"></canvas>
+<div id="ctrl-bar">
+  <span><b>마우스</b> 조준</span><span>|</span>
+  <span><b>클릭/SPACE</b> 발사</span><span>|</span>
+  <span><b>Z/우클릭</b> 스코프</span><span>|</span>
+  <span><b>R</b> 재장전</span><span>|</span>
+  <span><b>SHIFT</b> 숨참기</span>
 </div>
-
+<div id="hud">
+  <div class="hb"><div class="hv" id="score-v">0</div><div class="hl">SCORE</div></div>
+  <div class="hb"><div class="hv" id="kill-v">0</div><div class="hl">킬</div></div>
+  <div class="hb"><div class="hv" id="timer-v">--:--</div><div class="hl">TIME</div></div>
+  <div class="hb"><div class="hv" id="ammo-v">5/5</div><div class="hl">탄약</div></div>
+  <div id="battle-bar-wrap">
+    <div id="battle-label"><span>🔵 아군</span><span>적군 🔴</span></div>
+    <div id="battle-bg">
+      <div id="ally-fill" style="width:50%"></div>
+      <div id="enemy-fill" style="width:50%"></div>
+    </div>
+  </div>
+</div>
+<div id="scope-wrap">
+  <div id="scope-bg"></div>
+  <div id="scope-lens"><canvas id="scope-cv"></canvas></div>
+  <svg id="scope-cross" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"
+    style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;height:300px;pointer-events:none;">
+    <circle cx="150" cy="150" r="148" stroke="rgba(0,255,100,.4)" stroke-width="1.5" fill="none"/>
+    <line x1="0" y1="150" x2="118" y2="150" stroke="rgba(0,255,100,.8)" stroke-width="1"/>
+    <line x1="182" y1="150" x2="300" y2="150" stroke="rgba(0,255,100,.8)" stroke-width="1"/>
+    <line x1="150" y1="0" x2="150" y2="118" stroke="rgba(0,255,100,.8)" stroke-width="1"/>
+    <line x1="150" y1="182" x2="150" y2="300" stroke="rgba(0,255,100,.8)" stroke-width="1"/>
+    <circle cx="150" cy="150" r="3" stroke="rgba(0,255,100,.9)" stroke-width="1" fill="none"/>
+    <line x1="115" y1="165" x2="185" y2="165" stroke="rgba(0,255,100,.3)" stroke-width=".8"/>
+    <line x1="115" y1="135" x2="185" y2="135" stroke="rgba(0,255,100,.3)" stroke-width=".8"/>
+  </svg>
+  <div id="scope-info"></div>
+  <div id="breath-bar"><div style="font-size:9px;color:#445;margin-bottom:3px;text-align:center;">BREATH</div><div id="breath-bg"><div id="breath-fill" style="width:100%"></div></div></div>
+</div>
+<div id="warning"></div>
+<div id="toast"></div>
+<div id="killfeed"></div>
+<div id="ally-status"></div>
+<div id="mission-ov">
+  <div class="mo-title">🎯 스나이퍼 엘리트</div>
+  <div class="mo-sub">전장의 저격수 — WAR SNIPER</div>
+  <div class="mission-grid" id="mission-grid"></div>
+  <button class="mo-start" id="mo-start-btn" disabled onclick="startMission()">임무 시작 ▶</button>
+</div>
+<div id="result-ov">
+  <div class="res-title" id="res-title"></div>
+  <div class="res-stats" id="res-stats"></div>
+  <div class="res-btns">
+    <button class="rbtn retry" onclick="retryMission()">재시도 ↺</button>
+    <button class="rbtn back" onclick="gotoTitle()">타이틀</button>
+  </div>
+</div>
+</div>
 <script>
 'use strict';
-// ================================================================
-//  스나이퍼 엘리트 v3.0
-//  6 미션 스토리 · 4종 무기 (저격·반자동·산탄·권총)
-//  4배율 조준경 · 실시간 바람 탄도 · 호흡 안정화
-//  헤드샷/급소 판정 · 슬로우모션 · 킬체인 보너스
-//  이동 표적 AI · 군집 표적 · 시간 제한 미션
-//  파티클 이펙트 · 혈흔 · 장탄수 · 난이도 3단계
-// ================================================================
+const canvas=document.getElementById('gc'),ctx=canvas.getContext('2d');
+const scopeCV=document.getElementById('scope-cv'),sCtx=scopeCV.getContext('2d');
+const GW=900,GH=640;
+canvas.width=GW;canvas.height=GH;
 
-const bgc   = document.getElementById('bgc');
-const bgCtx = bgc.getContext('2d');
-const canvas= document.getElementById('gc');
-const ctx   = canvas.getContext('2d');
-const scopeCV = document.getElementById('scope-cv');
-const sCtx  = scopeCV.getContext('2d');
-const crossCV = document.getElementById('crosshair-cv');
-const crCtx = crossCV.getContext('2d');
-const root  = document.getElementById('root');
+let G=null,selMis=null,RAF,lastTs=0,timer=0;
 
-function resize(){
-  canvas.width = bgc.width = crossCV.width = root.clientWidth||window.innerWidth||730;
-  canvas.height= bgc.height= crossCV.height= root.clientHeight||window.innerHeight||560;
-}
-resize(); window.addEventListener('resize', ()=>{ resize(); drawStaticBg(); });
-setTimeout(()=>{resize();drawStaticBg();},100);setTimeout(()=>{resize();drawStaticBg();},500);
-
-// ================================================================
-//  WEAPON DEFS
-// ================================================================
-const WDEFS = [
-  { id:0, name:'AWM 저격',   emoji:'🎯', mag:5,  relT:140, dmg:200, spread:.005, zoom:4,   col:'#c04fff', desc:'볼트액션·최강 위력',    movePen:true },
-  { id:1, name:'SR-25 반자동',emoji:'⚙️', mag:10, relT:95,  dmg:120, spread:.015, zoom:3.5, col:'#00ff88', desc:'반자동·빠른 연사',      movePen:false},
-  { id:2, name:'SPAS-12 샷건',emoji:'💥', mag:8,  relT:110, dmg:80,  spread:.18,  zoom:1.5, col:'#ff7700', desc:'근접 산탄·광역 피해',   movePen:false,pellets:7},
-  { id:3, name:'M9 권총',    emoji:'🔫', mag:15, relT:50,  dmg:45,  spread:.04,  zoom:1.2, col:'#00d4ff', desc:'무한 탄약·빠른 재장전', unlimited:true},
+const MISSIONS=[
+  {id:1,name:'전선 사수',diff:'⭐ 초급',timeLimit:90,killGoal:15,bossGoal:0,allyHPMin:50,
+   desc:'적군 15명을 제거해 전선을 사수하라.',reward:5000000,
+   spawns:[{t:'infantry',n:15}]},
+  {id:2,name:'지휘관 암살',diff:'⭐⭐ 보통',timeLimit:120,killGoal:10,bossGoal:1,allyHPMin:30,
+   desc:'적 지휘관 1명과 경호원들을 처치하라.',reward:15000000,
+   spawns:[{t:'infantry',n:8},{t:'commander',n:1},{t:'guard',n:5}]},
+  {id:3,name:'포병 무력화',diff:'⭐⭐⭐ 어려움',timeLimit:150,killGoal:20,bossGoal:2,allyHPMin:40,
+   desc:'포병 파괴 및 적 장교 2명 제거.',reward:30000000,
+   spawns:[{t:'artillery',n:3},{t:'officer',n:2},{t:'infantry',n:15},{t:'guard',n:5}]},
+  {id:4,name:'포위 돌파',diff:'⭐⭐⭐⭐ 전문가',timeLimit:180,killGoal:40,bossGoal:3,allyHPMin:20,
+   desc:'포위된 아군을 구출하기 위해 사방의 적을 제거하라.',reward:60000000,
+   spawns:[{t:'infantry',n:25},{t:'officer',n:3},{t:'sniper_e',n:2},{t:'guard',n:10}]},
+  {id:5,name:'총사령관 처치',diff:'⭐⭐⭐⭐⭐ 전설',timeLimit:240,killGoal:30,bossGoal:1,allyHPMin:10,
+   desc:'최정예 경호대를 돌파하고 적 총사령관을 처치하라.',reward:200000000,
+   spawns:[{t:'infantry',n:15},{t:'guard',n:10},{t:'sniper_e',n:3},{t:'general',n:1}]},
+  {id:6,name:'야간 특수작전',diff:'⭐⭐⭐⭐⭐ 전설+',timeLimit:300,killGoal:60,bossGoal:4,allyHPMin:5,
+   desc:'야음을 틈타 전략 목표를 모두 제거하라.',reward:500000000,
+   spawns:[{t:'infantry',n:25},{t:'guard',n:15},{t:'officer',n:5},{t:'sniper_e',n:4},{t:'commander',n:3},{t:'general',n:1}],night:true},
 ];
 
-// ================================================================
-//  MISSION DEFS
-// ================================================================
-const MISSIONS = [
-  { id:0, name:'정지 표적',   icon:'🎯', desc:'정지 표적 5개 제거',         n:5,  time:90,  moving:false, boss:false, group:false, escort:false },
-  { id:1, name:'이동 표적',   icon:'🏃', desc:'이동 표적 4개 저격',         n:4,  time:75,  moving:true,  boss:false, group:false, escort:false },
-  { id:2, name:'제한 시간',   icon:'⏱️', desc:'60초 안에 7명 처치',         n:7,  time:60,  moving:false, boss:false, group:false, escort:false },
-  { id:3, name:'군집 섬멸',   icon:'👥', desc:'10명 무리 모두 제거',        n:10, time:100, moving:true,  boss:false, group:true,  escort:false },
-  { id:4, name:'VIP 경호',    icon:'🚨', desc:'VIP를 지키며 적 6명 저격',   n:6,  time:80,  moving:true,  boss:false, group:false, escort:true  },
-  { id:5, name:'보스 처치',   icon:'👹', desc:'고가치 표적(HVT) 제거!',     n:1,  time:60,  moving:true,  boss:true,  group:false, escort:false },
-];
+const ETYPES={
+  infantry:  {name:'보병',hp:100,col:'#cc2200',sz:8,spd:0.9,xp:100,boss:false,icon:'🪖'},
+  guard:     {name:'경호원',hp:150,col:'#991100',sz:9,spd:1.2,xp:180,boss:false,icon:'🔴'},
+  officer:   {name:'장교',hp:220,col:'#880000',sz:11,spd:0.8,xp:400,boss:true,icon:'⭐'},
+  commander: {name:'지휘관',hp:400,col:'#550000',sz:14,spd:0.6,xp:800,boss:true,icon:'🎖️'},
+  general:   {name:'총사령관',hp:700,col:'#330000',sz:17,spd:0.5,xp:3000,boss:true,icon:'🏅'},
+  artillery: {name:'포병',hp:450,col:'#7a4500',sz:20,spd:0,xp:600,boss:true,icon:'💣'},
+  sniper_e:  {name:'적저격수',hp:120,col:'#003322',sz:8,spd:0.4,xp:500,boss:true,icon:'🎯'},
+};
 
-// TARGET TYPES
-const TTYPES = [
-  { emoji:'🎯', sz:22, pts:100, head:.35, body:.75, label:'일반 표적' },
-  { emoji:'🪖', sz:20, pts:120, head:.33, body:.7,  label:'무장 병사' },
-  { emoji:'💣', sz:24, pts:150, head:.3,  body:.72, label:'폭발물 운반' },
-  { emoji:'📡', sz:26, pts:80,  head:.4,  body:.82, label:'통신 장비' },
-];
-
-// WEATHER affecting wind/sway
-const WEATHERS = [
-  { name:'맑음', wind:0,   sway:0,   fog:false },
-  { name:'바람', wind:2.5, sway:.8,  fog:false },
-  { name:'폭풍', wind:4.5, sway:1.8, fog:true  },
-  { name:'야간', wind:1.5, sway:.4,  fog:false, night:true },
-];
-
-// ================================================================
-//  STATE
-// ================================================================
-let G = { running: false, diffLv: 1 };
-let PARTS = [], HITS = [];
-let alertLevel = 0;        // 0=평온 1=경계 2=고경계 3=봉쇄
-let alertDecayTimer = 0;
-let _totalReinforced = 0;  // 증원된 표적 수
-
-// ================================================================
-//  INIT
-// ================================================================
-function initGame(){
-  const W = WEATHERS[Math.floor(Math.random()*WEATHERS.length)];
-  G = {
-    running: true, diffLv: G.diffLv,
-    mIdx: 0, score: 0, totalKills: 0, killChain: 0, chainTimer: 0,
-    ammo: [5,10,8,15], wIdx: 0,
-    reloading: false, relT: 0,
-    scoped: false,
-    breath: 100, breathHeld: false,
-    swayX: 0, swayY: 0, swayVX:0, swayVY:0,
-    wind: { dir: Math.random()<.5?1:-1, spd: 0 },
-    weather: W,
-    targets: [], bullets: [],
-    missionComplete: false, missionFailed: false,
-    mouse: { x: canvas.width/2, y: canvas.height/2 },
-    scopeX: canvas.width/2, scopeY: canvas.height/2,
-    frame: 0, timer: 0,
-    cleared: [], // which missions cleared
-    vip: null,
-    sessionStats: { headshots:0, bodyshots:0, misses:0, longestShot:0 },
+function initGame(midx){
+  const mis=MISSIONS[midx];
+  G={
+    midx,mis,phase:'play',
+    time:mis.timeLimit,score:0,kills:0,bossKills:0,
+    allyHP:100,allyPower:50,
+    enemies:[],allies:[],bullets:[],explosions:[],
+    scoped:false,mouse:{x:GW/2,y:GH/2},
+    swayX:0,swayY:0,swayT:0,
+    breathHeld:false,breathTimer:3,
+    reloading:false,reloadTimer:0,
+    ammo:5,maxAmmo:5,shootCd:0,
+    spawnQueue:buildQueue(mis),spawnTimer:0,
+    artilleryActive:0,sniperWarning:0,
+    allyWarnTimer:0,frame:0,
+    done:false,
   };
-  PARTS=[]; HITS=[];
-  alertLevel=0; alertDecayTimer=0; _totalReinforced=0;
-  drawStaticBg();
-  buildAmmoDisplay();
-  setWind();
-  loadMission(0);
+  for(let i=0;i<12;i++) spawnAlly();
+  updateHUD();
 }
 
-// ================================================================
-//  BACKGROUND
-// ================================================================
-function drawStaticBg(){
-  const W=canvas.width, H=canvas.height;
-  const isNight = G.running && G.weather && G.weather.night;
-  // Sky gradient
-  const sky = bgCtx.createLinearGradient(0,0,0,H*.58);
-  if(isNight){ sky.addColorStop(0,'#010206'); sky.addColorStop(1,'#040820'); }
-  else        { sky.addColorStop(0,'#050908'); sky.addColorStop(1,'#0c1a10'); }
-  bgCtx.fillStyle=sky; bgCtx.fillRect(0,0,W,H);
-
-  // Stars (always a few, more at night)
-  const starCount = isNight ? 180 : 55;
-  for(let i=0;i<starCount;i++){
-    const sx=((i*137.5+i*i*.003)%1)*W;
-    const sy=((i*98.3+i*.5)%.52)*H;
-    const sa=(isNight?.8:.28)+Math.random()*.4;
-    bgCtx.fillStyle=`rgba(240,240,200,${sa})`;
-    bgCtx.beginPath(); bgCtx.arc(sx,sy,i%9===0?1.3:.65,0,Math.PI*2); bgCtx.fill();
-  }
-
-  // Mountains — 4 layers
-  const mcols = isNight
-    ? ['#060d08','#091408','#0c1a0a','#10200c']
-    : ['#080f06','#0c1808','#10200a','#14260d'];
-  for(let l=0;l<4;l++){
-    bgCtx.fillStyle = mcols[l];
-    bgCtx.beginPath(); bgCtx.moveTo(0,H);
-    const peaks = 6+l*2;
-    for(let i=0;i<=peaks;i++){
-      const mx=i*(W/peaks);
-      const my=H*(.28+l*.08)+Math.sin(i*2.4+l)*H*(.14-l*.028);
-      if(i===0) bgCtx.lineTo(mx,my);
-      else { const cx=(mx+(i-1)*(W/peaks))/2; bgCtx.quadraticCurveTo(cx,my+20,mx,my); }
+function buildQueue(mis){
+  const q=[];let d=2;
+  for(const s of mis.spawns){
+    for(let i=0;i<s.n;i++){
+      q.push({t:s.t,delay:d+i*(1.2+Math.random()*0.8)});
     }
-    bgCtx.lineTo(W,H); bgCtx.closePath(); bgCtx.fill();
+    d+=s.n*1.2+4;
   }
+  q.sort((a,b)=>a.delay-b.delay);
+  return q;
+}
 
-  const fY = H*.62;
+function spawnAlly(){
+  const y=120+Math.random()*(GH-220);
+  G.allies.push({x:40+Math.random()*80,y,vx:0.3+Math.random()*0.3,phase:Math.random()*Math.PI*2,atkT:0.5+Math.random()});
+}
 
-  // Trees along treeline
-  bgCtx.fillStyle = isNight?'#040c04':'#050e05';
-  for(let i=0;i<45;i++){
-    const tx=Math.random()*W, ty=fY-2;
-    const th=16+Math.random()*46, tw=8+Math.random()*14;
-    bgCtx.beginPath();
-    bgCtx.moveTo(tx,ty);
-    bgCtx.lineTo(tx-tw/2,ty+th*.38); bgCtx.lineTo(tx-tw*.3,ty+th*.38);
-    bgCtx.lineTo(tx-tw*.38,ty+th*.72); bgCtx.lineTo(tx,ty+th);
-    bgCtx.lineTo(tx+tw*.38,ty+th*.72); bgCtx.lineTo(tx+tw*.3,ty+th*.38);
-    bgCtx.lineTo(tx+tw/2,ty+th*.38);
-    bgCtx.closePath(); bgCtx.fill();
+function spawnEnemy(type){
+  const t=ETYPES[type];const sc=1+G.midx*0.2;
+  const y=120+Math.random()*(GH-200);
+  const x=GW+30+Math.random()*60;
+  G.enemies.push({
+    type,x,y,vx:-(t.spd*(0.7+Math.random()*0.5)),vy:(Math.random()-0.5)*0.3,
+    hp:Math.round(t.hp*sc),maxHp:Math.round(t.hp*sc),
+    col:t.col,sz:t.sz,xp:Math.round(t.xp*sc),boss:t.boss,
+    icon:t.icon,name:t.name,
+    alive:true,dying:false,deathT:0,
+    phase:Math.random()*Math.PI*2,
+    atkT:1+Math.random()*2,
+    fireT:type==='sniper_e'?3+Math.random()*5:0,
+    special:type,
+  });
+}
+
+function tick(dt){
+  if(!G||G.phase!=='play'||G.done)return;
+  G.frame++;timer+=dt;G.time-=dt;
+  G.swayT+=dt;
+  const swayMult=G.breathHeld?0.08:1;
+  G.swayX=Math.sin(G.swayT*0.9)*5*swayMult+Math.sin(G.swayT*2.3)*2*swayMult;
+  G.swayY=Math.cos(G.swayT*0.7)*4*swayMult+Math.cos(G.swayT*1.8)*2*swayMult;
+  G.shootCd=Math.max(0,G.shootCd-dt);
+  if(G.breathHeld){G.breathTimer-=dt*0.4;if(G.breathTimer<=0){G.breathHeld=false;G.breathTimer=0;}}
+  else G.breathTimer=Math.min(3,G.breathTimer+dt*0.55);
+  if(G.reloading){G.reloadTimer-=dt;if(G.reloadTimer<=0){G.reloading=false;G.ammo=G.maxAmmo;showToast('탄창 장전!');updateHUD();}}
+  if(G.sniperWarning>0){G.sniperWarning-=dt;document.getElementById('warning').className=G.sniperWarning>0?'show':'';}
+  if(G.artilleryActive>0){G.artilleryActive-=dt;G.allyHP-=dt*8;}
+  // Spawn
+  G.spawnTimer+=dt;
+  while(G.spawnQueue.length&&G.spawnQueue[0].delay<=G.spawnTimer){spawnEnemy(G.spawnQueue.shift().t);}
+  // Update
+  updEnemies(dt);updAllies(dt);updBullets(dt);
+  // Battle ratio
+  const ae=G.enemies.filter(e=>e.alive).length,aa=G.allies.length;
+  const r=aa/Math.max(1,aa+ae);G.allyPower+=(r*100-G.allyPower)*dt*0.08;
+  G.allyHP=Math.max(0,Math.min(100,G.allyHP));
+  // Ally warn
+  if(G.allyHP<30){G.allyWarnTimer-=dt;if(G.allyWarnTimer<=0){G.allyWarnTimer=3;showToast('⚠️ 아군 위험!');}}
+  updateHUD();checkEnd();
+}
+
+function updEnemies(dt){
+  for(let i=G.enemies.length-1;i>=0;i--){
+    const e=G.enemies[i];
+    if(e.dying){e.deathT+=dt;if(e.deathT>0.7)G.enemies.splice(i,1);continue;}
+    if(!e.alive)continue;
+    e.phase+=dt*2;
+    if(e.special!=='artillery'){e.x+=e.vx;e.y=Math.max(100,Math.min(GH-50,e.y+e.vy+Math.sin(e.phase)*0.25));}
+    if(e.x<80){
+      G.allyHP-=dt*10;e.vx=0;
+      e.atkT-=dt;
+      if(e.atkT<=0){e.atkT=0.8+Math.random();G.allyHP-=4+Math.random()*4;
+        if(G.allies.length>0&&Math.random()<0.3)G.allies.splice(Math.floor(Math.random()*G.allies.length),1);}
+    }
+    if(e.special==='artillery'){
+      e.atkT-=dt;if(e.atkT<=0){e.atkT=5+Math.random()*4;G.artilleryActive=2;showKF('💥 포격!','#ff7700');}}
+    if(e.special==='sniper_e'){
+      e.fireT-=dt;if(e.fireT<=0&&e.x<GW-60){e.fireT=4+Math.random()*5;
+        G.sniperWarning=1.5;G.allyHP-=2;showKF('⚠️ 적 저격수 공격!','#ff4400');}}
   }
+}
 
-  // Ground
-  const gr = bgCtx.createLinearGradient(0,fY,0,H);
-  gr.addColorStop(0, isNight?'#101a10':'#182a12');
-  gr.addColorStop(1, isNight?'#080e08':'#0a1408');
-  bgCtx.fillStyle=gr; bgCtx.fillRect(0,fY,W,H-fY);
-  bgCtx.strokeStyle='rgba(0,80,0,.07)'; bgCtx.lineWidth=1;
-  for(let gy=fY;gy<H;gy+=20){ bgCtx.beginPath(); bgCtx.moveTo(0,gy); bgCtx.lineTo(W,gy); bgCtx.stroke(); }
+function updAllies(dt){
+  if(G.frame%300===0&&G.allies.length<14&&G.allyHP>25)spawnAlly();
+  for(const a of G.allies){
+    a.phase+=dt*2;
+    const ne=G.enemies.filter(e=>e.alive).sort((a,b)=>a.x-b.x)[0];
+    if(ne){
+      const dx=ne.x-a.x,dy=ne.y-a.y,d=Math.hypot(dx,dy);
+      if(d>60){a.x+=(dx/d)*a.vx;a.y+=(dy/d)*a.vx;}
+      else{a.atkT-=dt;if(a.atkT<=0){a.atkT=0.6+Math.random();ne.hp-=6+Math.random()*4;if(ne.hp<=0)killE(ne,false);}}
+    } else {a.x=Math.min(a.x+a.vx*0.3,GW-100);}
+    a.y=Math.max(100,Math.min(GH-50,a.y+Math.sin(a.phase)*0.2));
+  }
+}
 
-  // Buildings silhouette
-  for(let i=0;i<9;i++){
-    const bx=i*(W/8.5)-20, bw=26+Math.random()*50, bh=35+Math.random()*75;
-    bgCtx.fillStyle=isNight?'#050a05':'#060c04';
-    bgCtx.fillRect(bx, fY-bh, bw, bh);
-    for(let wx=bx+5;wx<bx+bw-5;wx+=11){
-      for(let wy=fY-bh+5;wy<fY-5;wy+=13){
-        if(Math.random()<(isNight?.5:.38)){
-          const litc = isNight?`rgba(255,210,100,.38)`:`rgba(255,200,80,.22)`;
-          bgCtx.fillStyle=litc; bgCtx.fillRect(wx,wy,4,7);
-          bgCtx.fillStyle=isNight?'#050a05':'#060c04';
-        }
+function updBullets(dt){
+  for(let i=G.bullets.length-1;i>=0;i--){
+    const b=G.bullets[i];b.x+=b.vx*dt*60;b.y+=b.vy*dt*60;b.life-=dt;
+    if(b.life<=0||b.x<0||b.x>GW||b.y<0||b.y>GH){G.bullets.splice(i,1);continue;}
+    let hit=false;
+    for(const e of G.enemies){
+      if(!e.alive)continue;
+      if(Math.hypot(e.x-b.x,e.y-b.y)<e.sz+4){
+        e.hp-=b.dmg;spawnDN(e.x,e.y,b.dmg,b.crit);
+        addExp(e.x,e.y,b.crit?'#ffff44':'#ff8844');
+        if(e.hp<=0)killE(e,true);
+        G.bullets.splice(i,1);hit=true;break;
       }
     }
-  }
-
-  // Fog overlay
-  if(G.running && G.weather && G.weather.fog){
-    const fg = bgCtx.createLinearGradient(0,0,0,H);
-    fg.addColorStop(0,'rgba(150,180,160,.22)'); fg.addColorStop(1,'rgba(100,140,110,.08)');
-    bgCtx.fillStyle=fg; bgCtx.fillRect(0,0,W,H);
+    if(hit)continue;
   }
 }
 
-// ================================================================
-//  WIND
-// ================================================================
-function setWind(){
-  const ms = MISSIONS[G.mIdx];
-  const diffWindMul = [0, .7, 1.4][G.diffLv];
-  const baseWind = G.weather.wind * diffWindMul;
-  G.wind.dir = Math.random()<.5 ? 1 : -1;
-  G.wind.spd = G.wind.dir * (baseWind * (.6+Math.random()*.8));
-  // Slowly change over time
-  G._windTarget = G.wind.spd;
-  updateWindHUD();
-}
-function updateWindHUD(){
-  const arrows = ['←','↙','↓','↘','→','↗','↑','↖'];
-  const abs = Math.abs(G.wind.spd);
-  document.getElementById('wind-arrow').textContent = abs<.2 ? '○' : G.wind.spd>0 ? '→' : '←';
-  document.getElementById('wind-spd').textContent = abs.toFixed(1)+' m/s';
-}
-
-// ================================================================
-//  MISSION LOADER
-// ================================================================
-function loadMission(idx){
-  const ms = MISSIONS[idx];
-  G.mIdx = idx;
-  G.missionComplete = false;
-  G.missionFailed   = false;
-  G.timer  = ms.time * 60;
-  // Reset ammo for all weapons (keep pistol unlimited)
-  G.ammo = [5,10,8,999];
-  G.reloading = false; G.relT = 0;
-  setWind(); drawStaticBg();
-  spawnTargets(ms);
-  buildAmmoDisplay();
-  document.getElementById('ms-num').textContent  = `MISSION ${idx+1} / ${MISSIONS.length}`;
-  document.getElementById('ms-name').textContent  = ms.name;
-  document.getElementById('ms-desc').textContent  = ms.desc;
-  document.getElementById('weapon-name').textContent = WDEFS[G.wIdx].name;
-  updateMissionHUD();
-  // VIP for escort mission
-  if(ms.escort){
-    G.vip = { x:canvas.width*.5, y:canvas.height*.52, hp:100, maxHp:100, alive:true };
-  }else{ G.vip=null; }
-}
-
-function spawnTargets(ms){
-  G.targets = [];
-  const W=canvas.width, H=canvas.height;
-  const zones=[.28,.35,.42,.5,.58];
-  const isBoss=ms.boss;
-
-  for(let i=0;i<ms.n;i++){
-    let t;
-    if(isBoss){
-      t={emoji:'👹',sz:52,pts:600,head:.28,body:.65,label:'HVT 보스'};
-    }else if(ms.escort && i===0){
-      // First "target" is actually an enemy
-      t = TTYPES[Math.floor(Math.random()*TTYPES.length)];
-    }else{
-      t = TTYPES[Math.floor(Math.random()*TTYPES.length)];
-    }
-    const y = H*zones[Math.floor(Math.random()*zones.length)];
-    const x = W*.1+Math.random()*W*.8;
-    const sz = t.sz + Math.random()*8;
-    const spd = ms.moving ? (.6+Math.random()*1.4)*(isBoss?1.5:1) : 0;
-
-    G.targets.push({
-      x, y, baseX:x, baseY:y,
-      sz, emoji:t.emoji, pts:t.pts, head:t.head, body:t.body, label:t.label,
-      spd, phase:Math.random()*Math.PI*2, amp:W*(.06+Math.random()*.1),
-      alive:true, flash:0,
-      dist: (250+Math.random()*650)|0,
-      isBoss,
-      alertLevel:0, // 0=unaware 1=alert 2=fleeing
-      vx:0, vy:0,
-      // Patrol path
-      patrolDir: Math.random()<.5 ? 1:-1,
-    });
+function killE(e,byPlayer){
+  if(!e.alive)return;
+  e.alive=false;e.dying=true;e.deathT=0;
+  addExp(e.x,e.y,e.col);
+  if(byPlayer){
+    G.kills++;G.score+=e.xp;
+    if(e.boss){G.bossKills++;showToast(`🏆 ${e.name} 처치! +${e.xp.toLocaleString()}XP`);showKF(`🏆 ${e.icon} ${e.name} 처치!`,'#f5c518');}
+    else showKF(`${e.icon} ${e.name} +${e.xp}`,'#ccc');
+    if(e.special==='artillery'){G.artilleryActive=0;showToast('💣 포병 파괴!');}
   }
 }
 
-// ================================================================
-//  PARTICLES
-// ================================================================
-function spawnP(x,y,o={}){
-  const n=o.n||8;
-  for(let i=0;i<n;i++){
-    const a=Math.random()*Math.PI*2, v=(o.vMin||1.5)+Math.random()*(o.vMax||5);
-    const cols=Array.isArray(o.col)?o.col:[o.col||'#ff2244'];
-    PARTS.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,
-      dec:(o.dMin||.025)+Math.random()*(o.dMax||.04),
-      col:cols[Math.floor(Math.random()*cols.length)],
-      sz:(o.szMin||2)+Math.random()*(o.szMax||5),glow:o.glow||false});
-  }
-}
-function spawnBlood(x,y,sz=1){
-  spawnP(x,y,{n:14+sz*4|0,col:['#8b0000','#cc0000','#ee1122'],vMax:5+sz*2,szMin:3,szMax:6+sz*2,dMin:.02,dMax:.04});
-  bgCtx.save(); bgCtx.globalAlpha=.42;
-  bgCtx.fillStyle='rgba(80,0,0,.4)';
-  bgCtx.beginPath(); bgCtx.ellipse(x,y,5+sz*5,3+sz*4,Math.random()*Math.PI,0,Math.PI*2); bgCtx.fill();
-  bgCtx.restore();
-}
-function spawnHit(x,y,txt,col){ HITS.push({x,y:y-14,txt,col,life:1,vy:-.65}); }
+function addExp(x,y,col){G.explosions.push({x,y,col,r:3,lr:1.8,life:0.4});}
 
-// ================================================================
-//  SHOOT
-// ================================================================
 function fire(){
-  const w = WDEFS[G.wIdx];
-  if(G.ammo[G.wIdx]<=0 || G.reloading || G.missionComplete) return;
-  if(!w.unlimited) G.ammo[G.wIdx]--;
-  buildAmmoDisplay();
-
-  // Bullet position
-  const originX = canvas.width/2, originY = canvas.height/2;
-
-  // Wind drift (proportional to wind speed, difficulty, and whether scoped)
-  const windDrift = G.wind.spd * (G.diffLv===0?0:G.diffLv===1?.6:1.2) * 18;
-  // Sway at moment of shot
-  const swayPen = G.breathHeld ? 0 : G.diffLv * (G.weather.sway+.5) * 3;
-
-  const pellets = w.pellets||1;
-  for(let pe=0;pe<pellets;pe++){
-    const spr = (Math.random()-.5)*w.spread*2*(G.scoped?.5:1);
-    const hitX = (G.scoped ? G.scopeX : G.mouse.x) + windDrift + (Math.random()-.5)*swayPen + spr*200;
-    const hitY = (G.scoped ? G.scopeY : G.mouse.y) + (Math.random()-.5)*swayPen;
-
-    let hitSomething = false;
-    G.targets.forEach(t=>{
-      if(!t.alive || hitSomething) return;
-      const dx=hitX-t.x, dy=hitY-t.y;
-      const dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist < t.sz*.95){
-        hitSomething=true;
-        const isHead = dist < t.sz*t.head;
-        const isBody = dist < t.sz*t.body;
-        // Damage
-        let pts = isHead ? t.pts*3 : isBody ? t.pts : Math.round(t.pts*.6);
-        // Distance bonus
-        const distBonus = Math.max(1, Math.floor(t.dist/100));
-        pts *= distBonus;
-        // Kill chain
-        G.killChain++; G.chainTimer=180;
-        if(G.killChain>=2) pts = Math.round(pts*(1+G.killChain*.2));
-        G.score += pts; G.totalKills++;
-        if(isHead) G.sessionStats.headshots++;
-        else G.sessionStats.bodyshots++;
-        if(t.dist > G.sessionStats.longestShot) G.sessionStats.longestShot=t.dist;
-
-        // Kill effects
-        t.alive=false;
-        spawnBlood(t.x, t.y, t.sz*.08);
-        spawnP(t.x,t.y,{n:isHead?22:14,col:isHead?['#ff0000','#cc0000','#ffffff']:['#cc2200','#ff4400'],glow:isHead,vMax:isHead?9:6,szMax:isHead?12:8});
-
-        // Headshot slow-mo
-        if(isHead || t.isBoss){
-          triggerSlowMo(isHead?'💀 HEADSHOT!':'👹 BOSS DOWN!');
-        }
-
-        addKillfeed(t, isHead, t.dist, pts);
-        spawnHit(t.x,t.y-t.sz, isHead?'💀 HEADSHOT!': isBody?'BODY SHOT': 'HIT', isHead?'#f5c518':'#ff4444');
-        spawnHit(t.x,t.y-t.sz-18,'+'+pts, isHead?'#f5c518':'#00d4ff');
-      }
-    });
-    if(!hitSomething){
-      G.sessionStats.misses++;
-      G.killChain=0;
-      spawnP(hitX,hitY,{n:4,col:'rgba(180,180,180,.4)',vMax:3,szMax:3,dMin:.08,dMax:.12});
-    }
-
-    // Bullet tracer
-    G.bullets.push({x:originX, y:originY, tx:hitX, ty:hitY, life:1});
-  }
-
-  // 총성 → 경보 레벨 상승
-  alertLevel = Math.min(3, alertLevel + 1);
-  alertDecayTimer = 480; // ~8초
-  updateAlertHUD();
-
-  // Muzzle flash
-  spawnP(originX,originY,{n:5,col:[w.col,'#fff'],vMin:2,vMax:5,dMin:.08,dMax:.12,glow:true});
-
-  if(G.ammo[G.wIdx]<=0 && !w.unlimited) setTimeout(startReload,200);
-  checkClear();
+  if(!G||G.phase!=='play'||G.done)return;
+  if(G.reloading||G.shootCd>0)return;
+  if(G.ammo<=0){startReload();return;}
+  G.ammo--;G.shootCd=0.9;updateHUD();
+  const crit=Math.random()<0.15;
+  let wx=G.mouse.x,wy=G.mouse.y;
+  if(G.scoped){const z=3.5;wx=G.mouse.x+(150-150)/z;wy=G.mouse.y+(150-150)/z;}
+  const sw=G.breathHeld?0.3:3;
+  wx+=(Math.random()-0.5)*sw*2+G.swayX*0.3;
+  wy+=(Math.random()-0.5)*sw*2+G.swayY*0.3;
+  const ang=Math.atan2(wy-(GH-50),wx-50);
+  G.bullets.push({x:50,y:GH-50,vx:Math.cos(ang)*900,vy:Math.sin(ang)*900,
+    dmg:85*(crit?2.5:1),crit,life:2});
+  addExp(50,GH-50,'#ffffaa');sfx_shoot();
+  if(G.ammo===0)setTimeout(startReload,300);
 }
 
 function startReload(){
-  if(G.reloading) return;
-  const w=WDEFS[G.wIdx];
-  if(w.unlimited||G.ammo[G.wIdx]>=w.mag) return;
-  G.reloading=true; G.relT=w.relT;
-  document.getElementById('rl-ring').style.display='block';
+  if(G.reloading||G.ammo===G.maxAmmo)return;
+  G.reloading=true;G.reloadTimer=2.2;showToast('재장전 중...');
 }
 
-function switchWeapon(idx){
-  if(idx===G.wIdx||idx>=WDEFS.length) return;
-  if(G.reloading){G.reloading=false;G.relT=0;document.getElementById('rl-ring').style.display='none';}
-  G.wIdx=idx;
-  document.getElementById('weapon-name').textContent=WDEFS[idx].name;
-  buildAmmoDisplay();
+function checkEnd(){
+  if(G.done)return;
+  const mis=G.mis;
+  if(G.time<=0||G.allyHP<=0){G.done=true;showResult(false);return;}
+  const bossRem=G.enemies.filter(e=>e.alive&&e.boss).length;
+  const allBossesSpawned=G.spawnQueue.filter(s=>ETYPES[s.t]?.boss).length===0;
+  let won=G.kills>=mis.killGoal&&(mis.bossGoal===0||G.bossKills>=mis.bossGoal);
+  if(won&&allBossesSpawned&&bossRem===0){G.done=true;showResult(true);}
 }
 
-// ================================================================
-//  ALERT LEVEL HUD
-// ================================================================
-function updateAlertHUD(){
-  const strip=document.getElementById('alert-strip');
-  const lbl=document.getElementById('alert-lbl');
-  const root=document.getElementById('root');
-  const msgs=['','⚠️ 경계 — 적이 움직임을 감지했다','🔴 고경계 — 증원 요청 중','🚨 봉쇄 — 전군 응전!'];
-  const cols=['','rgba(255,140,0,1)','rgba(255,50,0,1)','rgba(255,0,50,1)'];
-  const shadows=['','inset 0 0 20px rgba(255,140,0,.25)','inset 0 0 32px rgba(255,50,0,.35)','inset 0 0 50px rgba(255,0,50,.5)'];
-  if(strip){
-    strip.style.opacity = alertLevel>0 ? '1':'0';
-    strip.style.background = cols[alertLevel]||'transparent';
-    // 점멸 효과 (고경계 이상)
-    if(alertLevel>=2){ strip.style.animation='alertBlink .6s infinite'; }
-    else strip.style.animation='none';
+function showResult(win){
+  G.phase='result';if(G.scoped)toggleScope();
+  const el=document.getElementById('result-ov');
+  const t=document.getElementById('res-title');
+  t.textContent=win?'🏆 임무 완료!':'💀 임무 실패';
+  t.style.color=win?'#f5c518':'#ff2244';
+  const elapsed=G.mis.timeLimit-G.time;
+  document.getElementById('res-stats').innerHTML=`
+    <div class="rs">킬<b>${G.kills}</b></div>
+    <div class="rs">점수<b>${Math.round(G.score).toLocaleString()}</b></div>
+    <div class="rs">경과시간<b>${Math.floor(elapsed/60)}m ${Math.floor(elapsed%60)}s</b></div>
+    <div class="rs">아군HP<b>${Math.round(G.allyHP)}%</b></div>
+    <div class="rs">보스처치<b>${G.bossKills}</b></div>
+    <div class="rs">등급<b>${grade()}</b></div>`;
+  el.style.display='flex';
+  if(win){
+    const cl=JSON.parse(localStorage.getItem('sniper_clears')||'[]');
+    if(!cl.includes(G.midx))cl.push(G.midx);
+    localStorage.setItem('sniper_clears',JSON.stringify(cl));
+    sfx_win();
+    try{window.parent.postMessage({type:'sniper_result',score:Math.round(G.score),grade:grade()},'*');}catch(e){}
+  }else sfx_fail();
+}
+
+function grade(){const s=G.score;if(s>=50000)return'S';if(s>=30000)return'A';if(s>=15000)return'B';return'C';}
+function retryMission(){document.getElementById('result-ov').style.display='none';initGame(G.midx);}
+function gotoTitle(){document.getElementById('result-ov').style.display='none';G=null;buildTitle();document.getElementById('mission-ov').style.display='flex';}
+function toggleScope(){G.scoped=!G.scoped;document.getElementById('scope-wrap').style.display=G.scoped?'block':'none';}
+
+// ── DRAW ──────────────────────────────────────────────────
+function drawScene(c){
+  // Sky
+  const sky=c.createLinearGradient(0,0,0,GH*0.5);
+  sky.addColorStop(0,'#1a2a3a');sky.addColorStop(1,'#2a3a2a');
+  c.fillStyle=sky;c.fillRect(0,0,GW,GH);
+  // Ground
+  const gnd=c.createLinearGradient(0,GH*0.3,0,GH);
+  gnd.addColorStop(0,'#2a4a1a');gnd.addColorStop(1,'#1a3a0a');
+  c.fillStyle=gnd;c.fillRect(0,GH*0.3,GW,GH);
+  drawTerrain(c);
+  // Explosions
+  if(G)for(const ex of G.explosions){
+    const a=ex.life/0.4;c.save();c.globalAlpha=a*0.55;
+    c.fillStyle=ex.col;c.shadowColor=ex.col;c.shadowBlur=14;
+    c.beginPath();c.arc(ex.x,ex.y,ex.r*2,0,Math.PI*2);c.fill();
+    c.shadowBlur=0;c.restore();ex.life-=0.016;ex.r+=ex.lr;
   }
-  if(lbl){
-    lbl.style.opacity = alertLevel>0 ? '1':'0';
-    lbl.style.color = cols[alertLevel]||'transparent';
-    lbl.textContent = msgs[alertLevel]||'';
+  if(G)G.explosions=G.explosions.filter(e=>e.life>0);
+  // Allies
+  if(G)for(const a of G.allies){
+    const bob=Math.sin(a.phase)*2;c.save();c.translate(a.x,a.y+bob);
+    c.fillStyle='#2255cc';c.beginPath();c.arc(0,0,6,0,Math.PI*2);c.fill();
+    c.fillStyle='#4488ff';c.beginPath();c.arc(0,-8,4,0,Math.PI*2);c.fill();
+    c.restore();
   }
-  if(root){ root.style.boxShadow = shadows[alertLevel]||'none'; }
-}
-
-// ================================================================
-//  SLOW MOTION
-// ================================================================
-let slowMoTimer=0;
-function triggerSlowMo(label){
-  slowMoTimer=120;
-  const sf=document.getElementById('slowmo-frame');
-  const sl=document.getElementById('slowmo-lbl');
-  sf.style.opacity='1'; sl.textContent=label; sl.style.opacity='1';
-  setTimeout(()=>{sf.style.opacity='0';sl.style.opacity='0';},2000);
-}
-
-// KILL FEED
-function addKillfeed(t, head, dist, pts){
-  const kf=document.getElementById('killfeed');
-  const d=document.createElement('div'); d.className='kfe';
-  d.innerHTML=`${t.emoji} ${head?'💀 헤드샷':'격파'} <span style="color:var(--gold)">${dist}m</span> <b>+${pts}pt</b>`;
-  if(head){ d.style.borderLeftColor='var(--gold)'; d.style.color='var(--gold)'; }
-  if(t.isBoss){ d.style.borderLeftColor='var(--purple)'; d.style.fontSize='10px'; }
-  kf.appendChild(d); setTimeout(()=>d.remove(),3200);
-  while(kf.children.length>5) kf.removeChild(kf.firstChild);
-}
-
-// ================================================================
-//  MISSION CHECK
-// ================================================================
-function checkClear(){
-  const ms=MISSIONS[G.mIdx];
-  const alive=G.targets.filter(t=>t.alive).length;
-  if(alive===0 && !G.missionComplete){
-    G.missionComplete=true;
-    const bonus=(G.mIdx+1)*700;
-    G.score+=bonus;
-    G.cleared.push(G.mIdx);
-
-    // ── 등급 산출 (마지막 미션 클리어 시) ──
-    if(G.mIdx===MISSIONS.length-1){
-      const headRatio = G.totalKills>0 ? G.sessionStats.headshots/G.totalKills : 0;
-      const silent = alertLevel===0; // 무소음 여부
-      const missRatio = (G.sessionStats.misses||0)/(Math.max(1,G.totalKills+G.sessionStats.misses));
-      let grade='B';
-      if(headRatio>=0.6 && silent && missRatio<0.3) grade='S';
-      else if(headRatio>=0.4 && alertLevel<=1 && missRatio<0.5) grade='A';
-      G._finalGrade=grade;
-      const gradeReward={S:1000000,A:500000,B:200000};
-      try{window.parent.postMessage({type:'sniper_result',grade,reward:gradeReward[grade],score:G.score},'*');}catch(e){}
+  // Enemies
+  if(G)for(const e of G.enemies){
+    if(!e.alive&&!e.dying)continue;
+    const a=e.dying?Math.max(0,1-e.deathT/0.7):1;
+    c.save();c.globalAlpha=a;c.translate(e.x,e.y+Math.sin(e.phase)*2);
+    if(e.boss){c.shadowColor=e.special==='general'?'#ff0000':'#ff4400';c.shadowBlur=18;}
+    c.fillStyle=e.col;c.beginPath();c.arc(0,0,e.sz,0,Math.PI*2);c.fill();
+    c.shadowBlur=0;
+    // Artillery special shape
+    if(e.special==='artillery'){
+      c.fillStyle='#ff7700';c.fillRect(-12,-5,24,10);
+      c.fillStyle='#ffaa00';c.fillRect(-3,-14,6,14);
     }
-    const mc=document.getElementById('mc-banner');
-    document.getElementById('mc-big').textContent=G.mIdx<MISSIONS.length-1?'✅ 미션 클리어!':'🏆 전 임무 완료!';
-    document.getElementById('mc-sub').textContent=`+${bonus.toLocaleString()} 보너스 / 다음 미션 준비 중`;
-    mc.style.opacity='1';
-    setTimeout(()=>{
-      mc.style.opacity='0';
-      if(G.mIdx<MISSIONS.length-1){ G.mIdx++; setWind(); loadMission(G.mIdx); }
-      else setTimeout(()=>showResult(true),400);
-    },2800);
-  }
-}
-
-function showResult(victory){
-  G.running=false;
-  alertLevel=0; updateAlertHUD();
-  const best=Math.max(G.score,parseInt(localStorage.getItem('snipeBest')||'0'));
-  localStorage.setItem('snipeBest',best);
-  const grade=G._finalGrade||'B';
-  const gradeColor={S:'var(--gold)',A:'var(--green)',B:'var(--cyan)'}[grade]||'var(--cyan)';
-  const gradeReward={S:'100만원',A:'50만원',B:'20만원'}[grade];
-  const gradeDesc={S:'무소음·헤드샷 달인 🏆',A:'숙련 저격수 ⭐',B:'임무 완료 ✅'}[grade]||'';
-  const gradeHTML=victory?`<div style="margin:10px 0;padding:10px;background:rgba(255,255,255,.04);border:1px solid ${gradeColor}55;border-radius:10px;"><div style="font-family:'Black Han Sans',sans-serif;font-size:28px;color:${gradeColor};">${grade} 등급</div><div style="font-size:9px;color:#667;margin-top:2px;">${gradeDesc}</div><div style="font-size:10px;color:var(--gold);margin-top:4px;">💰 포털 보상: ${gradeReward}</div></div>`:'';
-  const ov=document.getElementById('overlay');
-  ov.innerHTML=`<div class="ov-box">
-    <div class="ov-eye">${victory?'ALL MISSIONS CLEARED':'MISSION FAILED'}</div>
-    <div class="ov-title" style="color:${victory?'var(--gold)':'var(--red)'}">${victory?'🏆 임무 완료!':'⏱️ 실패!'}</div>
-    <div class="ov-sub">${victory?'MISSION COMPLETE':'TIME OVER'}</div>
-    ${gradeHTML}
-    <div class="stats-row">
-      <div class="sc"><div class="sv" style="color:var(--gold)">${G.score.toLocaleString()}</div><div class="sl">점수</div></div>
-      <div class="sc"><div class="sv">${G.totalKills}</div><div class="sl">처치</div></div>
-      <div class="sc"><div class="sv" style="color:var(--red)">💀 ${G.sessionStats.headshots}</div><div class="sl">헤드샷</div></div>
-      <div class="sc"><div class="sv" style="color:var(--cyan)">${G.sessionStats.longestShot}m</div><div class="sl">최장 저격</div></div>
-    </div>
-    <div style="font-size:9px;color:#446;margin-bottom:14px">🏆 최고기록: <span style="color:var(--gold)">${best.toLocaleString()}</span> PT</div>
-    <button class="ov-btn" onclick="startGame()">재배치 🎯</button>
-    <br><button class="ov-btn2" onclick="showTitle()">설정 변경</button>
-  </div>`;
-  ov.style.display='flex';
-}
-
-// ================================================================
-//  UPDATE
-// ================================================================
-function update(){
-  if(!G.running || G.missionComplete) return;
-  G.frame++;
-
-  // ── 경보 레벨 처리 ──
-  if(alertDecayTimer>0){ alertDecayTimer--; }
-  else if(alertLevel>0){ alertLevel=Math.max(0,alertLevel-1); updateAlertHUD(); }
-  // 경보 2이상: 표적 이동속도 소폭 증가
-  if(alertLevel>=2){
-    G.targets.forEach(t=>{if(t.alive&&t.spd>0) t.spd=Math.min(t.spd*1.0008,3.5);});
-  }
-  // 경보 3: 10초마다 증원 표적 1명 추가 (최대 3명까지)
-  if(alertLevel>=3 && G.frame%600===0 && _totalReinforced<3){
-    const W=canvas.width,H=canvas.height;
-    const t_extra=TTYPES[Math.floor(Math.random()*TTYPES.length)];
-    // ✅ [BUG FIX] 화면 위/아래에서 스폰하면 Y이동이 없어서 영원히 안보임
-    // 좌/우에서만 스폰하도록 수정 (side 1, 3만 사용)
-    const side=Math.random()<0.5 ? 1 : 3;
-    let rx,ry;
-    if(side===1){rx=W+40;ry=H*.2+Math.random()*H*.5;}
-    else{rx=-40;ry=H*.2+Math.random()*H*.5;}
-    G.targets.push({
-      x:rx,y:ry,baseX:rx,baseY:ry,
-      sz:t_extra.sz+4,emoji:'🪖',pts:t_extra.pts,head:t_extra.head,body:t_extra.body,label:'증원병',
-      spd:1.4,phase:Math.random()*Math.PI*2,amp:W*.08,
-      alive:true,flash:0,dist:150+Math.floor(Math.random()*200),
-      isBoss:false,alertLevel:1,vx:0,vy:0,patrolDir:1,
-    });
-    _totalReinforced++;
-    spawnHit(canvas.width/2,canvas.height/2,'🚨 증원 도착!','#ff2244');
-  }
-
-  // Kill chain decay
-  if(G.chainTimer>0) G.chainTimer--;
-  else if(G.killChain>0) G.killChain=0;
-
-  // Timer
-  if(!G.missionComplete){
-    G.timer--;
-    if(G.timer<=0 && !G.missionComplete){ setTimeout(()=>showResult(false),400); return; }
-  }
-
-  // Reload
-  if(G.reloading){
-    G.relT--;
-    drawReloadRing();
-    if(G.relT<=0){
-      const w=WDEFS[G.wIdx]; G.ammo[G.wIdx]=w.mag;
-      G.reloading=false; document.getElementById('rl-ring').style.display='none';
-      buildAmmoDisplay();
-    }
-  }
-
-  // Breath
-  if(G.breathHeld){
-    G.breath=Math.max(0,G.breath-.48);
-    if(G.breath<=0){ G.breathHeld=false; }
-  }else{
-    G.breath=Math.min(100,G.breath+.22);
-  }
-  document.getElementById('breath-fill').style.width=G.breath+'%';
-  const bs=document.getElementById('breath-state');
-  if(G.breathHeld&&G.breath>30){ bs.textContent='✅ 안정'; bs.style.color='var(--green)'; }
-  else if(G.breathHeld){ bs.textContent='⚠️ 한계'; bs.style.color='var(--orange)'; }
-  else { bs.textContent='안정'; bs.style.color='#446'; }
-
-  // Scope sway
-  const diffSway = [0,.8,1.8][G.diffLv];
-  const wSway = G.weather.sway;
-  const baseSwayF = (diffSway + wSway) * (G.breathHeld ? .12 : 1.0);
-  if(!G.breathHeld){
-    G.swayVX += (Math.sin(G.frame*.031)*.15 + (Math.random()-.5)*.08)*baseSwayF;
-    G.swayVY += (Math.cos(G.frame*.022)*.12 + (Math.random()-.5)*.06)*baseSwayF;
-  }else{
-    G.swayVX += (Math.sin(G.frame*.015)*.03 + (Math.random()-.5)*.01)*baseSwayF;
-    G.swayVY += (Math.cos(G.frame*.011)*.025 + (Math.random()-.5)*.01)*baseSwayF;
-  }
-  G.swayVX *= .88; G.swayVY *= .88;
-  G.swayX += G.swayVX; G.swayY += G.swayVY;
-  G.swayX *= .92; G.swayY *= .92;
-
-  // Wind slowly shifts
-  if(G.frame%240===0){
-    G._windTarget = G.wind.dir * (Math.abs(G.wind.spd)+((Math.random()-.5)*1.2));
-    G._windTarget = Math.max(-G.weather.wind*1.5,Math.min(G.weather.wind*1.5,G._windTarget));
-  }
-  if(G._windTarget!==undefined){ G.wind.spd += (G._windTarget-G.wind.spd)*.005; updateWindHUD(); }
-
-  // Target movement + AI
-  G.targets.forEach(t=>{
-    if(!t.alive) return;
-    t.flash = Math.max(0,t.flash-1);
-    if(t.spd>0){
-      // Patrol movement
-      t.phase += .008 * t.spd;
-      const newX = t.baseX + Math.sin(t.phase)*t.amp;
-      // Bounce off edges
-      if(newX<canvas.width*.08 || newX>canvas.width*.92){
-        t.baseX = Math.max(canvas.width*.1, Math.min(canvas.width*.9, newX));
-        t.phase = -t.phase;
-      }
-      t.x = t.baseX + Math.sin(t.phase)*t.amp;
-      // ✅ [BUG FIX] 화면 밖에서 진입한 증원병은 화면 안으로 당겨지도록
-      if(t.x < -20) { t.baseX = canvas.width*.15; t.phase = 0; }
-      if(t.x > canvas.width+20) { t.baseX = canvas.width*.85; t.phase = Math.PI; }
-      // VIP escort: enemies slowly advance toward center
-      if(MISSIONS[G.mIdx].escort){
-        t.y = Math.min(canvas.height*.75, t.y + .3);
-      }
-    }
-  });
-
-  // VIP logic
-  if(G.vip && G.vip.alive){
-    // Enemies that reach VIP deal damage
-    G.targets.forEach(t=>{
-      if(!t.alive) return;
-      const dx=G.vip.x-t.x, dy=G.vip.y-t.y;
-      if(dx*dx+dy*dy < 2500){ G.vip.hp-=.2; if(G.vip.hp<=0){ G.missionFailed=true; showResult(false); } }
-    });
-  }
-
-  // Bullet tracer fade
-  for(let i=G.bullets.length-1;i>=0;i--){ G.bullets[i].life-=.15; if(G.bullets[i].life<=0)G.bullets.splice(i,1); }
-
-  // Particles
-  for(let i=PARTS.length-1;i>=0;i--){const p=PARTS[i];p.x+=p.vx;p.y+=p.vy;p.vx*=.88;p.vy*=.88;p.life-=p.dec;p.life<=0&&PARTS.splice(i,1);}
-  for(let i=HITS.length-1;i>=0;i--){const h=HITS[i];h.y+=h.vy;h.life-=.022;h.life<=0&&HITS.splice(i,1);}
-
-  // Slow-mo timer
-  if(slowMoTimer>0) slowMoTimer--;
-
-  updateMissionHUD();
-}
-
-function updateMissionHUD(){
-  document.getElementById('score-v').textContent=G.score.toLocaleString();
-  const ms=MISSIONS[G.mIdx];
-  const alive=G.targets.filter(t=>t.alive).length;
-  document.getElementById('ms-kills-v').textContent=`${ms.n-alive}/${ms.n}`;
-  document.getElementById('time-v').textContent=Math.max(0,Math.ceil(G.timer/60));
-  const _killed=MISSIONS[G.mIdx].n-alive;
-  document.getElementById('ms-prog').textContent=alive===0?'✅ 완료!':G.killChain>=2?`🔥 킬체인 ×${G.killChain} | 처치 ${_killed}/${MISSIONS[G.mIdx].n}`:`처치 ${_killed}/${MISSIONS[G.mIdx].n} — 표적 제거!`;
-}
-
-// ================================================================
-//  RELOAD RING
-// ================================================================
-function drawReloadRing(){
-  const w=WDEFS[G.wIdx], pct=1-(G.relT/w.relT);
-  const rc=document.getElementById('rl-cv').getContext('2d');
-  rc.clearRect(0,0,52,52);
-  rc.strokeStyle='rgba(245,197,24,.12)'; rc.lineWidth=4;
-  rc.beginPath(); rc.arc(26,26,22,0,Math.PI*2); rc.stroke();
-  rc.strokeStyle='rgba(245,197,24,.85)'; rc.shadowColor='rgba(245,197,24,.5)'; rc.shadowBlur=8; rc.lineWidth=4;
-  rc.beginPath(); rc.arc(26,26,22,-Math.PI*.5,-Math.PI*.5+Math.PI*2*pct); rc.stroke();
-}
-
-// ================================================================
-//  SCOPE RENDER
-// ================================================================
-function drawScope(){
-  const el=document.getElementById('scope-wrap');
-  if(!G.scoped){ el.style.display='none'; return; }
-  el.style.display='block';
-  const W=canvas.width, H=canvas.height;
-  const zoom = WDEFS[G.wIdx].zoom;
-  const SW=280, SH=280;
-  const srcW=W/zoom, srcH=H/zoom;
-  // 좌표 클램핑 → 화면 끝에서도 까맣게 되지 않도록
-  const rawX=G.scopeX-srcW/2, rawY=G.scopeY-srcH/2;
-  const srcX=Math.max(0,Math.min(W-srcW, rawX));
-  const srcY=Math.max(0,Math.min(H-srcH, rawY));
-  // 1) 정적 배경 (bgc)
-  try{ sCtx.drawImage(bgc, srcX, srcY, srcW, srcH, 0, 0, SW, SH); }catch(e){}
-  // 2) 게임 캔버스(표적·파티클) 를 그 위에 합성
-  try{ sCtx.drawImage(canvas, srcX, srcY, srcW, srcH, 0, 0, SW, SH); }catch(e){}
-  // Draw targets in scope
-  const scX=SW/srcW, scY=SH/srcH;
-  G.targets.forEach(t=>{
-    if(!t.alive) return;
-    const tx=(t.x-srcX)*scX, ty=(t.y-srcY)*scY;
-    if(tx<-30||tx>SW+30||ty<-30||ty>SH+30) return;
-    sCtx.save();
-    sCtx.font=`${t.sz*scX*1.5}px serif`; sCtx.textAlign='center'; sCtx.textBaseline='middle';
-    sCtx.shadowBlur=10; sCtx.shadowColor='rgba(255,50,0,.5)';
-    sCtx.fillText(t.emoji,tx,ty); sCtx.restore();
-    // Head zone ring
-    sCtx.strokeStyle='rgba(255,50,50,.25)'; sCtx.lineWidth=1;
-    sCtx.beginPath(); sCtx.arc(tx,ty,t.sz*scX*t.head,0,Math.PI*2); sCtx.stroke();
-    // Body zone ring
-    sCtx.strokeStyle='rgba(255,150,50,.18)'; sCtx.lineWidth=1;
-    sCtx.beginPath(); sCtx.arc(tx,ty,t.sz*scX*t.body,0,Math.PI*2); sCtx.stroke();
-    // Range label
-    sCtx.fillStyle='rgba(0,255,0,.5)'; sCtx.font='8px Orbitron,monospace';
-    sCtx.textAlign='center'; sCtx.fillText(t.dist+'m',tx,ty+t.sz*scX+12);
-  });
-  // VIP
-  if(G.vip&&G.vip.alive){
-    const vx=(G.vip.x-srcX)*scX, vy=(G.vip.y-srcY)*scY;
-    sCtx.save(); sCtx.font=`${28*scX}px serif`; sCtx.textAlign='center'; sCtx.textBaseline='middle';
-    sCtx.shadowBlur=12; sCtx.shadowColor='rgba(0,255,136,.6)'; sCtx.fillText('🧑',vx,vy); sCtx.restore();
+    // Icon for bosses
+    if(e.boss&&e.sz>=11){c.font=`${e.sz}px serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(e.icon,0,0);}
     // HP bar
-    sCtx.fillStyle='rgba(0,0,0,.5)'; sCtx.fillRect(vx-20,vy-30,40,5);
-    sCtx.fillStyle='#00ff88'; sCtx.fillRect(vx-20,vy-30,40*(G.vip.hp/G.vip.maxHp),5);
-  }
-  // Green tint + vignette
-  sCtx.fillStyle='rgba(0,20,0,.1)'; sCtx.fillRect(0,0,SW,SH);
-  const vg=sCtx.createRadialGradient(SW/2,SH/2,SW*.28,SW/2,SH/2,SW*.58);
-  vg.addColorStop(0,'transparent'); vg.addColorStop(1,'rgba(0,0,0,.5)');
-  sCtx.fillStyle=vg; sCtx.fillRect(0,0,SW,SH);
-  // Hold bar in scope SVG
-  const hb=document.getElementById('hold-bar');
-  if(hb) hb.setAttribute('width',44*(G.breath/100));
-  // Sway the lens
-  const lens=document.getElementById('scope-lens');
-  const sx=G.swayX*3, sy=G.swayY*3;
-  lens.style.transform=`translate(calc(-50% + ${sx}px),calc(-50% + ${sy}px))`;
-}
-
-// CROSSHAIR
-function drawCrosshair(){
-  const W=canvas.width, H=canvas.height;
-  crCtx.clearRect(0,0,W,H);
-  if(G.scoped) return;
-  const mx=G.mouse.x+G.swayX*2, my=G.mouse.y+G.swayY*2;
-  const w=WDEFS[G.wIdx];
-  const col=w.col;
-  const sz=G.breathHeld?8:12+(1-G.breath/100)*10;
-  crCtx.save();
-  crCtx.strokeStyle=col; crCtx.lineWidth=1.2; crCtx.globalAlpha=.7;
-  crCtx.shadowColor=col; crCtx.shadowBlur=4;
-  crCtx.beginPath();
-  crCtx.moveTo(mx-sz,my); crCtx.lineTo(mx+sz,my);
-  crCtx.moveTo(mx,my-sz); crCtx.lineTo(mx,my+sz);
-  crCtx.stroke();
-  crCtx.beginPath(); crCtx.arc(mx,my,4,0,Math.PI*2); crCtx.stroke();
-  // Wind indicator
-  if(Math.abs(G.wind.spd)>.5){
-    const wi=G.wind.spd*6;
-    crCtx.strokeStyle='rgba(0,200,255,.4)'; crCtx.lineWidth=1;
-    crCtx.beginPath(); crCtx.moveTo(mx,my); crCtx.lineTo(mx+wi,my); crCtx.stroke();
-    crCtx.beginPath(); crCtx.arc(mx+wi,my,3,0,Math.PI*2); crCtx.stroke();
-  }
-  crCtx.restore();
-}
-
-// ================================================================
-//  MAIN DRAW
-// ================================================================
-function drawTargets(){
-  G.targets.forEach(t=>{
-    if(!t.alive) return;
-    ctx.save();
-    if(t.flash>0&&t.flash%2===0) ctx.filter='brightness(4) saturate(0)';
-    if(t.isBoss){ctx.shadowColor='rgba(255,0,50,.5)';ctx.shadowBlur=t.sz*.7;}
-    ctx.font=`${t.sz*1.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(t.emoji,t.x,t.y); ctx.restore();
-    // Range tag
-    ctx.save(); ctx.fillStyle='rgba(255,255,255,.28)';
-    ctx.font=`${t.sz*.34}px Orbitron,monospace`; ctx.textAlign='center';
-    ctx.fillText(t.dist+'m',t.x,t.y+t.sz*.95); ctx.restore();
-    // HP bar for boss
-    if(t.isBoss){
-      const bw=t.sz*2.4,bh=6,bx=t.x-bw/2,by=t.y-t.sz-12;
-      ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(bx,by,bw,bh);
-      ctx.fillStyle='var(--red)'; ctx.fillRect(bx,by,bw*(t.hp/(t.maxHp||100)),bh);
+    if(!e.dying&&e.hp<e.maxHp){
+      const bw=e.sz*3,pct=Math.max(0,e.hp/e.maxHp);
+      c.fillStyle='rgba(0,0,0,.7)';c.fillRect(-bw/2,-e.sz-10,bw,5);
+      c.fillStyle=pct>0.5?'#22cc44':pct>0.25?'#ccaa00':'#cc2200';
+      c.fillRect(-bw/2,-e.sz-10,bw*pct,5);
     }
+    c.restore();
+  }
+  // Bullets
+  if(G)for(const b of G.bullets){
+    c.save();c.fillStyle='#ffff88';c.shadowColor='#ffff88';c.shadowBlur=8;
+    c.beginPath();c.arc(b.x,b.y,3,0,Math.PI*2);c.fill();c.shadowBlur=0;c.restore();
+  }
+  // Player sniper position
+  c.save();c.translate(50,GH-50);
+  c.fillStyle='rgba(0,255,100,0.15)';c.beginPath();c.arc(0,0,16,0,Math.PI*2);c.fill();
+  c.font='18px serif';c.textAlign='center';c.textBaseline='middle';c.fillText('🎯',0,0);
+  c.restore();
+  // Aim line when scoped
+  if(G&&G.scoped){
+    c.save();c.strokeStyle='rgba(0,255,100,0.1)';c.lineWidth=1;c.setLineDash([4,8]);
+    c.beginPath();c.moveTo(50,GH-50);c.lineTo(G.mouse.x,G.mouse.y);c.stroke();c.restore();
+  }
+  // Artillery warning
+  if(G&&G.artilleryActive>0){
+    c.save();c.globalAlpha=0.3+Math.sin(timer*8)*0.25;c.fillStyle='#ff7700';
+    c.font='bold 15px Orbitron';c.textAlign='center';
+    c.fillText('⚠️ 포격중!',GW/2,72);c.restore();
+  }
+}
+
+function drawTerrain(c){
+  // Allied trench (left)
+  c.fillStyle='#1a2a0a';c.fillRect(15,90,90,GH-160);
+  // Enemy area (right)
+  c.fillStyle='#2a1a0a';c.fillRect(GW-110,90,110,GH-160);
+  // Cover/trees
+  const trees=[[200,160],[360,260],[510,190],[620,360],[720,210],[760,300],[410,420],[560,460]];
+  for(const[x,y]of trees){
+    c.fillStyle='#1a4a0a';c.beginPath();c.arc(x,y,18,0,Math.PI*2);c.fill();
+    c.fillStyle='#2a6a1a';c.beginPath();c.arc(x,y-8,13,0,Math.PI*2);c.fill();
+  }
+  // Craters
+  const craters=[[300,320],[520,310],[660,290]];
+  for(const[x,y]of craters){
+    c.fillStyle='#0a1a00';c.beginPath();c.ellipse(x,y,28,16,0,0,Math.PI*2);c.fill();
+    c.strokeStyle='#1a2a00';c.lineWidth=2;c.beginPath();c.ellipse(x,y,28,16,0,0,Math.PI*2);c.stroke();
+  }
+  // Horizon line
+  c.strokeStyle='rgba(100,120,80,0.3)';c.lineWidth=2;c.beginPath();c.moveTo(0,GH*0.3);c.lineTo(GW,GH*0.3);c.stroke();
+}
+
+function drawScopeView(){
+  if(!G||!G.scoped)return;
+  const zoom=3.5;const cx=G.mouse.x,cy=G.mouse.y;
+  sCtx.save();
+  sCtx.fillStyle='#0a1a00';sCtx.fillRect(0,0,300,300);
+  sCtx.scale(zoom,zoom);
+  sCtx.translate(150/zoom-cx+G.swayX*0.3,150/zoom-cy+G.swayY*0.3);
+  drawScene(sCtx);
+  sCtx.restore();
+  // Scope info
+  const dist=Math.round(Math.hypot(G.mouse.x-50,G.mouse.y-(GH-50)));
+  document.getElementById('scope-info').textContent=
+    `${dist}m | ${G.breathHeld?'숨참기 ✓':'안정화 필요'} | ${G.ammo}/${G.maxAmmo}`;
+  document.getElementById('breath-fill').style.width=(G.breathTimer/3*100)+'%';
+}
+
+function updateHUD(){
+  if(!G)return;
+  document.getElementById('score-v').textContent=Math.round(G.score).toLocaleString();
+  document.getElementById('kill-v').textContent=G.kills;
+  const t=Math.max(0,G.time);
+  document.getElementById('timer-v').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+  document.getElementById('ammo-v').textContent=G.reloading?'장전...':`${G.ammo}/${G.maxAmmo}`;
+  document.getElementById('ally-fill').style.width=G.allyPower+'%';
+  document.getElementById('enemy-fill').style.width=(100-G.allyPower)+'%';
+  document.getElementById('ally-status').textContent=
+    `🔵 아군HP ${Math.round(G.allyHP)}% | 잔여적 ${G.enemies.filter(e=>e.alive).length} | 킬 ${G.kills}/${G.mis.killGoal} | 지휘부 ${G.bossKills}/${G.mis.bossGoal}`;
+}
+
+function spawnDN(x,y,v,crit){
+  const el=document.createElement('div');el.className='dnum';
+  const r=canvas.getBoundingClientRect();
+  el.style.cssText=`left:${r.left+x-20}px;top:${r.top+y}px;font-size:${crit?22:14}px;color:${crit?'#ffff44':'#fff'};`;
+  el.textContent=crit?`${Math.round(v)}!!`:`${Math.round(v)}`;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),950);
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+function showKF(msg,col){
+  const kf=document.getElementById('killfeed');
+  const it=document.createElement('div');it.className='kf';it.style.color=col||'#ccc';it.textContent=msg;
+  kf.appendChild(it);
+  setTimeout(()=>{it.style.opacity='0';setTimeout(()=>it.remove(),600);},2500);
+  while(kf.children.length>5)kf.removeChild(kf.firstChild);
+}
+
+// Audio
+let ACtx=null;
+function ensureAudio(){if(!ACtx)try{ACtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+function beep(f,t,d,v=.2,delay=0){if(!ACtx)return;try{
+  const o=ACtx.createOscillator(),g=ACtx.createGain();o.connect(g);g.connect(ACtx.destination);
+  o.type=t;o.frequency.value=f;const ts=ACtx.currentTime+delay;
+  g.gain.setValueAtTime(0,ts);g.gain.linearRampToValueAtTime(v,ts+.005);g.gain.exponentialRampToValueAtTime(.001,ts+d);
+  o.start(ts);o.stop(ts+d+.05);}catch(e){}}
+function sfx_shoot(){ensureAudio();beep(180,'sawtooth',.12,.4);beep(90,'sine',.18,.3,.06);}
+function sfx_win(){ensureAudio();[523,659,784,1047].forEach((f,i)=>beep(f,'sine',.3,.35,i*.12));}
+function sfx_fail(){ensureAudio();[300,200,150].forEach((f,i)=>beep(f,'sawtooth',.3,.3,i*.15));}
+
+// Build title
+function buildTitle(){
+  const cleared=JSON.parse(localStorage.getItem('sniper_clears')||'[]');
+  const grid=document.getElementById('mission-grid');
+  grid.innerHTML='';
+  MISSIONS.forEach((m,i)=>{
+    const locked=i>0&&!cleared.includes(i-1);
+    const div=document.createElement('div');
+    div.className='mis-card'+(locked?' locked':'');
+    div.innerHTML=`<div class="mc-num">${i+1}</div><div class="mc-name">${m.name}</div><div class="mc-diff">${m.diff}</div>${cleared.includes(i)?'<div class="mc-clr">✅ 완료</div>':''}`;
+    if(!locked){div.onclick=()=>{selMis=i;document.querySelectorAll('.mis-card').forEach(x=>x.classList.remove('sel'));div.classList.add('sel');document.getElementById('mo-start-btn').disabled=false;ensureAudio();};}
+    grid.appendChild(div);
   });
-  // VIP
-  if(G.vip&&G.vip.alive){
-    ctx.save(); ctx.font='36px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.shadowColor='rgba(0,255,136,.6)'; ctx.shadowBlur=14; ctx.fillText('🧑',G.vip.x,G.vip.y); ctx.restore();
-    const bw=50,bh=5,bx=G.vip.x-bw/2,by=G.vip.y-28;
-    ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(bx,by,bw,bh);
-    ctx.fillStyle='#00ff88'; ctx.fillRect(bx,by,bw*(G.vip.hp/G.vip.maxHp),bh);
-    ctx.fillStyle='rgba(0,255,136,.4)'; ctx.font='7px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillText('VIP',G.vip.x,by-4);
-  }
 }
 
-function drawBulletTracers(){
-  for(const b of G.bullets){
-    ctx.save(); ctx.globalAlpha=b.life*.85;
-    ctx.strokeStyle='rgba(255,220,100,.7)'; ctx.lineWidth=1.5;
-    ctx.shadowColor='rgba(255,200,50,.5)'; ctx.shadowBlur=5;
-    ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.tx,b.ty); ctx.stroke();
-    ctx.restore();
-  }
+function startMission(){
+  if(selMis===null)return;
+  document.getElementById('mission-ov').style.display='none';
+  initGame(selMis);
 }
 
-function drawParts(){
-  for(const p of PARTS){
-    ctx.save(); ctx.globalAlpha=Math.max(0,p.life);
-    if(p.glow){ctx.shadowColor=p.col;ctx.shadowBlur=p.sz*2.5;}
-    ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.sz*Math.max(.08,p.life),0,Math.PI*2); ctx.fill();
-    if(p.glow)ctx.shadowBlur=0; ctx.restore();
-  }
-}
-function drawHits(){
-  for(const h of HITS){
-    ctx.save(); ctx.globalAlpha=Math.max(0,h.life);
-    ctx.shadowColor=h.col; ctx.shadowBlur=8; ctx.fillStyle=h.col;
-    ctx.font="bold 12px 'Black Han Sans',sans-serif"; ctx.textAlign='center';
-    ctx.fillText(h.txt,h.x,h.y); ctx.restore();
-  }
-}
-
-// ================================================================
-//  AMMO DISPLAY
-// ================================================================
-function buildAmmoDisplay(){
-  const ac=document.getElementById('ammo-col'); ac.innerHTML='';
-  const w=WDEFS[G.wIdx];
-  const cur=G.ammo[G.wIdx];
-  const max=w.mag;
-  if(w.unlimited){ ac.innerHTML='<div style="font-family:Black Han Sans,sans-serif;font-size:12px;color:var(--cyan);letter-spacing:1px">∞</div>'; return; }
-  for(let i=0;i<Math.min(max,30);i++){
-    const d=document.createElement('div'); d.className='adot'+(i<cur?' live':''); ac.appendChild(d);
-  }
-}
-
-// ================================================================
-//  MAIN LOOP
-// ================================================================
-let _RAF_i=null;
-function loop(){
-  if(!G.running) return;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawBulletTracers();
-  drawTargets();
-  drawParts(); drawHits();
-  drawScope();
-  drawCrosshair();
-  update();
-  _RAF_i=requestAnimationFrame(loop);
-}
-
-// ================================================================
-//  TITLE
-// ================================================================
-function showTitle(){
-  const best=parseInt(localStorage.getItem('snipeBest')||'0');
-  const tags=['🎯 4배율 조준경','💨 실시간 바람 탄도','🫁 호흡 안정화','💀 헤드샷 슬로우모션','🔫 4종 무기','📡 6개 미션','👹 VIP 경호·보스','🔥 킬체인 보너스','📏 최장 저격 기록','⛈️ 날씨 시스템','🔴 급소 판정','🩸 혈흔 시스템'];
-  const tp=[...tags,...tags].map((t,i)=>`<span class="tpill ${['c','g','r','p'][i%4]}">${t}</span>`).join('');
-  const dnames=['신병 🟢','특전사 🟡','전설 🔴'],ddesc=['바람 없음·넓은 판정','바람+흔들림','강풍+작은 판정'];
-  const msListHTML=MISSIONS.map((ms,i)=>`
-    <div class="ml-item">
-      <div class="ml-ico">${ms.icon}</div>
-      <div class="ml-info"><div class="ml-name">${ms.name}</div><div class="ml-desc">${ms.desc}</div></div>
-    </div>`).join('');
-  document.getElementById('ovc').innerHTML=`
-    <div class="ov-eye">SNIPER ELITE v3.0</div>
-    <div class="ov-title" style="color:var(--green)">🎯 스나이퍼<br>엘리트</div>
-    <div class="ov-sub">6 MISSIONS · BALLISTICS · HEADSHOT</div>
-    <div class="tag-strip"><div class="tag-inner">${tp}</div></div>
-    <div style="font-size:8px;color:#336;margin-bottom:8px;letter-spacing:2px">미션 목록</div>
-    <div class="mission-list">${msListHTML}</div>
-    <div style="font-size:8px;color:#336;margin-bottom:8px;letter-spacing:2px">난이도</div>
-    <div class="diff-row">${dnames.map((n,i)=>`<div class="dt${i===G.diffLv?' sel':''}" onclick="setDiff(${i})"><div>${n}</div><div style="font-size:7px;color:#446;margin-top:2px">${ddesc[i]}</div></div>`).join('')}</div>
-    <div style="font-size:8px;color:#334;line-height:2.3;margin-bottom:12px">
-      우클릭(또는 🔭) — 조준경 전환 &nbsp;|&nbsp; HOLD/Shift — 호흡 유지<br>
-      클릭/스페이스/🔫 — 발사 &nbsp;|&nbsp; R/🔄 — 재장전<br>
-      1~4 키/🔀 — 무기 변경 &nbsp;|&nbsp; 바람 방향 보정 후 저격!
-    </div>
-    ${best>0?`<div style="font-size:9px;color:#446;margin-bottom:12px">🏆 최고기록: <span style="color:var(--gold)">${best.toLocaleString()}</span> PT</div>`:''}
-    <button class="ov-btn" onclick="startGame()">임무 시작 🎯</button>
-    <div style="font-size:9px;color:#445;margin-top:12px;line-height:2;text-align:left;">📖 <b style="color:#00ff88">게임 방법:</b><br>· 화면에 나타나는 표적(이모지)을 마우스로 조준 후 발사<br>· Z키 또는 우클릭으로 4배율 조준경(스코프) 사용<br>· Shift키로 호흡 안정화 → 정확도 향상<br>· 6개 미션 전부 클리어하면 보상 지급!</div>`;
-  document.getElementById('overlay').style.display='flex';
-}
-
-window.setDiff=d=>{G.diffLv=d;document.querySelectorAll('.dt').forEach((t,i)=>t.classList.toggle('sel',i===d));};
-window.startGame=()=>{
-  document.getElementById('overlay').style.display='none';
-  if(_RAF_i){cancelAnimationFrame(_RAF_i);_RAF_i=null;}
-  initGame(); _RAF_i=requestAnimationFrame(loop);
-};
-window.showTitle=showTitle;
-
-// ================================================================
-//  INPUT
-// ================================================================
+// Input
 canvas.addEventListener('mousemove',e=>{
   const r=canvas.getBoundingClientRect();
-  G.mouse.x=e.clientX-r.left; G.mouse.y=e.clientY-r.top;
-  if(G.scoped){G.scopeX=G.mouse.x;G.scopeY=G.mouse.y;}
+  if(G){G.mouse.x=e.clientX-r.left;G.mouse.y=e.clientY-r.top;}
 });
-canvas.addEventListener('mousedown',e=>{if(G.running&&!G.missionComplete)fire();});
-canvas.addEventListener('contextmenu',e=>{e.preventDefault();if(G.running)G.scoped=!G.scoped;});
-canvas.addEventListener('touchmove',e=>{e.preventDefault();
-  const t=e.touches[0]; const r=canvas.getBoundingClientRect();
-  G.mouse.x=t.clientX-r.left; G.mouse.y=t.clientY-r.top;
-  if(G.scoped){G.scopeX=G.mouse.x;G.scopeY=G.mouse.y;}
-},{passive:false});
-canvas.addEventListener('touchend',e=>{e.preventDefault();if(G.running&&G.scoped&&!G.missionComplete)fire();},{passive:false});
+canvas.addEventListener('click',e=>{if(G&&G.phase==='play'){ensureAudio();fire();}});
+canvas.addEventListener('contextmenu',e=>{e.preventDefault();if(G&&G.phase==='play')toggleScope();});
 document.addEventListener('keydown',e=>{
-  if(e.key==='Shift')G.breathHeld=true;
-  if((e.key==='r'||e.key==='R')&&G.running)startReload();
-  if(e.key==='z'||e.key==='Z'||e.key==='Escape'){if(G.running)G.scoped=!G.scoped;}
-  if(e.key===' '){e.preventDefault();if(G.running&&!G.missionComplete)fire();}
-  if(e.key==='1')switchWeapon(0);if(e.key==='2')switchWeapon(1);
-  if(e.key==='3')switchWeapon(2);if(e.key==='4')switchWeapon(3);
+  if(e.key==='Shift'&&G)G.breathHeld=true;
+  if(e.key===' '){e.preventDefault();if(G&&G.phase==='play'){ensureAudio();fire();}}
+  if((e.key==='r'||e.key==='R')&&G&&G.phase==='play')startReload();
+  if((e.key==='z'||e.key==='Z'||e.key==='Escape')&&G&&G.phase==='play')toggleScope();
 });
-document.addEventListener('keyup',e=>{if(e.key==='Shift')G.breathHeld=false;});
+document.addEventListener('keyup',e=>{if(e.key==='Shift'&&G)G.breathHeld=false;});
 
-// Touch buttons
-function addT(id,dn,up){
-  const el=document.getElementById(id);if(!el)return;
-  const d=e=>{e.preventDefault();if(dn)dn();};
-  const u=e=>{e.preventDefault();if(up)up();};
-  el.addEventListener('touchstart',d,{passive:false});el.addEventListener('touchend',u,{passive:false});
-  el.addEventListener('mousedown',d);el.addEventListener('mouseup',u);
+// Main loop
+function loop(ts){
+  const dt=Math.min((ts-lastTs)/1000,0.05);lastTs=ts;timer+=dt;
+  ctx.clearRect(0,0,GW,GH);
+  if(G&&G.phase==='play'){tick(dt);drawScene(ctx);drawScopeView();}
+  else{ctx.fillStyle='#060a06';ctx.fillRect(0,0,GW,GH);}
+  RAF=requestAnimationFrame(loop);
 }
-addT('tch-scope',()=>{if(G.running)G.scoped=!G.scoped;},null);
-addT('tch-fire',()=>{if(G.running&&!G.missionComplete)fire();},null);
-addT('tch-reload',()=>{if(G.running)startReload();},null);
-addT('tch-hold',()=>G.breathHeld=true,()=>G.breathHeld=false);
-addT('tch-weapon',()=>{if(G.running)switchWeapon((G.wIdx+1)%WDEFS.length);},null);
 
-showTitle();
+buildTitle();
+RAF=requestAnimationFrame(loop);
 </script>
 </body>
 </html>"""
@@ -1187,7 +594,6 @@ def render():
     from utils.database import load_db, save_db
     from utils.config import USERS_FILE
 
-    # ── 결과 처리 ──
     qp = st.query_params
     if qp.get('sniper_score'):
         try:
@@ -1195,13 +601,11 @@ def render():
             s_score = int(qp.get('sniper_score', 0))
             s_grade = qp.get('sniper_grade', '')
             if uid and s_score > 0:
-                # [BUG FIX] DB에서 최신 game_records 로드 후 비교
                 _users = load_db(USERS_FILE, {})
                 cur_rec = _users.get(uid, {}).get('game_records', st.session_state.get('game_records', {}))
                 if s_score > cur_rec.get('sniper', {}).get('score', 0):
                     cur_rec.setdefault('sniper', {}).update({'score': s_score, 'grade': s_grade})
                     st.session_state.game_records = cur_rec
-                    # [BUG FIX] DB에 직접 저장
                     if uid in _users:
                         _users[uid]['game_records'] = cur_rec
                         save_db(USERS_FILE, _users)
@@ -1212,8 +616,19 @@ def render():
         st.query_params.clear()
         st.rerun()
 
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#060a06,#0c1a0c);border:1px solid rgba(0,255,100,0.2);
+      border-radius:16px;padding:16px 24px;margin-bottom:12px;display:flex;align-items:center;gap:16px;'>
+      <div style='font-size:2rem;'>🎯</div>
+      <div>
+        <div style='font-family:"Black Han Sans",sans-serif;font-size:1.1rem;color:#e8ffe8;'>🎯 스나이퍼 엘리트 — 전장의 저격수</div>
+        <div style='font-size:0.82rem;color:#6a9a6a;margin-top:2px;'>대규모 전쟁에서 아군을 지원하는 엘리트 저격수! 6가지 작전 미션 도전!</div>
+        <div style='font-size:0.76rem;color:#4a7a4a;margin-top:4px;'>🖱️ 클릭/SPACE: 발사 | 우클릭/Z: 스코프 | R: 재장전 | SHIFT: 숨참기</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
-    st.caption("🎯 마우스: 조준 | SPACE/클릭: 발사 | Z/ESC: 스코프 | R: 재장전 | SHIFT: 숨참기 | 1~4: 무기전환")
 
     listener_html = """
     <script>
@@ -1228,4 +643,4 @@ def render():
     </script>
     """
     _cv1.html(listener_html, height=0)
-    components.html(GAME_HTML, height=730, scrolling=False)
+    components.html(GAME_HTML, height=785, scrolling=False)
