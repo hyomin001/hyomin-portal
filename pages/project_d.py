@@ -841,6 +841,51 @@ html,body{
 @keyframes sparkleFly{0%{opacity:1;transform:translate(0,0)scale(1);}100%{opacity:0;transform:translate(var(--dx,0),var(--dy,-40px))scale(0);}}
 .screen-flash{position:fixed;inset:0;pointer-events:none;z-index:9989;animation:screenFlash 0.35s ease-out forwards;}
 @keyframes screenFlash{0%{opacity:var(--intensity,0.15);}100%{opacity:0;}}
+/* Move motion banner */
+.move-banner{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:linear-gradient(160deg,rgba(10,20,50,0.97),rgba(5,10,30,0.97));
+  border:2px solid var(--blue);border-radius:20px;
+  padding:18px 36px;z-index:9990;pointer-events:none;
+  text-align:center;min-width:280px;
+  box-shadow:0 0 40px rgba(77,171,247,0.3),0 8px 40px rgba(0,0,0,0.8);
+  animation:moveBannerIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes moveBannerIn{from{opacity:0;transform:translate(-50%,-50%) scale(0.8);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+.mb-char{font-size:2.8rem;margin-bottom:6px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));}
+.mb-name{font-family:'Black Han Sans',sans-serif;font-size:1.1rem;margin-bottom:4px;}
+.mb-dice{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0;}
+.mb-die{background:linear-gradient(145deg,#f8f9ff,#dde0f5);border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#1a1a30;box-shadow:inset 0 1px 3px rgba(255,255,255,0.9),0 4px 14px rgba(0,0,0,0.6);}
+.mb-arrow{font-size:1.4rem;color:var(--blue);}
+.mb-from,.mb-to{font-size:0.78rem;padding:4px 12px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid var(--border2);}
+.mb-to{background:rgba(77,171,247,0.12);border-color:var(--blue);}
+.mb-steps{font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--gold);margin-top:4px;}
+
+/* Ownership color overlay on cells */
+.cell-own-overlay{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  border-radius:3px;opacity:0.18;transition:opacity 0.3s;
+}
+.own-name-label{
+  position:absolute;bottom:1px;left:0;right:0;
+  text-align:center;font-size:0;font-weight:800;z-index:5;
+  transition:all 0.3s;line-height:1;letter-spacing:0;
+  text-shadow:0 1px 4px rgba(0,0,0,0.9);pointer-events:none;
+}
+
+/* Win condition banner */
+.wincond-banner{
+  position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);
+  background:linear-gradient(160deg,rgba(5,15,5,0.97),rgba(10,30,10,0.97));
+  border:2px solid var(--green);border-radius:24px;
+  padding:24px 40px;z-index:9992;
+  text-align:center;
+  box-shadow:0 0 60px rgba(16,217,110,0.3),0 8px 40px rgba(0,0,0,0.9);
+  animation:moveBannerIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.wc-title{font-family:'Black Han Sans',sans-serif;font-size:1.6rem;color:var(--green);letter-spacing:3px;margin-bottom:8px;}
+.wc-desc{font-size:0.85rem;color:var(--text2);margin-bottom:16px;}
+
 </style>
 </head>
 <body>
@@ -1279,6 +1324,77 @@ function checkWin() {
   }
   return false;
 }
+// ── WIN CONDITION CHECK: 모두의마블 스타일 ──
+function checkWinConditions() {
+  if (!G || G.phase === 'gameover') return false;
+  const a = alive();
+  if (a.length <= 1) return false; // 이미 checkWin에서 처리
+
+  const pidx = G.turn;
+  const p = G.players[pidx];
+  if (p.bankrupt) return false;
+
+  // ① 한 색상 라인 전부 독점 (색상 그룹 하나를 완전히 차지)
+  for (let grp = 0; grp <= 7; grp++) {
+    const total = GRP_SIZE[grp] || 0;
+    if (total === 0) continue;
+    const mine = G.cells.filter(c => c.group === grp && c.owner === pidx).length;
+    if (mine === total) {
+      // 이미 독점은 기존에 있지만, 여기서는 "첫 완성" 체크용
+      // 대신 호텔까지 모두 지었을 때만 즉시 승리로 처리
+      const allHotel = G.cells.filter(c => c.group === grp && c.owner === pidx && c.houses === 4).length === total;
+      if (allHotel) {
+        triggerWinCondition(pidx, `🏨 ${p.name}이(가) ${['아시아','동남아','중동-아프리카','유럽A','유럽B','미국','캐나다-남미','호주'][grp]} 라인 전체 호텔 건설!`, '한 라인 완전 독점 달성!');
+        return true;
+      }
+    }
+  }
+
+  // ② 연속된 3개 이상 칸에 건물 보유
+  const myBuiltCells = [];
+  for (let ci = 0; ci < 40; ci++) {
+    const c = G.cells[ci];
+    if (c.owner === pidx && c.type === 'prop' && (c.houses || 0) >= 1 && !c.mortgaged) {
+      myBuiltCells.push(ci);
+    }
+  }
+  // 인접 칸(±1) 연속 3개 체크
+  if (myBuiltCells.length >= 3) {
+    for (let i = 0; i < myBuiltCells.length - 2; i++) {
+      const a0 = myBuiltCells[i], a1 = myBuiltCells[i+1], a2 = myBuiltCells[i+2];
+      if (a1 === a0 + 1 && a2 === a1 + 1) {
+        triggerWinCondition(pidx,
+          `🏗️ ${p.name}이(가) ${CELLS[a0].name}·${CELLS[a1].name}·${CELLS[a2].name} 연속 3칸 건물!`,
+          '연속 3칸 건물 건설 달성!');
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function triggerWinCondition(pidx, msg, subMsg) {
+  const p = G.players[pidx];
+  G.winner = p.name;
+  G.winnerIdx = pidx;
+  G.phase = 'gameover';
+  log(`🏆 [게임 종료] ${msg}`, 'important');
+  toast(`🏆 ${msg}`, 'special');
+
+  // 승리 조건 배너 표시
+  const banner = document.createElement('div');
+  banner.className = 'wincond-banner';
+  banner.innerHTML = `
+    <div style="font-size:3rem;margin-bottom:8px">${p.char.emoji}</div>
+    <div class="wc-title">🏆 ${p.name} 승리!</div>
+    <div class="wc-desc">${msg}</div>
+    <div style="font-size:0.75rem;color:var(--text3);letter-spacing:2px">${subMsg}</div>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => { banner.remove(); showGameOver(); }, 2200);
+}
+
 
 function ownsGroup(pidx,grp) {
   if (grp<0) return false;
@@ -1418,6 +1534,7 @@ function doBuild(pidx,ci) {
   butler('build');toast(`🏠 ${c.name} ${lbl}!`,'gain');
   spawnSparkles(window.innerWidth*0.6, window.innerHeight*0.5,'#10d96e',10);
   renderAll();
+  setTimeout(()=>{if(checkWinConditions()){renderAll();}},200);
 }
 
 function useAbility() {
@@ -1856,6 +1973,46 @@ function spawnTrail(ci) {
 // ═══════════════════════════════════════════════════════════
 //  SPECIAL EFFECTS
 // ═══════════════════════════════════════════════════════════
+
+// ── 이동 모션 배너 ──
+function showMoveBanner(pidx, from, to, d1, d2) {
+  const p = G.players[pidx];
+  const fromCell = CELLS[from];
+  const toCell = CELLS[to];
+  const steps = ((to - from + 40) % 40) || 40;
+
+  const banner = document.createElement('div');
+  banner.className = 'move-banner';
+  banner.id = 'move-banner-active';
+  banner.innerHTML = `
+    <div class="mb-char">${p.char.emoji}</div>
+    <div class="mb-name" style="color:${p.color}">${p.name}</div>
+    <div class="mb-dice">
+      <div class="mb-die">${DICE_FACES[d1-1]}</div>
+      <span style="color:var(--text3);font-size:1rem">+</span>
+      <div class="mb-die">${DICE_FACES[d2-1]}</div>
+      <span style="color:var(--gold);font-family:'Fredoka One',cursive;font-size:1.2rem">= ${d1+d2}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-top:6px;">
+      <div class="mb-from">${fromCell.flag||'📍'} ${fromCell.name}</div>
+      <div class="mb-arrow">→</div>
+      <div class="mb-to">${toCell.flag||'📍'} ${toCell.name}</div>
+    </div>
+    <div class="mb-steps">+${steps}칸 이동</div>
+  `;
+  document.body.appendChild(banner);
+
+  // 이동 완료 후 제거
+  setTimeout(() => {
+    const el = document.getElementById('move-banner-active');
+    if (el) {
+      el.style.transition = 'opacity 0.4s';
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 400);
+    }
+  }, 1400);
+}
+
 function spawnFloatText(text,color,isLoss) {
   const el=document.createElement('div');
   el.className='float-text';
@@ -1937,10 +2094,10 @@ function doRoll() {
     } else {
       G.doubles=0;log(`🎲 ${d1}+${d2}=${total}`);
     }
-    const from=p.pos;renderAll();
+    const from=p.pos;const toPos=(from+total)%40;showMoveBanner(G.turn,from,toPos,d1,d2);renderAll();
     setTimeout(()=>{
-      animateMove(G.turn,from,(from+total)%40,()=>{
-        movePlayer(G.turn,total);landCell(G.turn,total);
+      animateMove(G.turn,from,toPos,()=>{
+        movePlayer(G.turn,total);if(checkWinConditions()){renderAll();return;}landCell(G.turn,total);
         animating=false;
         if(!isDouble&&G.phase!=='buy'&&G.phase!=='card'&&G.phase!=='casino'&&G.phase!=='auction'&&G.phase!=='trade_offer'&&G.phase!=='gameover')nextTurn();
         renderAll();
@@ -2329,8 +2486,27 @@ function renderBoard() {
     }
     const orEl=document.getElementById('or-'+ci);
     if(orEl){
-      if(c.owner!==null&&!c.mortgaged){orEl.style.borderColor=G.players[c.owner].color+'55';orEl.style.boxShadow=`inset 0 0 8px ${G.players[c.owner].color}18`;}
-      else{orEl.style.borderColor='transparent';orEl.style.boxShadow='none';}
+      if(c.owner!==null&&!c.mortgaged){
+        const oc=G.players[c.owner].color;
+        orEl.style.borderColor=oc+'88';
+        orEl.style.boxShadow=`inset 0 0 14px ${oc}30, 0 0 8px ${oc}40`;
+        orEl.style.background=`linear-gradient(135deg,${oc}15,${oc}08)`;
+      } else{orEl.style.borderColor='transparent';orEl.style.boxShadow='none';orEl.style.background='transparent';}
+    }
+    // 소유자 색상 오버레이 + 이름 레이블
+    let ownOvEl=document.getElementById('own-ov-'+ci);
+    let ownNameEl=document.getElementById('own-nm-'+ci);
+    const cellEl=document.getElementById('cell-'+ci);
+    if(cellEl){
+      if(!ownOvEl){ownOvEl=document.createElement('div');ownOvEl.className='cell-own-overlay';ownOvEl.id='own-ov-'+ci;cellEl.appendChild(ownOvEl);}
+      if(!ownNameEl){ownNameEl=document.createElement('div');ownNameEl.className='own-name-label';ownNameEl.id='own-nm-'+ci;cellEl.appendChild(ownNameEl);}
+      if(c.owner!==null&&!c.mortgaged){
+        const oc=G.players[c.owner].color;
+        const oname=G.players[c.owner].name;
+        ownOvEl.style.background=oc;ownOvEl.style.opacity='0.15';
+        ownNameEl.style.fontSize=Math.max(4,fs-2)+'px';
+        ownNameEl.style.color=oc;ownNameEl.textContent=oname.slice(0,4);
+      } else {ownOvEl.style.opacity='0';ownNameEl.textContent='';}
     }
     const mo=document.getElementById('mo-'+ci);
     if(mo)mo.style.display=c.mortgaged?'flex':'none';
