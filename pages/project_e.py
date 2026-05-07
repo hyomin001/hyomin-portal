@@ -19,7 +19,7 @@ html,body{width:100%;height:838px;overflow:hidden;background:var(--bg);font-fami
 #gc{display:block;image-rendering:pixelated;}
 
 /* HUD */
-#hud{position:absolute;top:0;left:0;right:0;z-index:50;padding:8px 12px;
+#hud{position:absolute;top:34px;left:0;right:0;z-index:50;padding:8px 12px;
   background:linear-gradient(#000a,transparent);display:flex;align-items:center;gap:8px;pointer-events:none;}
 .bar-wrap{display:flex;flex-direction:column;gap:3px;}
 .bar-row{display:flex;align-items:center;gap:5px;}
@@ -2206,32 +2206,7 @@ def render():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── 내 던전 기록 표시 ──
-    best_score  = dstats.get('best_score', 0)
-    best_kills  = dstats.get('best_kills', 0)
-    clears      = dstats.get('clears', 0)
-    played      = dstats.get('games_played', 0)
 
-    st.markdown(f"""
-    <div style='display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;'>
-      <div style='background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
-        <div style='color:#888;font-size:0.72rem;'>최고 점수</div>
-        <div style='color:#FFD600;font-weight:900;font-size:1rem;'>{best_score:,}</div>
-      </div>
-      <div style='background:rgba(255,50,70,0.08);border:1px solid rgba(255,50,70,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
-        <div style='color:#888;font-size:0.72rem;'>최고 킬</div>
-        <div style='color:#FF4B4B;font-weight:900;font-size:1rem;'>{best_kills:,}</div>
-      </div>
-      <div style='background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
-        <div style='color:#888;font-size:0.72rem;'>클리어</div>
-        <div style='color:#00FF88;font-weight:900;font-size:1rem;'>{clears}회</div>
-      </div>
-      <div style='background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.3);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;'>
-        <div style='color:#888;font-size:0.72rem;'>총 플레이</div>
-        <div style='color:#00E5FF;font-weight:900;font-size:1rem;'>{played}판</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
 
     st.markdown("""
     <style>
