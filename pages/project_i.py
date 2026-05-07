@@ -130,6 +130,7 @@ canvas{display:block;image-rendering:pixelated;}
   <div class="hb"><div class="hv" id="kill-v">0</div><div class="hl">킬</div></div>
   <div class="hb"><div class="hv" id="timer-v">--:--</div><div class="hl">TIME</div></div>
   <div class="hb"><div class="hv" id="ammo-v">5/5</div><div class="hl">탄약</div></div>
+  <div class="hb"><div class="hv" id="ally-hp-v">100%</div><div class="hl">아군HP</div></div>
   <div id="frontline-wrap">
     <div id="fl-label"><span>🔵 아군 본진</span><span>적 본진 🔴</span></div>
     <div id="fl-bg">
@@ -151,7 +152,7 @@ canvas{display:block;image-rendering:pixelated;}
   <div id="php-bg"><div id="php-fill" style="width:100%"></div></div>
 </div>
 
-<div id="cover-btn" id="cover-btn" onmousedown="setCover(true)" onmouseup="setCover(false)" ontouchstart="setCover(true)" ontouchend="setCover(false)">[ C ] 엄폐</div>
+<div id="cover-btn" onmousedown="setCover(true)" onmouseup="setCover(false)" ontouchstart="setCover(true)" ontouchend="setCover(false)">[ C ] 엄폐</div>
 
 <div id="scope-wrap">
   <div id="scope-bg"></div>
@@ -241,7 +242,7 @@ const MISSIONS = [
 // ── ENTITY CONFIG ────────────────────────────────────────────
 const ECFG = {
   infantry: { name:'보병',    hp:80,  xp:80,  sz:10, key:false, mgSupp:0,   moraleBoost:0,  color:'#aa2800', hcolor:'#885500', speed:0.3 },
-  mg:       { name:'기관총병',hp:140, xp:400, sz:12, key:true,  mgSupp:18,  moraleBoost:0,  color:'#881500', hcolor:'#664400', speed:0   },
+  mg:       { name:'기관총병',hp:140, xp:400, sz:12, key:true,  mgSupp:10,  moraleBoost:0,  color:'#881500', hcolor:'#664400', speed:0   },
   officer:  { name:'장교',    hp:180, xp:500, sz:11, key:true,  mgSupp:0,   moraleBoost:20, color:'#6a0000', hcolor:'#551100', speed:0.3 },
   sniper_e: { name:'적저격수',hp:90,  xp:600, sz:9,  key:true,  mgSupp:0,   moraleBoost:0,  color:'#334422', hcolor:'#223311', speed:0.2 },
   general:  { name:'총사령관',hp:350, xp:2000,sz:14, key:true,  mgSupp:0,   moraleBoost:35, color:'#440000', hcolor:'#330000', speed:0.2 },
@@ -271,6 +272,7 @@ function initGame(midx) {
     frame:0, done:false,
     spawnTimer:0,
     failReason:'',
+    _scopeAimX:150, _scopeAimY:150,
   };
 
   // Spawn allies along left of frontline
@@ -380,7 +382,7 @@ function tick(dt) {
   tickBullets(dt);
   tickParticles(dt);
 
-  if (G.suppressionLevel > 40) G.allyHP -= dt*(G.suppressionLevel-40)*0.12;
+  if (G.suppressionLevel > 40) G.allyHP -= dt*(G.suppressionLevel-40)*0.07;
   G.allyHP = Math.max(0, Math.min(100, G.allyHP));
 
   if (G.warCryTimer > 0) {
@@ -516,6 +518,7 @@ function tickBullets(dt) {
     const b=G.bullets[i];
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt;
     if (b.life<=0||b.x<0||b.x>GW||b.y<0||b.y>GH) { G.bullets.splice(i,1); continue; }
+    if (b.vfxOnly) continue; // 비주얼 전용 총알은 판정 없음
     if (b.isPlayer) {
       for (const e of G.enemies) {
         if(!e.alive||e.dying) continue;
@@ -637,13 +640,22 @@ function fire() {
     addParticle(aimX,aimY,'#cc8844','blood');
   }
 
+  // 플레이어 탄도 비주얼 - 실제 총알 오브젝트 생성
+  const bvx=aimX-65, bvy=aimY-(GH-40);
+  const blen=Math.hypot(bvx,bvy)+0.001;
+  const bspd=900;
+  G.bullets.push({
+    x:65,y:GH-40,
+    vx:(bvx/blen)*bspd,vy:(bvy/blen)*bspd,
+    dmg:0,isPlayer:true,faction:'player_vfx',
+    life:blen/bspd+0.1, vfxOnly:true
+  });
   addParticle(65, GH-40, '#ffffcc', 'muzzle');
   sfx_shoot();
   if(G.ammo===0) setTimeout(startReload,300);
 }
 
-G && (G._scopeAimX=150);
-G && (G._scopeAimY=150);
+// _scopeAimX/Y는 initGame에서 초기화됨
 
 function startReload() {
   if(!G||G.reloading||G.ammo===G.maxAmmo) return;
@@ -654,8 +666,10 @@ function startReload() {
 function setCover(on) {
   if(!G||G.phase!=='play'||G.done) return;
   G.coverActive=on;
-  document.getElementById('cover-btn').className = on ? 'active' : '';
-  document.getElementById('cover-vignette').className = on ? 'show' : '';
+  const btn=document.getElementById('cover-btn');
+  if(on) btn.classList.add('active'); else btn.classList.remove('active');
+  const vig=document.getElementById('cover-vignette');
+  if(on) vig.classList.add('show'); else vig.classList.remove('show');
   if(on && G.scoped) toggleScope();
 }
 
@@ -694,11 +708,16 @@ function showResult(win) {
     <div class="rs">전선전진<b>${Math.max(0,fl)}%</b></div>
     <div class="rs">등급<b>${grade()}</b></div>`;
   el.style.display='flex';
-  if(win){ sfx_win(); try{window.parent.postMessage({type:'sniper_result',score:Math.round(G.score),grade:grade()},'*');}catch(e){} }
+  if(win){
+    sfx_win();
+    if(!window._sniperClears) window._sniperClears=[];
+    if(!window._sniperClears.includes(G.midx)) window._sniperClears.push(G.midx);
+    try{window.parent.postMessage({type:'sniper_result',score:Math.round(G.score),grade:grade()},'*');}catch(e){}
+  }
   else sfx_fail();
 }
 
-function grade(){const s=G.score;return s>=60000?'S':s>=35000?'A':s>=15000?'B':'C';}
+function grade(){const s=G.score;return s>=6000?'S':s>=3000?'A':s>=1200?'B':'C';}
 function retryMission(){document.getElementById('result-ov').style.display='none';initGame(G.midx);}
 function gotoTitle(){document.getElementById('result-ov').style.display='none';G=null;buildTitle();document.getElementById('mission-ov').style.display='flex';}
 
@@ -917,9 +936,15 @@ function drawScene(c, isScope) {
   // Draw bullets
   for(const b of G.bullets) {
     c.save();
-    c.fillStyle=b.isPlayer?'#ffffa0':b.faction==='ally'?'#88aaff':'#ff8844';
-    c.shadowColor=c.fillStyle; c.shadowBlur=6;
-    c.beginPath(); c.arc(b.x,b.y,b.isPlayer?3:2,0,Math.PI*2); c.fill();
+    c.fillStyle=b.vfxOnly?'#ffffff':b.isPlayer?'#ffffa0':b.faction==='ally'?'#88aaff':'#ff8844';
+    const bRadius=b.vfxOnly?2.5:b.isPlayer?3:2;
+    c.shadowColor=c.fillStyle; c.shadowBlur=b.vfxOnly?12:6;
+    c.beginPath(); c.arc(b.x,b.y,bRadius,0,Math.PI*2); c.fill();
+    // 예광탄 꼬리 효과
+    if(b.vfxOnly||b.isPlayer){
+      c.globalAlpha=0.35;
+      c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*0.018,b.y-b.vy*0.018);c.strokeStyle=c.fillStyle;c.lineWidth=b.vfxOnly?2:1.5;c.stroke();
+    }
     c.shadowBlur=0; c.restore();
   }
 
@@ -1035,7 +1060,19 @@ function updateHUD() {
   document.getElementById('kill-v').textContent=G.kills;
   const t=Math.max(0,G.time);
   document.getElementById('timer-v').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
-  document.getElementById('ammo-v').textContent=G.reloading?'장전...':`${G.ammo}/${G.maxAmmo}`;
+  const ammoEl=document.getElementById('ammo-v');
+  if(G.reloading){
+    const rPct=Math.round((1-G.reloadTimer/2.2)*100);
+    ammoEl.textContent=`▐${Math.floor(rPct/10)*'█'.repeat(1)}${rPct}%`;
+    ammoEl.style.color='#ffcc00';
+  } else {
+    ammoEl.textContent=`${G.ammo}/${G.maxAmmo}`;
+    ammoEl.style.color=G.ammo>0?'#f5c518':'#ff4444';
+  }
+
+  // Ally HP
+  const ahpEl=document.getElementById('ally-hp-v');
+  if(ahpEl){ahpEl.textContent=Math.round(G.allyHP)+'%';ahpEl.style.color=G.allyHP>60?'#00ff88':G.allyHP>30?'#ffcc00':'#ff4444';}
 
   // Frontline bar
   const total=820-80; const pos=G.frontlineX-80;
@@ -1114,7 +1151,7 @@ function sfx_fail(){ensureAudio();[300,220,160].forEach((f,i)=>beep(f,'sawtooth'
 
 // ── TITLE ─────────────────────────────────────────────────────
 function buildTitle(){
-  const cleared=JSON.parse(localStorage.getItem('sniper_clears')||'[]');
+  const cleared=window._sniperClears||[];
   const grid=document.getElementById('mission-grid');
   grid.innerHTML='';
   MISSIONS.forEach((m,i)=>{
@@ -1136,11 +1173,19 @@ function startMission(){
 // ── INPUT ─────────────────────────────────────────────────────
 canvas.addEventListener('mousemove',e=>{
   const r=canvas.getBoundingClientRect();
-  if(G){G.mouse.x=e.clientX-r.left;G.mouse.y=e.clientY-r.top;}
-  if(G&&G.scoped){
-    G._scopeAimX=150+(e.clientX-r.left-G.mouse.x)*3.5;
-    G._scopeAimY=150+(e.clientY-r.top -G.mouse.y)*3.5;
-    G._scopeAimX=150; G._scopeAimY=150; // center by default
+  const rawX=e.clientX-r.left, rawY=e.clientY-r.top;
+  if(G){
+    if(G.scoped){
+      // 스코프 모드: 화면 중앙에서의 오프셋으로 조준점 계산
+      const centerX=GW/2, centerY=GH/2;
+      G._scopeAimX=150+(rawX-centerX)*0.18;
+      G._scopeAimY=150+(rawY-centerY)*0.18;
+      G._scopeAimX=Math.max(30,Math.min(270,G._scopeAimX));
+      G._scopeAimY=Math.max(30,Math.min(270,G._scopeAimY));
+    } else {
+      G._scopeAimX=150; G._scopeAimY=150;
+    }
+    G.mouse.x=rawX; G.mouse.y=rawY;
   }
 });
 canvas.addEventListener('click',e=>{if(G&&G.phase==='play'){ensureAudio();fire();}});
