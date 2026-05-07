@@ -750,36 +750,66 @@ function updAllies(dt) {
 function updBullets(dt) {
   for(let i=G.bullets.length-1;i>=0;i--) {
     const b = G.bullets[i];
-    b.x += b.vx*dt*60; b.y += b.vy*dt*60; b.life -= dt;
-    // wind drift
-    b.x += G.wind.speed*Math.cos(G.wind.angle)*dt*0.8;
-    b.y += G.wind.speed*Math.sin(G.wind.angle)*dt*0.4;
-    // trail particles
-    if(G.frame%2===0) spawnParticle(b.x, b.y, '#ffff88','#ffaa44',1);
-    if(b.life<=0||b.x<0||b.x>GW||b.y<0||b.y>GH) { G.bullets.splice(i,1); continue; }
-    let hit=false;
-    for(const e of G.enemies) {
-      if(!e.alive) continue;
-      if(Math.hypot(e.x-b.x, e.y-b.y)<e.sz+5) {
-        const headshot = Math.random()<(b.crit?0.6:0.15);
-        const dmg = b.dmg * (headshot?2:1);
-        e.hp -= dmg; e.flashT=0.2; e.hitPulse=1;
-        G.totalDamage += dmg;
-        G.shotsHit++;
-        if(headshot) G.headshots++;
-        spawnDN(e.x,e.y,Math.round(dmg),b.crit,headshot);
-        if(b.crit||headshot) {
-          document.getElementById('crit-flash').classList.add('show');
-          setTimeout(()=>document.getElementById('crit-flash').classList.remove('show'),150);
+    
+    // 1. 이번 프레임에서 총알이 이동할 전체 X, Y 거리 계산
+    const moveX = b.vx*dt*60 + G.wind.speed*Math.cos(G.wind.angle)*dt*0.8;
+    const moveY = b.vy*dt*60 + G.wind.speed*Math.sin(G.wind.angle)*dt*0.4;
+    
+    // 2. 이동 거리를 10픽셀 단위로 잘게 쪼갬 (터널링 방지)
+    const steps = Math.max(1, Math.ceil(Math.hypot(moveX, moveY) / 10));
+    const stepX = moveX / steps;
+    const stepY = moveY / steps;
+    
+    let hit = false;
+    
+    // 3. 쪼갠 거리(step)만큼 이동시키면서 매번 충돌 검사
+    for(let s = 0; s < steps; s++) {
+      b.x += stepX;
+      b.y += stepY;
+      
+      for(const e of G.enemies) {
+        if(!e.alive) continue;
+        
+        // 충돌 판정
+        if(Math.hypot(e.x-b.x, e.y-b.y) < e.sz + 5) {
+          const headshot = Math.random() < (b.crit ? 0.6 : 0.15);
+          const dmg = b.dmg * (headshot ? 2 : 1);
+          e.hp -= dmg; 
+          e.flashT = 0.2; 
+          e.hitPulse = 1;
+          G.totalDamage += dmg;
+          G.shotsHit++;
+          if(headshot) G.headshots++;
+          
+          spawnDN(e.x, e.y, Math.round(dmg), b.crit, headshot);
+          
+          if(b.crit || headshot) {
+            document.getElementById('crit-flash').classList.add('show');
+            setTimeout(()=>document.getElementById('crit-flash').classList.remove('show'), 150);
+          }
+          
+          // 피격 파티클 및 흔적
+          for(let p=0; p<12; p++) spawnParticle(e.x, e.y, '#cc1100', '#ff2200', 1+Math.random()*2);
+          G.bloodSplats.push({x:e.x, y:e.y, r:2+Math.random()*4, a:0.4});
+          
+          if(e.hp <= 0) killE(e, true);
+          
+          hit = true;
+          break; // 적을 맞췄으므로 현재 총알의 적 탐색 루프 탈출
         }
-        // blood + hit particles
-        for(let p=0;p<12;p++) spawnParticle(e.x,e.y,'#cc1100','#ff2200',1+Math.random()*2);
-        G.bloodSplats.push({x:e.x,y:e.y,r:2+Math.random()*4,a:0.4});
-        if(e.hp<=0) killE(e,true);
-        G.bullets.splice(i,1); hit=true; break;
       }
+      if(hit) break; // 맞췄으면 스텝(이동) 루프도 탈출
     }
-    if(hit) continue;
+    
+    b.life -= dt;
+    
+    // 총알 궤적 파티클
+    if(G.frame%2===0 && !hit) spawnParticle(b.x, b.y, '#ffff88','#ffaa44',1);
+    
+    // 4. 충돌했거나, 수명이 다했거나, 맵 밖으로 나가면 총알 삭제
+    if(hit || b.life<=0 || b.x<0 || b.x>GW || b.y<0 || b.y>GH) { 
+      G.bullets.splice(i,1); 
+    }
   }
 }
 
