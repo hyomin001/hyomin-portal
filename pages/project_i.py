@@ -20,10 +20,12 @@ GAME_HTML = r"""<!DOCTYPE html>
   --allyBlue:#3388ff;--enemyRed:#ff3322;
   --scope:rgba(0,255,100,0.85);--scopeDim:rgba(0,255,100,0.35);
 }
-html,body{width:100%;height:800px;overflow:hidden;background:var(--bg);
-  font-family:'Rajdhani',sans-serif;touch-action:none;cursor:crosshair;}
-#root{position:relative;width:100%;height:800px;overflow:hidden;}
-canvas{display:block;image-rendering:pixelated;}
+html,body{width:100%;height:100vh;margin:0;padding:0;overflow:hidden;background:#020305;
+  font-family:'Rajdhani',sans-serif;touch-action:none;cursor:crosshair;
+  display:flex;align-items:center;justify-content:center;}
+#root{position:relative;width:100%;max-width:920px;aspect-ratio:920/660;overflow:hidden;
+  background:var(--bg);box-shadow:0 0 30px rgba(0,0,0,0.8);border:1px solid rgba(0,255,100,0.1);}
+canvas{width:100%;height:100%;display:block;image-rendering:pixelated;}
 
 /* ── SCANLINE OVERLAY ──────────── */
 #scanlines{position:absolute;inset:0;pointer-events:none;z-index:9;
@@ -876,12 +878,23 @@ function fire() {
   G.muzzleFlash=1;
   buildAmmoUI();
   const crit = Math.random()<(0.15*G.critBonus);
+  
   let wx=G.mouse.x, wy=G.mouse.y;
   const sw = G.breathHeld ? 0.25 : 3.5;
-  wx += (Math.random()-0.5)*sw*2 + G.swayX*0.35;
-  wy += (Math.random()-0.5)*sw*2 + G.swayY*0.35;
-  // wind effect on aim
-  wx += G.wind.speed*Math.cos(G.wind.angle)*0.4;
+  
+  // 💡 수정됨: 스코프 모드일 땐 유저가 직접 마우스로 흔들림을 보정하므로 이중 적용 방지!
+  if(G.scoped) {
+    wx -= G.swayX*0.35;
+    wy -= G.swayY*0.35;
+  } else {
+    wx += G.swayX*0.35;
+    wy += G.swayY*0.35;
+  }
+  
+  // 숨참기에 따른 기본 탄착군 분산만 적용 (바람 효과는 날아가는 도중에만 적용되도록 제거)
+  wx += (Math.random()-0.5)*sw*2;
+  wy += (Math.random()-0.5)*sw*2;
+  
   const ang = Math.atan2(wy-(GH-55), wx-55);
   const spd = 920;
   G.bullets.push({
@@ -889,7 +902,7 @@ function fire() {
     vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd,
     dmg: 80*(crit?2.8:1), crit, life:2
   });
-  // muzzle particles
+  
   for(let p=0;p<15;p++) spawnParticle(55,GH-55,'#ffff88','#ffaa00',1.5+Math.random()*2);
   sfx_shoot();
   if(G.ammo===0) setTimeout(startReload,400);
@@ -1387,7 +1400,12 @@ function spawnDN(x,y,v,crit,headshot) {
   const r=canvas.getBoundingClientRect();
   const size=headshot?26:crit?22:14;
   const col=headshot?'#ffff44':crit?'#ffaa00':'#ffffff';
-  el.style.cssText=`left:${r.left+x-24}px;top:${r.top+y-10}px;font-size:${size}px;color:${col};`;
+  
+  // 캔버스 스케일에 맞춰서 정확한 텍스트 팝업 위치 보정
+  const screenX = r.left + x * (r.width / canvas.width);
+  const screenY = r.top + y * (r.height / canvas.height);
+  
+  el.style.cssText=`left:${screenX-24}px;top:${screenY-10}px;font-size:${size}px;color:${col};`;
   const label=headshot?`💀 ${v}!`:crit?`${v}!!`:`${v}`;
   el.textContent=label;
   document.body.appendChild(el);
@@ -1565,7 +1583,11 @@ function startMission() {
 // ══════════════════════════════════════════
 canvas.addEventListener('mousemove',e=>{
   const r=canvas.getBoundingClientRect();
-  if(G){G.mouse.x=e.clientX-r.left;G.mouse.y=e.clientY-r.top;}
+  if(G){
+    // 화면 크기가 변해도 정확한 조준점(비율)을 찾아냄
+    G.mouse.x = (e.clientX - r.left) * (canvas.width / r.width);
+    G.mouse.y = (e.clientY - r.top) * (canvas.height / r.height);
+  }
 });
 canvas.addEventListener('click',e=>{
   if(G&&G.phase==='play'){ensureAudio();fire();}
