@@ -15,7 +15,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0f;touch-action
 #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
 
 /* ── HUD ── */
-#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:stretch;padding:8px 10px;gap:6px;}
+#hud{position:absolute;top:34px;left:0;right:0;display:flex;justify-content:space-between;align-items:stretch;padding:8px 10px;gap:6px;}
 .hp{background:rgba(0,0,0,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:5px 10px;text-align:center;min-width:60px;}
 .hv{font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;line-height:1;letter-spacing:1px;}
 .hl{font-size:6px;letter-spacing:3px;color:rgba(255,255,255,0.3);margin-top:2px;font-family:'Share Tech Mono',monospace;}
