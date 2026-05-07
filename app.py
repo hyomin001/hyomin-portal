@@ -655,7 +655,7 @@ if st.session_state.page_view == "portal":
           <div class='card-badge badge-new'>💡 도전</div>
           <div class='card-icon'>💻</div>
           <div class='card-title'>THE TERMINAL</div>
-          <div class='card-desc'>커맨드라인 방탈출 어드벤처<br>20 스테이지 · 가상 파일시스템</div>
+          <div class='card-desc'>커맨드라인 방탈출 어드벤처<br>20 스테이지 · 타임어택 모드</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("터미널 접속 >_", use_container_width=True, key="btn_term"):
@@ -742,8 +742,8 @@ if st.session_state.page_view == "portal":
         <div class='game-card' style='border-color:rgba(0,255,136,0.4);min-height:180px;'>
           <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.35);'>🎯 ELITE</div>
           <div class='card-icon'>🎯</div>
-          <div class='card-title'>스나이퍼 엘리트</div>
-          <div class='card-desc'>저격수 · 암살 <br>바람 탄도 ·아군 전선방</div>
+          <div class='card-title'>스나이퍼 엘리트 ULTRA</div>
+          <div class='card-desc'>6 미션 · 야간작전 포함<br>콤보·헤드샷·바람탄도·미니맵</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("임무 입장 🎯", use_container_width=True, key="btn_i"):
@@ -776,26 +776,21 @@ if st.session_state.page_view == "portal":
 <div class="arch-highlight" style="border-left-color:#c04fff; background: linear-gradient(90deg, rgba(192,79,255,0.08), rgba(108,99,255,0.06));">
     <p style="color:#c04fff !important;">🎮 게임 패치노트 (2026.05.07)</p>
     <p class="sub">
-        <b>🎯 스나이퍼 엘리트 — 완전 재구현</b><br>
-        · 기존 미션 타겟 게임 → <b>대규모 전장 저격 게임</b>으로 전면 교체<br>
-        · 아군(파란색)과 적군(빨간색)이 실제 교전하는 전장 배경 구현<br>
-        · <b>6가지 작전 미션</b>: 전선 사수 → 지휘관 암살 → 포병 무력화 → 포위 돌파 → 총사령관 처치 → 야간 특수작전<br>
-        · 아군 전선 HP 게이지, 포병 포격 시스템, 적 저격수 반격 추가<br>
-        · HUD가 키 설명 바와 겹치던 문제 수정<br><br>
-        <b>💻 THE TERMINAL — 20스테이지로 확장</b><br>
-        · 기존 14단계 → <b>20단계</b>로 6개 스테이지 추가<br>
-        · STAGE 15: 바이러스 제로데이 / STAGE 16: 소셜 엔지니어링<br>
-        · STAGE 17: 블록체인 포크 공격 / STAGE 18: 메모리 포렌식<br>
-        · STAGE 19: 우주 인프라 해킹 / STAGE 20: 효민 유니버스의 창조자 (최종)<br>
-        · 스테이지 11~20 클리어 보상 추가 (최고 STAGE 20 클리어 시 20억)<br><br>
-        <b>⚔️ 던전 런 REBORN</b><br>
-        · 상단 최고점수·최고킬·클리어·총플레이 박스 제거 (게임 화면 가독성 개선)<br>
-        · HUD 스탯(LV/ATK/KILL 등)이 조작키 바와 겹치던 문제 수정<br><br>
-        <b>🏎️ 네온 도주 레이싱 · 🧟 좀비 아포칼립스</b><br>
-        · SCORE/WAVE/KILLS 등 HUD 영역이 조작키 힌트 바와 겹치던 문제 수정<br><br>
-        <b>🥊 스트리트 파이터 EX (이전 패치 2026.05.03)</b><br>
-        · <b>2P 대전 모드 추가</b> — 같은 PC에서 두 명이 동시에 플레이 가능<br>
-        · <b>조작키 전면 개편</b> — P1(A/D/W/S + Z/X/C/V/F) / P2(방향키 + 숫자 1~5) 완전 분리
+        <b>🎯 스나이퍼 엘리트 ULTRA 대업그레이드</b><br>
+        · <b>6미션 체제</b> — 야간 특수작전(6스테이지) 신규 추가<br>
+        · <b>콤보 시스템</b> — 연속 킬 시 최대 ×10 점수 배율 적용<br>
+        · <b>헤드샷 시스템</b> — 헤드샷 판정 시 2배 데미지 + 💀 연출<br>
+        · <b>파티클 엔진</b> — 혈흔·폭발·총구화염·탄환궤적 전면 적용<br>
+        · <b>미니맵</b> — 우하단 실시간 아군/적/탄환 위치 표시<br>
+        · <b>탄창 시각화</b> — 개별 황동 탄환 핍 UI로 교체<br>
+        · <b>Web Audio API</b> — 총성·재장전·보스킬 사운드 레이어드 추가<br>
+        · <b>스코프 업그레이드</b> — 밀도트 + 노이즈 그레인 + 야시경 필터<br><br>
+        <b>💻 THE TERMINAL</b><br>
+        · <b>20 스테이지 완성</b> — stage 15~20 SyntaxError 버그 수정 및 정식 해금<br>
+        · <b>타임어택 모드</b> — 전체 20스테이지 최속 클리어 도전 모드 추가<br>
+        · Enter키 즉시 제출(chat_input) 방식으로 UX 개선<br><br>
+        <b>🎮 전체 공통</b><br>
+        · 포털 카드 최신 게임 정보 반영 업데이트
     </p>
 </div>
         """, unsafe_allow_html=True)
@@ -947,12 +942,11 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/project_a.py</strong>AI 무한 모의고사</div>
     <div class="module-item"><strong>pages/project_b.py</strong>월드 배틀</div>
     <div class="module-item"><strong>pages/project_d.py</strong>🎲 인베스트 마블 보드게임</div>
-    <div class="module-item"><strong>pages/project_c.py</strong>💻 THE TERMINAL 방탈출 (20 STAGES)</div>
-    <div class="module-item"><strong>pages/project_e.py</strong>⚔️ 뱀서라이크 던전 게임 (SURVIVORS REBORN)</div>
-    <div class="module-item"><strong>pages/project_f.py</strong>🏎️ 네온 도주 레이싱 (NEON RUNAWAY)</div>
+    <div class="module-item"><strong>pages/project_e.py</strong>⚔️ 뱀서라이크 던전 게임</div>
+    <div class="module-item"><strong>pages/project_f.py</strong>🏎️ 네온 도주 레이싱</div>
     <div class="module-item"><strong>pages/project_g.py</strong>🧟 좀비 아포칼립스 슈터</div>
-    <div class="module-item"><strong>pages/project_h.py</strong>🥊 스트리트 파이터 EX (2P 대전 지원)</div>
-    <div class="module-item"><strong>pages/project_i.py</strong>🎯 스나이퍼 엘리트 — WAR SNIPER (6미션)</div>
+    <div class="module-item"><strong>pages/project_h.py</strong>🥊 스트리트 파이터 EX</div>
+    <div class="module-item"><strong>pages/project_i.py</strong>🎯 스나이퍼 엘리트 ULTRA</div>
 </div>
         """, unsafe_allow_html=True)
 
@@ -1092,8 +1086,8 @@ if st.session_state.page_view == "portal":
         <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">decode</code>,
         <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">rot13</code> 등
         실제 터미널 명령어와 유사한 커맨드를 입력해 숨겨진 비밀번호를 찾아야 합니다.
-        단계별 3개의 힌트가 제공되며, STAGE 1(입문)부터 STAGE 20(창조자급)까지 점진적으로 난이도가 상승합니다.
-        전체 클리어 시 <b>10억 + 전설 칭호</b> 획득!
+        단계별 3개의 힌트가 제공되며, 모든 스테이지를 클리어하면 <b>타임어택 모드</b>가 해금됩니다.
+        스테이지 클리어 시 보상금이 지급되고 전체 클리어 시 특별 칭호가 부여됩니다.
     </p>
     <div style="margin-top:12px;">
         <span class="arch-badge">🖥️ 20 STAGES</span>
@@ -1102,8 +1096,8 @@ if st.session_state.page_view == "portal":
         <span class="arch-badge">🔐 SHA-256 정답 검증</span>
         <span class="arch-badge">💡 단계별 3힌트</span>
         <span class="arch-badge">⏱️ 타임어택 모드</span>
-        <span class="arch-badge">💰 스테이지별 클리어 보상</span>
-        <span class="arch-badge">⭐~창조자급 난이도</span>
+        <span class="arch-badge">💰 클리어 보상금</span>
+        <span class="arch-badge">⭐~⭐⭐⭐⭐⭐ 난이도</span>
     </div>
     <div style="margin-top:10px;background:rgba(0,255,136,0.07);border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:var(--green) !important;font-weight:700;">💡 기본 명령어</p>
@@ -1124,25 +1118,25 @@ if st.session_state.page_view == "portal":
     <h4 style="color:#c04fff !important;">⚔️ 던전 런 2.5D — SURVIVORS REBORN</h4>
     <p>
         사방에서 끝없이 몰려오는 몬스터들을 쓸어버리는 <b>본격 뱀서라이크(서바이벌)</b> 게임입니다.
+        화려한 <b>2.5D 입체 그래픽</b>과 함께 적의 웨이브를 돌파하고 보스를 격파하세요.
         <b style="color:#ff3366;">레벨업 시 등장하는 무기와 패시브를 조합해 극한의 시너지를 완성하세요!</b><br>
         <b>전사·마법사·궁수·닌자</b> 4개의 고유 클래스, 몰입감 넘치는 타격감, 그리고 강력한 웨이브 보스들이 기다립니다.
-        보스 처치 시 유물 3개 중 1개를 선택해 빌드를 완성하세요.
     </p>
     <div style="margin-top:12px;">
         <span class="arch-badge" style="background:rgba(192,78,255,0.2);color:#c04fff !important;border-color:rgba(192,78,255,0.4);">🌪️ 뱀서라이크 서바이벌</span>
+        <span class="arch-badge" style="background:rgba(192,78,255,0.2);color:#c04fff !important;border-color:rgba(192,78,255,0.4);">🧊 2.5D 입체 그래픽</span>
         <span class="arch-badge" style="background:rgba(192,78,255,0.2);color:#c04fff !important;border-color:rgba(192,78,255,0.4);">⚔️ 자동 공격 & 핵앤슬래시</span>
         <span class="arch-badge" style="background:rgba(192,78,255,0.2);color:#c04fff !important;border-color:rgba(192,78,255,0.4);">🃏 무기/스킬 조합</span>
         <span class="arch-badge" style="background:rgba(192,78,255,0.2);color:#c04fff !important;border-color:rgba(192,78,255,0.4);">👹 웨이브 보스전</span>
-        <span class="arch-badge" style="background:rgba(192,78,255,0.2);color:#c04fff !important;border-color:rgba(192,78,255,0.4);">⚗️ 유물 선택 시스템</span>
-        <span class="arch-badge" style="background:rgba(192,78,255,0.2);color:#c04fff !important;border-color:rgba(192,78,255,0.4);">💰 클리어 보상 2억</span>
     </div>
     <div style="margin-top:10px;background:rgba(192,78,255,0.08);border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:#c04fff !important;font-weight:700;">💡 컨트롤</p>
         <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
             <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">W A S D</code> 또는
-            <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">↑↓←→</code> 이동 &nbsp;
+            <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">↑↓←→</code> 상하좌우 이동 &nbsp;
             <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">자동</code> 기본 공격 &nbsp;
-            <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">Q E R</code> 액티브 스킬
+            <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">Q E R</code> 액티브 스킬 사용 &nbsp;
+            <code style="background:rgba(192,78,255,0.2);padding:1px 5px;border-radius:3px;">마우스</code> 캐릭터 및 능력 선택
         </p>
     </div>
 </div>
@@ -1252,30 +1246,32 @@ if st.session_state.page_view == "portal":
 
             st.markdown("""
 <div class="arch-card" style="border-left-color:#00ff88;">
-    <h4 style="color:#00ff88 !important;">🎯 스나이퍼 엘리트 &#8212; WAR SNIPER</h4>
+    <h4 style="color:#00ff88 !important;">🎯 스나이퍼 엘리트 ULTRA &#8212; WAR SNIPER</h4>
     <p>
-        <b>대규모 전쟁</b> 한복판에서 아군의 승리를 돕는 엘리트 저격수 작전 게임입니다.
-        아군(파란색)과 적군(빨간색)이 실제로 교전하는 전장에서, 저격수로서 적 지휘부를 제거하고
-        아군 전선을 사수하세요. 적 포병이 포격을 가하면 아군 HP가 빠르게 감소하며,
-        적 저격수의 반격도 조심해야 합니다.
-        <b>6가지 작전 미션</b>이 순차적으로 해금되며, 최종 미션 야간 특수작전까지 도전하세요.
+        전장의 저격수가 되어 6개의 미션을 완수하는 본격 스나이퍼 시뮬레이션입니다.
+        실제 바람 탄도 물리가 적용되어 풍향·풍속에 따라 탄환이 휘며,
+        <b>헤드샷</b> 판정 시 2배 데미지와 함께 💀 연출이 등장합니다.
+        <b>콤보 시스템</b>(×10까지)으로 연속 킬 시 점수 배율이 상승하고,
+        6스테이지는 <b>야간 특수작전</b>으로 야시경 스코프를 사용합니다.
+        파티클 엔진, 미니맵, Web Audio 사운드, 탄창 시각화 UI까지 완비된 게임입니다.
     </p>
     <div style="margin-top:12px;">
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔭 스코프 조준</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">⚔️ 6가지 작전 미션</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔵 아군 전선 방어</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">💣 포병 무력화</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🌙 야간 특수작전</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🎖️ 지휘부 암살</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔭 3.5x~5x 배율 스코프</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🌬️ 바람 탄도 물리</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">💀 헤드샷 시스템</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔥 ×10 콤보</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🌙 야간 6스테이지</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🗺️ 실시간 미니맵</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">S~D 등급 평가</span>
     </div>
     <div style="margin-top:10px;background:rgba(0,255,136,0.07);border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:var(--green) !important;font-weight:700;">💡 컨트롤</p>
         <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
-            PC: <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">마우스</code> 조준 &nbsp;
-            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">우클릭/Z</code> 스코프 전환 &nbsp;
             <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">클릭/Space</code> 발사 &nbsp;
-            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">Shift</code> 숨참기(사격 안정) &nbsp;
-            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">R</code> 재장전
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">우클릭/Z</code> 스코프 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">Shift</code> 숨참기 안정 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">R</code> 재장전 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">ESC</code> 타이틀
         </p>
     </div>
 </div>
