@@ -655,7 +655,7 @@ if st.session_state.page_view == "portal":
           <div class='card-badge badge-new'>💡 도전</div>
           <div class='card-icon'>💻</div>
           <div class='card-title'>THE TERMINAL</div>
-          <div class='card-desc'>커맨드라인 방탈출 어드벤처<br>10 스테이지 · 가상 파일시스템</div>
+          <div class='card-desc'>커맨드라인 방탈출 어드벤처<br>20 스테이지 · 가상 파일시스템</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("터미널 접속 >_", use_container_width=True, key="btn_term"):
@@ -743,7 +743,7 @@ if st.session_state.page_view == "portal":
           <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.35);'>🎯 ELITE</div>
           <div class='card-icon'>🎯</div>
           <div class='card-title'>스나이퍼 엘리트</div>
-          <div class='card-desc'>5 미션 · 4배율 스코프<br>바람 탄도 · 헤드샷 슬로우모션</div>
+          <div class='card-desc'>저격수 · 암살 br>바람 탄도 ·아군 전선방</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("임무 입장 🎯", use_container_width=True, key="btn_i"):
