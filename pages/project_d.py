@@ -1324,44 +1324,39 @@ function checkWin() {
   }
   return false;
 }
-// ── WIN CONDITION CHECK: 모두의마블 스타일 ──
+// ══ 🏆 특수 승리 조건 체크 (3가지 필수 + 3가지 보너스) ══
 function checkWinConditions() {
   if (!G || G.phase === 'gameover') return false;
   const a = alive();
-  if (a.length <= 1) return false; // 이미 checkWin에서 처리
-
-  const pidx = G.turn;
-  const p = G.players[pidx];
+  if (a.length <= 1) return false;
+  const pidx = G.turn, p = G.players[pidx];
   if (p.bankrupt) return false;
+  const grpNames = ['아시아권','동남아시아','중동·아프리카','유럽 서부','유럽 중부','미국','아메리카','오세아니아'];
 
-  // ① 한 색상 라인 전부 독점 (색상 그룹 하나를 완전히 차지)
+  // ══ 필수 규칙 ①: 한 라인 완전 독점 + 전체 호텔 건설 → 즉시 승리 ══
   for (let grp = 0; grp <= 7; grp++) {
     const total = GRP_SIZE[grp] || 0;
     if (total === 0) continue;
-    const mine = G.cells.filter(c => c.group === grp && c.owner === pidx).length;
-    if (mine === total) {
-      // 이미 독점은 기존에 있지만, 여기서는 "첫 완성" 체크용
-      // 대신 호텔까지 모두 지었을 때만 즉시 승리로 처리
-      const allHotel = G.cells.filter(c => c.group === grp && c.owner === pidx && c.houses === 4).length === total;
-      if (allHotel) {
-        triggerWinCondition(pidx, `🏨 ${p.name}이(가) ${['아시아','동남아','중동-아프리카','유럽A','유럽B','미국','캐나다-남미','호주'][grp]} 라인 전체 호텔 건설!`, '한 라인 완전 독점 달성!');
+    const grpCells = G.cells.filter(c => c.group === grp);
+    if (grpCells.filter(c => c.owner === pidx).length === total) {
+      if (grpCells.filter(c => c.owner === pidx && c.houses === 4).length === total) {
+        triggerWinCondition(pidx,
+          `🏨 ${p.name}이(가) [${grpNames[grp]}] 라인 전체 호텔 완성!`,
+          '라인 독점 + 전체 호텔 건설 달성!');
         return true;
       }
     }
   }
 
-  // ② 연속된 3개 이상 칸에 건물 보유
+  // ══ 필수 규칙 ②: 연속 붙어있는 3칸에 건물 보유 → 즉시 승리 ══
   const myBuiltCells = [];
   for (let ci = 0; ci < 40; ci++) {
     const c = G.cells[ci];
-    if (c.owner === pidx && c.type === 'prop' && (c.houses || 0) >= 1 && !c.mortgaged) {
-      myBuiltCells.push(ci);
-    }
+    if (c.owner === pidx && c.type === 'prop' && (c.houses || 0) >= 1 && !c.mortgaged) myBuiltCells.push(ci);
   }
-  // 인접 칸(±1) 연속 3개 체크
   if (myBuiltCells.length >= 3) {
     for (let i = 0; i < myBuiltCells.length - 2; i++) {
-      const a0 = myBuiltCells[i], a1 = myBuiltCells[i+1], a2 = myBuiltCells[i+2];
+      const [a0, a1, a2] = [myBuiltCells[i], myBuiltCells[i+1], myBuiltCells[i+2]];
       if (a1 === a0 + 1 && a2 === a1 + 1) {
         triggerWinCondition(pidx,
           `🏗️ ${p.name}이(가) ${CELLS[a0].name}·${CELLS[a1].name}·${CELLS[a2].name} 연속 3칸 건물!`,
@@ -1369,6 +1364,45 @@ function checkWinConditions() {
         return true;
       }
     }
+  }
+
+  // ══ 필수 규칙 ③: 파산 → 기존 checkWin()으로 처리 (유지) ══
+
+  // ══ 보너스 규칙 ④: 공항 4개 독점 + 호텔 2개 이상 = 항공왕 승리 ══
+  const myAirports = G.cells.filter(c => c.type === 'airport' && c.owner === pidx).length;
+  const myHotels = G.cells.filter(c => c.owner === pidx && c.houses === 4).length;
+  if (myAirports >= 4 && myHotels >= 2) {
+    triggerWinCondition(pidx,
+      `✈️ ${p.name}이(가) 공항 4개 독점 + 호텔 2개! 항공왕 승리!`,
+      '공항 완전 독점 + 호텔 건설 달성!');
+    return true;
+  }
+
+  // ══ 보너스 규칙 ⑤: 동일 국가 모든 도시 + 전부 호텔 = 국가 지배자 ══
+  const countryMap = {};
+  G.cells.forEach(c => {
+    if (c.owner === pidx && c.type === 'prop' && c.country && !c.mortgaged) {
+      if (!countryMap[c.country]) countryMap[c.country] = [];
+      countryMap[c.country].push(c);
+    }
+  });
+  for (const [country, cells] of Object.entries(countryMap)) {
+    const totalInCountry = CELLS.filter(c => c.country === country && c.type === 'prop').length;
+    if (totalInCountry >= 2 && cells.length >= totalInCountry && cells.every(c => c.houses === 4)) {
+      triggerWinCondition(pidx,
+        `🌍 ${p.name}이(가) ${country} 완전 지배! 모든 도시 호텔화!`,
+        '단일 국가 완전 지배 달성!');
+      return true;
+    }
+  }
+
+  // ══ 보너스 규칙 ⑥: 자산 총액 ₩50,000 이상 = 세계 최고 갑부 ══
+  const nw = getNetWorth(pidx);
+  if (nw >= 50000) {
+    triggerWinCondition(pidx,
+      `💰 ${p.name}이(가) 순자산 ₩${nw.toLocaleString()} 달성! 세계 최고 갑부!`,
+      '순자산 ₩50,000 이상 달성!');
+    return true;
   }
 
   return false;
@@ -1950,12 +1984,28 @@ function animateMove(pidx,from,to,cb) {
   const steps=[];let cur=from;
   while(cur!==to){cur=(cur+1)%40;steps.push(cur);}
   let i=0;
+  // 이동 속도: 칸수에 따라 조절 (많은 칸은 빠르게)
+  const stepDelay = steps.length > 8 ? 80 : steps.length > 5 ? 100 : 130;
+  const p = G.players[pidx];
   const iv=setInterval(()=>{
     G.players[pidx].pos=steps[i];
     spawnTrail(steps[i]);
+    // 실시간 배너 현재 위치 업데이트
+    const banner=document.getElementById('move-banner-active');
+    if(banner){
+      const curCell=CELLS[steps[i]];
+      const curEl=banner.querySelector('.mb-cur');
+      if(curEl) curEl.textContent=`${curCell.flag||'📍'} ${curCell.name}`;
+      const progressEl=banner.querySelector('.mb-progress');
+      if(progressEl){
+        const pct=Math.round((i+1)/steps.length*100);
+        progressEl.style.width=pct+'%';
+        progressEl.textContent='';
+      }
+    }
     renderTokens();i++;
     if(i>=steps.length){clearInterval(iv);cb&&cb();}
-  },100);
+  },stepDelay);
 }
 
 function spawnTrail(ci) {
@@ -1974,12 +2024,16 @@ function spawnTrail(ci) {
 //  SPECIAL EFFECTS
 // ═══════════════════════════════════════════════════════════
 
-// ── 이동 모션 배너 ──
+// ── 이동 모션 배너 (한칸한칸 실시간 표시) ──
 function showMoveBanner(pidx, from, to, d1, d2) {
   const p = G.players[pidx];
   const fromCell = CELLS[from];
   const toCell = CELLS[to];
   const steps = ((to - from + 40) % 40) || 40;
+
+  // 기존 배너 제거
+  const old=document.getElementById('move-banner-active');
+  if(old) old.remove();
 
   const banner = document.createElement('div');
   banner.className = 'move-banner';
@@ -1998,19 +2052,25 @@ function showMoveBanner(pidx, from, to, d1, d2) {
       <div class="mb-arrow">→</div>
       <div class="mb-to">${toCell.flag||'📍'} ${toCell.name}</div>
     </div>
-    <div class="mb-steps">+${steps}칸 이동</div>
+    <div style="margin-top:5px;font-size:0.68rem;color:var(--text3)">현재 위치:</div>
+    <div class="mb-cur" style="font-size:0.8rem;font-weight:700;color:var(--blue);margin-top:2px;">${fromCell.flag||'📍'} ${fromCell.name}</div>
+    <div style="margin-top:6px;background:rgba(255,255,255,0.06);border-radius:99px;height:5px;overflow:hidden;width:100%;">
+      <div class="mb-progress" style="height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));width:0%;border-radius:99px;transition:width 0.08s;"></div>
+    </div>
+    <div class="mb-steps" style="margin-top:4px;">+${steps}칸 이동</div>
   `;
   document.body.appendChild(banner);
 
-  // 이동 완료 후 제거
+  // 이동 완료 후 자동 제거
+  const removeDuration = steps * 130 + 600;
   setTimeout(() => {
     const el = document.getElementById('move-banner-active');
     if (el) {
-      el.style.transition = 'opacity 0.4s';
+      el.style.transition = 'opacity 0.35s';
       el.style.opacity = '0';
       setTimeout(() => el.remove(), 400);
     }
-  }, 1400);
+  }, removeDuration);
 }
 
 function spawnFloatText(text,color,isLoss) {
