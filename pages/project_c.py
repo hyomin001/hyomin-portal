@@ -1,5 +1,5 @@
 # pages/project_c.py
-# 💻 THE TERMINAL — 방탈출 v4.0 [14 STAGES]
+# 💻 THE TERMINAL — 방탈출 v5.0 [20 STAGES]
 import streamlit as st
 import time
 import base64
@@ -1064,7 +1064,7 @@ STAGES = {
                 "type": "file",
                 "content": (
                     "여기까지 왔다.\n\n"
-                    "1단계부터 14단계까지.\n"
+                    "1단계부터 20단계까지.\n"
                     "너는 이 우주의 진정한 레전드다.\n\n"
                     "마지막 문을 열어라.\n"
                     "— 효민 우주의 창조자"
@@ -1075,8 +1075,478 @@ STAGES = {
     },
 }
 
+    15: {
+        "title":      "STAGE 15 — 바이러스 제로데이",
+        "desc":       "핵발전소 제어망에 바이러스가 침투했다. 소스 코드에서 멜웨어 시그니처를 추출해 무력화 명령을 실행하라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 전설",
+        "goal":       "바이러스 시그니처를 조합해 `unlock [시그니처]` 로 입력하라.",
+        "answer_hash": hashlib.sha256("VXKILL_CORE_ZERO".encode()).hexdigest(),
+        "hint_1": "`/npp/virus/` 내부를 탐색하라. 코드 파일을 `cat` 으로 열어봐라.",
+        "hint_2": "`signature_a.bin` 과 `signature_b.bin` 에서 [ ] 안의 텍스트를 합쳐라.",
+        "hint_3": "형식: `VXKILL_CORE_ZERO` — 세 조각을 언더바로 연결.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/npp": {"type": "dir"},
+            "/npp/ALERT.txt": {
+                "type": "file",
+                "content": (
+                    "⚠️  NPP EMERGENCY ALERT  ⚠️\n\n"
+                    "핵발전소 제어 시스템에 바이러스 감지.\n"
+                    "냉각수 제어가 비정상 작동 중.\n\n"
+                    "바이러스 시그니처를 추출해 무력화하라.\n"
+                    "경로: /npp/virus/"
+                ),
+            },
+            "/npp/virus": {"type": "dir"},
+            "/npp/virus/manifest.txt": {
+                "type": "file",
+                "content": (
+                    "바이러스 매니페스트\n"
+                    "────────────────────────────────\n"
+                    "이름: ZERO-DAY-NPP\n"
+                    "타겟: 냉각수 제어 PLC\n"
+                    "시그니처: 3조각으로 분산 인코딩됨\n"
+                    "조각 위치: signature_a, b, c\n"
+                    "무력화 명령: 조각을 언더바로 조합 → unlock 실행"
+                ),
+            },
+            "/npp/virus/signature_a.bin": {
+                "type": "file",
+                "content": (
+                    "시그니처 조각 A\n"
+                    "데이터: [VXKILL]\n"
+                    "체크섬: 0x4A1F\n"
+                    "다음: signature_b.bin"
+                ),
+            },
+            "/npp/virus/signature_b.bin": {
+                "type": "file",
+                "content": (
+                    "시그니처 조각 B\n"
+                    "데이터: [CORE]\n"
+                    "체크섬: 0xB3D2\n"
+                    "다음: 숨겨진 signature_c"
+                ),
+            },
+            "/npp/virus/.signature_c.bin": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "시그니처 조각 C (기밀)\n"
+                    "데이터: [ZERO]\n"
+                    "체크섬: 0xC8E9\n\n"
+                    "세 조각 조합: VXKILL_CORE_ZERO\n"
+                    "이 명령어로 바이러스를 종료할 수 있다."
+                ),
+            },
+            "/npp/control": {"type": "dir"},
+            "/npp/control/status.log": {
+                "type": "file",
+                "content": (
+                    "냉각수 온도: 2847°C (정상 범위 초과)\n"
+                    "압력: 비정상 급등 중\n"
+                    "자동 정지 장치: 무력화됨\n\n"
+                    "바이러스 무력화 명령을 지금 즉시 실행하라!\n"
+                    "카운트다운: T-00:47:33"
+                ),
+            },
+            "/tmp": {"type": "dir"},
+            "/tmp/.analyst_note": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "보안 분석가 긴급 메모\n\n"
+                    "무력화 코드: VXKILL_CORE_ZERO\n"
+                    "unlock VXKILL_CORE_ZERO 를 실행하라.\n"
+                    "시간이 없다!"
+                ),
+            },
+        },
+        "flavor": "원자로 경보음이 울린다. 디지털 세계가 물리 세계를 위협한다.",
+    },
+
+    16: {
+        "title":      "STAGE 16 — 소셜 엔지니어링",
+        "desc":       "해커가 직원 계정을 탈취하기 위해 피싱 시스템을 구축했다. 내부 통신에서 탈취된 마스터 패스워드를 역추적하라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 전설",
+        "goal":       "역추적된 마스터 패스워드를 `unlock [패스워드]` 로 입력하라.",
+        "answer_hash": hashlib.sha256("SOCIAL_HACK_2026".encode()).hexdigest(),
+        "hint_1": "`/phish/inbox/` 의 이메일들을 읽어라.",
+        "hint_2": "`.stolen_creds` 파일에 탈취된 자격증명이 있다.",
+        "hint_3": "마스터 패스워드: `SOCIAL_HACK_2026` — 연도를 포함한 형식.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/phish": {"type": "dir"},
+            "/phish/README.txt": {
+                "type": "file",
+                "content": (
+                    "소셜 엔지니어링 서버 분석 시스템\n\n"
+                    "적의 피싱 인프라에 역침투 성공.\n"
+                    "inbox/ 에서 탈취된 이메일을 분석하라.\n"
+                    "마스터 패스워드를 찾아 해커 계정을 잠가라."
+                ),
+            },
+            "/phish/inbox": {"type": "dir"},
+            "/phish/inbox/mail_001.txt": {
+                "type": "file",
+                "content": (
+                    "보낸 사람: ceo@hyomin-corp.kr\n"
+                    "제목: 긴급 - 시스템 점검\n\n"
+                    "IT팀장님, 임시 패스워드 변경 필요합니다.\n"
+                    "마스터 패스워드 파일을 .stolen_creds 에 저장하세요.\n"
+                    "— CEO"
+                ),
+            },
+            "/phish/inbox/mail_002.txt": {
+                "type": "file",
+                "content": (
+                    "보낸 사람: attacker@darkweb.onion\n"
+                    "제목: [피싱] 계정 탈취 성공\n\n"
+                    "타겟: hyomin-corp\n"
+                    "방법: 소셜 엔지니어링 2026\n"
+                    "상태: 마스터 패스워드 획득 완료\n"
+                    "저장 위치: /phish/inbox/.stolen_creds\n"
+                ),
+            },
+            "/phish/inbox/.stolen_creds": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "=== 탈취된 자격증명 ===\n\n"
+                    "사용자: admin@hyomin-corp.kr\n"
+                    "마스터 패스워드: SOCIAL_HACK_2026\n\n"
+                    "unlock SOCIAL_HACK_2026 으로 해커 계정을 잠가라."
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/analyst": {"type": "dir"},
+            "/home/analyst/report.txt": {
+                "type": "file",
+                "content": (
+                    "소셜 엔지니어링 분석 보고서\n\n"
+                    "공격자는 피싱 이메일을 통해 마스터 패스워드를 탈취했다.\n"
+                    "탈취된 자격증명은 inbox 디렉토리의 숨김 파일에 있다.\n"
+                    "`ls -a` 와 `cat` 명령어로 분석하라."
+                ),
+            },
+        },
+        "flavor": "사람이 가장 큰 보안 취약점이다. 신뢰가 무기가 된다.",
+    },
+
+    17: {
+        "title":      "STAGE 17 — 블록체인 포크 공격",
+        "desc":       "악의적인 노드가 블록체인을 포크해 자산을 이중 지출하고 있다. 악성 노드의 비밀 키를 탈취해 공격을 차단하라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 레전드",
+        "goal":       "악성 노드의 비밀 키를 찾아 `unlock [키]` 로 입력하라.",
+        "answer_hash": hashlib.sha256("FORK_ATTACK_51PCT".encode()).hexdigest(),
+        "hint_1": "`/chain/nodes/` 에서 악성 노드를 찾아라.",
+        "hint_2": "`.malicious_node/private_key.dat` 에 비밀 키가 있다.",
+        "hint_3": "키 형식: `FORK_ATTACK_51PCT` — 51% 공격을 의미한다.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/chain": {"type": "dir"},
+            "/chain/STATUS.txt": {
+                "type": "file",
+                "content": (
+                    "블록체인 네트워크 상태\n\n"
+                    "정상 노드: 48%\n"
+                    "악성 노드: 51% ← 공격 진행 중\n"
+                    "이중 지출 감지: 예\n\n"
+                    "악성 노드를 차단하려면 비밀 키가 필요하다.\n"
+                    "경로: /chain/nodes/"
+                ),
+            },
+            "/chain/nodes": {"type": "dir"},
+            "/chain/nodes/node_alpha.dat": {
+                "type": "file",
+                "content": "정상 노드 ALPHA: 해시율 12% — 정상 작동",
+            },
+            "/chain/nodes/node_beta.dat": {
+                "type": "file",
+                "content": "정상 노드 BETA: 해시율 18% — 정상 작동",
+            },
+            "/chain/nodes/node_gamma.dat": {
+                "type": "file",
+                "content": "정상 노드 GAMMA: 해시율 18% — 정상 작동",
+            },
+            "/chain/nodes/.malicious_node": {"type": "dir"},
+            "/chain/nodes/.malicious_node/info.txt": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "악성 노드 정보\n"
+                    "해시율: 51% (인위적 증폭)\n"
+                    "목적: 51% 공격 / 이중 지출\n"
+                    "비밀 키는 같은 디렉토리 내 private_key.dat 에 있다."
+                ),
+            },
+            "/chain/nodes/.malicious_node/private_key.dat": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "악성 노드 비밀 키\n"
+                    "────────────────────────────────\n"
+                    "KEY: FORK_ATTACK_51PCT\n\n"
+                    "이 키로 악성 노드를 강제 종료할 수 있다.\n"
+                    "unlock FORK_ATTACK_51PCT 를 실행하라."
+                ),
+            },
+            "/chain/ledger": {"type": "dir"},
+            "/chain/ledger/double_spend.log": {
+                "type": "file",
+                "content": (
+                    "이중 지출 트랜잭션 로그\n"
+                    "TX#A001: 500 BTC 이중 지출 감지\n"
+                    "TX#A002: 1200 BTC 이중 지출 감지\n"
+                    "TX#A003: 9000 BTC 이중 지출 시도 중\n\n"
+                    "악성 노드를 차단하면 공격이 무효화됩니다."
+                ),
+            },
+        },
+        "flavor": "탈중앙화의 역설 — 51%가 진실을 지배한다.",
+    },
+
+    18: {
+        "title":      "STAGE 18 — 메모리 포렌식",
+        "desc":       "크래시된 서버의 메모리 덤프에서 범인이 남긴 암호화 키를 복원하라. 조각난 메모리 청크를 분석해야 한다.",
+        "difficulty": "⭐⭐⭐⭐⭐ 레전드+",
+        "goal":       "메모리에서 복원된 키를 `unlock [키]` 로 입력하라.",
+        "answer_hash": hashlib.sha256("MEMDUMP_KEY_0xFF".encode()).hexdigest(),
+        "hint_1": "`/forensic/dump/` 안의 모든 청크를 `cat` 으로 읽어라.",
+        "hint_2": "`grep KEY` 로 핵심 데이터를 찾아라.",
+        "hint_3": "키 형식: `MEMDUMP_KEY_0xFF` — 16진수 접두어 포함.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/forensic": {"type": "dir"},
+            "/forensic/README.txt": {
+                "type": "file",
+                "content": (
+                    "메모리 포렌식 분석 도구 v2.3\n\n"
+                    "크래시된 서버의 RAM 덤프를 분석 중.\n"
+                    "덤프는 32개 청크로 분산됨.\n\n"
+                    "주요 청크: /forensic/dump/\n"
+                    "핵심 데이터는 청크 내 '[KEY]' 태그로 표시됨."
+                ),
+            },
+            "/forensic/dump": {"type": "dir"},
+            "/forensic/dump/chunk_01.mem": {
+                "type": "file",
+                "content": (
+                    "CHUNK 01: 0x00001000-0x00002000\n"
+                    "DATA: 03fa bc12 4400 0000 NORMAL_DATA_SEGMENT\n"
+                    "상태: 정상 (암호화 키 없음)"
+                ),
+            },
+            "/forensic/dump/chunk_08.mem": {
+                "type": "file",
+                "content": (
+                    "CHUNK 08: 0x00008000-0x00009000\n"
+                    "DATA: ff00 3a4b KEY_FRAGMENT_BEGIN\n"
+                    "[KEY] 첫 부분: MEMDUMP\n"
+                    "상태: 핵심 데이터 포함"
+                ),
+            },
+            "/forensic/dump/chunk_16.mem": {
+                "type": "file",
+                "content": (
+                    "CHUNK 16: 0x00010000-0x00011000\n"
+                    "DATA: 88af 0011 cc44 KEY_FRAGMENT_MID\n"
+                    "[KEY] 중간 부분: _KEY\n"
+                    "상태: 핵심 데이터 포함"
+                ),
+            },
+            "/forensic/dump/.chunk_24.mem": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "CHUNK 24 (숨김): 0x00018000-0x00019000\n"
+                    "DATA: 4e6f 7265 KEY_FRAGMENT_END\n"
+                    "[KEY] 마지막 부분: _0xFF\n\n"
+                    "전체 키: MEMDUMP_KEY_0xFF\n"
+                    "unlock MEMDUMP_KEY_0xFF 를 실행하라."
+                ),
+            },
+            "/forensic/report": {"type": "dir"},
+            "/forensic/report/analysis.txt": {
+                "type": "file",
+                "content": (
+                    "메모리 분석 보고서\n\n"
+                    "크래시 원인: 악성 프로세스 주입\n"
+                    "범인 흔적: 암호화 키가 메모리에 잔존\n"
+                    "청크 08, 16, 24에 핵심 데이터 분산\n"
+                    "grep 명령어로 [KEY] 태그를 검색하라."
+                ),
+            },
+        },
+        "flavor": "메모리는 거짓말하지 않는다. 죽은 프로세스도 흔적을 남긴다.",
+    },
+
+    19: {
+        "title":      "STAGE 19 — 우주 인프라 해킹",
+        "desc":       "민간 우주 인프라 회사의 발사 제어 시스템에 침투했다. 로켓 자폭 코드를 비활성화하기 전에 발사를 막아라.",
+        "difficulty": "⭐⭐⭐⭐⭐ 신화",
+        "goal":       "발사 중지 코드를 찾아 `unlock [코드]` 로 즉시 입력하라.",
+        "answer_hash": hashlib.sha256("ABORT_LAUNCH_NOW".encode()).hexdigest(),
+        "hint_1": "`/launch/control/` 을 탐색하라. 발사 절차 파일을 읽어라.",
+        "hint_2": "`.abort_protocol` 파일에 중지 코드가 있다.",
+        "hint_3": "중지 코드: `ABORT_LAUNCH_NOW` — 대문자, 언더바 포함.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/launch": {"type": "dir"},
+            "/launch/COUNTDOWN.txt": {
+                "type": "file",
+                "content": (
+                    "🚀 발사 카운트다운\n\n"
+                    "T-00:04:22 ... T-00:04:21 ...\n\n"
+                    "이 로켓에는 군사 위성이 탑재되어 있다.\n"
+                    "발사되면 전 세계 통신망이 마비된다.\n\n"
+                    "발사 중지 코드를 지금 즉시 입력하라!\n"
+                    "경로: /launch/control/"
+                ),
+            },
+            "/launch/control": {"type": "dir"},
+            "/launch/control/procedures.txt": {
+                "type": "file",
+                "content": (
+                    "발사 절차 문서 v7.2\n\n"
+                    "정상 발사: LAUNCH_AUTHORIZED\n"
+                    "발사 중지: ABORT_LAUNCH_NOW\n"
+                    "비상 자폭: SELF_DESTRUCT_OMEGA\n\n"
+                    "중지 코드는 .abort_protocol 파일에 암호화 보관됨."
+                ),
+            },
+            "/launch/control/.abort_protocol": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "=== 발사 중지 프로토콜 (LEVEL 5 기밀) ===\n\n"
+                    "발사 중지 명령어: ABORT_LAUNCH_NOW\n\n"
+                    "unlock ABORT_LAUNCH_NOW 를 즉시 실행하라.\n"
+                    "지금 당장!"
+                ),
+            },
+            "/launch/payload": {"type": "dir"},
+            "/launch/payload/manifest.dat": {
+                "type": "file",
+                "content": (
+                    "탑재물 매니페스트 (기밀)\n"
+                    "위성: SAT-CTRL-OMEGA\n"
+                    "임무: 전 세계 통신 제어\n"
+                    "발사 허가: 불법 취득\n\n"
+                    "이 발사를 막아라."
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/whistleblower": {"type": "dir"},
+            "/home/whistleblower/.message": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "내부 고발자 메시지\n\n"
+                    "발사 중지 코드: ABORT_LAUNCH_NOW\n"
+                    "이 코드를 사용해 발사를 막아라.\n"
+                    "세상이 너를 기억할 것이다.\n"
+                    "— 익명의 내부 고발자"
+                ),
+            },
+        },
+        "flavor": "T-4분. 하늘이 닫히기 전에 문을 열어라.",
+    },
+
+    20: {
+        "title":      "STAGE 20 — 효민 유니버스의 창조자",
+        "desc":       "최종 스테이지. 효민 유니버스의 뿌리에 닿았다. 모든 것의 시작과 끝, 창조자의 비밀 코드를 해독하라. 이 우주는 네 것이다.",
+        "difficulty": "⭐⭐⭐⭐⭐ 창조자급",
+        "goal":       "창조자의 최종 코드를 찾아 `unlock [코드]` 로 이 우주를 완성하라.",
+        "answer_hash": hashlib.sha256("HYOMIN_IS_GOD_2026".encode()).hexdigest(),
+        "hint_1": "`/genesis/` 를 탐색하라. 창조 기록 파일들을 모두 읽어라.",
+        "hint_2": "세 구역의 조각을 합치면 최종 코드가 된다. `ls -a` 로 숨김 파일을 찾아라.",
+        "hint_3": "최종 코드: `HYOMIN_IS_GOD_2026` — 창조자의 이름, 칭호, 연도를 언더바로.",
+        "filesystem": {
+            "/": {"type": "dir"},
+            "/genesis": {"type": "dir"},
+            "/genesis/ORIGIN.txt": {
+                "type": "file",
+                "content": (
+                    "=== 효민 유니버스 창세기 ===\n\n"
+                    "2026년, 이 세계는 창조자 효민에 의해 탄생했다.\n"
+                    "1번 스테이지부터 20번 스테이지까지.\n"
+                    "서버를 해킹하고, 위성을 무력화하고,\n"
+                    "AI를 정지시키고, 로켓을 멈추고,\n"
+                    "마침내 여기까지 도달한 자.\n\n"
+                    "너는 이제 이 우주의 일부다.\n\n"
+                    "최종 코드는 세 조각으로 나뉘어져 있다.\n"
+                    "genesis/alpha, beta, gamma 를 탐색하라."
+                ),
+            },
+            "/genesis/alpha": {"type": "dir"},
+            "/genesis/alpha/readme.txt": {
+                "type": "file",
+                "content": "Alpha 구역: 창조자의 이름. 숨김 파일을 찾아라.",
+            },
+            "/genesis/alpha/.name": {
+                "type": "file",
+                "hidden": True,
+                "content": "조각 1/3: HYOMIN",
+            },
+            "/genesis/beta": {"type": "dir"},
+            "/genesis/beta/readme.txt": {
+                "type": "file",
+                "content": "Beta 구역: 창조자의 칭호. ls -a 를 사용하라.",
+            },
+            "/genesis/beta/.title": {
+                "type": "file",
+                "hidden": True,
+                "content": "조각 2/3: IS_GOD",
+            },
+            "/genesis/gamma": {"type": "dir"},
+            "/genesis/gamma/readme.txt": {
+                "type": "file",
+                "content": "Gamma 구역: 창조의 연도. 마지막 조각이 여기 있다.",
+            },
+            "/genesis/gamma/.year": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "조각 3/3: 2026\n\n"
+                    "최종 코드: HYOMIN_IS_GOD_2026\n"
+                    "unlock HYOMIN_IS_GOD_2026 을 입력하라.\n\n"
+                    "1단계부터 20단계까지 완주한 당신은\n"
+                    "효민 유니버스의 진정한 창조자입니다.\n"
+                    "— 효민"
+                ),
+            },
+            "/genesis/.final_truth": {
+                "type": "file",
+                "hidden": True,
+                "content": (
+                    "=== 최종 진실 ===\n\n"
+                    "이 세계를 창조한 것은 효민이다.\n"
+                    "그리고 이 세계를 완성한 것은 너다.\n\n"
+                    "HYOMIN_IS_GOD_2026\n\n"
+                    "수고했다. 진짜로.\n"
+                    "— 효민 우주의 창조자"
+                ),
+            },
+            "/home": {"type": "dir"},
+            "/home/god": {"type": "dir"},
+            "/home/god/message.txt": {
+                "type": "file",
+                "content": (
+                    "20개의 문을 통과한 자에게.\n\n"
+                    "이 메시지를 읽고 있다면\n"
+                    "너는 이미 이 우주를 지배하고 있다.\n\n"
+                    "최종 코드를 입력하고 전설이 되어라.\n"
+                    "— 창조자"
+                ),
+            },
+        },
+        "flavor": "이것이 끝이자 시작이다. 20개의 문을 연 자만이 신의 이름을 안다.",
+    },
+}
+
 # ══════════════════════════════════════════════════════════
-#  스테이지별 난이도 색상 (14개)
+#  스테이지별 난이도 색상 (20개)
 # ══════════════════════════════════════════════════════════
 DIFF_COLORS = {
     1:  "#39ff14",
@@ -1093,6 +1563,12 @@ DIFF_COLORS = {
     12: "#ff5577",
     13: "#00eeff",
     14: "#ffd700",
+    15: "#ff00ff",
+    16: "#00ff99",
+    17: "#ff6600",
+    18: "#6600ff",
+    19: "#ff0055",
+    20: "#ffd700",
 }
 
 # ══════════════════════════════════════════════════════════
@@ -1786,7 +2262,7 @@ def render():
             💻 THE TERMINAL 방탈출
           </div>
           <div style='color:#4ade80; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
-            초고난이도 커맨드라인 해킹 시뮬레이터 — 14 STAGES
+            초고난이도 커맨드라인 해킹 시뮬레이터 — 20 STAGES
           </div>
           <div style='color:#86efac; font-size:0.75rem; margin-top:6px;'>
             마우스는 잊어라 — 오직 커맨드라인으로 숨겨진 단서를 찾아 탈출하라
@@ -1888,7 +2364,7 @@ def render():
             <div style='background:linear-gradient(135deg,#0a0f0a,#0c1a10);border:2px solid rgba(57,255,20,0.5);
               border-radius:16px;padding:20px 24px;margin-bottom:20px;'>
               <div style='font-family:"Orbitron",sans-serif;font-size:1rem;color:#39ff14;letter-spacing:4px;margin-bottom:8px;'>⏱ TIME ATTACK MODE</div>
-              <div style='font-size:0.8rem;color:#4a9a4a;margin-bottom:12px;'>전체 10스테이지를 얼마나 빠르게 클리어할 수 있는가? 최속 기록에 도전하라!</div>
+              <div style='font-size:0.8rem;color:#4a9a4a;margin-bottom:12px;'>전체 20스테이지를 얼마나 빠르게 클리어할 수 있는가? 최속 기록에 도전하라!</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1918,7 +2394,7 @@ def render():
                         "║       ⏱  TIME ATTACK MODE START!        ║",
                         "╚══════════════════════════════════════════╝",
                         "",
-                        "  전체 10스테이지 최속 클리어에 도전!",
+                        "  전체 20스테이지 최속 클리어에 도전!",
                         "  STAGE 1 — 버려진 서버실",
                         "─" * 44,
                     ]
@@ -2151,7 +2627,10 @@ def render():
                 1: 5_000_000,   2: 10_000_000,  3: 15_000_000,
                 4: 20_000_000,  5: 30_000_000,  6: 40_000_000,
                 7: 50_000_000,  8: 70_000_000,  9: 100_000_000,
-                10: 500_000_000,
+                10: 200_000_000, 11: 250_000_000, 12: 300_000_000,
+                13: 350_000_000, 14: 400_000_000, 15: 500_000_000,
+                16: 600_000_000, 17: 700_000_000, 18: 800_000_000,
+                19: 900_000_000, 20: 2_000_000_000,
             }
             # 힌트 미사용 보너스 (기본 보상의 50% 추가)
             base_reward    = STAGE_REWARDS.get(stage_num, 10_000_000)
@@ -2292,7 +2771,7 @@ def render():
                       padding:14px; border:1px solid #ffd700; border-radius:6px;
                       font-size:1rem; letter-spacing:2px;
                     '>
-                      🏆 10 STAGES COMPLETE<br>
+                      🏆 20 STAGES COMPLETE<br>
                       <span style='font-size:0.8rem; color:#a07000;'>
                         당신은 진짜 해커다.
                       </span>
