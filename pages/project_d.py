@@ -1075,6 +1075,78 @@ let animating = false;
 let boardSize = 560;
 let floatSide = 0;
 
+// ── WATCHDOG: 7초 동안 게임이 멈추면 자동으로 턴을 강제 진행 ──
+let _wdTimer = null;
+let _wdLastPhase = '';
+let _wdLastTurn = -1;
+let _wdLastTs = 0;
+const WD_TIMEOUT = 7000; // 7초
+
+function watchdogReset() {
+  _wdLastTs = Date.now();
+  _wdLastPhase = G ? G.phase : '';
+  _wdLastTurn  = G ? G.turn  : -1;
+}
+
+function watchdogTick() {
+  if (!G || G.phase === 'gameover') { watchdogReset(); return; }
+  const now = Date.now();
+  const sameState = (G.phase === _wdLastPhase && G.turn === _wdLastTurn);
+  const elapsed   = now - _wdLastTs;
+
+  if (sameState && elapsed > WD_TIMEOUT) {
+    const p = G.players[G.turn];
+    console.warn(`[WATCHDOG] 멈춤 감지 — phase:${G.phase} turn:${G.turn}(${p.name}) elapsed:${elapsed}ms → 강제 진행`);
+
+    // 1. animating 강제 해제
+    animating = false;
+
+    // 2. auction stuck → resolveAuction
+    if (G.phase === 'auction' && G.auction) {
+      log(`⚙️ [시스템] 경매 시간 초과 → 강제 종료`, 'important');
+      resolveAuction();
+      watchdogReset(); return;
+    }
+
+    // 3. trade stuck → cancel
+    if ((G.phase === 'trade_offer' || G.phase === 'trade_respond') && G.trade) {
+      log(`⚙️ [시스템] 거래 시간 초과 → 강제 취소`, 'important');
+      G.trade = null; G.phase = 'roll';
+      if (!p.is_bot) renderAll();
+      else { nextTurn(); renderAll(); setTimeout(checkBotTurn, 400); }
+      watchdogReset(); return;
+    }
+
+    // 4. buy/card stuck (bot forgot to decide)
+    if ((G.phase === 'buy' || G.phase === 'card') && p.is_bot) {
+      botDecide(G.turn);
+      if (G.phase !== 'gameover') nextTurn();
+      renderAll();
+      if (G.phase !== 'gameover') setTimeout(checkBotTurn, 400);
+      watchdogReset(); return;
+    }
+
+    // 5. bot roll stuck
+    if (G.phase === 'roll' && p.is_bot) {
+      log(`⚙️ [시스템] AI 주사위 지연 → 강제 실행`, 'important');
+      doBotTurn();
+      watchdogReset(); return;
+    }
+
+    // 6. human stuck on non-interactive phase → just advance
+    if (G.phase === 'roll' && !p.is_bot) {
+      // Don't force-roll for human, just reset watchdog
+      watchdogReset(); return;
+    }
+
+    // fallback: reset phase and try
+    G.phase = 'roll';
+    if (p.is_bot) { nextTurn(); renderAll(); setTimeout(checkBotTurn, 400); }
+    else renderAll();
+    watchdogReset();
+  }
+}
+
 // Auction state
 let auctionState = null;
 // {ci, currentBid, leaderId, round, bids:{pidx: amount}, timer, phase}
@@ -1442,22 +1514,13 @@ function landCell(pidx,roll) {
   if(G.phase!=='gameover')G.phase='roll';
 }
 
-// 🔥 봇 턴 무한 대기 방지용 타이머 변수 추가
-let botWatchdog = null;
-
 function nextTurn() {
   if(G.phase==='gameover')return;
-  
-  // 턴이 넘어가면 무조건 타이머 초기화 (안전장치 해제)
-  if(botWatchdog) { 
-    clearTimeout(botWatchdog); 
-    botWatchdog = null; 
-  }
-  
   const n=G.players.length;
   let nxt=(G.turn+1)%n,att=0;
   while(G.players[nxt].bankrupt&&att<n){nxt=(nxt+1)%n;att++;}
   G.turn=nxt;G.phase='roll';G.doubles=0;
+  watchdogReset();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1675,12 +1738,8 @@ function respondTrade(accept) {
     log(`❌ ${to.name} 거래 거절`,'trade');
     toast(`❌ 거래 거절`,'lose');
     butler('trade_no');
-    G.trade=null;G.phase='roll';renderAll();
   }
-  
-  if (G.players[G.turn].is_bot) {
-    setTimeout(checkBotTurn, 500);
-  }
+  G.trade=null;G.phase='roll';renderAll();
 }
 
 function cancelTrade() {
@@ -1857,6 +1916,7 @@ function spawnScreenFlash(colorRgba) {
 function doRoll() {
   if(!G||animating)return;
   animating=true;
+  watchdogReset(); // 플레이어가 주사위를 굴릴 때 리셋
   const p=G.players[G.turn];
   let {d1,d2}=rollDice();
   let total=d1+d2;
@@ -1977,23 +2037,7 @@ function doCasino(bet) {
 function checkBotTurn() {
   if(!G||G.phase==='gameover')return;
   const p=G.players[G.turn];
-  
-  if(p.is_bot&&!p.bankrupt) {
-    // 🔥 워치독 가동: 10초(10000ms)가 지나도 봇 턴이면 강제로 턴 종료시킴
-    botWatchdog = setTimeout(() => {
-      if (G && G.turn === G.players.indexOf(p) && G.phase !== 'gameover') {
-        G.trade = null;
-        G.auction = null;
-        G.pending_card = null;
-        log(`⚠️ ${p.name} 처리 지연으로 강제 턴 종료!`, 'lose'); // 로그창에 빨간 글씨로 띄움
-        nextTurn();
-        renderAll();
-        setTimeout(checkBotTurn, 500);
-      }
-    }, 10000);
-
-    doBotTurn();
-  }
+  if(p.is_bot&&!p.bankrupt)doBotTurn();
 }
 
 function doBotTurn() {
@@ -2001,8 +2045,9 @@ function doBotTurn() {
     if(!G||G.phase==='gameover')return;
     const pidx=G.turn,p=G.players[pidx];
     if(!p.is_bot||p.bankrupt)return;
+    watchdogReset(); // AI가 실제로 처리 시작할 때 리셋
 
-    // 능력 사용
+    // Bot ability
     if(!p.ability_used&&Math.random()<0.3){
       const key=p.char.abilityKey;
       if(key==='tax_immune')p._tax_immune=true;
@@ -2011,7 +2056,7 @@ function doBotTurn() {
       p.ability_used=true;
     }
 
-    // 협상 제안
+    // Trade initiation (hard bots occasionally)
     if(G.diff==='hard'&&G.phase==='roll'&&Math.random()<0.06){
       const tradeTarget=alive().find((o,i)=>G.players.indexOf(o)!==pidx&&!o.is_bot);
       if(tradeTarget){
@@ -2026,7 +2071,10 @@ function doBotTurn() {
           const from=G.players[pidx],to=G.players[tidx];
           log(`🤝 ${from.name}이 ${to.name}에게 거래 제안!`,'trade');
           if(!to.is_bot){
-            renderAll();return; // 사람이 수락/거절할 때까지 대기
+            renderAll();
+            // watchdog이 trade_respond 상태를 감지해 7초 후 자동 취소하도록 타이머 리셋
+            watchdogReset();
+            return; // human responds
           } else {
             const accepted=botEvaluateTrade(G.trade);
             if(accepted){executeTrade(G.trade);toast(`🤝 거래 성사!`,'trade');}
@@ -2036,7 +2084,6 @@ function doBotTurn() {
       }
     }
 
-    // 블랙홀(감옥) 탈출 로직
     if(p.jail_turns>0&&G.phase==='roll'){
       if(G.diff==='hard'&&p.money>=JAIL_BAIL){
         p.money-=JAIL_BAIL;p.jail_turns=0;log(`💰 ${p.name} 보석금!`,'lose');renderAll();setTimeout(()=>doBotRoll(pidx),400);
@@ -2045,29 +2092,11 @@ function doBotTurn() {
         G.d1=d1;G.d2=d2;
         if(isDouble){
           p.jail_turns=0;log(`🎉 ${p.name} 더블 탈출!`);renderAll();
-          animateMove(pidx,p.pos,(p.pos+total)%40,()=>{
-            movePlayer(pidx,total);landCell(pidx,total);
-            const phaseBefore = G.phase;
-            botDecide(pidx);
-            if(phaseBefore === 'casino' || G.phase === 'auction') return;
-            if(G.phase!=='gameover')nextTurn();renderAll();
-            G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);
-          });
+          animateMove(pidx,p.pos,(p.pos+total)%40,()=>{movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});
         } else {
           p.jail_turns--;log(`😔 ${p.name} 더블 실패`);
-          if(p.jail_turns<=0){
-            p.jail_turns=0;renderAll();
-            animateMove(pidx,p.pos,(p.pos+total)%40,()=>{
-              movePlayer(pidx,total);landCell(pidx,total);
-              const phaseBefore = G.phase;
-              botDecide(pidx);
-              if(phaseBefore === 'casino' || G.phase === 'auction') return;
-              if(G.phase!=='gameover')nextTurn();renderAll();
-              G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);
-            });
-          } else {
-            nextTurn();renderAll();setTimeout(checkBotTurn,500);
-          }
+          if(p.jail_turns<=0){p.jail_turns=0;renderAll();animateMove(pidx,p.pos,(p.pos+total)%40,()=>{movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}
+          else{nextTurn();renderAll();setTimeout(checkBotTurn,500);}
         }
       }
       return;
@@ -2100,13 +2129,7 @@ function doBotRoll(pidx) {
   renderAll();const from=p.pos;
   setTimeout(()=>{
     animateMove(pidx,from,(from+total)%40,()=>{
-      movePlayer(pidx,total);landCell(pidx,total);
-      
-      const phaseBefore = G.phase;
-      botDecide(pidx);
-      
-      if(phaseBefore === 'casino' || G.phase === 'auction') return;
-      
+      movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);
       if(!isDouble&&G.phase!=='gameover')nextTurn();renderAll();
       if(G.phase==='gameover')showGameOver();
       else if(isDouble&&G.phase==='roll')setTimeout(()=>doBotRoll(pidx),800);
@@ -2522,7 +2545,7 @@ function renderLog(){
   el.innerHTML=G.log.slice(0,60).map(e=>`<div class="log-row log-${e.style||''}">${e.msg}</div>`).join('');
 }
 
-function renderAll(){if(!G)return;renderBoard();renderTokens();renderDiceCenter();renderPlayers();renderAction();renderLog();}
+function renderAll(){if(!G)return;watchdogReset();renderBoard();renderTokens();renderDiceCenter();renderPlayers();renderAction();renderLog();}
 
 // ═══════════════════════════════════════════════════════════
 //  TOOLTIP
@@ -2610,12 +2633,17 @@ function startGame(){
     log('🔨 경매 시스템 활성화 · 🤝 협상 시스템 활성화');
     log('✨ 캐릭터 능력과 협상으로 세계를 정복하세요!');
     renderAll();
+    // 워치독 시작
+    watchdogReset();
+    if(_wdTimer)clearInterval(_wdTimer);
+    _wdTimer=setInterval(watchdogTick,1000);
     setTimeout(checkBotTurn,1000);
   },60);
 }
 
 function showGameOver(){
   if(!G||!G.winner)return;
+  if(_wdTimer){clearInterval(_wdTimer);_wdTimer=null;}
   const winnerP=G.players[G.winnerIdx];
   playSound('win');
   document.getElementById('winner-avatar').textContent=winnerP.char.emoji;
@@ -2632,6 +2660,7 @@ function showGameOver(){
 
 function resetToChar(){
   G=null;mgrOpen=false;animating=false;selectedChar=null;auctionState=null;tradeState=null;
+  if(_wdTimer){clearInterval(_wdTimer);_wdTimer=null;}
   document.getElementById('gameover').style.display='none';
   document.getElementById('game').style.display='none';
   document.getElementById('setup').style.display='none';
