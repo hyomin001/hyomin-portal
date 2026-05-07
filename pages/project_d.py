@@ -1665,8 +1665,12 @@ function respondTrade(accept) {
     log(`❌ ${to.name} 거래 거절`,'trade');
     toast(`❌ 거래 거절`,'lose');
     butler('trade_no');
+    G.trade=null;G.phase='roll';renderAll();
   }
-  G.trade=null;G.phase='roll';renderAll();
+  
+  if (G.players[G.turn].is_bot) {
+    setTimeout(checkBotTurn, 500);
+  }
 }
 
 function cancelTrade() {
@@ -1972,7 +1976,7 @@ function doBotTurn() {
     const pidx=G.turn,p=G.players[pidx];
     if(!p.is_bot||p.bankrupt)return;
 
-    // Bot ability
+    // 능력 사용
     if(!p.ability_used&&Math.random()<0.3){
       const key=p.char.abilityKey;
       if(key==='tax_immune')p._tax_immune=true;
@@ -1981,7 +1985,7 @@ function doBotTurn() {
       p.ability_used=true;
     }
 
-    // Trade initiation (hard bots occasionally)
+    // 협상 제안
     if(G.diff==='hard'&&G.phase==='roll'&&Math.random()<0.06){
       const tradeTarget=alive().find((o,i)=>G.players.indexOf(o)!==pidx&&!o.is_bot);
       if(tradeTarget){
@@ -1996,7 +2000,7 @@ function doBotTurn() {
           const from=G.players[pidx],to=G.players[tidx];
           log(`🤝 ${from.name}이 ${to.name}에게 거래 제안!`,'trade');
           if(!to.is_bot){
-            renderAll();return; // human responds
+            renderAll();return; // 사람이 수락/거절할 때까지 대기
           } else {
             const accepted=botEvaluateTrade(G.trade);
             if(accepted){executeTrade(G.trade);toast(`🤝 거래 성사!`,'trade');}
@@ -2006,6 +2010,7 @@ function doBotTurn() {
       }
     }
 
+    // 블랙홀(감옥) 탈출 로직
     if(p.jail_turns>0&&G.phase==='roll'){
       if(G.diff==='hard'&&p.money>=JAIL_BAIL){
         p.money-=JAIL_BAIL;p.jail_turns=0;log(`💰 ${p.name} 보석금!`,'lose');renderAll();setTimeout(()=>doBotRoll(pidx),400);
@@ -2014,11 +2019,29 @@ function doBotTurn() {
         G.d1=d1;G.d2=d2;
         if(isDouble){
           p.jail_turns=0;log(`🎉 ${p.name} 더블 탈출!`);renderAll();
-          animateMove(pidx,p.pos,(p.pos+total)%40,()=>{movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});
+          animateMove(pidx,p.pos,(p.pos+total)%40,()=>{
+            movePlayer(pidx,total);landCell(pidx,total);
+            const phaseBefore = G.phase;
+            botDecide(pidx);
+            if(phaseBefore === 'casino' || G.phase === 'auction') return;
+            if(G.phase!=='gameover')nextTurn();renderAll();
+            G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);
+          });
         } else {
           p.jail_turns--;log(`😔 ${p.name} 더블 실패`);
-          if(p.jail_turns<=0){p.jail_turns=0;renderAll();animateMove(pidx,p.pos,(p.pos+total)%40,()=>{movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);if(G.phase!=='gameover')nextTurn();renderAll();G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);});}
-          else{nextTurn();renderAll();setTimeout(checkBotTurn,500);}
+          if(p.jail_turns<=0){
+            p.jail_turns=0;renderAll();
+            animateMove(pidx,p.pos,(p.pos+total)%40,()=>{
+              movePlayer(pidx,total);landCell(pidx,total);
+              const phaseBefore = G.phase;
+              botDecide(pidx);
+              if(phaseBefore === 'casino' || G.phase === 'auction') return;
+              if(G.phase!=='gameover')nextTurn();renderAll();
+              G.phase==='gameover'?showGameOver():setTimeout(checkBotTurn,600);
+            });
+          } else {
+            nextTurn();renderAll();setTimeout(checkBotTurn,500);
+          }
         }
       }
       return;
@@ -2051,7 +2074,13 @@ function doBotRoll(pidx) {
   renderAll();const from=p.pos;
   setTimeout(()=>{
     animateMove(pidx,from,(from+total)%40,()=>{
-      movePlayer(pidx,total);landCell(pidx,total);botDecide(pidx);
+      movePlayer(pidx,total);landCell(pidx,total);
+      
+      const phaseBefore = G.phase;
+      botDecide(pidx);
+      
+      if(phaseBefore === 'casino' || G.phase === 'auction') return;
+      
       if(!isDouble&&G.phase!=='gameover')nextTurn();renderAll();
       if(G.phase==='gameover')showGameOver();
       else if(isDouble&&G.phase==='roll')setTimeout(()=>doBotRoll(pidx),800);
