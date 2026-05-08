@@ -6,7 +6,7 @@ import logging
 import time as _time
 from utils.config import (
     KST, USERS_FILE, COMMENTS_FILE, MARKET_FILE, TXLOG_FILE,
-    REALESTATE_MARKET_FILE, CLAN_FILE, STATS_FILE, estate_config
+    REALESTATE_MARKET_FILE, CLAN_FILE, STATS_FILE, LEADERBOARD_FILE, estate_config
 )
 
 @st.cache_resource
@@ -216,3 +216,61 @@ def get_user_clan(uid):
 def save_market(data):
     """시장 전체 데이터 저장"""
     save_db(MARKET_FILE, data)
+
+
+# ══════════════════════════════════════════════════════════════
+# 🏆 전역 명예의 전당 (Global Leaderboard)  A~I 전 게임 공통
+# 구조: { "game_id": { "top_user": str, "top_score": int, "date": str } }
+# ══════════════════════════════════════════════════════════════
+
+_GAME_META = {
+    "academy":       {"name": "AI 아카데미",        "fmt": lambda s: f"{s:,}점"},
+    "zombie_war":    {"name": "좀비 전쟁",           "fmt": lambda s: f"{s:,}점"},
+    "terminal":      {"name": "THE TERMINAL",        "fmt": lambda s: f"{s:,}점"},
+    "invest_marble": {"name": "인베스트마블",         "fmt": lambda s: f"₩{s:,}"},
+    "dungeon":       {"name": "던전 런 REBORN",       "fmt": lambda s: f"{s:,}점"},
+    "racing":        {"name": "네온 도주 레이싱",     "fmt": lambda s: f"{s:,}점"},
+    "zombie":        {"name": "좀비 아포칼립스",      "fmt": lambda s: f"{s:,}킬"},
+    "fighter":       {"name": "스트리트 파이터 EX",   "fmt": lambda s: f"{s:,}점"},
+    "sniper":        {"name": "라인 배틀 저격전",     "fmt": lambda s: f"{s:,}킬"},
+}
+
+def get_game_meta(game_id: str) -> dict:
+    return _GAME_META.get(game_id, {"name": game_id, "fmt": lambda s: f"{s:,}점"})
+
+def load_leaderboard() -> dict:
+    """전역 리더보드 로드"""
+    return load_db(LEADERBOARD_FILE, {})
+
+def save_leaderboard(data: dict):
+    """전역 리더보드 저장"""
+    save_db(LEADERBOARD_FILE, data)
+
+def update_leaderboard(game_id: str, user_name: str, score) -> bool:
+    """
+    게임 종료 시 호출 — 현재 유저 점수가 기존 1위보다 높으면 갱신.
+    반환값: True = 신규 1위 달성, False = 기록 미달성
+    """
+    try:
+        lb = load_leaderboard()
+        prev = lb.get(game_id, {})
+        if score > prev.get("top_score", -1):
+            lb[game_id] = {
+                "top_user":  user_name,
+                "top_score": score,
+                "date":      datetime.now(KST).strftime("%Y-%m-%d"),
+            }
+            save_leaderboard(lb)
+            return True
+        return False
+    except Exception as e:
+        logging.error(f"[update_leaderboard] {game_id} 업데이트 실패: {e}")
+        return False
+
+def format_leaderboard_score(game_id: str, score) -> str:
+    """게임별 단위에 맞게 점수를 포맷팅"""
+    meta = get_game_meta(game_id)
+    try:
+        return meta["fmt"](int(score))
+    except Exception:
+        return str(score)
