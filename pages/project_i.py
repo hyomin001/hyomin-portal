@@ -6,14 +6,17 @@ GAME_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>스나이퍼 엘리트 v5 — 전선 돌파</title>
+<title>Age of War — 전선 돌파 저격전</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Rajdhani:wght@500;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{--red:#ff2244;--grn:#00ff88;--gold:#f5c518;--cyan:#00d4ff;--bg:#06080a;--blue:#4488ff;}
-html,body{width:100%;height:100vh;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;cursor:crosshair;}
+html,body{width:100%;height:100vh;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;cursor:none;}
 #root{position:relative;width:100%;height:100vh;overflow:hidden;}
 canvas{display:block;}
+
+/* ── CUSTOM CURSOR (숨기고 캔버스에서 그림) ── */
+* { cursor: none !important; }
 
 /* ── CTRL BAR ── */
 #ctrl-bar{position:absolute;top:0;left:0;right:0;z-index:200;background:rgba(0,0,0,.92);border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:center;align-items:center;gap:10px;padding:3px 10px;font-size:9px;color:#556;flex-wrap:wrap;}
@@ -69,16 +72,11 @@ canvas{display:block;}
 #cover-btn{position:absolute;bottom:14px;right:10px;z-index:100;background:rgba(0,0,0,.8);border:1px solid rgba(0,255,136,.25);border-radius:7px;padding:5px 13px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#00ff88;cursor:pointer;letter-spacing:1px;user-select:none;transition:all .12s;}
 #cover-btn.active{background:rgba(0,255,136,.12);border-color:#00ff88;box-shadow:0 0 12px rgba(0,255,136,.35);}
 
-/* ── SCOPE OVERLAY ── */
-#scope-wrap{position:absolute;inset:0;z-index:60;pointer-events:none;display:none;}
-#scope-mask{position:absolute;inset:0;background:rgba(0,0,0,.97);}
-#scope-lens-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);}
-#scope-canvas{display:block;border-radius:50%;}
-#scope-svg{position:absolute;top:0;left:0;pointer-events:none;}
-#scope-vignette{position:absolute;border-radius:50%;inset:0;background:radial-gradient(circle,transparent 60%,rgba(0,0,0,.7) 100%);pointer-events:none;}
-#scope-outer{position:absolute;border-radius:50%;border:3px solid rgba(0,255,100,.3);box-shadow:0 0 0 1px rgba(0,255,100,.1),0 0 30px rgba(0,255,100,.15),0 0 0 9999px rgba(0,0,0,.97);}
-#scope-info{position:absolute;bottom:18%;left:50%;transform:translateX(-50%);font-family:'Rajdhani',sans-serif;font-size:10px;color:rgba(0,255,100,.7);letter-spacing:2px;text-align:center;white-space:nowrap;}
-#breath-wrap{position:absolute;bottom:12%;left:50%;transform:translateX(-50%);width:140px;}
+/* ── SCOPE MODE — 전체화면 오버레이 방식 ── */
+/* 스코프는 캔버스 위에 직접 그려지므로 별도 DOM 없음 */
+#scope-info-hud{position:absolute;bottom:60px;right:10px;z-index:110;pointer-events:none;display:none;flex-direction:column;align-items:flex-end;gap:3px;}
+#scope-info-hud .si{font-family:'Rajdhani',sans-serif;font-size:10px;color:rgba(0,255,100,.8);letter-spacing:2px;text-align:right;}
+#breath-wrap{position:absolute;bottom:46px;right:10px;z-index:110;pointer-events:none;display:none;width:140px;}
 #breath-lbl{font-size:7px;color:#334;text-align:center;margin-bottom:2px;letter-spacing:1px;}
 #breath-track{height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
 #breath-fill{height:100%;background:#00ff88;transition:width .05s;}
@@ -115,6 +113,12 @@ canvas{display:block;}
 #war-cry{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);z-index:240;font-family:'Black Han Sans',sans-serif;font-size:1.5rem;color:#00ff88;text-shadow:0 0 18px rgba(0,255,136,.9),0 0 40px rgba(0,255,136,.4);pointer-events:none;opacity:0;transition:opacity .25s;letter-spacing:4px;white-space:nowrap;text-align:center;}
 #war-cry.show{opacity:1;}
 
+/* ── AGE BANNER ── */
+#age-banner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.7);opacity:0;z-index:260;pointer-events:none;text-align:center;transition:all .3s;}
+#age-banner.show{transform:translate(-50%,-50%) scale(1);opacity:1;}
+.ab-title{font-family:'Black Han Sans',sans-serif;font-size:2rem;letter-spacing:6px;text-shadow:0 0 40px currentColor;}
+.ab-sub{font-size:.8rem;letter-spacing:3px;margin-top:5px;opacity:.8;}
+
 /* ── MISSION SCREEN ── */
 #mission-ov{position:absolute;inset:0;z-index:300;background:radial-gradient(ellipse at 50% 30%,#0a1a0a,#050a05 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;}
 .mo-title{font-family:'Black Han Sans',sans-serif;font-size:2rem;color:var(--gold);letter-spacing:8px;text-shadow:0 0 30px rgba(245,197,24,.5);margin-bottom:3px;}
@@ -148,31 +152,28 @@ canvas{display:block;}
 /* ── SUMMON BURST EFFECT ── */
 .summon-burst{position:fixed;pointer-events:none;border-radius:50%;border:2px solid #00ff88;animation:sburst .5s ease-out forwards;z-index:500;}
 @keyframes sburst{from{transform:scale(0.2);opacity:1}to{transform:scale(2.5);opacity:0}}
+
+/* ── AGE INDICATOR ── */
+#age-indicator{position:absolute;top:68px;left:130px;z-index:110;pointer-events:none;font-family:'Black Han Sans',sans-serif;font-size:10px;letter-spacing:2px;padding:3px 10px;border-radius:4px;border:1px solid currentColor;opacity:.85;}
 </style>
 </head>
 <body>
 <div id="root">
 <canvas id="gc"></canvas>
 
-<!-- SCOPE -->
-<div id="scope-wrap">
-  <div id="scope-mask"></div>
-  <div id="scope-lens-wrap">
-    <canvas id="scope-canvas"></canvas>
-    <svg id="scope-svg" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div id="scope-vignette"></div>
-    <div id="scope-outer"></div>
-  </div>
-  <div id="scope-info"></div>
-  <div id="breath-wrap">
-    <div id="breath-lbl">BREATH HOLD</div>
-    <div id="breath-track"><div id="breath-fill" style="width:100%"></div></div>
-  </div>
+<!-- SCOPE INFO HUD (DOM, 스코프 켤 때만 표시) -->
+<div id="scope-info-hud">
+  <div class="si" id="si-dist">---m</div>
+  <div class="si" id="si-ammo">--/--</div>
+</div>
+<div id="breath-wrap">
+  <div id="breath-lbl">BREATH HOLD</div>
+  <div id="breath-track"><div id="breath-fill" style="width:100%"></div></div>
 </div>
 
 <div id="ctrl-bar">
   <span><b>클릭/SPACE</b> 발사</span><span>|</span>
-  <span><b>우클릭/Z</b> 스코프</span><span>|</span>
+  <span><b>우클릭/Z</b> 스코프(마우스=조준점)</span><span>|</span>
   <span><b>C</b> 엄폐</span><span>|</span>
   <span><b>R</b> 재장전</span><span>|</span>
   <span><b>SHIFT</b> 숨참기</span><span>|</span>
@@ -194,6 +195,9 @@ canvas{display:block;}
     </div>
   </div>
 </div>
+
+<!-- AGE INDICATOR -->
+<div id="age-indicator"></div>
 
 <!-- AMMO STRIP -->
 <div id="ammo-strip"></div>
@@ -226,13 +230,14 @@ canvas{display:block;}
 <div id="warning-flash"></div>
 <div id="det-banner">💥 발각됨!</div>
 <div id="war-cry"></div>
+<div id="age-banner"><div class="ab-title" id="ab-title"></div><div class="ab-sub" id="ab-sub"></div></div>
 <div id="toast-wrap"></div>
 <div id="killfeed"></div>
 
 <!-- MISSION -->
 <div id="mission-ov">
-  <div class="mo-title">🎯 스나이퍼 엘리트</div>
-  <div class="mo-sub">FRONTLINE BREACH v5 — 전선 돌파 작전</div>
+  <div class="mo-title">⚔️ AGE of WAR — 저격 지원</div>
+  <div class="mo-sub">전쟁의 시대 · 라인 배틀 + 스나이퍼 지원</div>
   <div class="mission-grid" id="mission-grid"></div>
   <button class="mo-start" id="mo-start-btn" disabled onclick="startMission()">작전 개시 ▶</button>
 </div>
@@ -252,60 +257,46 @@ canvas{display:block;}
 <script>
 'use strict';
 // ══════════════════════════════════════════════════════
-//  스나이퍼 엘리트 v5 — 전선 돌파 (10라운드 + 아군 소환)
+//  AGE of WAR — 전선 라인배틀 + 스나이퍼 지원
+//  스코프: 마우스 커서 = 조준점 정중앙 (캔버스 직접 렌더링)
 // ══════════════════════════════════════════════════════
 const canvas = document.getElementById('gc');
 const ctx    = canvas.getContext('2d');
-const scvs   = document.getElementById('scope-canvas');
-const sCtx   = scvs.getContext('2d');
-const SCOPE_R = 170;
 let GW = window.innerWidth, GH = window.innerHeight;
 canvas.width = GW; canvas.height = GH;
-scvs.width = SCOPE_R*2; scvs.height = SCOPE_R*2;
 
-// Scope DOM sizing
-const lw = document.getElementById('scope-lens-wrap');
-lw.style.width = lw.style.height = (SCOPE_R*2)+'px';
-const so = document.getElementById('scope-outer');
-so.style.width = so.style.height = (SCOPE_R*2)+'px';
-const ss = document.getElementById('scope-svg');
-ss.setAttribute('width',SCOPE_R*2); ss.setAttribute('height',SCOPE_R*2);
-ss.setAttribute('viewBox',`0 0 ${SCOPE_R*2} ${SCOPE_R*2}`);
-(()=>{
-  const R=SCOPE_R,S=SCOPE_R*2;
-  ss.innerHTML=`
-    <circle cx="${R}" cy="${R}" r="${R-2}" stroke="rgba(0,255,100,.2)" stroke-width="1" fill="none"/>
-    <line x1="0" y1="${R}" x2="${R-30}" y2="${R}" stroke="rgba(0,255,100,.75)" stroke-width=".9"/>
-    <line x1="${R+30}" y1="${R}" x2="${S}" y2="${R}" stroke="rgba(0,255,100,.75)" stroke-width=".9"/>
-    <line x1="${R}" y1="0" x2="${R}" y2="${R-30}" stroke="rgba(0,255,100,.75)" stroke-width=".9"/>
-    <line x1="${R}" y1="${R+30}" x2="${R}" y2="${S}" stroke="rgba(0,255,100,.75)" stroke-width=".9"/>
-    <circle cx="${R}" cy="${R}" r="3" stroke="rgba(0,255,100,.9)" stroke-width=".9" fill="none"/>
-    <line x1="${R-26}" y1="${R+20}" x2="${R+26}" y2="${R+20}" stroke="rgba(0,255,100,.25)" stroke-width=".7"/>
-    <line x1="${R-26}" y1="${R-20}" x2="${R+26}" y2="${R-20}" stroke="rgba(0,255,100,.25)" stroke-width=".7"/>
-  `;
-})();
-
-// ── ALLY UNIT TYPES (소환 가능 병력) ──────────────────
-const ALLY_UNITS = [
-  { id:'infantry', name:'보병',    cost:15,  key:'1', ico:'🪖', hp:80,  fireRate:1.2, dmg:14, speed:0.25, effect:'일반 보병 소환',   color:'#2255aa' },
-  { id:'assault',  name:'돌격대',  cost:30,  key:'2', ico:'⚔️', hp:60,  fireRate:0.5, dmg:8,  speed:0.45, effect:'빠른 돌격병',     color:'#4488ff' },
-  { id:'heavy',    name:'중화기',  cost:50,  key:'3', ico:'💪', hp:180, fireRate:2.0, dmg:22, speed:0.10, effect:'고체력 화력지원',  color:'#8844ff' },
-  { id:'medic',    name:'의무병',  cost:25,  key:'4', ico:'🏥', hp:70,  fireRate:3.0, dmg:5,  speed:0.20, effect:'아군 HP 소량 회복', color:'#00ffaa', isHeal:true },
-  { id:'sniper_a', name:'아군저격', cost:45,  key:'5', ico:'🎯', hp:50,  fireRate:3.5, dmg:80, speed:0.12, effect:'고데미지 저격병', color:'#aaff44' },
+// ── 시대(AGE) 정의 — Age of War 스타일 ────────────────
+const AGES = [
+  { id:0, name:'석기 시대',    color:'#aa8844', bgSky:['#1a1208','#2a1e10'], bgGnd:['#1a1008','#0e0a04'], unitStyle:'primitive'  },
+  { id:1, name:'고대 시대',    color:'#cc9922', bgSky:['#0a1220','#1a2030'], bgGnd:['#181408','#0e0c04'], unitStyle:'ancient'    },
+  { id:2, name:'중세 시대',    color:'#8899aa', bgSky:['#060e1a','#0e182a'], bgGnd:['#0e1208','#080e04'], unitStyle:'medieval'   },
+  { id:3, name:'르네상스',     color:'#aa6622', bgSky:['#081420','#102030'], bgGnd:['#0a1004','#080c04'], unitStyle:'renaissance'},
+  { id:4, name:'산업 혁명',    color:'#888888', bgSky:['#060808','#0e1010'], bgGnd:['#080808','#040404'], unitStyle:'industrial' },
+  { id:5, name:'근현대전',     color:'#445566', bgSky:['#04080a','#080f12'], bgGnd:['#060a04','#040804'], unitStyle:'modern'     },
+  { id:6, name:'SF 미래전',    color:'#0088ff', bgSky:['#020408','#040810'], bgGnd:['#020408','#020406'], unitStyle:'future'     },
 ];
 
-// ── MISSIONS (10라운드) ────────────────────────────────
+// ── 병력 유닛 정의 (시대별 외관 변화) ─────────────────
+const ALLY_UNITS = [
+  { id:'warrior',  name:'전사',    cost:15, key:'1', ico:'⚔️', hp:90,  fireRate:1.4, dmg:16, speed:0.28, effect:'기본 근접 전사',   color:'#2255aa' },
+  { id:'archer',   name:'궁수',    cost:20, key:'2', ico:'🏹', hp:55,  fireRate:1.0, dmg:12, speed:0.20, effect:'원거리 공격수',    color:'#44aa22' },
+  { id:'knight',   name:'기사',    cost:40, key:'3', ico:'🛡️', hp:220, fireRate:1.8, dmg:28, speed:0.12, effect:'고체력 방패전사', color:'#8844ff' },
+  { id:'medic',    name:'의무병',  cost:25, key:'4', ico:'🏥', hp:70,  fireRate:3.0, dmg:5,  speed:0.18, effect:'아군 HP 회복',     color:'#00ffaa', isHeal:true },
+  { id:'sniper_a', name:'아군저격', cost:45, key:'5', ico:'🎯', hp:55,  fireRate:3.8, dmg:90, speed:0.10, effect:'고데미지 저격병',  color:'#aaff44' },
+];
+
+// ── 미션 정의 (시대 진행 포함) ────────────────────────
 const MISSIONS = [
-  { id:1, name:'도강 엄호',     diff:'⭐',           timeLimit:100, startLine:500, allyN:6,  enemyN:8,  reward:3_000_000,  resource:60,  keyTargets:[{type:'mg',n:1}],                            desc:'기관총 1정을 제거해 도강로를 열어라.' },
-  { id:2, name:'고지 탈환',     diff:'⭐⭐',          timeLimit:120, startLine:520, allyN:8,  enemyN:12, reward:8_000_000,  resource:70,  keyTargets:[{type:'mg',n:2},{type:'officer',n:1}],       desc:'기관총 2정·장교 제거.' },
-  { id:3, name:'시가전',        diff:'⭐⭐⭐',         timeLimit:150, startLine:540, allyN:10, enemyN:18, reward:18_000_000, resource:80,  keyTargets:[{type:'mg',n:2},{type:'officer',n:2},{type:'sniper_e',n:1}], desc:'적 저격수·지휘관 우선 제압.' },
-  { id:4, name:'포위망 탈출',   diff:'⭐⭐⭐⭐',        timeLimit:180, startLine:560, allyN:7,  enemyN:25, reward:40_000_000, resource:90,  keyTargets:[{type:'mg',n:3},{type:'officer',n:2},{type:'sniper_e',n:2}], desc:'수적 열세를 정밀 저격으로 극복.' },
-  { id:5, name:'사령부 공략',   diff:'⭐⭐⭐⭐⭐',       timeLimit:200, startLine:580, allyN:12, enemyN:30, reward:80_000_000, resource:100, keyTargets:[{type:'mg',n:3},{type:'officer',n:3},{type:'sniper_e',n:2},{type:'general',n:1}], desc:'총사령관 처치 시 적군 패주.' },
-  { id:6, name:'핵 시설 탈취',  diff:'⭐⭐⭐⭐⭐',       timeLimit:220, startLine:600, allyN:9,  enemyN:35, reward:130_000_000,resource:110, keyTargets:[{type:'mg',n:4},{type:'officer',n:3},{type:'sniper_e',n:3},{type:'general',n:1}], desc:'핵 시설 제압. 지휘부 전멸.' },
-  { id:7, name:'도심 저항군',   diff:'💀 극한',       timeLimit:240, startLine:620, allyN:8,  enemyN:40, reward:200_000_000,resource:120, keyTargets:[{type:'mg',n:4},{type:'officer',n:4},{type:'sniper_e',n:3},{type:'general',n:2}], desc:'도심 전투. 민간인 피해 주의.' },
-  { id:8, name:'해안 교두보',   diff:'💀 극한',       timeLimit:260, startLine:640, allyN:14, enemyN:45, reward:350_000_000,resource:130, keyTargets:[{type:'mg',n:5},{type:'officer',n:4},{type:'sniper_e',n:4},{type:'general',n:2}], desc:'해안 상륙 엄호. 대규모 전투.' },
-  { id:9, name:'결전의 전야',   diff:'🔥 전설',       timeLimit:280, startLine:660, allyN:10, enemyN:55, reward:600_000_000,resource:140, keyTargets:[{type:'mg',n:5},{type:'officer',n:5},{type:'sniper_e',n:5},{type:'general',n:3}], desc:'전쟁의 끝이 보인다. 마지막 대전.' },
-  { id:10,name:'작전: 오메가', diff:'⚡ 신화',        timeLimit:300, startLine:680, allyN:12, enemyN:65, reward:1_000_000_000,resource:150, keyTargets:[{type:'mg',n:6},{type:'officer',n:5},{type:'sniper_e',n:5},{type:'general',n:4}], desc:'최후의 작전. 세계의 운명이 걸려있다.' },
+  { id:1,  name:'부족 전쟁',      diff:'⭐',      timeLimit:100, startLine:500, allyN:6,  enemyN:8,  reward:3_000_000,   resource:60,  ageId:0, keyTargets:[{type:'mg',n:1}],                            desc:'석기 부족의 침략을 막아라.' },
+  { id:2,  name:'성벽 공방',      diff:'⭐⭐',     timeLimit:120, startLine:515, allyN:8,  enemyN:12, reward:8_000_000,   resource:70,  ageId:1, keyTargets:[{type:'mg',n:2},{type:'officer',n:1}],       desc:'고대 성곽 전투. 장교를 노려라.' },
+  { id:3,  name:'십자군 원정',    diff:'⭐⭐⭐',    timeLimit:150, startLine:530, allyN:10, enemyN:18, reward:18_000_000,  resource:80,  ageId:2, keyTargets:[{type:'mg',n:2},{type:'officer',n:2},{type:'sniper_e',n:1}], desc:'중세 전장. 적 궁병을 제거하라.' },
+  { id:4,  name:'화약 전쟁',      diff:'⭐⭐⭐⭐',   timeLimit:180, startLine:545, allyN:7,  enemyN:25, reward:40_000_000,  resource:90,  ageId:3, keyTargets:[{type:'mg',n:3},{type:'officer',n:2},{type:'sniper_e',n:2}], desc:'머스킷 소총 시대. 정밀 사격 필요.' },
+  { id:5,  name:'산업 대전',      diff:'⭐⭐⭐⭐⭐',  timeLimit:200, startLine:560, allyN:12, enemyN:30, reward:80_000_000,  resource:100, ageId:4, keyTargets:[{type:'mg',n:3},{type:'officer',n:3},{type:'sniper_e',n:2},{type:'general',n:1}], desc:'증기기관 시대. 기관총 진지를 격파.' },
+  { id:6,  name:'참호전',         diff:'⭐⭐⭐⭐⭐',  timeLimit:220, startLine:575, allyN:9,  enemyN:35, reward:130_000_000, resource:110, ageId:5, keyTargets:[{type:'mg',n:4},{type:'officer',n:3},{type:'sniper_e',n:3},{type:'general',n:1}], desc:'세계대전 참호. 기관총수를 처리하라.' },
+  { id:7,  name:'도심 침공',      diff:'💀 극한',  timeLimit:240, startLine:590, allyN:8,  enemyN:40, reward:200_000_000, resource:120, ageId:5, keyTargets:[{type:'mg',n:4},{type:'officer',n:4},{type:'sniper_e',n:3},{type:'general',n:2}], desc:'현대 도시 전투. 특수부대를 저지.' },
+  { id:8,  name:'해안 상륙작전',  diff:'💀 극한',  timeLimit:260, startLine:605, allyN:14, enemyN:45, reward:350_000_000, resource:130, ageId:5, keyTargets:[{type:'mg',n:5},{type:'officer',n:4},{type:'sniper_e',n:4},{type:'general',n:2}], desc:'해안 교두보 확보. 대규모 전투.' },
+  { id:9,  name:'미래 전쟁',      diff:'🔥 전설',  timeLimit:280, startLine:620, allyN:10, enemyN:55, reward:600_000_000, resource:140, ageId:6, keyTargets:[{type:'mg',n:5},{type:'officer',n:5},{type:'sniper_e',n:5},{type:'general',n:3}], desc:'SF 로봇 전쟁. 에너지 무기 주의.' },
+  { id:10, name:'최후의 전쟁',    diff:'⚡ 신화',  timeLimit:300, startLine:640, allyN:12, enemyN:65, reward:1_000_000_000,resource:150, ageId:6, keyTargets:[{type:'mg',n:6},{type:'officer',n:5},{type:'sniper_e',n:5},{type:'general',n:4}], desc:'세계의 운명이 걸린 최후의 전쟁.' },
 ];
 
 const ECFG = {
@@ -318,9 +309,16 @@ const ECFG = {
 
 let G=null, selMis=null, RAF, lastTs=0, gTimer=0;
 
+// ── SCOPE 상태 ─────────────────────────────────────────
+// 스코프는 별도 DOM 없이 캔버스에 직접 그린다.
+// mouseX, mouseY가 항상 조준점 중앙.
+const SCOPE_RADIUS = Math.min(GW, GH) * 0.28; // 화면 비율로 동적 설정
+let scopeR = SCOPE_RADIUS;
+
 // ── INIT ──────────────────────────────────────────────
 function initGame(midx) {
   const mis = MISSIONS[midx];
+  scopeR = Math.min(GW, GH) * 0.28;
   G = {
     midx, mis, phase:'play',
     time: mis.timeLimit,
@@ -335,25 +333,47 @@ function initGame(midx) {
     shakeX:0, shakeY:0,
     scoped:false, breathHeld:false, breathTimer:3,
     swayX:0, swayY:0, swayT:0,
-    scopeOffX:0, scopeOffY:0,
     shootCd:0, ammo:5, maxAmmo:5,
     reloading:false, reloadTimer:0, reloadDur:2.2,
     mouse:{x:GW/2, y:GH/2},
     frame:0, done:false, failReason:'',
     muzzleFlash:0,
-    // 자원 시스템
     resource: mis.resource,
     resourceMax: mis.resource,
-    resourceRegen: 4.5, // 초당 회복
-    summonCd:0, // 소환 쿨다운
-    lastSummonType: null,
+    resourceRegen: 4.5,
+    summonCd:0,
+    ageId: mis.ageId,
+    ageBannerTimer: 2.5,
+    ageBannerShown: true,
   };
-  for(let i=0;i<mis.allyN;i++) spawnAlly('infantry');
+  for(let i=0;i<mis.allyN;i++) spawnAlly('warrior');
   for(const kt of mis.keyTargets) for(let j=0;j<kt.n;j++) spawnEnemy(kt.type);
   for(let i=0;i<mis.enemyN;i++) spawnEnemy('infantry');
   buildAmmoStrip();
   buildSummonPanel();
   updateHUD();
+  // 시대 배너 표시
+  showAgeBanner(AGES[mis.ageId]);
+  updateAgeIndicator();
+}
+
+function showAgeBanner(age) {
+  const el = document.getElementById('age-banner');
+  document.getElementById('ab-title').textContent = '⚔ ' + age.name;
+  document.getElementById('ab-title').style.color = age.color;
+  document.getElementById('ab-sub').textContent = '새로운 전쟁 시대가 열렸다';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+function updateAgeIndicator() {
+  if(!G) return;
+  const age = AGES[G.ageId];
+  const el = document.getElementById('age-indicator');
+  el.textContent = '⚔ ' + age.name;
+  el.style.color = age.color;
+  el.style.borderColor = age.color;
+  el.style.textShadow = `0 0 12px ${age.color}88`;
 }
 
 // ── SPAWN ──────────────────────────────────────────────
@@ -370,8 +390,7 @@ function spawnAlly(type, targetX, targetY) {
     phase:Math.random()*Math.PI*2,
     alive:true, dying:false, deathT:0,
     walkOff:Math.random()*0.4,
-    // 소환 이동 애니메이션
-    spawnAnim:0.5, // 남은 스폰 애니메이션 시간
+    spawnAnim:0.5,
   });
 }
 
@@ -404,12 +423,10 @@ function tick(dt) {
   G.shootCd=Math.max(0,G.shootCd-dt);
   G.muzzleFlash=Math.max(0,G.muzzleFlash-dt*8);
   G.summonCd=Math.max(0,G.summonCd-dt);
-
-  // 자원 재생
   G.resource=Math.min(G.resourceMax, G.resource+G.resourceRegen*dt);
 
-  // Sway
-  const sm=G.breathHeld?0.05:G.scoped?0.4:G.coverActive?1.5:1;
+  // Sway (스코프 시 마우스가 조준점이므로 sway는 경미하게)
+  const sm=G.breathHeld?0.04:G.scoped?0.3:G.coverActive?1.2:1;
   G.swayX=(Math.sin(G.swayT*0.9)*4.5+Math.sin(G.swayT*2.3)*1.8)*sm;
   G.swayY=(Math.cos(G.swayT*0.74)*3.5+Math.cos(G.swayT*1.9)*1.5)*sm;
 
@@ -452,7 +469,6 @@ function tick(dt) {
 
   if(G.suppressionLevel>35) G.allyHP-=dt*(G.suppressionLevel-35)*0.055;
   G.allyHP=Math.max(0,Math.min(100,G.allyHP));
-
   if(G.warCryTimer>0){G.warCryTimer-=dt;if(G.warCryTimer<=0)document.getElementById('war-cry').classList.remove('show');}
   document.getElementById('muzzle-flash').style.opacity=G.muzzleFlash>0?G.muzzleFlash*0.7:0;
 
@@ -483,7 +499,6 @@ function tickFrontline(dt) {
   const aStr=Math.max(0.25,allyAlive/G.mis.allyN);
   const net=(push*aStr)-enemyPush;
   G.frontlineX=Math.max(130,Math.min(GW-80,G.frontlineX+net*dt));
-
   for(const a of G.allies){if(!a.alive)continue;a.x+=(G.frontlineX-22-Math.random()*30-a.x)*dt*1.6;}
   for(const e of G.enemies){
     if(!e.alive||e.dying||e.type==='mg')continue;
@@ -493,9 +508,8 @@ function tickFrontline(dt) {
 }
 
 function tickAllies(dt) {
-  // 자동 증원 (소수 유지)
   if(G.frame%350===0&&G.allies.filter(a=>a.alive).length<Math.max(2,Math.floor(G.mis.allyN*0.4))&&G.allyHP>15) {
-    spawnAlly('infantry');
+    spawnAlly('warrior');
   }
   for(const a of G.allies) {
     if(a.dying){a.deathT+=dt;if(a.deathT>0.7)a.alive=false;continue;}
@@ -503,11 +517,8 @@ function tickAllies(dt) {
     if(a.spawnAnim>0) a.spawnAnim-=dt;
     a.phase+=dt*2.6;
     a.fireTimer-=dt;
-    // Y 이동
     a.y+=(a.targetY-a.y)*dt*0.8;
-
     if(a.isHeal) {
-      // 의무병: 주변 아군 HP 회복
       if(a.fireTimer<=0) {
         a.fireTimer=a.fireRate;
         for(const b of G.allies) {
@@ -545,7 +556,6 @@ function tickEnemies(dt) {
     e.moveTimer-=dt;
     if(e.moveTimer<=0&&e.type!=='mg'){e.moveTimer=1.5+Math.random()*3;e.targetY=115+Math.random()*(GH-220);}
     e.y+=(e.targetY-e.y)*dt*0.9;
-
     if(e.fireTimer<=0) {
       e.fireTimer=e.type==='mg'?0.13:0.65+Math.random()*1.7;
       const na=nearestAlly(e.x,e.y);
@@ -571,10 +581,8 @@ function tickEnemies(dt) {
 
 function nearestEnemy(x,y){let b=null,d=Infinity;for(const e of G.enemies){if(!e.alive||e.dying)continue;const dd=Math.hypot(e.x-x,e.y-y);if(dd<d){d=dd;b=e;}}return b;}
 function nearestAlly(x,y){let b=null,d=Infinity;for(const a of G.allies){if(!a.alive||a.dying)continue;const dd=Math.hypot(a.x-x,a.y-y);if(dd<d){d=dd;b=a;}}return b;}
-
 function addTracer(x1,y1,x2,y2,col,isPlayer){G.tracers.push({x1,y1,x2,y2,col,isPlayer,life:isPlayer?0.22:0.1,maxLife:isPlayer?0.22:0.1});}
 function tickTracers(dt){for(let i=G.tracers.length-1;i>=0;i--){G.tracers[i].life-=dt;if(G.tracers[i].life<=0)G.tracers.splice(i,1);}}
-
 function tickParticles(dt){
   for(let i=G.particles.length-1;i>=0;i--){
     const p=G.particles[i];
@@ -582,18 +590,12 @@ function tickParticles(dt){
     if(p.life<=0)G.particles.splice(i,1);
   }
 }
-
 function addParticle(x,y,col,type){
   const cnt=type==='exp'?14:type==='blood'?7:type==='muzzle'?4:3;
   for(let i=0;i<cnt;i++){
     const spd=type==='exp'?160:type==='blood'?80:type==='muzzle'?60:40;
     const angle=Math.random()*Math.PI*2;
-    G.particles.push({
-      x,y,vx:Math.cos(angle)*spd*(0.3+Math.random()*0.7),
-      vy:Math.sin(angle)*spd*(0.3+Math.random()*0.7)-30,
-      life:type==='muzzle'?0.08+Math.random()*0.08:0.22+Math.random()*0.3,
-      col:type==='muzzle'?'#ffe066':col,r:type==='exp'?1.5+Math.random()*2.5:1,
-    });
+    G.particles.push({x,y,vx:Math.cos(angle)*spd*(0.3+Math.random()*0.7),vy:Math.sin(angle)*spd*(0.3+Math.random()*0.7)-30,life:type==='muzzle'?0.08+Math.random()*0.08:0.22+Math.random()*0.3,col:type==='muzzle'?'#ffe066':col,r:type==='exp'?1.5+Math.random()*2.5:1});
   }
 }
 
@@ -605,23 +607,22 @@ function killEnemy(e,byPlayer) {
   for(let i=0;i<3;i++) addParticle(e.x+Math.random()*12-6,e.y+Math.random()*12-6,'#442200','blood');
   if(!byPlayer)return;
   G.kills++;G.score+=e.xp;
-  // 자원 획득
   const resGain=e.key?20:5;
   G.resource=Math.min(G.resourceMax,G.resource+resGain);
   if(e.key){
     G.keyKills++;
     let push=0,cry='',kfmsg='',kfcol='#f5c518';
     switch(e.type){
-      case 'mg':    push=55;cry='아군 전진!';        kfmsg='💥 기관총 제압! 전선 전진!';  kfcol='#00ff88';showToast('기관총 처치! 아군 전진!','grn');break;
-      case 'officer':push=32;cry='장교 처치!';       kfmsg='🎖 장교 제거! 적 사기 하락!'; kfcol='#f5c518';showToast('장교 처치! 전선 약화!');break;
-      case 'general':push=95;cry='총사령관 처치!\n전면 돌파!';kfmsg='🏅 총사령관 처치!'; kfcol='#ff4400';showToast('총사령관 처치!','grn');break;
-      case 'sniper_e':push=24;cry='적 저격수 제거!';kfmsg='🎯 적 저격수 처치!';         kfcol='#00aaff';showToast('적 저격수 처치!');break;
+      case 'mg':    push=55;cry='아군 전진!';       kfmsg='💥 기관총 제압! 전선 전진!'; kfcol='#00ff88';showToast('기관총 처치! 아군 전진!','grn');break;
+      case 'officer':push=32;cry='지휘관 처치!';    kfmsg='🎖 장교 제거! 적 사기 하락!';kfcol='#f5c518';showToast('장교 처치! 전선 약화!');break;
+      case 'general':push=95;cry='총사령관 처치!\n전면 돌파!';kfmsg='🏅 총사령관 처치!';kfcol='#ff4400';showToast('총사령관 처치!','grn');break;
+      case 'sniper_e':push=24;cry='적 저격수 제거!';kfmsg='🎯 적 저격수 처치!';kfcol='#00aaff';showToast('적 저격수 처치!');break;
     }
     if(push>0)G.frontlineX=Math.min(GW-80,G.frontlineX+push);
     if(cry){const el=document.getElementById('war-cry');el.innerHTML=cry.replace('\n','<br>');el.classList.add('show');G.warCryTimer=2.2;}
     showKF(kfmsg,kfcol);
   } else {
-    showKF(`보병 처치 +${e.xp}pt`,'#666');
+    showKF(`처치 +${e.xp}pt`,'#666');
   }
 }
 
@@ -634,13 +635,11 @@ function summonUnit(unitId) {
   if(G.summonCd>0){showToast(`쿨다운 ${G.summonCd.toFixed(1)}초`,'red');return;}
   G.resource-=unit.cost;
   G.summonCd=1.5;
-  // 아군 전선 바로 뒤에 소환
   const y=115+Math.random()*(GH-220);
   const x=G.frontlineX-10-Math.random()*30;
   spawnAlly(unitId, x, y);
   showToast(`${unit.ico} ${unit.name} 소환!`,'blue');
   showKF(`🪖 ${unit.name} 소환 (-${unit.cost}자원)`,'#4488ff');
-  // 소환 버스트 효과
   const burst=document.createElement('div');
   burst.className='summon-burst';
   const r=canvas.getBoundingClientRect();
@@ -648,8 +647,7 @@ function summonUnit(unitId) {
   document.body.appendChild(burst);
   setTimeout(()=>burst.remove(),550);
   ensureAudio();sfx_summon();
-  updateHUD();
-  buildAmmoStrip();
+  updateHUD();buildAmmoStrip();
 }
 
 // ── FIRE ──────────────────────────────────────────────
@@ -666,21 +664,24 @@ function fire() {
   const crit=G.breathHeld&&Math.random()<0.25;
   const hs=crit&&Math.random()<0.45;
 
-  let aimX,aimY;
-  if(G.scoped){
-    const zoom=3.8;
-    aimX=G.mouse.x+G.scopeOffX/zoom;
-    aimY=G.mouse.y+G.scopeOffY/zoom;
-  } else {aimX=G.mouse.x;aimY=G.mouse.y;}
-  const sw=G.breathHeld?0.15:G.scoped?1.2:3.2;
-  aimX+=(Math.random()-.5)*sw*2+G.swayX*(G.scoped?0.15:0.5);
-  aimY+=(Math.random()-.5)*sw*2+G.swayY*(G.scoped?0.15:0.5);
+  // ── 핵심: 스코프 켤 때 마우스 위치 = 완전한 조준점 ──
+  // 스코프 시에는 마우스 위치가 그대로 조준점 (오프셋 없음)
+  // 일반 모드에서도 마우스 위치가 조준점
+  let aimX = G.mouse.x;
+  let aimY = G.mouse.y;
+
+  // 흔들림만 적용 (조준점 자체는 이동 없음)
+  const sw=G.breathHeld?0.08:G.scoped?0.5:2.8;
+  aimX+=(Math.random()-.5)*sw*2+G.swayX*(G.scoped?0.08:0.4);
+  aimY+=(Math.random()-.5)*sw*2+G.swayY*(G.scoped?0.08:0.4);
 
   let hit=false;
+  // 스코프 시 탐지 반경 확대 (확대됨)
+  const hitBonus = G.scoped ? 8 : 0;
   const sorted=[...G.enemies].sort((a,b)=>Math.hypot(a.x-aimX,a.y-aimY)-Math.hypot(b.x-aimX,b.y-aimY));
   for(const e of sorted){
     if(!e.alive||e.dying)continue;
-    const hitR=hs?e.sz+12:e.sz+5;
+    const hitR=hs?e.sz+14:e.sz+5+hitBonus;
     if(Math.hypot(aimX-e.x,aimY-e.y)<hitR){
       const dmg=hs?999:crit?e.sz*14+50:80+Math.random()*25;
       e.hp-=dmg;
@@ -698,6 +699,7 @@ function fire() {
     for(const e of G.enemies){if(!e.alive)continue;if(Math.hypot(aimX-e.x,aimY-e.y)<50){G.aggro=Math.min(100,G.aggro+8);break;}}
     addParticle(aimX,aimY,'#aa8844','blood');
   }
+  // 총구 불꽃 위치: 저격수 거점 (왼쪽 하단)
   addTracer(80,GH-38,aimX,aimY,'#ffffa0',true);
   if(G.ammo===0)setTimeout(startReload,250);
 }
@@ -716,8 +718,11 @@ function toggleScope(){
   if(!G||G.phase!=='play'||G.done)return;
   if(G.coverActive&&!G.scoped){showToast('엄폐 중 스코프 불가!','red');return;}
   G.scoped=!G.scoped;
-  document.getElementById('scope-wrap').style.display=G.scoped?'block':'none';
-  if(!G.scoped){G.scopeOffX=0;G.scopeOffY=0;}
+  // 스코프 HUD 토글
+  const siHud=document.getElementById('scope-info-hud');
+  const bwrap=document.getElementById('breath-wrap');
+  siHud.style.display=G.scoped?'flex':'none';
+  bwrap.style.display=G.scoped?'block':'none';
   sfx_scope(G.scoped);
 }
 
@@ -731,10 +736,8 @@ function checkEnd(){
     showResult(false);
   }
 }
-
 function grade(){const s=G.score;return s>=7000?'S':s>=3500?'A':s>=1400?'B':'C';}
 function gradeColor(){return{S:'#f5c518',A:'#00ff88',B:'#00aaff',C:'#888'}[grade()];}
-
 function showResult(win){
   G.phase='result';
   if(G.scoped)toggleScope();
@@ -762,45 +765,45 @@ function showResult(win){
     try{window.parent.postMessage({type:'sniper_result',score:Math.round(G.score),grade:g,midx:G.midx},'*');}catch(e){}
   } else sfx_fail();
 }
-
 function retryMission(){document.getElementById('result-ov').style.display='none';initGame(G.midx);}
 function gotoTitle(){document.getElementById('result-ov').style.display='none';G=null;buildTitle();document.getElementById('mission-ov').style.display='flex';}
 
-// ── DRAW ──────────────────────────────────────────────
-function drawScene(c,W,H,isScope){
-  // Sky
+// ══════════════════════════════════════════════════════
+//  DRAW — 전체 렌더링
+// ══════════════════════════════════════════════════════
+function drawScene(c, W, H, zoom, panX, panY) {
+  // zoom, panX, panY: 스코프 확대 시 사용. 기본값은 1, 0, 0
+  const z = zoom||1;
+  const age = G ? AGES[G.ageId] : AGES[0];
+
+  // 배경
   const sky=c.createLinearGradient(0,0,0,H*0.36);
-  sky.addColorStop(0,'#080f1a');sky.addColorStop(.5,'#0e1e10');sky.addColorStop(1,'#141e0c');
-  c.fillStyle=sky;c.fillRect(0,0,W,H);
-  // Ground
+  sky.addColorStop(0, age.bgSky[0]); sky.addColorStop(1, age.bgSky[1]);
+  c.fillStyle=sky; c.fillRect(0,0,W,H);
   const gnd=c.createLinearGradient(0,H*0.34,0,H);
-  gnd.addColorStop(0,'#182808');gnd.addColorStop(.4,'#10200a');gnd.addColorStop(1,'#09130a');
-  c.fillStyle=gnd;c.fillRect(0,H*0.34,W,H);
-  // Tree line
-  c.fillStyle='#0a1508';
+  gnd.addColorStop(0, age.bgGnd[0]); gnd.addColorStop(1, age.bgGnd[1]);
+  c.fillStyle=gnd; c.fillRect(0,H*0.34,W,H);
+
+  drawTreeLine(c,W,H,age);
+  drawTerrain(c,W,H,age);
+  if(G) {
+    drawFrontlineIndicator(c,W,H);
+    for(const p of G.particles){c.save();c.globalAlpha=Math.max(0,Math.min(1,p.life*3));c.fillStyle=p.col;c.beginPath();c.arc(p.x,p.y,p.r,0,Math.PI*2);c.fill();c.restore();}
+    for(const t of G.tracers){const a=t.life/t.maxLife;c.save();c.globalAlpha=a*0.85;c.strokeStyle=t.col;c.lineWidth=t.isPlayer?2.2:1.2;c.shadowColor=t.col;c.shadowBlur=t.isPlayer?10:4;c.beginPath();c.moveTo(t.x1,t.y1);c.lineTo(t.x2,t.y2);c.stroke();c.shadowBlur=0;c.restore();}
+    for(const a of G.allies) drawAlly(c,a,age);
+    for(const e of G.enemies) drawEnemy(c,e,age);
+    drawSniperHide(c,W,H,age);
+  }
+}
+
+function drawTreeLine(c,W,H,age){
+  const col = age.id<=1?'#1a1008':age.id<=3?'#0a1508':age.id<=5?'#0a1408':'#050810';
+  c.fillStyle=col;
   for(let tx=0;tx<W;tx+=55){
     const th=28+Math.sin(tx*0.065+1)*22+Math.sin(tx*0.03)*14;
     c.beginPath();c.moveTo(tx,H*0.38);c.lineTo(tx+8,H*0.38-th);
     c.lineTo(tx+26,H*0.38-th-8);c.lineTo(tx+44,H*0.38-th);c.lineTo(tx+55,H*0.38);c.fill();
   }
-  drawTerrain(c,W,H);
-  if(!isScope&&G) drawFrontlineIndicator(c,W,H);
-  if(!G)return;
-  // Particles
-  for(const p of G.particles){c.save();c.globalAlpha=Math.max(0,Math.min(1,p.life*3));c.fillStyle=p.col;c.beginPath();c.arc(p.x,p.y,p.r,0,Math.PI*2);c.fill();c.restore();}
-  // Tracers
-  for(const t of G.tracers){
-    const a=t.life/t.maxLife;
-    c.save();c.globalAlpha=a*0.85;c.strokeStyle=t.col;c.lineWidth=t.isPlayer?2.2:1.2;
-    c.shadowColor=t.col;c.shadowBlur=t.isPlayer?10:4;
-    c.beginPath();c.moveTo(t.x1,t.y1);c.lineTo(t.x2,t.y2);c.stroke();
-    c.shadowBlur=0;c.restore();
-  }
-  // Allies
-  for(const a of G.allies) drawAlly(c,a);
-  // Enemies
-  for(const e of G.enemies) drawEnemy(c,e);
-  if(!isScope) drawSniperHide(c,W,H);
 }
 
 function drawFrontlineIndicator(c,W,H){
@@ -814,24 +817,40 @@ function drawFrontlineIndicator(c,W,H){
   c.restore();
 }
 
-function drawTerrain(c,W,H){
+function drawTerrain(c,W,H,age){
   c.save();
-  // 아군 모래주머니
-  const sbPos=[[140,290],[140,190],[140,400],[195,250],[195,360],[250,310]];
-  for(const[sx,sy]of sbPos){drawSandbag(c,sx,sy);}
-  // 적군 바위
-  const rkPos=[[W-80,270],[W-80,390],[W-120,200],[W-120,440],[W-50,330]];
-  for(const[rx,ry]of rkPos){drawRock(c,rx,ry);}
+  // 아군 엄폐물 (시대별)
+  if(age.id<=1){
+    // 석기/고대: 바위 방어선
+    [[140,290],[140,190],[140,400],[195,250],[195,360]].forEach(([x,y])=>drawRock(c,x,y,'#302010'));
+  } else if(age.id<=3){
+    // 중세/르네상스: 목책+모래주머니
+    [[140,290],[140,190],[140,400],[195,250],[195,360],[250,310]].forEach(([x,y])=>drawSandbag(c,x,y));
+  } else {
+    // 근현대+SF: 모래주머니+참호
+    [[140,290],[140,190],[140,400],[195,250],[195,360],[250,310]].forEach(([x,y])=>drawSandbag(c,x,y));
+    // 참호선
+    c.fillStyle='rgba(0,0,0,.35)';c.fillRect(120,H*0.38+20,8,H*0.55);
+  }
+  // 적 진영 엄폐물
+  const rkCol = age.id>=5?'#1a2828':'#282828';
+  [[W-80,270],[W-80,390],[W-120,200],[W-120,440],[W-50,330]].forEach(([x,y])=>drawRock(c,x,y,rkCol));
   // 분화구
-  const craters=[[320,300],[490,265],[640,380],[410,175],[550,435]];
-  for(const[cx,cy]of craters){
+  [[320,300],[490,265],[640,380],[410,175],[550,435]].forEach(([cx,cy])=>{
     c.fillStyle='#0a1008';c.beginPath();c.ellipse(cx,cy,24,14,0.1,0,Math.PI*2);c.fill();
     c.strokeStyle='#182015';c.lineWidth=1.5;c.beginPath();c.ellipse(cx,cy,24,14,0.1,0,Math.PI*2);c.stroke();
-  }
+  });
   // 나무 그루터기
-  const stumps=[[255,375],[435,195],[695,295],[340,155]];
-  for(const[tx,ty]of stumps){
+  [[255,375],[435,195],[695,295],[340,155]].forEach(([tx,ty])=>{
     c.fillStyle='#1a1208';c.fillRect(tx-4,ty-24,8,24);c.fillRect(tx-7,ty-2,14,6);
+  });
+  // SF 시대: 에너지 장벽
+  if(age.id>=6){
+    c.save();
+    c.globalAlpha=0.15;
+    c.strokeStyle='#0088ff';c.lineWidth=2;c.setLineDash([8,4]);
+    c.beginPath();c.moveTo(180,H*0.12);c.lineTo(180,H*0.9);c.stroke();
+    c.setLineDash([]);c.restore();
   }
   c.restore();
 }
@@ -844,36 +863,60 @@ function drawSandbag(c,x,y){
   c.beginPath();c.ellipse(x+6,y-2,12,6,0,0,Math.PI*2);c.fill();
   c.restore();
 }
-
-function drawRock(c,x,y){
-  c.save();c.fillStyle='#282828';
+function drawRock(c,x,y,col){
+  c.save();c.fillStyle=col||'#282828';
   c.beginPath();c.ellipse(x,y,17,11,0.25,0,Math.PI*2);c.fill();
-  c.fillStyle='#353535';c.beginPath();c.ellipse(x-5,y-3,10,7,0.1,0,Math.PI*2);c.fill();
+  c.fillStyle='rgba(255,255,255,0.04)';c.beginPath();c.ellipse(x-5,y-3,10,7,0.1,0,Math.PI*2);c.fill();
   c.restore();
 }
 
-function drawSniperHide(c,W,H){
+function drawSniperHide(c,W,H,age){
   c.save();
   c.translate(80,H-38);
-  // 총신
-  c.fillStyle='#1a1a1a';c.fillRect(8,-2,38,5);
-  c.fillRect(44,-3,12,7);
-  // 스코프
-  c.fillStyle='#111a11';c.fillRect(16,-7,18,5);
-  // 바이포드
-  c.strokeStyle='#1a1a1a';c.lineWidth=2;
-  c.beginPath();c.moveTo(38,3);c.lineTo(34,16);c.stroke();
-  c.beginPath();c.moveTo(38,3);c.lineTo(42,16);c.stroke();
-  // 플레이어 몸
-  c.fillStyle='#1a3010';c.beginPath();c.ellipse(-12,2,22,9,0.15,0,Math.PI*2);c.fill();
+  // 시대별 무기 모양
+  if(age.id<=1){
+    // 석기/고대: 활
+    c.strokeStyle='#8a6020';c.lineWidth=2.5;
+    c.beginPath();c.arc(0,0,22,Math.PI*0.8,Math.PI*2.2);c.stroke();
+    c.strokeStyle='#c8a060';c.lineWidth=1;
+    c.beginPath();c.moveTo(-16,-8);c.lineTo(16,8);c.stroke();
+  } else if(age.id<=3){
+    // 중세/르네상스: 석궁/머스킷
+    c.fillStyle='#1a1a1a';c.fillRect(8,-2,38,5);c.fillRect(44,-3,12,7);
+    c.fillStyle='#8a6020';c.fillRect(5,-8,12,14);
+    c.fillStyle='#604010';c.fillRect(-12,2,20,12);
+  } else if(age.id<=5){
+    // 근현대: 저격 소총
+    c.fillStyle='#1a1a1a';c.fillRect(8,-2,38,5);c.fillRect(44,-3,12,7);
+    c.fillStyle='#111a11';c.fillRect(16,-7,18,5);
+    c.strokeStyle='#1a1a1a';c.lineWidth=2;
+    c.beginPath();c.moveTo(38,3);c.lineTo(34,16);c.stroke();
+    c.beginPath();c.moveTo(38,3);c.lineTo(42,16);c.stroke();
+  } else {
+    // SF: 에너지 라이플
+    c.fillStyle='#0a1a2a';c.fillRect(4,-4,48,8);c.fillRect(48,-5,14,10);
+    c.fillStyle='#0044aa';c.fillRect(16,-2,18,4);
+    c.strokeStyle='#0088ff';c.lineWidth=1.5;
+    c.shadowColor='#0088ff';c.shadowBlur=8;
+    c.beginPath();c.moveTo(58,0);c.lineTo(72,0);c.stroke();
+    c.shadowBlur=0;
+  }
+  // 플레이어 몸 (시대별 색상)
+  const bodyCol = age.id<=1?'#3a2810':age.id<=3?'#2a2010':age.id<=5?'#1a3010':'#0a1a2a';
+  const helmetCol = age.id<=1?'#402a10':age.id<=3?'#281e0e':age.id<=5?'#182818':'#0a1428';
+  c.fillStyle=bodyCol;c.beginPath();c.ellipse(-12,2,22,9,0.15,0,Math.PI*2);c.fill();
   c.fillStyle='#223318';c.beginPath();c.ellipse(-20,1,12,7,-0.1,0,Math.PI*2);c.fill();
-  // 헬멧
-  c.fillStyle='#182818';c.beginPath();c.arc(-8,-5,7,Math.PI,0);c.closePath();c.fill();
+  c.fillStyle=helmetCol;c.beginPath();c.arc(-8,-5,7,Math.PI,0);c.closePath();c.fill();
+  if(age.id>=6){
+    // SF 바이저
+    c.fillStyle='rgba(0,136,255,0.6)';c.fillRect(-14,-9,12,5);
+    c.shadowColor='#0088ff';c.shadowBlur=4;c.fillRect(-14,-9,12,5);c.shadowBlur=0;
+  }
   c.restore();
 }
 
-// ── DRAW ALLY ──────────────────────────────────────────
-function drawAlly(c,a){
+// ── DRAW ALLY (시대별 외관) ────────────────────────────
+function drawAlly(c,a,age){
   if(!a.alive&&!a.dying)return;
   const alpha=a.dying?Math.max(0,1-a.deathT/0.7):1;
   const spawnScale=a.spawnAnim>0?Math.max(0.2,1-a.spawnAnim*1.5):1;
@@ -882,9 +925,7 @@ function drawAlly(c,a){
   c.globalAlpha=alpha;
   c.translate(Math.round(a.x),Math.round(a.y+bob));
   c.scale(spawnScale,spawnScale);
-  // 소환 중 색깔 펄스
   if(a.spawnAnim>0){c.shadowColor=a.color;c.shadowBlur=20;}
-  // 그림자
   c.save();c.globalAlpha=0.22*alpha;c.fillStyle='#000';c.beginPath();c.ellipse(0,14,10,4,0,0,Math.PI*2);c.fill();c.restore();
   // 다리
   c.fillStyle='#1a2a1a';c.fillRect(-4,4,4,9);c.fillRect(1,4,4,9);
@@ -892,28 +933,42 @@ function drawAlly(c,a){
   // 몸
   c.fillStyle='#253525';c.fillRect(-5,-5,10,10);
   c.fillStyle='#304030';c.fillRect(-4,-4,8,8);
-  // 팔
   c.fillStyle='#253525';c.fillRect(-8,-4,4,7);c.fillRect(5,-4,4,7);
   // 얼굴
   c.fillStyle='#c09870';c.beginPath();c.arc(0,-10,4.5,0,Math.PI*2);c.fill();
-  // 헬멧 (아군: 파란색)
-  c.fillStyle='#1e3a6e';c.beginPath();c.arc(0,-14,5.5,Math.PI,0);c.fill();c.fillRect(-6.5,-14,13,3);
-  c.fillStyle='#162e58';c.fillRect(-7,-13,14,2);
-  // 총
-  c.fillStyle='#1a1a1a';c.fillRect(6,-2,18,4);c.fillRect(12,2,4,6);c.fillRect(8,2,3,5);
-  // 유닛 타입 표시 (의무병/저격수 등)
-  if(a.unitType!=='infantry'){
-    c.globalAlpha=0.9;
-    c.fillStyle=a.color||'#00ff88';
+  // 헬멧 (시대별)
+  const hCol = age.id<=1?'#4a3818':age.id<=3?'#2a3a5a':age.id<=5?'#1e3a6e':'#0a1e40';
+  c.fillStyle=hCol;c.beginPath();c.arc(0,-14,5.5,Math.PI,0);c.fill();c.fillRect(-6.5,-14,13,3);
+  c.fillStyle=age.id>=6?'rgba(0,136,255,0.4)':'#162e58';c.fillRect(-7,-13,14,2);
+  if(age.id>=6){
+    c.fillStyle='rgba(0,136,255,0.5)';c.fillRect(-5,-12,10,3);
+  }
+  // 무기
+  if(age.id<=1){
+    c.strokeStyle='#8a6020';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(6,0);c.lineTo(22,-6);c.stroke();
+  } else if(age.id<=3){
+    c.fillStyle='#604010';c.fillRect(6,-2,14,4);c.fillRect(18,-5,4,9);
+  } else if(age.id<=5){
+    c.fillStyle='#1a1a1a';c.fillRect(6,-2,18,4);c.fillRect(12,2,4,6);c.fillRect(8,2,3,5);
+  } else {
+    c.fillStyle='#0a1a2a';c.fillRect(6,-3,22,5);
+    c.fillStyle='#0044aa';c.fillRect(16,-1,8,3);
+    c.strokeStyle='#00aaff';c.lineWidth=1;c.shadowColor='#00aaff';c.shadowBlur=4;
+    c.beginPath();c.moveTo(28,0);c.lineTo(34,0);c.stroke();c.shadowBlur=0;
+  }
+  // 유닛 타입 아이콘
+  if(a.unitType!=='warrior'){
+    c.globalAlpha=0.9;c.fillStyle=a.color||'#00ff88';
     c.font='bold 7px Orbitron';c.textAlign='center';
-    const labels={assault:'⚔',heavy:'💪',medic:'🏥',sniper_a:'🎯'};
+    const labels={archer:'🏹',knight:'🛡',medic:'🏥',sniper_a:'🎯'};
     c.fillText(labels[a.unitType]||'',0,-22);
   }
   c.restore();
 }
 
-// ── DRAW ENEMY ─────────────────────────────────────────
-function drawEnemy(c,e){
+// ── DRAW ENEMY (시대별 외관) ───────────────────────────
+function drawEnemy(c,e,age){
   if(!e.alive&&!e.dying)return;
   const alpha=e.dying?Math.max(0,1-e.deathT/0.7):1;
   const bob=Math.sin(e.phase)*1.2;
@@ -922,19 +977,21 @@ function drawEnemy(c,e){
   c.translate(Math.round(e.x),Math.round(e.y+bob));
   const sz=e.type==='general'?1.28:e.type==='mg'?1.12:1;
   c.scale(sz,sz);
-  // 그림자
   c.save();c.globalAlpha=0.22*alpha;c.fillStyle='#000';c.beginPath();c.ellipse(0,14,9,4,0,0,Math.PI*2);c.fill();c.restore();
   const helmetC=e.type==='general'?'#553300':e.type==='officer'?'#4a3000':e.type==='sniper_e'?'#162216':'#503828';
   const bodyC=e.type==='general'?'#3a1200':e.type==='officer'?'#2a1200':e.type==='sniper_e'?'#182018':'#2e1a0e';
   const pantC=e.type==='general'?'#280e00':e.type==='officer'?'#1e0e00':'#241408';
+  // SF 시대는 약간 다른 색상
+  const actualBodyC = age.id>=6 ? (e.type==='general'?'#001a3a':e.type==='officer'?'#001030':bodyC) : bodyC;
+  const actualHelmetC = age.id>=6 ? (e.type==='general'?'#002255':e.type==='officer'?'#001844':helmetC) : helmetC;
   c.fillStyle=pantC;c.fillRect(-4,4,4,9);c.fillRect(1,4,4,9);
   c.fillStyle='#111';c.fillRect(-4,12,4,4);c.fillRect(1,12,4,4);
-  c.fillStyle=bodyC;c.fillRect(-5,-5,10,10);
+  c.fillStyle=actualBodyC;c.fillRect(-5,-5,10,10);
   c.fillStyle='#3a2a18';c.fillRect(-4,-4,8,8);
   c.fillStyle='#2a1e0e';c.fillRect(-3,-2,3,3);c.fillRect(1,-2,3,3);
-  c.fillStyle=bodyC;c.fillRect(-8,-4,4,7);c.fillRect(5,-4,4,7);
+  c.fillStyle=actualBodyC;c.fillRect(-8,-4,4,7);c.fillRect(5,-4,4,7);
   c.fillStyle='#b88858';c.beginPath();c.arc(0,-10,4.5,0,Math.PI*2);c.fill();
-  c.fillStyle=helmetC;
+  c.fillStyle=actualHelmetC;
   if(e.type==='officer'||e.type==='general'){
     c.fillRect(-6,-17,12,4);c.beginPath();c.arc(0,-15,5,Math.PI,0);c.fill();
     c.fillStyle='#f5c518';c.beginPath();c.arc(0,-16,2,0,Math.PI*2);c.fill();
@@ -943,11 +1000,23 @@ function drawEnemy(c,e){
     c.beginPath();c.arc(0,-14,5.5,Math.PI,0);c.fill();c.fillRect(-6.5,-14,13,3);
     c.fillStyle=e.type==='sniper_e'?'#0e1a0e':'#3a2818';c.fillRect(-7,-13,14,2);
   }
+  // SF 바이저
+  if(age.id>=6){
+    c.fillStyle='rgba(255,50,0,0.5)';c.fillRect(-5,-12,10,3);
+    c.shadowColor='#ff3300';c.shadowBlur=4;c.fillRect(-5,-12,10,3);c.shadowBlur=0;
+  }
   if(e.type==='sniper_e'){c.fillStyle='rgba(0,35,0,0.55)';c.fillRect(-4,-13,8,7);}
   c.fillStyle='#1a1a1a';
   if(e.type==='mg'){
-    c.fillRect(-24,-2,22,4);c.fillRect(-22,2,2,10);c.fillRect(-18,2,2,10);
-    c.fillStyle='#2a2a2a';c.beginPath();c.arc(-14,2,4,0,Math.PI*2);c.fill();
+    if(age.id>=6){
+      c.fillStyle='#0a1a2a';c.fillRect(-24,-2,22,4);c.fillRect(-22,2,2,10);c.fillRect(-18,2,2,10);
+      c.fillStyle='#0044aa';c.beginPath();c.arc(-14,2,4,0,Math.PI*2);c.fill();
+      c.strokeStyle='#ff3300';c.lineWidth=1;c.shadowColor='#ff3300';c.shadowBlur=6;
+      c.beginPath();c.moveTo(-26,0);c.lineTo(-34,0);c.stroke();c.shadowBlur=0;
+    } else {
+      c.fillRect(-24,-2,22,4);c.fillRect(-22,2,2,10);c.fillRect(-18,2,2,10);
+      c.fillStyle='#2a2a2a';c.beginPath();c.arc(-14,2,4,0,Math.PI*2);c.fill();
+    }
   } else if(e.type==='sniper_e'){
     c.fillRect(-28,0,26,3);c.fillStyle='#111a11';c.fillRect(-22,-4,10,4);
     c.fillStyle='#2a2a2a';c.fillRect(-30,-1,4,5);
@@ -976,22 +1045,162 @@ function drawEnemy(c,e){
   }
 }
 
-// ── SCOPE VIEW ─────────────────────────────────────────
-function drawScopeView(){
-  if(!G||!G.scoped)return;
-  const R=SCOPE_R,S=R*2,zoom=3.8;
-  sCtx.save();
-  sCtx.fillStyle='#08100a';sCtx.fillRect(0,0,S,S);
-  sCtx.beginPath();sCtx.arc(R,R,R,0,Math.PI*2);sCtx.clip();
-  sCtx.scale(zoom,zoom);
-  const cx=G.mouse.x+G.scopeOffX/zoom;
-  const cy=G.mouse.y+G.scopeOffY/zoom;
-  sCtx.translate(R/zoom-cx+G.swayX*0.2,R/zoom-cy+G.swayY*0.2);
-  drawScene(sCtx,GW,GH,true);
-  sCtx.restore();
-  const dist=Math.round(Math.hypot(G.mouse.x-80,G.mouse.y-(GH-38)));
-  document.getElementById('scope-info').textContent=`${dist}m · ${G.breathHeld?'숨참기 ✓':'흔들림'} · ${G.ammo}/${G.maxAmmo}탄`;
-  document.getElementById('breath-fill').style.width=(G.breathTimer/3*100)+'%';
+// ══════════════════════════════════════════════════════
+//  스코프 렌더링 — 마우스가 항상 조준점 정중앙
+//  방식: 캔버스 전체에 직접 그림 (DOM 분리 X)
+// ══════════════════════════════════════════════════════
+function drawScopeOverlay(mainCtx, W, H) {
+  if(!G||!G.scoped) return;
+
+  const mx = G.mouse.x;
+  const my = G.mouse.y;
+  const R  = scopeR;
+  const ZOOM = 3.8;
+
+  // ── 1. 화면 전체를 반투명 검정으로 덮기 ──
+  mainCtx.save();
+  mainCtx.fillStyle = 'rgba(0,0,0,0.93)';
+  mainCtx.fillRect(0,0,W,H);
+
+  // ── 2. 스코프 원 안쪽만 클리핑 (마우스 위치 중심) ──
+  mainCtx.save();
+  mainCtx.beginPath();
+  mainCtx.arc(mx, my, R, 0, Math.PI*2);
+  mainCtx.clip();
+
+  // ── 3. 스코프 원 안에 확대된 씬 그리기 ──
+  // 확대 변환: 마우스 위치(mx, my)를 중심으로 ZOOM배 확대
+  mainCtx.save();
+  // 약간의 흔들림
+  const swayOffX = G.swayX * 0.15;
+  const swayOffY = G.swayY * 0.15;
+  mainCtx.translate(mx + swayOffX, my + swayOffY);
+  mainCtx.scale(ZOOM, ZOOM);
+  mainCtx.translate(-mx, -my);
+  // 확대된 씬 그리기
+  drawScene(mainCtx, W, H);
+  mainCtx.restore();
+
+  // ── 4. 스코프 내부 비네트 (원 안쪽 가장자리 어두움) ──
+  const vgr = mainCtx.createRadialGradient(mx, my, R*0.55, mx, my, R);
+  vgr.addColorStop(0, 'transparent');
+  vgr.addColorStop(1, 'rgba(0,0,0,0.75)');
+  mainCtx.fillStyle = vgr;
+  mainCtx.beginPath();
+  mainCtx.arc(mx, my, R, 0, Math.PI*2);
+  mainCtx.fill();
+
+  // ── 5. 십자선(크로스헤어) — 마우스 위치 정중앙 ──
+  const chCol = 'rgba(0,255,100,0.9)';
+  const chFade = 'rgba(0,255,100,0.3)';
+  mainCtx.strokeStyle = chCol;
+  mainCtx.lineWidth = 1.0;
+
+  // 수평선 (좌)
+  mainCtx.beginPath();
+  mainCtx.moveTo(mx - R + 4, my);
+  mainCtx.lineTo(mx - 28, my);
+  mainCtx.stroke();
+  // 수평선 (우)
+  mainCtx.beginPath();
+  mainCtx.moveTo(mx + 28, my);
+  mainCtx.lineTo(mx + R - 4, my);
+  mainCtx.stroke();
+  // 수직선 (상)
+  mainCtx.beginPath();
+  mainCtx.moveTo(mx, my - R + 4);
+  mainCtx.lineTo(mx, my - 28);
+  mainCtx.stroke();
+  // 수직선 (하)
+  mainCtx.beginPath();
+  mainCtx.moveTo(mx, my + 28);
+  mainCtx.lineTo(mx, my + R - 4);
+  mainCtx.stroke();
+
+  // 밀-닷 (mil-dot reticle)
+  mainCtx.strokeStyle = chFade;
+  mainCtx.lineWidth = 0.7;
+  // 수평 보조선
+  mainCtx.beginPath(); mainCtx.moveTo(mx-26, my+20); mainCtx.lineTo(mx+26, my+20); mainCtx.stroke();
+  mainCtx.beginPath(); mainCtx.moveTo(mx-26, my-20); mainCtx.lineTo(mx+26, my-20); mainCtx.stroke();
+  // 밀-닷 점들
+  mainCtx.fillStyle = chCol;
+  [-40,-20,20,40].forEach(d=>{
+    mainCtx.beginPath(); mainCtx.arc(mx+d, my, 1.5, 0, Math.PI*2); mainCtx.fill();
+    mainCtx.beginPath(); mainCtx.arc(mx, my+d, 1.5, 0, Math.PI*2); mainCtx.fill();
+  });
+
+  // 중앙 작은 원
+  mainCtx.strokeStyle = chCol;
+  mainCtx.lineWidth = 0.8;
+  mainCtx.beginPath();
+  mainCtx.arc(mx, my, 3.5, 0, Math.PI*2);
+  mainCtx.stroke();
+
+  mainCtx.restore(); // clip 해제
+
+  // ── 6. 스코프 테두리 원 ──
+  mainCtx.save();
+  mainCtx.strokeStyle = 'rgba(0,255,100,0.35)';
+  mainCtx.lineWidth = 3;
+  mainCtx.shadowColor = 'rgba(0,255,100,0.2)';
+  mainCtx.shadowBlur = 15;
+  mainCtx.beginPath();
+  mainCtx.arc(mx, my, R, 0, Math.PI*2);
+  mainCtx.stroke();
+  // 바깥 더블링
+  mainCtx.strokeStyle = 'rgba(0,255,100,0.1)';
+  mainCtx.lineWidth = 1;
+  mainCtx.beginPath();
+  mainCtx.arc(mx, my, R+4, 0, Math.PI*2);
+  mainCtx.stroke();
+  mainCtx.restore();
+
+  // ── 7. 스코프 정보 텍스트 ──
+  const dist = Math.round(Math.hypot(mx-80, my-(GH-38)));
+  const info = `${dist}m  ·  ${G.breathHeld?'숨참기 ✓':'흔들림 中'}  ·  ${G.ammo}/${G.maxAmmo}탄`;
+  mainCtx.save();
+  mainCtx.font = '10px Rajdhani,sans-serif';
+  mainCtx.textAlign = 'center';
+  mainCtx.fillStyle = 'rgba(0,255,100,0.75)';
+  mainCtx.letterSpacing = '2px';
+  mainCtx.fillText(info, mx, my + R * 0.78);
+  mainCtx.restore();
+
+  // ── 8. 숨참기 바 ──
+  mainCtx.save();
+  const bw = 140, bh = 4;
+  const bx = mx - bw/2, by = my + R * 0.86;
+  mainCtx.fillStyle='rgba(255,255,255,.06)';mainCtx.fillRect(bx,by,bw,bh);
+  const bf = G.breathTimer/3;
+  mainCtx.fillStyle = bf > 0.5 ? '#00ff88' : bf > 0.2 ? '#ffcc00' : '#ff4444';
+  mainCtx.fillRect(bx,by,bw*bf,bh);
+  mainCtx.restore();
+
+  mainCtx.restore(); // 맨 처음 save
+}
+
+// ── 일반 모드 크로스헤어 (스코프 OFF일 때) ─────────────
+function drawCrosshair(c, mx, my) {
+  if(!G||G.scoped||G.coverActive) return;
+  const col = 'rgba(255,255,255,0.85)';
+  const size = 10;
+  const gap  = 5;
+  c.save();
+  c.strokeStyle = col;
+  c.lineWidth = 1.5;
+  c.shadowColor = 'rgba(0,0,0,0.9)';
+  c.shadowBlur = 3;
+  // 수평
+  c.beginPath();c.moveTo(mx-size-gap,my);c.lineTo(mx-gap,my);c.stroke();
+  c.beginPath();c.moveTo(mx+gap,my);c.lineTo(mx+size+gap,my);c.stroke();
+  // 수직
+  c.beginPath();c.moveTo(mx,my-size-gap);c.lineTo(mx,my-gap);c.stroke();
+  c.beginPath();c.moveTo(mx,my+gap);c.lineTo(mx,my+size+gap);c.stroke();
+  // 중앙 점
+  c.fillStyle = col;
+  c.beginPath();c.arc(mx,my,1.5,0,Math.PI*2);c.fill();
+  c.restore();
 }
 
 // ── HUD ────────────────────────────────────────────────
@@ -1031,28 +1240,21 @@ function updateHUD(){
   const ahp=Math.round(G.allyHP);
   const av=document.getElementById('ally-hp-v');av.textContent=ahp+'%';
   av.style.color=ahp>60?'#00ff88':ahp>30?'#ffcc00':'#ff4444';
-  // 자원
   const rv=Math.floor(G.resource);
   document.getElementById('res-v').textContent=rv;
   document.getElementById('resource-val').textContent=rv;
-  // 소환 버튼 갱신
   ALLY_UNITS.forEach(u=>{
     const btn=document.getElementById('sbtn-'+u.id);
-    if(btn){
-      const canAfford=G.resource>=u.cost&&G.summonCd<=0;
-      btn.classList.toggle('disabled',!canAfford);
-    }
+    if(btn){const canAfford=G.resource>=u.cost&&G.summonCd<=0;btn.classList.toggle('disabled',!canAfford);}
   });
   const cdEl=document.getElementById('summon-cd');
   if(cdEl) cdEl.textContent=G.summonCd>0?`쿨다운 ${G.summonCd.toFixed(1)}s`:'소환 준비됨';
-  // 전선
   const total=(GW-80)-130,pos=G.frontlineX-130;
   const pct=(pos/total*100);
   document.getElementById('fl-ally').style.width=pct+'%';
   document.getElementById('fl-enemy').style.width=(100-pct)+'%';
   document.getElementById('fl-mid').style.left=pct+'%';
   document.getElementById('fl-pct-txt').textContent=Math.round(pct)+'%';
-  // Aggro
   const ap=Math.round(G.aggro);
   const af=document.getElementById('aggro-fill');
   af.style.width=ap+'%';
@@ -1060,11 +1262,17 @@ function updateHUD(){
   document.getElementById('aggro-pct').textContent=ap+'%';
   const at=ap<28?'은폐 유지 중 — 안전':ap<55?'주의 — 노출 위험':ap<82?'⚠ 위험! 즉시 엄폐!':'🔴 발각 직전!';
   const atEl=document.getElementById('aggro-txt');atEl.textContent=at;atEl.style.color=ap>55?'#ff5500':'#445';
-  // 저격수 HP
   const php=Math.round(G.playerHP);
   document.getElementById('php-pct').textContent=php+'%';
   document.getElementById('php-fill').style.width=php+'%';
   document.getElementById('php-fill').style.background=php>60?'linear-gradient(90deg,#00aa44,#00ff88)':php>30?'linear-gradient(90deg,#cc8800,#ffcc00)':'linear-gradient(90deg,#aa0000,#ff4444)';
+  // 스코프 HUD
+  if(G.scoped){
+    const dist=Math.round(Math.hypot(G.mouse.x-80,G.mouse.y-(GH-38)));
+    document.getElementById('si-dist').textContent=`${dist}m`;
+    document.getElementById('si-ammo').textContent=`${G.ammo}/${G.maxAmmo}탄`;
+    document.getElementById('breath-fill').style.width=(G.breathTimer/3*100)+'%';
+  }
 }
 
 // ── UI HELPERS ─────────────────────────────────────────
@@ -1075,7 +1283,6 @@ function showToast(msg,cls=''){
   el.textContent=msg;w.appendChild(el);
   setTimeout(()=>el.remove(),2100);
 }
-
 function showKF(msg,col){
   const kf=document.getElementById('killfeed');
   const it=document.createElement('div');it.className='kf';
@@ -1085,7 +1292,6 @@ function showKF(msg,col){
   setTimeout(()=>{it.style.transition='opacity .4s';it.style.opacity='0';setTimeout(()=>it.remove(),450);},2400);
   while(kf.children.length>6)kf.removeChild(kf.firstChild);
 }
-
 function spawnDmgNum(x,y,v,crit){
   const el=document.createElement('div');el.className='dnum';
   const r=canvas.getBoundingClientRect();
@@ -1121,9 +1327,11 @@ function buildTitle(){
   grid.innerHTML='';
   MISSIONS.forEach((m,i)=>{
     const locked=i>0&&!cleared.includes(i-1);
+    const age=AGES[m.ageId];
     const div=document.createElement('div');
     div.className='mis-card'+(locked?' locked':'');
-    div.innerHTML=`<div class="mc-num">${i+1}</div><div class="mc-name">${m.name}</div><div class="mc-diff">${m.diff}</div><div class="mc-desc">${m.desc}</div>${cleared.includes(i)?'<div class="mc-clr">✅ 완료</div>':''}`;
+    div.style.borderColor=locked?'rgba(255,255,255,.06)':`${age.color}44`;
+    div.innerHTML=`<div class="mc-num" style="color:${age.color}">${i+1}</div><div class="mc-name">${m.name}</div><div class="mc-diff">${m.diff}</div><div style="font-size:7px;color:${age.color}88;margin-top:2px;">${age.name}</div><div class="mc-desc">${m.desc}</div>${cleared.includes(i)?'<div class="mc-clr">✅ 완료</div>':''}`;
     if(!locked){div.onclick=()=>{selMis=i;document.querySelectorAll('.mis-card').forEach(x=>x.classList.remove('sel'));div.classList.add('sel');document.getElementById('mo-start-btn').disabled=false;ensureAudio();};}
     grid.appendChild(div);
   });
@@ -1138,14 +1346,8 @@ function startMission(){
 // ── INPUT ──────────────────────────────────────────────
 canvas.addEventListener('mousemove',e=>{
   const r=canvas.getBoundingClientRect();
-  const rx=e.clientX-r.left,ry=e.clientY-r.top;
-  if(G){
-    G.mouse.x=rx;G.mouse.y=ry;
-    if(G.scoped){
-      const cx=r.width/2,cy=r.height/2;
-      G.scopeOffX=(rx-cx)*0.55;G.scopeOffY=(ry-cy)*0.55;
-    } else {G.scopeOffX=0;G.scopeOffY=0;}
-  }
+  const rx=e.clientX-r.left, ry=e.clientY-r.top;
+  if(G){G.mouse.x=rx;G.mouse.y=ry;}
 });
 canvas.addEventListener('click',e=>{if(G&&G.phase==='play'){ensureAudio();fire();}});
 canvas.addEventListener('contextmenu',e=>{e.preventDefault();if(G&&G.phase==='play')toggleScope();});
@@ -1155,19 +1357,17 @@ document.addEventListener('keydown',e=>{
   if((e.key==='r'||e.key==='R')&&G&&G.phase==='play')startReload();
   if((e.key==='z'||e.key==='Z'||e.key==='Escape')&&G&&G.phase==='play')toggleScope();
   if((e.key==='c'||e.key==='C')&&G&&G.phase==='play')setCover(true);
-  // 숫자 키 소환
-  const numMap={'1':'infantry','2':'assault','3':'heavy','4':'medic','5':'sniper_a'};
+  const numMap={'1':'warrior','2':'archer','3':'knight','4':'medic','5':'sniper_a'};
   if(numMap[e.key]&&G&&G.phase==='play'){ensureAudio();summonUnit(numMap[e.key]);}
 });
 document.addEventListener('keyup',e=>{
   if(e.key==='Shift'&&G)G.breathHeld=false;
   if((e.key==='c'||e.key==='C')&&G)setCover(false);
 });
-
-// 화면 리사이즈 대응
 window.addEventListener('resize',()=>{
   GW=window.innerWidth;GH=window.innerHeight;
   canvas.width=GW;canvas.height=GH;
+  scopeR=Math.min(GW,GH)*0.28;
 });
 
 // ── MAIN LOOP ──────────────────────────────────────────
@@ -1176,12 +1376,22 @@ function loop(ts){
   ctx.save();
   if(G&&(G.shakeX||G.shakeY))ctx.translate(Math.round(G.shakeX),Math.round(G.shakeY));
   ctx.clearRect(-12,-12,GW+24,GH+24);
+
   if(G&&G.phase==='play'){
     tick(dt);
-    drawScene(ctx,GW,GH,false);
-    drawScopeView();
+    // 일반 씬 렌더링
+    drawScene(ctx,GW,GH);
+    // 스코프 오버레이 (캔버스 직접)
+    if(G.scoped) {
+      drawScopeOverlay(ctx, GW, GH);
+    } else {
+      // 일반 크로스헤어
+      drawCrosshair(ctx, G.mouse.x, G.mouse.y);
+    }
   } else {
     ctx.fillStyle='#06080a';ctx.fillRect(0,0,GW,GH);
+    // 대기 화면 크로스헤어
+    if(G&&G.scoped) drawScopeOverlay(ctx,GW,GH);
   }
   ctx.restore();
   RAF=requestAnimationFrame(loop);
@@ -1202,7 +1412,6 @@ def render():
 
     qp = st.query_params
 
-    # ── query_params로 결과가 넘어왔을 때 DB 저장 ──
     if qp.get('sniper_score'):
         try:
             uid = st.session_state.get('logged_in_user', '')
@@ -1234,7 +1443,6 @@ def render():
         st.query_params.clear()
         st.rerun()
 
-    # ── DB에서 클리어 목록 읽어서 JS에 주입 ──
     cleared_list = []
     try:
         gr = st.session_state.get('game_records', {})
@@ -1242,7 +1450,6 @@ def render():
     except Exception:
         cleared_list = []
 
-    # 클리어 데이터를 HTML에 주입
     final_html = GAME_HTML.replace(
         "buildTitle();\nRAF=requestAnimationFrame(loop);",
         f"window._sc={json.dumps(cleared_list)};\nbuildTitle();\nRAF=requestAnimationFrame(loop);"
