@@ -8,8 +8,8 @@ from datetime import datetime
 # ==============================
 # 1. 코어 모듈 임포트
 # ==============================
-from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA
-from utils.database import load_db, save_db, load_stats, save_stats
+from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, LEADERBOARD_FILE, estate_config, FORGE_DATA
+from utils.database import load_db, save_db, load_stats, save_stats, load_leaderboard, format_leaderboard_score
 from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
 from utils.database import get_login_lock, set_login_lock, clear_login_lock, save_db
 from utils.market_sync import run_market_sync
@@ -52,15 +52,15 @@ def _merge_game_records(stored: dict) -> dict:
         'racing':  {'score': 0, 'dist': 0.0},
         'zombie':  {'wave': 0, 'score': 0, 'kills': 0},
         'fighter': {'score': 0, 'perfects': 0},
-        'sniper':  {'score': 0, 'grade': '', 'clears': []},  # clears: 클리어한 미션 인덱스 목록
+        'sniper':  {'score': 0, 'kills': 0},  # score/kills: 라인배틀 최고킬 기록
     }
     result = {}
     for key, dval in default.items():
         db_val = stored.get(key, {})
         merged = {**dval, **db_val}
         # sniper.clears 누락 보완
-        if key == 'sniper' and 'clears' not in merged:
-            merged['clears'] = []
+        if key == 'sniper' and 'kills' not in merged:
+            merged['kills'] = merged.get('score', 0)
         result[key] = merged
     return result
 
@@ -660,7 +660,7 @@ if st.session_state.page_view == "portal":
           <div class='card-badge badge-gold'>🏆 PICK</div>
           <div class='card-icon'>🎲</div>
           <div class='card-title'>인베스트 마블</div>
-          <div class='card-desc'>AI 봇과 보드게임 대결<br>집·호텔·저당·무인도 전략</div>
+          <div class='card-desc'>보드게임 + 실시간 주식<br>경매·협상·캐릭터 능력 전략</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("🎲 마블 입장", use_container_width=True, key="btn_marble"):
@@ -762,13 +762,13 @@ if st.session_state.page_view == "portal":
     with nc4:
         st.markdown("""
         <div class='game-card' style='border-color:rgba(0,255,136,0.4);min-height:180px;'>
-          <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.35);'>🎯 v5</div>
+          <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.35);'>🔫 NEW</div>
           <div class='card-icon'>🎯</div>
-          <div class='card-title'>스나이퍼 엘리트 v5</div>
-          <div class='card-desc'>10 미션 · 아군 소환 시스템<br>전선 돌파 · 기록 영구 저장</div>
+          <div class='card-title'>라인 배틀 저격전</div>
+          <div class='card-desc'>4단계 난이도 · 기지 공방전<br>유닛 소환 · 정밀 저격 지원</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("임무 입장 🎯", use_container_width=True, key="btn_i"):
+        if st.button("🔫 전투 입장", use_container_width=True, key="btn_i"):
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_i"
             else:
@@ -798,20 +798,18 @@ if st.session_state.page_view == "portal":
 <div class="arch-highlight" style="border-left-color:#c04fff; background: linear-gradient(90deg, rgba(192,79,255,0.08), rgba(108,99,255,0.06));">
     <p style="color:#c04fff !important;">🎮 게임 패치노트 (2026.05.08)</p>
     <p class="sub">
-        <b>🎯 스나이퍼 엘리트 v5 대업그레이드</b><br>
-        · <b>10라운드 미션 체제</b> — 초급~신화까지 10단계 순차 해금<br>
-        · <b>아군 소환 시스템</b> — 자원(💎)으로 보병/돌격대/중화기/의무병/아군저격수 소환 (1~5 단축키)<br>
-        · <b>자원 재생 시스템</b> — 시간 경과 및 적 처치 시 자원 획득<br>
-        · <b>화면 전체 채우기</b> — 브라우저 전체 크기에 맞춰 동적 렌더링<br>
-        · <b>기록 영구 저장 수정</b> — 로그아웃 후 재로그인 시 클리어 기록 완벽 복원<br><br>
-        <b>🎲 인베스트 마블 업그레이드</b><br>
-        · <b>승리 조건 6가지 추가</b> — 라인독점+전체호텔 / 연속3칸건물 / 기존파산 유지 / 공항4개+호텔 / 단일국가지배 / 순자산₩50,000<br>
-        · <b>이동 배너 실시간 표시</b> — 한 칸씩 이동 시 현재 위치와 프로그레스바 표시<br>
-        · <b>게임 기록 DB 저장</b> — 승리/순자산 기록이 로그아웃 후에도 영구 보존<br><br>
-        <b>🔧 기록 시스템 전면 개선</b><br>
-        · 로그인 시 <code>game_records.sniper.clears</code> 필드 자동 복원<br>
-        · 클리어한 미션 번호 MongoDB에 영구 저장<br>
-        · 마블 승리 기록(순자산·승리횟수·게임수) DB 동기화
+        <b>🔫 라인 배틀 저격전 (project_i 전면 개편)</b><br>
+        · <b>라인 배틀 메커니즘</b> — 아군/적군 기지 공방, 유닛 자동 전진 전투<br>
+        · <b>4단계 난이도</b> — 초보/중급/어려움/극악 선택, 적 체력·스폰속도 차등화<br>
+        · <b>정밀 저격 스코프</b> — RMB/F로 3.5배 줌 스코프, 탄창 제한·재장전 딜레이<br>
+        · <b>유닛 소환 시스템</b> — 보병/돌격대/중보병/의무병/저격수 5종 (1~5키)<br>
+        · <b>전역 명예의 전당</b> — 최고 킬 수 전국 1위 기록 연동<br><br>
+        <b>🎲 인베스트 마블 리더보드 연동</b><br>
+        · <b>전역 리더보드</b> — 최종 순자산 전국 1위 기록 (₩단위) 연동<br>
+        · 기존 게임 시스템(보드판·주식·캐릭터·경매·협상) 완전 유지<br><br>
+        <b>🏆 전역 명예의 전당 시스템 (A~I 공통)</b><br>
+        · <code>leaderboard_db</code> — 전 게임 1위 기록 통합 관리<br>
+        · 게임별 단위 동적 포맷팅 (킬/점수/₩) 자동 표시
     </p>
 </div>
         """, unsafe_allow_html=True)
@@ -967,7 +965,7 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/project_f.py</strong>🏎️ 네온 도주 레이싱</div>
     <div class="module-item"><strong>pages/project_g.py</strong>🧟 좀비 아포칼립스 슈터</div>
     <div class="module-item"><strong>pages/project_h.py</strong>🥊 스트리트 파이터 EX</div>
-    <div class="module-item"><strong>pages/project_i.py</strong>🎯 스나이퍼 엘리트 v5 (10라운드+소환)</div>
+    <div class="module-item"><strong>pages/project_i.py</strong>🔫 라인 배틀 저격전 (4난이도·기지공방·소환)</div>
 </div>
         """, unsafe_allow_html=True)
 
