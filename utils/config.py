@@ -14,7 +14,8 @@ TXLOG_FILE    = "txlog_db.json"
 REALESTATE_MARKET_FILE = "realestate_market_db.json"  
 CLAN_FILE     = "clan_db.json"
 MESSAGES_FILE = "messages_db.json"
-STATS_FILE    = "stats_db.json"  # 👈 [통계 대시보드] 통계용 DB 파일 상수 추가!
+STATS_FILE       = "stats_db.json"  # 👈 [통계 대시보드] 통계용 DB 파일 상수 추가!
+LEADERBOARD_FILE = "leaderboard_db.json"  # 🏆 전역 명예의 전당 (A~I 전 게임 1위 기록)
 
 # 📈 주식 설정
 stock_config = [
