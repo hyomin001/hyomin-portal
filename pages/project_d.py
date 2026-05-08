@@ -2892,6 +2892,11 @@ function showGameOver(){
   }).join('');
   document.getElementById('gameover').style.display='flex';
   butler('win');spawnConfetti();spawnFireworks();
+  // ── 플레이어(인덱스 0)가 우승했을 때 DB에 기록 저장 ──
+  if(G.winnerIdx===0){
+    const score=getNetWorth(0);
+    try{window.parent.postMessage({type:'marble_result',score,wins:1},'*');}catch(e){}
+  }
 }
 
 function resetToChar(){
@@ -2951,6 +2956,38 @@ window.addEventListener('DOMContentLoaded',()=>{
 """
 
 def render():
+    import streamlit.components.v1 as _cv1
+    from utils.core import sync_user_data
+    from utils.database import load_db, save_db
+    from utils.config import USERS_FILE
+
+    # ── 마블 결과가 query_params로 넘어왔을 때 DB 저장 ──
+    qp = st.query_params
+    if qp.get('marble_score'):
+        try:
+            uid = st.session_state.get('logged_in_user', '')
+            m_score = int(qp.get('marble_score', 0))
+            m_wins  = int(qp.get('marble_wins', 0))
+            if uid and m_score > 0:
+                _users = load_db(USERS_FILE, {})
+                if uid in _users:
+                    ms = _users[uid].setdefault('marble_stats', {
+                        'wins': 0, 'losses': 0, 'games_played': 0, 'best_net_worth': 0
+                    })
+                    ms['games_played'] = ms.get('games_played', 0) + 1
+                    ms['wins']         = ms.get('wins', 0) + m_wins
+                    if m_score > ms.get('best_net_worth', 0):
+                        ms['best_net_worth'] = m_score
+                        st.toast(f"🏆 인베스트마블 최고 순자산 갱신! ₩{m_score:,}", icon="🌍")
+                    _users[uid]['marble_stats'] = ms
+                    save_db(USERS_FILE, _users)
+                    st.session_state.marble_stats = ms
+                    sync_user_data()
+        except Exception:
+            pass
+        st.query_params.clear()
+        st.rerun()
+
     st.markdown("""
     <style>
     #MainMenu{visibility:hidden;}
@@ -2961,14 +2998,27 @@ def render():
     </style>
     """, unsafe_allow_html=True)
 
-    # 화면 높이에 맞게 자동 조절 안내
     col_info, col_tip = st.columns([3, 1])
     with col_info:
         st.caption("📱 모바일: 화면을 가로로 돌리면 더 편합니다 | 💡 게임이 잘리면 아래로 스크롤하세요")
     with col_tip:
         st.caption("🖥️ 권장: 1280px 이상 화면")
 
+    listener_html = """
+    <script>
+    window.parent.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'marble_result') {
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set('marble_score', e.data.score);
+        url.searchParams.set('marble_wins',  e.data.wins ?? 0);
+        window.parent.location.href = url.toString();
+      }
+    });
+    </script>
+    """
+    _cv1.html(listener_html, height=0)
     components.html(GAME_HTML, height=880, scrolling=True)
+
 
 if __name__ == "__main__":
     render()
