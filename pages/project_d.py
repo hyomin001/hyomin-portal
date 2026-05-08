@@ -2958,11 +2958,16 @@ window.addEventListener('DOMContentLoaded',()=>{
 def render():
     import streamlit.components.v1 as _cv1
     from utils.core import sync_user_data
-    from utils.database import load_db, save_db
+    from utils.database import (
+        load_db, save_db, load_leaderboard, update_leaderboard,
+        format_leaderboard_score
+    )
     from utils.config import USERS_FILE
 
-    # ── 마블 결과가 query_params로 넘어왔을 때 DB 저장 ──
+    GAME_ID = "invest_marble"
     qp = st.query_params
+
+    # ── 마블 결과가 query_params로 넘어왔을 때 DB 저장 ──
     if qp.get('marble_score'):
         try:
             uid = st.session_state.get('logged_in_user', '')
@@ -2983,10 +2988,29 @@ def render():
                     save_db(USERS_FILE, _users)
                     st.session_state.marble_stats = ms
                     sync_user_data()
+                # 전역 리더보드 갱신
+                user_name = _users.get(uid, {}).get('nickname', uid) if uid else uid
+                if update_leaderboard(GAME_ID, user_name, m_score):
+                    st.toast(f"👑 전국 1위! 인베스트마블 ₩{m_score:,}", icon="👑")
         except Exception:
             pass
         st.query_params.clear()
         st.rerun()
+
+    # ── 전역 리더보드 표시 ──
+    lb = load_leaderboard()
+    rec = lb.get(GAME_ID, {})
+    if rec:
+        score_fmt = format_leaderboard_score(GAME_ID, rec.get('top_score', 0))
+        st.markdown(f"""
+        <div style='background:linear-gradient(90deg,rgba(255,215,0,.10),rgba(0,0,0,0));
+          border:1px solid rgba(255,215,0,.35);border-radius:10px;padding:8px 18px;
+          margin-bottom:10px;font-family:"Orbitron",sans-serif;font-size:.82rem;'>
+          👑 전국 1위: <b style="color:#ffd700;">{rec.get("top_user","?")}</b>
+          &nbsp;|&nbsp; <span style="color:#00d4ff;">{score_fmt}</span>
+          &nbsp;|&nbsp; <span style="color:#556;">{rec.get("date","")}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("""
     <style>
