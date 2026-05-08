@@ -11,12 +11,12 @@ GAME_HTML = r"""<!DOCTYPE html>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{--red:#ff2244;--grn:#00ff88;--gold:#f5c518;--cyan:#00d4ff;--bg:#06080a;--blue:#4488ff;}
-html,body{width:100%;height:100vh;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;cursor:none;}
+html,body{width:100%;height:100vh;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;}
 #root{position:relative;width:100%;height:100vh;overflow:hidden;}
 canvas{display:block;}
 
 /* ── CUSTOM CURSOR (숨기고 캔버스에서 그림) ── */
-* { cursor: none !important; }
+.in-game, .in-game * { cursor: none !important; }
 
 /* ── CTRL BAR ── */
 #ctrl-bar{position:absolute;top:0;left:0;right:0;z-index:200;background:rgba(0,0,0,.92);border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:center;align-items:center;gap:10px;padding:3px 10px;font-size:9px;color:#556;flex-wrap:wrap;}
