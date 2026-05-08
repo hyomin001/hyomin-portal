@@ -44,6 +44,28 @@ if "page_view" not in st.session_state:
 
 
 # ==============================
+# _merge_game_records — game_records 기본값 보장 (clears 필드 포함)
+# ==============================
+def _merge_game_records(stored: dict) -> dict:
+    """DB에 저장된 game_records와 기본값을 병합해 누락 필드를 보완합니다."""
+    default = {
+        'racing':  {'score': 0, 'dist': 0.0},
+        'zombie':  {'wave': 0, 'score': 0, 'kills': 0},
+        'fighter': {'score': 0, 'perfects': 0},
+        'sniper':  {'score': 0, 'grade': '', 'clears': []},  # clears: 클리어한 미션 인덱스 목록
+    }
+    result = {}
+    for key, dval in default.items():
+        db_val = stored.get(key, {})
+        merged = {**dval, **db_val}
+        # sniper.clears 누락 보완
+        if key == 'sniper' and 'clears' not in merged:
+            merged['clears'] = []
+        result[key] = merged
+    return result
+
+
+# ==============================
 # _do_login — 모듈 수준 함수
 # ==============================
 def _do_login(uid: str, users: dict, device_mode: str):
@@ -72,7 +94,7 @@ def _do_login(uid: str, users: dict, device_mode: str):
         'terminal_cleared':  set(u.get('terminal_cleared', [])),
         'dungeon_stats':     u.get('dungeon_stats', {'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0}),
         'marble_stats':      u.get('marble_stats', {'wins': 0, 'losses': 0, 'games_played': 0, 'best_net_worth': 0}),
-        'game_records':      u.get('game_records', {'racing': {'score': 0, 'dist': 0.0}, 'zombie': {'wave': 0, 'score': 0, 'kills': 0}, 'fighter': {'score': 0, 'perfects': 0}, 'sniper': {'score': 0, 'grade': ''}}),
+        'game_records':      _merge_game_records(u.get('game_records', {})),
     })
     stats    = load_stats()
     today    = datetime.now(KST).strftime("%Y-%m-%d")
@@ -740,10 +762,10 @@ if st.session_state.page_view == "portal":
     with nc4:
         st.markdown("""
         <div class='game-card' style='border-color:rgba(0,255,136,0.4);min-height:180px;'>
-          <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.35);'>🎯 ELITE</div>
+          <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.35);'>🎯 v5</div>
           <div class='card-icon'>🎯</div>
-          <div class='card-title'>스나이퍼 엘리트 ULTRA</div>
-          <div class='card-desc'>6 미션 · 야간작전 포함<br>콤보·헤드샷·바람탄도·미니맵</div>
+          <div class='card-title'>스나이퍼 엘리트 v5</div>
+          <div class='card-desc'>10 미션 · 아군 소환 시스템<br>전선 돌파 · 기록 영구 저장</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("임무 입장 🎯", use_container_width=True, key="btn_i"):
@@ -774,23 +796,22 @@ if st.session_state.page_view == "portal":
     </p>
 </div>
 <div class="arch-highlight" style="border-left-color:#c04fff; background: linear-gradient(90deg, rgba(192,79,255,0.08), rgba(108,99,255,0.06));">
-    <p style="color:#c04fff !important;">🎮 게임 패치노트 (2026.05.07)</p>
+    <p style="color:#c04fff !important;">🎮 게임 패치노트 (2026.05.08)</p>
     <p class="sub">
-        <b>🎯 스나이퍼 엘리트 ULTRA 대업그레이드</b><br>
-        · <b>6미션 체제</b> — 야간 특수작전(6스테이지) 신규 추가<br>
-        · <b>콤보 시스템</b> — 연속 킬 시 최대 ×10 점수 배율 적용<br>
-        · <b>헤드샷 시스템</b> — 헤드샷 판정 시 2배 데미지 + 💀 연출<br>
-        · <b>파티클 엔진</b> — 혈흔·폭발·총구화염·탄환궤적 전면 적용<br>
-        · <b>미니맵</b> — 우하단 실시간 아군/적/탄환 위치 표시<br>
-        · <b>탄창 시각화</b> — 개별 황동 탄환 핍 UI로 교체<br>
-        · <b>Web Audio API</b> — 총성·재장전·보스킬 사운드 레이어드 추가<br>
-        · <b>스코프 업그레이드</b> — 밀도트 + 노이즈 그레인 + 야시경 필터<br><br>
-        <b>💻 THE TERMINAL</b><br>
-        · <b>20 스테이지 완성</b> — stage 15~20 SyntaxError 버그 수정 및 정식 해금<br>
-        · <b>타임어택 모드</b> — 전체 20스테이지 최속 클리어 도전 모드 추가<br>
-        · Enter키 즉시 제출(chat_input) 방식으로 UX 개선<br><br>
-        <b>🎮 전체 공통</b><br>
-        · 포털 카드 최신 게임 정보 반영 업데이트
+        <b>🎯 스나이퍼 엘리트 v5 대업그레이드</b><br>
+        · <b>10라운드 미션 체제</b> — 초급~신화까지 10단계 순차 해금<br>
+        · <b>아군 소환 시스템</b> — 자원(💎)으로 보병/돌격대/중화기/의무병/아군저격수 소환 (1~5 단축키)<br>
+        · <b>자원 재생 시스템</b> — 시간 경과 및 적 처치 시 자원 획득<br>
+        · <b>화면 전체 채우기</b> — 브라우저 전체 크기에 맞춰 동적 렌더링<br>
+        · <b>기록 영구 저장 수정</b> — 로그아웃 후 재로그인 시 클리어 기록 완벽 복원<br><br>
+        <b>🎲 인베스트 마블 업그레이드</b><br>
+        · <b>승리 조건 6가지 추가</b> — 라인독점+전체호텔 / 연속3칸건물 / 기존파산 유지 / 공항4개+호텔 / 단일국가지배 / 순자산₩50,000<br>
+        · <b>이동 배너 실시간 표시</b> — 한 칸씩 이동 시 현재 위치와 프로그레스바 표시<br>
+        · <b>게임 기록 DB 저장</b> — 승리/순자산 기록이 로그아웃 후에도 영구 보존<br><br>
+        <b>🔧 기록 시스템 전면 개선</b><br>
+        · 로그인 시 <code>game_records.sniper.clears</code> 필드 자동 복원<br>
+        · 클리어한 미션 번호 MongoDB에 영구 저장<br>
+        · 마블 승리 기록(순자산·승리횟수·게임수) DB 동기화
     </p>
 </div>
         """, unsafe_allow_html=True)
@@ -946,7 +967,7 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/project_f.py</strong>🏎️ 네온 도주 레이싱</div>
     <div class="module-item"><strong>pages/project_g.py</strong>🧟 좀비 아포칼립스 슈터</div>
     <div class="module-item"><strong>pages/project_h.py</strong>🥊 스트리트 파이터 EX</div>
-    <div class="module-item"><strong>pages/project_i.py</strong>🎯 스나이퍼 엘리트 ULTRA</div>
+    <div class="module-item"><strong>pages/project_i.py</strong>🎯 스나이퍼 엘리트 v5 (10라운드+소환)</div>
 </div>
         """, unsafe_allow_html=True)
 
@@ -1246,32 +1267,32 @@ if st.session_state.page_view == "portal":
 
             st.markdown("""
 <div class="arch-card" style="border-left-color:#00ff88;">
-    <h4 style="color:#00ff88 !important;">🎯 스나이퍼 엘리트 ULTRA &#8212; WAR SNIPER</h4>
+    <h4 style="color:#00ff88 !important;">🎯 스나이퍼 엘리트 v5 &#8212; FRONTLINE BREACH</h4>
     <p>
-        전장의 저격수가 되어 6개의 미션을 완수하는 본격 스나이퍼 시뮬레이션입니다.
-        실제 바람 탄도 물리가 적용되어 풍향·풍속에 따라 탄환이 휘며,
-        <b>헤드샷</b> 판정 시 2배 데미지와 함께 💀 연출이 등장합니다.
-        <b>콤보 시스템</b>(×10까지)으로 연속 킬 시 점수 배율이 상승하고,
-        6스테이지는 <b>야간 특수작전</b>으로 야시경 스코프를 사용합니다.
-        파티클 엔진, 미니맵, Web Audio 사운드, 탄창 시각화 UI까지 완비된 게임입니다.
+        전장의 저격수가 되어 <b>10개의 미션</b>을 완수하는 본격 전선 돌파 시뮬레이션입니다.
+        적을 처치하거나 시간이 지나면 <b>자원(💎)</b>이 쌓이고,
+        이를 사용해 <b>보병·돌격대·중화기·의무병·아군저격수</b>를 소환해 전선을 밀어붙이세요.
+        기관총병·장교·총사령관 같은 핵심 목표를 먼저 제거하면 전선이 크게 전진합니다.
+        <b>클리어 기록은 MongoDB에 영구 저장</b>되어 로그아웃 후에도 진행상황이 유지됩니다.
     </p>
     <div style="margin-top:12px;">
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔭 3.5x~5x 배율 스코프</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🌬️ 바람 탄도 물리</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🎮 10라운드 미션</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🪖 아군 소환 시스템</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">💎 자원 관리</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔭 스코프 저격</span>
         <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">💀 헤드샷 시스템</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔥 ×10 콤보</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🌙 야간 6스테이지</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🗺️ 실시간 미니맵</span>
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">S~D 등급 평가</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">💾 기록 영구 저장</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">S~C 등급 평가</span>
     </div>
     <div style="margin-top:10px;background:rgba(0,255,136,0.07);border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:var(--green) !important;font-weight:700;">💡 컨트롤</p>
         <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
             <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">클릭/Space</code> 발사 &nbsp;
             <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">우클릭/Z</code> 스코프 &nbsp;
-            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">Shift</code> 숨참기 안정 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">Shift</code> 숨참기 &nbsp;
             <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">R</code> 재장전 &nbsp;
-            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">ESC</code> 타이틀
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">C</code> 엄폐 &nbsp;
+            <code style="background:rgba(0,255,136,0.15);padding:1px 5px;border-radius:3px;">1~5</code> 병력 소환
         </p>
     </div>
 </div>
