@@ -16,12 +16,13 @@ GAME_HTML = r"""<!DOCTYPE html>
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);
-  overflow:hidden;width:100vw;height:100vh;user-select:none;}
+  overflow:hidden;width:100%;height:100%;user-select:none;}
 
 /* ══ DIFF SELECT ══ */
 #diff-select{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;
   align-items:center;justify-content:center;background:rgba(5,8,15,.98);
-  background-image:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(255,69,96,.07) 0%,transparent 70%);}
+  background-image:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(255,69,96,.07) 0%,transparent 70%);
+  overflow-y:auto;}
 .ds-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,5vw,3.2rem);
   background:linear-gradient(135deg,#ff4560,#ff8c42,#ffd700);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
@@ -52,10 +53,10 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .start-btn:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(255,69,96,.6);}
 
 /* ══ GAME ══ */
-#game{display:none;width:100vw;height:100vh;flex-direction:column;}
+#game{display:none;width:100%;height:100%;flex-direction:column;overflow:hidden;}
 .hud{background:rgba(5,8,15,.96);border-bottom:1px solid rgba(255,255,255,.07);
   padding:7px 14px;display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:6px;position:relative;z-index:50;flex-shrink:0;}
+  flex-wrap:wrap;gap:6px;position:relative;z-index:50;flex-shrink:0;min-height:44px;}
 .hud-left,.hud-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .hud-title{font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;color:var(--orange);}
 .base-hp-wrap{display:flex;align-items:center;gap:7px;}
@@ -74,12 +75,12 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .diff-hud-badge{font-size:.7rem;padding:3px 10px;border-radius:20px;font-weight:700;}
 .weather-badge{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--text2);font-size:.7rem;padding:3px 10px;border-radius:8px;}
 
-#battlefield{display:block;width:100%;flex:1;position:relative;}
+#battlefield{display:block;width:100%;flex:1;min-height:0;}
 
 /* BOTTOM PANEL */
 .bot-panel{background:rgba(5,8,15,.96);border-top:1px solid rgba(255,255,255,.07);
   padding:6px 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
-  position:relative;z-index:50;flex-shrink:0;}
+  position:relative;z-index:50;flex-shrink:0;min-height:64px;}
 .unit-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
   border-radius:10px;padding:5px 8px;cursor:pointer;transition:all .18s;
   text-align:center;min-width:64px;position:relative;}
@@ -587,8 +588,15 @@ const canvas=document.getElementById('battlefield');
 const ctx=canvas.getContext('2d');
 
 function resize(){
-  const r=canvas.getBoundingClientRect();
-  W=canvas.width=r.width;H=canvas.height=r.height;
+  // Use offsetWidth/Height so canvas knows its real rendered size
+  W=canvas.width=canvas.offsetWidth;
+  H=canvas.height=canvas.offsetHeight;
+  if(W<10||H<10){
+    // fallback: read from bounding rect
+    const r=canvas.getBoundingClientRect();
+    W=canvas.width=Math.max(r.width,300);
+    H=canvas.height=Math.max(r.height,200);
+  }
   GROUND=H*0.72;ALLY_BASE_X=70;ENEMY_BASE_X=W-70;
 }
 
@@ -636,11 +644,14 @@ function startGame(diff){
   const db=document.getElementById('diff-badge');
   db.textContent=dc.name;
   db.style.cssText=`background:${dc.bgCol};color:${dc.col};border:1px solid ${dc.bdCol};`;
-  resize();updateHUD();updateButtons();
-  document.getElementById('scope').style.display='block';
-  canvas.style.cursor='none';
-  document.getElementById('pierce-val').textContent='×'+G.pierceCount;
-  requestAnimationFrame(loop);
+  // defer so flex layout fully renders before we measure
+  setTimeout(()=>{
+    resize();updateHUD();updateButtons();
+    document.getElementById('scope').style.display='block';
+    canvas.style.cursor='none';
+    document.getElementById('pierce-val').textContent='×'+G.pierceCount;
+    requestAnimationFrame(loop);
+  },30);
 }
 
 function goMenu(){
