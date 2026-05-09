@@ -502,6 +502,7 @@ if st.session_state.page_view == "portal":
     market = load_db(MARKET_FILE, {})
 
     # ── 최상단 HUD ──
+    _users_db_for_stats = {}  # 기본값 선언 — 아래 try 블록 실패 시 NameError 방지
     try:
         _stats   = load_stats()
         _today   = datetime.now(KST).strftime("%Y-%m-%d")
@@ -660,8 +661,8 @@ if st.session_state.page_view == "portal":
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("""
-        <div class='game-card card-universe'>
+        st.markdown(f"""
+        <div class='game-card card-universe' style='position:relative;'>
           <div class='card-badge badge-live'>🔴 LIVE</div>
           <div class='card-icon'>🌌</div>
           <div class='card-title'>HYOMIN UNIVERSE</div>
@@ -677,7 +678,7 @@ if st.session_state.page_view == "portal":
             st.rerun()
 
         st.markdown("""
-        <div class='game-card card-battle' style='margin-top:16px;'>
+        <div class='game-card card-battle' style='margin-top:16px;position:relative;'>
           <div class='card-badge badge-hot'>🔥 HOT</div>
           <div class='card-icon'>🗳️</div>
           <div class='card-title'>WORLD BATTLE</div>
@@ -694,7 +695,7 @@ if st.session_state.page_view == "portal":
 
     with col2:
         st.markdown("""
-        <div class='game-card card-academy'>
+        <div class='game-card card-academy' style='position:relative;'>
           <div class='card-badge badge-new'>✨ NEW</div>
           <div class='card-icon'>🧠</div>
           <div class='card-title'>AI 아카데미</div>
