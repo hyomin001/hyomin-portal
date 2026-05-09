@@ -1,910 +1,1160 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import json
 
 GAME_HTML = r"""<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>라인 배틀 저격전</title>
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Rajdhani:wght@500;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>라인 배틀 저격전 v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Black+Han+Sans&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-:root{--red:#ff2244;--grn:#00ff88;--gold:#f5c518;--cyan:#00d4ff;--bg:#06080a;--blue:#4488ff;}
-html,body{width:100%;height:100vh;overflow:hidden;background:var(--bg);font-family:'Orbitron',sans-serif;touch-action:none;}
-#root{position:relative;width:100%;height:100vh;overflow:hidden;}
-canvas{display:block;}
-.in-game,.in-game *{cursor:none!important;}
+:root{
+  --bg:#05080f;--bg2:#080d1a;--gold:#ffd700;--green:#10d96e;--red:#ff4560;
+  --blue:#4dabf7;--cyan:#22d3ee;--orange:#ff8c42;--purple:#b26cf7;
+  --text:#e8f0ff;--text2:#7a8fb5;--border:rgba(255,255,255,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);
+  overflow:hidden;width:100vw;height:100vh;user-select:none;}
 
-/* CTRL BAR */
-#ctrl-bar{position:absolute;top:0;left:0;right:0;z-index:200;background:rgba(0,0,0,.92);border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:center;align-items:center;gap:10px;padding:3px 10px;font-size:9px;color:#556;flex-wrap:wrap;}
-#ctrl-bar b{color:#f5c518;}
+/* ══ DIFF SELECT ══ */
+#diff-select{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(5,8,15,.98);
+  background-image:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(255,69,96,.07) 0%,transparent 70%);}
+.ds-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,5vw,3.2rem);
+  background:linear-gradient(135deg,#ff4560,#ff8c42,#ffd700);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:3px;margin-bottom:4px;text-align:center;}
+.ds-sub{color:var(--text2);font-size:.76rem;letter-spacing:5px;margin-bottom:6px;text-align:center;}
+.ds-version{display:inline-block;background:rgba(255,140,66,.15);border:1px solid rgba(255,140,66,.4);
+  color:var(--orange);border-radius:20px;padding:2px 12px;font-size:.72rem;font-weight:700;
+  margin-bottom:24px;letter-spacing:2px;}
+.diff-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:780px;width:92%;margin-bottom:18px;}
+.diff-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:20px 12px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;}
+.diff-card:hover,.diff-card.sel{transform:translateY(-5px);}
+.diff-card[data-d="0"]:hover,.diff-card[data-d="0"].sel{border-color:#10d96e;box-shadow:0 0 28px rgba(16,217,110,.2);}
+.diff-card[data-d="1"]:hover,.diff-card[data-d="1"].sel{border-color:#4dabf7;box-shadow:0 0 28px rgba(77,171,247,.2);}
+.diff-card[data-d="2"]:hover,.diff-card[data-d="2"].sel{border-color:#ff8c42;box-shadow:0 0 28px rgba(255,140,66,.2);}
+.diff-card[data-d="3"]:hover,.diff-card[data-d="3"].sel{border-color:#ff4560;box-shadow:0 0 28px rgba(255,69,96,.2);}
+.diff-em{font-size:2.2rem;margin-bottom:7px;}
+.diff-name{font-family:'Black Han Sans',sans-serif;font-size:1.1rem;margin-bottom:5px;}
+.diff-desc{font-size:.72rem;color:var(--text2);line-height:1.65;}
+.diff-tag{display:inline-block;font-size:.62rem;font-weight:700;border-radius:20px;padding:2px 8px;margin-top:7px;}
 
-/* HUD TOP */
-#hud{position:absolute;top:24px;left:0;right:0;z-index:100;pointer-events:none;display:flex;gap:4px;padding:4px 8px;align-items:stretch;}
-.hb{background:rgba(0,0,0,.82);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:3px 8px;text-align:center;min-width:48px;}
-.hv{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:900;color:var(--gold);}
-.hl{font-size:7px;color:#334;letter-spacing:.8px;text-transform:uppercase;}
-#frontline-wrap{flex:1;margin:0 6px;display:flex;flex-direction:column;justify-content:center;}
-#fl-label{display:flex;justify-content:space-between;font-size:7px;color:#334;margin-bottom:3px;}
-#fl-track{height:10px;background:rgba(255,255,255,.04);border-radius:99px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.06);}
-#fl-ally{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,#0033cc,#2266ff,#44aaff);transition:width .35s;}
-#fl-enemy{position:absolute;top:0;right:0;height:100%;background:linear-gradient(270deg,#880000,#cc2200,#ff4400);transition:width .35s;}
-#fl-mid{position:absolute;top:-1px;bottom:-1px;width:3px;background:#fff;border-radius:2px;transition:left .35s;transform:translateX(-50%);box-shadow:0 0 6px #fff;}
+/* FEATURE PILLS */
+.feature-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;justify-content:center;max-width:780px;}
+.feat-pill{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:20px;
+  padding:4px 12px;font-size:.72rem;color:var(--text2);}
+.feat-pill span{color:var(--cyan);}
 
-/* AMMO */
-#ammo-strip{position:absolute;top:72px;right:10px;z-index:100;pointer-events:none;display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
-.ammo-pip{width:6px;height:18px;border-radius:2px;background:#f5c518;border:1px solid rgba(255,255,255,.2);box-shadow:0 0 4px rgba(245,197,24,.4);transition:all .15s;}
-.ammo-pip.empty{background:#1a1a1a;border-color:#333;box-shadow:none;}
+.start-btn{padding:13px 52px;font-size:1.05rem;font-weight:900;font-family:'Black Han Sans',sans-serif;
+  background:linear-gradient(135deg,#ff4560,#ff8c42);color:#fff;border:none;border-radius:40px;
+  cursor:pointer;letter-spacing:2px;transition:all .2s;box-shadow:0 0 32px rgba(255,69,96,.4);}
+.start-btn:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(255,69,96,.6);}
 
-/* SUMMON PANEL */
-#summon-panel{position:absolute;left:0;top:64px;bottom:50px;width:120px;z-index:100;display:flex;flex-direction:column;gap:4px;padding:6px;background:rgba(0,0,0,.7);border-right:1px solid rgba(0,255,136,.12);}
-#summon-title{font-size:7px;color:#0f9;letter-spacing:1px;text-align:center;margin-bottom:4px;border-bottom:1px solid rgba(0,255,136,.15);padding-bottom:4px;}
-#resource-row{display:flex;align-items:center;justify-content:center;gap:4px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:900;color:#f5c518;margin-bottom:5px;}
-.summon-btn{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);border-radius:5px;padding:4px 5px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px;user-select:none;}
-.summon-btn:hover{background:rgba(0,255,136,.18);border-color:#00ff88;box-shadow:0 0 8px rgba(0,255,136,.25);}
-.summon-btn:active{transform:scale(0.95);}
-.summon-btn.disabled{opacity:.3;cursor:not-allowed;}
-.sb-ico{font-size:14px;}.sb-name{font-size:7px;color:#aaa;letter-spacing:.5px;}
-.sb-cost{font-size:7px;color:#f5c518;font-family:'Rajdhani',sans-serif;font-weight:700;}
+/* ══ GAME ══ */
+#game{display:none;width:100vw;height:100vh;flex-direction:column;}
 
-/* COVER BTN */
-#cover-btn{position:absolute;bottom:14px;right:10px;z-index:100;background:rgba(0,0,0,.8);border:1px solid rgba(0,255,136,.25);border-radius:7px;padding:5px 13px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#00ff88;cursor:pointer;letter-spacing:1px;user-select:none;transition:all .12s;}
-#cover-btn.active{background:rgba(0,255,136,.12);border-color:#00ff88;box-shadow:0 0 12px rgba(0,255,136,.35);}
+/* HUD */
+.hud{background:rgba(5,8,15,.96);border-bottom:1px solid rgba(255,255,255,.07);
+  padding:7px 14px;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:6px;position:relative;z-index:50;flex-shrink:0;}
+.hud-left,.hud-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.hud-title{font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;color:var(--orange);}
+.base-hp-wrap{display:flex;align-items:center;gap:7px;}
+.base-label{font-size:.7rem;color:var(--text2);font-weight:700;min-width:36px;}
+.hp-bar-outer{width:120px;height:13px;background:rgba(255,255,255,.06);border-radius:7px;
+  overflow:hidden;border:1px solid rgba(255,255,255,.08);position:relative;}
+.hp-fill{height:100%;border-radius:7px;transition:width .3s;}
+.hp-fill.ally{background:linear-gradient(90deg,#10d96e,#22d3ee);}
+.hp-fill.enemy{background:linear-gradient(90deg,#ff4560,#ff8c42);}
+.hp-val{font-size:.72rem;font-weight:700;min-width:32px;}
+.hud-badge{border-radius:8px;padding:3px 10px;font-size:.75rem;font-weight:700;}
+.res-badge{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:var(--gold);}
+.wave-badge{background:rgba(178,108,247,.12);border:1px solid rgba(178,108,247,.3);color:var(--purple);}
+.score-badge{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:var(--cyan);}
+.kills-badge{background:rgba(255,69,96,.1);border:1px solid rgba(255,69,96,.3);color:var(--red);}
+.diff-hud-badge{font-size:.7rem;padding:3px 10px;border-radius:20px;font-weight:700;}
 
-/* AMMO/RELOAD */
-#php-wrap{position:absolute;left:130px;bottom:14px;z-index:100;pointer-events:none;width:150px;}
-#php-label{font-size:7px;color:#445;letter-spacing:1px;margin-bottom:3px;display:flex;justify-content:space-between;}
-#php-track{height:8px;background:rgba(0,0,0,.5);border-radius:99px;overflow:hidden;border:1px solid rgba(0,255,100,.1);}
-#php-fill{height:100%;background:linear-gradient(90deg,#00aa44,#00ff88);border-radius:99px;transition:width .3s;}
-#reload-bar-wrap{position:absolute;left:130px;bottom:26px;z-index:100;pointer-events:none;width:150px;display:none;}
-#reload-bar-fill{height:5px;background:var(--cyan);border-radius:99px;width:0%;transition:width .05s;}
+/* CANVAS */
+#battlefield{display:block;width:100%;flex:1;position:relative;}
 
-/* OVERLAYS */
-#warning-flash{position:absolute;inset:0;z-index:190;pointer-events:none;opacity:0;background:rgba(255,0,40,.4);transition:opacity .08s;}
-#cover-vignette{position:absolute;inset:0;z-index:40;pointer-events:none;background:radial-gradient(ellipse 55% 45% at 50% 50%,transparent 35%,rgba(0,0,0,.75) 100%);opacity:0;transition:opacity .3s;}
-#cover-vignette.on{opacity:1;}
-#muzzle-flash{position:absolute;inset:0;z-index:35;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 8% 90%,rgba(255,220,100,.2),transparent 38%);transition:opacity .05s;}
+/* BOTTOM PANEL */
+.bot-panel{background:rgba(5,8,15,.96);border-top:1px solid rgba(255,255,255,.07);
+  padding:8px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  position:relative;z-index:50;flex-shrink:0;}
+.unit-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
+  border-radius:10px;padding:6px 10px;cursor:pointer;transition:all .18s;
+  text-align:center;min-width:72px;position:relative;}
+.unit-btn:hover:not(:disabled){transform:translateY(-3px);border-color:var(--cyan);
+  background:rgba(34,211,238,.07);box-shadow:0 4px 16px rgba(34,211,238,.15);}
+.unit-btn:disabled{opacity:.35;cursor:not-allowed;}
+.unit-btn .key-badge{position:absolute;top:3px;left:5px;font-size:.58rem;color:var(--text2);font-weight:900;}
+.unit-btn .uem{font-size:1.3rem;display:block;margin-bottom:1px;}
+.unit-btn .uname{font-size:.65rem;font-weight:700;display:block;}
+.unit-btn .ucost{font-size:.62rem;color:var(--gold);display:block;}
+.unit-btn .ucool{height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:4px;overflow:hidden;}
+.unit-btn .ucool-fill{height:100%;background:var(--cyan);border-radius:2px;transition:width .1s linear;}
 
-/* TOAST */
-#toast-wrap{position:absolute;top:58px;left:50%;transform:translateX(-50%);z-index:280;display:flex;flex-direction:column;gap:5px;align-items:center;pointer-events:none;}
-.toast-item{background:rgba(4,12,4,.97);border:1px solid rgba(245,197,24,.35);border-radius:4px;padding:5px 14px;font-size:10px;color:var(--gold);letter-spacing:1px;white-space:nowrap;animation:toastSlide .2s ease,toastFade .4s ease 1.6s forwards;}
-@keyframes toastSlide{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
-@keyframes toastFade{to{opacity:0}}
-.toast-item.red{border-color:rgba(255,50,50,.4);color:#ff6666;}
-.toast-item.grn{border-color:rgba(0,255,100,.4);color:#00ff88;}
-.toast-item.blue{border-color:rgba(0,200,255,.4);color:#00d4ff;}
+/* ABILITY ROW */
+.ability-row{display:flex;gap:7px;margin-left:auto;align-items:center;}
+.abil-btn{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:6px 10px;cursor:pointer;text-align:center;min-width:64px;
+  transition:all .2s;position:relative;}
+.abil-btn:hover:not(.cooldown){border-color:var(--gold);background:rgba(255,215,0,.08);}
+.abil-btn.cooldown{opacity:.45;cursor:not-allowed;}
+.abil-btn .aem{font-size:1.2rem;display:block;}
+.abil-btn .aname{font-size:.6rem;font-weight:700;color:var(--gold);}
+.abil-btn .acool{font-size:.58rem;color:var(--text2);}
+.abil-cd-bar{position:absolute;bottom:0;left:0;height:3px;background:var(--gold);border-radius:0 0 8px 8px;transition:width .1s linear;}
 
-/* KILLFEED */
-#killfeed{position:absolute;top:68px;right:8px;z-index:200;pointer-events:none;display:flex;flex-direction:column;gap:3px;}
-.kf-item{font-family:'Rajdhani',sans-serif;font-size:9px;color:rgba(255,100,100,.9);text-align:right;letter-spacing:.5px;animation:kfFade .2s ease,kfFade .5s ease 2s forwards;}
-@keyframes kfFade{to{opacity:0}}
+.snipe-hint{font-size:.72rem;color:var(--text2);line-height:1.5;padding-left:8px;
+  border-left:2px solid rgba(255,255,255,.08);}
 
-/* BASE HP */
-#ally-hp{position:absolute;left:0;bottom:50px;z-index:100;pointer-events:none;width:140px;padding:4px 6px;background:rgba(0,0,0,.7);}
-#enemy-hp{position:absolute;right:0;bottom:50px;z-index:100;pointer-events:none;width:140px;padding:4px 6px;background:rgba(0,0,0,.7);text-align:right;}
-.base-lbl{font-size:7px;color:#334;margin-bottom:2px;letter-spacing:.8px;}
-.base-track{height:7px;background:rgba(255,255,255,.05);border-radius:99px;overflow:hidden;}
-.base-fill-ally{height:100%;background:linear-gradient(90deg,#0066ff,#44aaff);border-radius:99px;transition:width .3s;}
-.base-fill-enemy{height:100%;background:linear-gradient(90deg,#ff4400,#ff8800);border-radius:99px;float:right;transition:width .3s;}
+/* SCOPE */
+#scope{position:fixed;pointer-events:none;z-index:1000;display:none;
+  filter:drop-shadow(0 0 6px rgba(255,69,96,0.5));}
+#scope svg{display:block;}
 
-/* SCREENS */
-#title-screen,#result-screen,#difficulty-screen{position:absolute;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,6,10,.97);}
-.title-logo{font-family:'Black Han Sans',sans-serif;font-size:clamp(2rem,7vw,4rem);background:linear-gradient(135deg,#f5c518,#ff8800,#ff2244);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 30px rgba(255,100,0,.4));letter-spacing:4px;text-align:center;}
-.sub-txt{font-size:clamp(.6rem,2vw,.85rem);color:#334;letter-spacing:3px;margin:8px 0 24px;}
-.diff-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0;}
-.diff-btn{padding:14px 24px;border-radius:10px;border:1.5px solid;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:900;letter-spacing:2px;transition:all .15s;text-align:center;min-width:160px;}
-.diff-btn:hover{transform:scale(1.04);filter:brightness(1.2);}
-.diff-easy{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.07);}
-.diff-med{border-color:#f5c518;color:#f5c518;background:rgba(245,197,24,.07);}
-.diff-hard{border-color:#ff8800;color:#ff8800;background:rgba(255,136,0,.08);}
-.diff-hell{border-color:#ff2244;color:#ff2244;background:rgba(255,34,68,.08);}
-.diff-sub{font-size:.62rem;color:#445;letter-spacing:1px;margin-top:3px;}
-.start-btn{padding:12px 40px;border-radius:8px;border:2px solid var(--gold);color:var(--gold);background:rgba(245,197,24,.08);font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:900;letter-spacing:3px;cursor:pointer;transition:all .15s;margin-top:8px;}
-.start-btn:hover{background:rgba(245,197,24,.18);box-shadow:0 0 20px rgba(245,197,24,.3);}
-.result-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,6vw,3.5rem);letter-spacing:4px;text-align:center;margin-bottom:16px;}
-.result-stat{font-family:'Rajdhani',sans-serif;font-size:1.1rem;color:#aaa;letter-spacing:2px;margin:5px 0;}
-.result-stat span{color:var(--gold);}
-.lb-banner{background:rgba(245,197,24,.12);border:1.5px solid rgba(245,197,24,.5);border-radius:10px;padding:10px 24px;margin:14px 0;font-family:'Rajdhani',sans-serif;font-size:1rem;color:var(--gold);letter-spacing:2px;text-align:center;animation:lbPulse 1.2s ease-in-out infinite;}
-@keyframes lbPulse{0%,100%{box-shadow:0 0 10px rgba(245,197,24,.3);}50%{box-shadow:0 0 30px rgba(245,197,24,.6);}}
+/* KILL FEED */
+#killfeed{position:fixed;top:70px;right:14px;z-index:200;display:flex;flex-direction:column;gap:4px;pointer-events:none;}
+.kf-item{background:rgba(5,8,15,.88);border:1px solid rgba(255,69,96,.3);border-radius:7px;
+  padding:4px 10px;font-size:.72rem;font-weight:700;animation:kfIn .2s,kfOut .3s 2.5s forwards;white-space:nowrap;}
+@keyframes kfIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+@keyframes kfOut{to{opacity:0;transform:translateX(20px);}}
+
+/* TOAST CENTER */
+.twrap{position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:600;
+  display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;}
+.toast{padding:7px 16px;border-radius:9px;font-size:.8rem;font-weight:700;
+  background:rgba(8,13,26,.96);border:1px solid rgba(255,255,255,.1);
+  animation:ti .22s,to2 .22s 2.3s forwards;white-space:nowrap;}
+@keyframes ti{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes to2{to{opacity:0;transform:translateY(-8px);}}
+
+/* BOSS ALERT */
+#boss-alert{position:fixed;inset:0;z-index:400;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;}
+.boss-alert-box{font-family:'Black Han Sans',sans-serif;font-size:clamp(2rem,6vw,4rem);
+  color:#ff4560;text-shadow:0 0 40px #ff4560,0 0 80px #ff4560;
+  animation:bossAlert 2s ease-out forwards;}
+@keyframes bossAlert{0%{opacity:0;transform:scale(0.5);}30%{opacity:1;transform:scale(1.1);}70%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.2);}}
+
+/* RESULT */
+#result{display:none;position:fixed;inset:0;z-index:500;background:rgba(5,8,15,.97);
+  flex-direction:column;align-items:center;justify-content:center;
+  background-image:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(255,215,0,.06) 0%,transparent 70%);}
+.res-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(2.5rem,7vw,4rem);
+  margin-bottom:6px;text-align:center;}
+.res-subtitle{font-size:.85rem;color:var(--text2);margin-bottom:22px;text-align:center;letter-spacing:2px;}
+.res-stats{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:20px 28px;margin-bottom:20px;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;min-width:420px;}
+.stat-item{text-align:center;}
+.stat-v{font-size:1.4rem;font-weight:900;color:var(--gold);}
+.stat-l{font-size:.7rem;color:var(--text2);margin-top:2px;}
+.grade-box{font-family:'Black Han Sans',sans-serif;font-size:3.5rem;margin-bottom:14px;
+  text-shadow:0 0 30px currentColor;}
+.res-btn-row{display:flex;gap:10px;}
+.res-btn{padding:12px 36px;font-size:.9rem;font-weight:900;border:none;border-radius:36px;cursor:pointer;
+  letter-spacing:2px;transition:all .2s;}
+.res-btn.main{background:linear-gradient(135deg,var(--gold),#ff8c00);color:#1a0500;}
+.res-btn.main:hover{transform:scale(1.05);}
+.res-btn.menu{background:rgba(255,255,255,.06);color:var(--text2);border:1px solid rgba(255,255,255,.12);}
+.res-btn.menu:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* FW */
+#fw{position:fixed;inset:0;pointer-events:none;z-index:490;overflow:hidden;}
+@keyframes fwp{to{transform:translate(var(--dx),var(--dy));opacity:0;}}
+
+/* SHOP MODAL */
+#shop-modal{display:none;position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.75);
+  align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+.shop-box{background:linear-gradient(160deg,#0d1830,#1a2545);border:1px solid rgba(255,255,255,.1);
+  border-radius:18px;padding:26px;max-width:500px;width:92%;box-shadow:0 30px 80px rgba(0,0,0,.7);}
+.shop-title{font-family:'Black Han Sans',sans-serif;font-size:1.4rem;color:var(--gold);margin-bottom:4px;}
+.shop-sub{color:var(--text2);font-size:.78rem;margin-bottom:18px;}
+.shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.shop-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;
+  padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s;}
+.shop-item:hover:not(.bought){border-color:var(--gold);background:rgba(255,215,0,.07);}
+.shop-item.bought{opacity:.5;cursor:not-allowed;}
+.shop-item .sem{font-size:1.6rem;display:block;margin-bottom:4px;}
+.shop-item .sname{font-size:.75rem;font-weight:700;display:block;margin-bottom:3px;}
+.shop-item .sdesc{font-size:.65rem;color:var(--text2);display:block;margin-bottom:5px;}
+.shop-item .scost{font-size:.72rem;color:var(--gold);font-weight:700;}
+.shop-close{padding:9px 28px;border-radius:30px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);color:var(--text2);cursor:pointer;font-size:.88rem;font-weight:700;transition:all .2s;}
+.shop-close:hover{border-color:var(--red);color:var(--red);}
 </style>
 </head>
 <body>
-<div id="root">
-  <canvas id="gc"></canvas>
+<div id="fw"></div>
 
-  <!-- DIFFICULTY SELECT -->
-  <div id="difficulty-screen">
-    <div class="title-logo">🎯 라인 배틀 저격전</div>
-    <div class="sub-txt">LINE BATTLE SNIPER</div>
-    <div class="sub-txt" style="color:#556;font-size:.72rem;">난이도를 선택하세요</div>
-    <div class="diff-grid">
-      <div class="diff-btn diff-easy" onclick="selectDiff('easy')">초보<div class="diff-sub">적 체력 70% · 느린 스폰</div></div>
-      <div class="diff-btn diff-med" onclick="selectDiff('medium')">중급<div class="diff-sub">적 체력 100% · 기본 스폰</div></div>
-      <div class="diff-btn diff-hard" onclick="selectDiff('hard')">어려움<div class="diff-sub">적 체력 140% · 빠른 스폰</div></div>
-      <div class="diff-btn diff-hell" onclick="selectDiff('hell')">극악<div class="diff-sub">적 체력 200% · 매우 빠름</div></div>
+<!-- ══════════ DIFF SELECT ══════════ -->
+<div id="diff-select">
+  <div class="ds-title">⚔️ 라인 배틀 저격전</div>
+  <div class="ds-sub">AGE OF WAR · SNIPER EDITION</div>
+  <div class="ds-version">VERSION 2.0</div>
+
+  <div class="feature-row">
+    <div class="feat-pill">🛒 <span>웨이브 상점</span></div>
+    <div class="feat-pill">💥 <span>특수 스킬</span></div>
+    <div class="feat-pill">👹 <span>보스 웨이브</span></div>
+    <div class="feat-pill">⚡ <span>유닛 업그레이드</span></div>
+    <div class="feat-pill">🎯 <span>콤보 저격</span></div>
+    <div class="feat-pill">🏆 <span>S~F 등급</span></div>
+  </div>
+
+  <div class="diff-grid">
+    <div class="diff-card sel" data-d="0">
+      <div class="diff-em">🟢</div>
+      <div class="diff-name" style="color:#10d96e">초 보</div>
+      <div class="diff-desc">느린 적 AI<br>빠른 자원 재생<br>풍부한 시작 자원</div>
+      <div class="diff-tag" style="background:rgba(16,217,110,.15);color:#10d96e;border:1px solid rgba(16,217,110,.3);">추천 입문</div>
     </div>
-    <div id="diff-chosen" style="font-family:'Rajdhani',sans-serif;font-size:.9rem;color:#556;min-height:28px;"></div>
-    <button class="start-btn" id="start-btn" style="display:none" onclick="startGame()">▶ 전투 개시</button>
-    <div style="margin-top:18px;font-size:.65rem;color:#223;letter-spacing:2px;">RMB·F: 스코프 | 1~5: 유닛 소환 | C: 엄폐 | 클릭: 발사</div>
-  </div>
-
-  <!-- RESULT SCREEN -->
-  <div id="result-screen" style="display:none;">
-    <div class="result-title" id="result-title">승리!</div>
-    <div class="result-stat">총 킬 수: <span id="r-kills">0</span></div>
-    <div class="result-stat">기지 잔존 HP: <span id="r-hp">0</span>%</div>
-    <div class="result-stat">난이도: <span id="r-diff">-</span></div>
-    <div id="lb-banner" class="lb-banner" style="display:none;">👑 전국 1위 달성! 명예의 전당 등재!</div>
-    <div style="display:flex;gap:12px;margin-top:20px;">
-      <button class="start-btn" onclick="goTitle()">↩ 타이틀</button>
-      <button class="start-btn" style="border-color:#00ff88;color:#00ff88;" onclick="retryGame()">▶ 재도전</button>
+    <div class="diff-card" data-d="1">
+      <div class="diff-em">🔵</div>
+      <div class="diff-name" style="color:#4dabf7">중 급</div>
+      <div class="diff-desc">균형 잡힌 전투<br>다양한 유닛 소환<br>적당한 압박</div>
+      <div class="diff-tag" style="background:rgba(77,171,247,.15);color:#4dabf7;border:1px solid rgba(77,171,247,.3);">밸런스</div>
+    </div>
+    <div class="diff-card" data-d="2">
+      <div class="diff-em">🟠</div>
+      <div class="diff-name" style="color:#ff8c42">어 려 움</div>
+      <div class="diff-desc">최적화된 AI<br>강유닛 집중 소환<br>전략 필수</div>
+      <div class="diff-tag" style="background:rgba(255,140,66,.15);color:#ff8c42;border:1px solid rgba(255,140,66,.3);">고수용</div>
+    </div>
+    <div class="diff-card" data-d="3">
+      <div class="diff-em">🔴</div>
+      <div class="diff-name" style="color:#ff4560">극 악</div>
+      <div class="diff-desc">완벽한 자원 활용<br>최강 유닛 러시<br>보스 강화</div>
+      <div class="diff-tag" style="background:rgba(255,69,96,.15);color:#ff4560;border:1px solid rgba(255,69,96,.3);">🔥 불가능?</div>
     </div>
   </div>
+  <button class="start-btn" id="start-btn">⚔️ 전투 시작</button>
+</div>
 
-  <!-- TITLE SCREEN (between games) -->
-  <div id="title-screen" style="display:none;">
-    <div class="title-logo">🎯 라인 배틀 저격전</div>
-    <div class="sub-txt">LINE BATTLE SNIPER</div>
-    <div style="font-size:.7rem;color:#445;margin-bottom:20px;letter-spacing:1px;" id="title-record"></div>
-    <button class="start-btn" onclick="showDiffScreen()">▶ 게임 시작</button>
-  </div>
-
-  <!-- HUD (in-game) -->
-  <div id="ctrl-bar">
-    <span><b>RMB/F</b> 스코프</span><span><b>클릭</b> 발사</span>
-    <span><b>C</b> 엄폐</span><span><b>1~5</b> 유닛 소환</span>
-    <span><b>R</b> 재장전</span>
-  </div>
-  <div id="hud" style="display:none;">
-    <div class="hb"><div class="hv" id="h-kills">0</div><div class="hl">KILLS</div></div>
-    <div class="hb"><div class="hv" id="h-res">0</div><div class="hl">RESOURCE</div></div>
-    <div id="frontline-wrap">
-      <div id="fl-label"><span>아군 기지</span><span>적군 기지</span></div>
-      <div id="fl-track">
-        <div id="fl-ally" style="width:50%"></div>
-        <div id="fl-enemy" style="width:50%"></div>
-        <div id="fl-mid" style="left:50%"></div>
+<!-- ══════════ GAME ══════════ -->
+<div id="game">
+  <div class="hud">
+    <div class="hud-left">
+      <span class="hud-title">⚔️ AGE OF WAR v2</span>
+      <div class="base-hp-wrap">
+        <span class="base-label">🏰 아군</span>
+        <div class="hp-bar-outer"><div class="hp-fill ally" id="ally-hp-bar" style="width:100%"></div></div>
+        <span class="hp-val" id="ally-hp-val" style="color:var(--green)">1500</span>
+      </div>
+      <div class="base-hp-wrap">
+        <span class="base-label">🏯 적군</span>
+        <div class="hp-bar-outer"><div class="hp-fill enemy" id="enemy-hp-bar" style="width:100%"></div></div>
+        <span class="hp-val" id="enemy-hp-val" style="color:var(--red)">1500</span>
       </div>
     </div>
-    <div class="hb"><div class="hv" id="h-ammo">5/5</div><div class="hl">AMMO</div></div>
-    <div class="hb"><div class="hv" id="h-time">90</div><div class="hl">TIME</div></div>
-  </div>
-
-  <!-- SUMMON PANEL -->
-  <div id="summon-panel" style="display:none;">
-    <div id="summon-title">소환 패널</div>
-    <div id="resource-row">💎 <span id="res-count">0</span></div>
-    <div class="summon-btn" id="sb1" onclick="summonUnit(0)">
-      <span class="sb-ico">🪖</span><span class="sb-name">보병</span><span class="sb-cost">[1] 30</span>
-    </div>
-    <div class="summon-btn" id="sb2" onclick="summonUnit(1)">
-      <span class="sb-ico">⚔️</span><span class="sb-name">돌격대</span><span class="sb-cost">[2] 60</span>
-    </div>
-    <div class="summon-btn" id="sb3" onclick="summonUnit(2)">
-      <span class="sb-ico">🛡️</span><span class="sb-name">중보병</span><span class="sb-cost">[3] 80</span>
-    </div>
-    <div class="summon-btn" id="sb4" onclick="summonUnit(3)">
-      <span class="sb-ico">💊</span><span class="sb-name">의무병</span><span class="sb-cost">[4] 50</span>
-    </div>
-    <div class="summon-btn" id="sb5" onclick="summonUnit(4)">
-      <span class="sb-ico">🎯</span><span class="sb-name">저격수</span><span class="sb-cost">[5] 120</span>
+    <div class="hud-right">
+      <span class="hud-badge wave-badge" id="wave-badge">웨이브 1</span>
+      <span class="hud-badge res-badge">💎 <span id="res-val">150</span></span>
+      <span class="hud-badge score-badge">🏆 <span id="score-val">0</span></span>
+      <span class="hud-badge kills-badge">💀 <span id="kills-val">0</span></span>
+      <span class="hud-badge diff-hud-badge" id="diff-badge"></span>
     </div>
   </div>
 
-  <!-- BASE HP BARS -->
-  <div id="ally-hp" style="display:none;">
-    <div class="base-lbl">🏰 아군 기지</div>
-    <div class="base-track"><div class="base-fill-ally" id="ally-fill" style="width:100%"></div></div>
-    <div id="ally-hp-txt" style="font-size:8px;color:#2266ff;margin-top:2px;font-family:'Rajdhani',sans-serif;">100%</div>
+  <canvas id="battlefield"></canvas>
+
+  <div class="bot-panel">
+    <!-- Units -->
+    <button class="unit-btn" id="btn0" onclick="spawnAlly(0)">
+      <span class="key-badge">1</span><span class="uem">🧍</span>
+      <span class="uname">보병</span><span class="ucost">💎30</span>
+      <div class="ucool"><div class="ucool-fill" id="cool0" style="width:100%"></div></div>
+    </button>
+    <button class="unit-btn" id="btn1" onclick="spawnAlly(1)">
+      <span class="key-badge">2</span><span class="uem">🪖</span>
+      <span class="uname">돌격대</span><span class="ucost">💎60</span>
+      <div class="ucool"><div class="ucool-fill" id="cool1" style="width:100%"></div></div>
+    </button>
+    <button class="unit-btn" id="btn2" onclick="spawnAlly(2)">
+      <span class="key-badge">3</span><span class="uem">💪</span>
+      <span class="uname">중화기</span><span class="ucost">💎120</span>
+      <div class="ucool"><div class="ucool-fill" id="cool2" style="width:100%"></div></div>
+    </button>
+    <button class="unit-btn" id="btn3" onclick="spawnAlly(3)">
+      <span class="key-badge">4</span><span class="uem">🏥</span>
+      <span class="uname">의무병</span><span class="ucost">💎80</span>
+      <div class="ucool"><div class="ucool-fill" id="cool3" style="width:100%"></div></div>
+    </button>
+    <button class="unit-btn" id="btn4" onclick="spawnAlly(4)">
+      <span class="key-badge">5</span><span class="uem">🎯</span>
+      <span class="uname">저격수</span><span class="ucost">💎100</span>
+      <div class="ucool"><div class="ucool-fill" id="cool4" style="width:100%"></div></div>
+    </button>
+    <button class="unit-btn" id="btn5" onclick="spawnAlly(5)">
+      <span class="key-badge">6</span><span class="uem">🛡️</span>
+      <span class="uname">전차</span><span class="ucost">💎200</span>
+      <div class="ucool"><div class="ucool-fill" id="cool5" style="width:100%"></div></div>
+    </button>
+
+    <!-- Abilities -->
+    <div class="ability-row">
+      <div class="abil-btn" id="abil0" onclick="useAbility(0)">
+        <span class="aem">💣</span>
+        <span class="aname">공습</span>
+        <span class="acool" id="acool0">Q 준비</span>
+        <div class="abil-cd-bar" id="abar0" style="width:100%"></div>
+      </div>
+      <div class="abil-btn" id="abil1" onclick="useAbility(1)">
+        <span class="aem">⚡</span>
+        <span class="aname">전격전</span>
+        <span class="acool" id="acool1">E 준비</span>
+        <div class="abil-cd-bar" id="abar1" style="width:100%"></div>
+      </div>
+      <div class="abil-btn" id="abil2" onclick="useAbility(2)">
+        <span class="aem">🛡️</span>
+        <span class="aname">방어막</span>
+        <span class="acool" id="acool2">R 준비</span>
+        <div class="abil-cd-bar" id="abar2" style="width:100%"></div>
+      </div>
+      <button class="unit-btn" id="shop-btn" onclick="openShop()" style="border-color:rgba(255,215,0,.3);min-width:56px;">
+        <span class="uem">🛒</span>
+        <span class="uname" style="color:var(--gold)">상점</span>
+        <span class="ucost">S키</span>
+      </button>
+      <div class="snipe-hint">
+        🔭 <b>클릭 저격</b> · 연속 저격 콤보<br>
+        🔫 재장전: <span id="reload-status" style="color:var(--green)">준비</span>
+        &nbsp;|&nbsp; 콤보: <span id="combo-val" style="color:var(--gold)">×1</span>
+      </div>
+    </div>
   </div>
-  <div id="enemy-hp" style="display:none;">
-    <div class="base-lbl">🏯 적 기지 ▶</div>
-    <div class="base-track"><div class="base-fill-enemy" id="enemy-fill" style="width:100%"></div></div>
-    <div id="enemy-hp-txt" style="font-size:8px;color:#ff4400;margin-top:2px;font-family:'Rajdhani',sans-serif;">100%</div>
+</div>
+
+<!-- SCOPE -->
+<div id="scope">
+  <svg width="130" height="130" viewBox="0 0 130 130">
+    <circle cx="65" cy="65" r="58" fill="rgba(0,0,0,0.15)" stroke="rgba(255,69,96,0.9)" stroke-width="2.5"/>
+    <circle cx="65" cy="65" r="3.5" fill="rgba(255,69,96,1)"/>
+    <line x1="65" y1="2" x2="65" y2="42" stroke="rgba(255,69,96,0.8)" stroke-width="1.8"/>
+    <line x1="65" y1="88" x2="65" y2="128" stroke="rgba(255,69,96,0.8)" stroke-width="1.8"/>
+    <line x1="2" y1="65" x2="42" y2="65" stroke="rgba(255,69,96,0.8)" stroke-width="1.8"/>
+    <line x1="88" y1="65" x2="128" y2="65" stroke="rgba(255,69,96,0.8)" stroke-width="1.8"/>
+    <line x1="65" y1="48" x2="65" y2="54" stroke="rgba(255,69,96,0.5)" stroke-width="1"/>
+    <line x1="65" y1="76" x2="65" y2="82" stroke="rgba(255,69,96,0.5)" stroke-width="1"/>
+    <line x1="48" y1="65" x2="54" y2="65" stroke="rgba(255,69,96,0.5)" stroke-width="1"/>
+    <line x1="76" y1="65" x2="82" y2="65" stroke="rgba(255,69,96,0.5)" stroke-width="1"/>
+    <circle cx="65" cy="65" r="22" fill="none" stroke="rgba(255,69,96,0.25)" stroke-width="1"/>
+    <circle cx="65" cy="65" r="38" fill="none" stroke="rgba(255,69,96,0.15)" stroke-width="1"/>
+  </svg>
+</div>
+
+<!-- KILL FEED -->
+<div id="killfeed"></div>
+
+<!-- BOSS ALERT -->
+<div id="boss-alert" style="display:none;"></div>
+
+<!-- SHOP MODAL -->
+<div id="shop-modal">
+  <div class="shop-box">
+    <div class="shop-title">🛒 전술 상점</div>
+    <div class="shop-sub" id="shop-sub">현재 💎 <span id="shop-res">0</span> — 웨이브 사이에 업그레이드하세요</div>
+    <div class="shop-grid" id="shop-grid"></div>
+    <button class="shop-close" onclick="closeShop()">✕ 닫기</button>
   </div>
+</div>
 
-  <!-- COVER BTN -->
-  <button id="cover-btn" style="display:none;" onclick="toggleCover()">🛡 엄폐</button>
+<!-- TOAST -->
+<div class="twrap" id="twrap"></div>
 
-  <!-- AMMO STRIP -->
-  <div id="ammo-strip" style="display:none;"></div>
-
-  <!-- OVERLAYS -->
-  <div id="warning-flash"></div>
-  <div id="cover-vignette"></div>
-  <div id="muzzle-flash"></div>
-  <div id="toast-wrap"></div>
-  <div id="killfeed"></div>
+<!-- RESULT -->
+<div id="result">
+  <div class="grade-box" id="res-grade">S</div>
+  <div class="res-title" id="res-title">🏆 승리!</div>
+  <div class="res-subtitle" id="res-subtitle"></div>
+  <div class="res-stats">
+    <div class="stat-item"><div class="stat-v" id="st-score">0</div><div class="stat-l">최종 점수</div></div>
+    <div class="stat-item"><div class="stat-v" id="st-kills">0</div><div class="stat-l">처치 수</div></div>
+    <div class="stat-item"><div class="stat-v" id="st-wave">0</div><div class="stat-l">최고 웨이브</div></div>
+    <div class="stat-item"><div class="stat-v" id="st-snipes">0</div><div class="stat-l">저격 성공</div></div>
+  </div>
+  <div class="res-btn-row">
+    <button class="res-btn main" onclick="location.reload()">🔄 다시하기</button>
+    <button class="res-btn menu" onclick="goMenu()">📋 메뉴</button>
+  </div>
 </div>
 
 <script>
+'use strict';
 // ═══════════════════════════════════════════════════════
-// CONSTANTS
+//  UNIT & ABILITY DEFINITIONS
 // ═══════════════════════════════════════════════════════
-const DIFF = {
-  easy:   {hpMul:0.7,  spawnMul:1.6, baseHp:200, resMul:1.3, label:'초보'},
-  medium: {hpMul:1.0,  spawnMul:1.0, baseHp:150, resMul:1.0, label:'중급'},
-  hard:   {hpMul:1.4,  spawnMul:0.7, baseHp:100, resMul:0.85,label:'어려움'},
-  hell:   {hpMul:2.0,  spawnMul:0.45,baseHp:70,  resMul:0.7, label:'극악'},
-};
-const UNIT_TYPES = [
-  {name:'보병',    emoji:'🪖', hp:80,  spd:38, atk:12, range:30, cost:30, col:'#4488ff'},
-  {name:'돌격대',  emoji:'⚔️', hp:60,  spd:60, atk:20, range:28, cost:60, col:'#00ffaa'},
-  {name:'중보병',  emoji:'🛡️', hp:200, spd:22, atk:8,  range:32, cost:80, col:'#88aaff'},
-  {name:'의무병',  emoji:'💊', hp:50,  spd:45, atk:5,  range:25, cost:50, col:'#ff88ff', healer:true},
-  {name:'저격수',  emoji:'🎯', hp:40,  spd:30, atk:80, range:280,cost:120,col:'#ffcc00'},
+const UNIT_DEFS = [
+  {id:0,name:'보병',     em:'🧍',cost:30, hp:100,  atk:10, spd:0.85,range:42, ranged:false,pri:1,reward:12,  trainTime:40},
+  {id:1,name:'돌격대',   em:'🪖',cost:60, hp:190,  atk:22, spd:1.15,range:52, ranged:false,pri:2,reward:22,  trainTime:60},
+  {id:2,name:'중화기병', em:'💪',cost:120,hp:320,  atk:42, spd:0.6, range:70, ranged:true, pri:4,reward:45,  trainTime:90},
+  {id:3,name:'의무병',   em:'🏥',cost:80, hp:120,  atk:4,  spd:0.75,range:65, ranged:false,pri:1,reward:18,  trainTime:70,healer:true},
+  {id:4,name:'저격수',   em:'🎯',cost:100,hp:80,   atk:70, spd:0.55,range:220,ranged:true, pri:3,reward:32,  trainTime:80},
+  {id:5,name:'전차',     em:'🚛',cost:200,hp:700,  atk:55, spd:0.4, range:90, ranged:false,pri:5,reward:90,  trainTime:140},
+  // Enemy only
+  {id:6, name:'적보병',  em:'👹',cost:30, hp:95,   atk:9,  spd:0.9, range:42, ranged:false,pri:1,reward:10},
+  {id:7, name:'장교',    em:'🎖️',cost:150,hp:260,  atk:32, spd:0.8, range:58, ranged:false,pri:5,reward:55},
+  {id:8, name:'로켓병',  em:'🚀',cost:180,hp:140,  atk:70, spd:0.5, range:190,ranged:true, pri:5,reward:65},
+  {id:9, name:'적탱크',  em:'🛡️',cost:280,hp:700,  atk:58, spd:0.38,range:85, ranged:false,pri:5,reward:110},
+  {id:10,name:'드론',    em:'🛸',cost:120,hp:70,   atk:25, spd:1.5, range:75, ranged:true, pri:4,reward:38},
+  {id:11,name:'보스',    em:'💀',cost:999,hp:3000, atk:80, spd:0.5, range:100,ranged:false,pri:5,reward:300,isBoss:true},
 ];
-const ENEMY_TYPES = [
-  {name:'적병',    emoji:'👺', hp:70,  spd:35, atk:10, range:30, col:'#ff4400'},
-  {name:'중보병',  emoji:'💀', hp:180, spd:20, atk:7,  range:32, col:'#ff8800'},
-  {name:'돌격',    emoji:'🔥', hp:55,  spd:58, atk:18, range:26, col:'#ff2244'},
-  {name:'지휘관',  emoji:'👿', hp:400, spd:18, atk:22, range:35, col:'#cc00ff'},
+
+const ABILITY_DEFS = [
+  {id:0,name:'공습',   em:'💣',key:'q',cd:600, desc:'전선에 폭격기 공습 (적 전체 피해)',
+   fx:(G,W,H,GROUND)=>{
+     for(let i=0;i<5;i++) setTimeout(()=>{
+       if(!G.running) return;
+       const x=ALLY_BASE_X+100+Math.random()*(W-200);
+       airstrikeBomb(x,GROUND-10,G);
+     },i*200);
+   }},
+  {id:1,name:'전격전', em:'⚡',key:'e',cd:450, desc:'아군 전체 이동속도·공격속도 2배 (8초)',
+   fx:(G)=>{
+     G.blitzEnd=G.frame+480;
+     G.units.filter(u=>u.side===0).forEach(u=>{u.spd*=2;u._blitzed=true;});
+     toast('⚡ 전격전! 아군 강화 8초!','gold');
+   }},
+  {id:2,name:'방어막', em:'🛡️',key:'r',cd:500, desc:'아군 기지 방어막 (10초간 피해 70% 감소)',
+   fx:(G)=>{
+     G.shieldEnd=G.frame+600;
+     toast('🛡️ 방어막 활성화! 10초간 방어!','good');
+   }},
 ];
-const AMMO_MAX = 6;
-const RELOAD_TIME = 2200; // ms
-const GAME_DURATION = 120; // seconds
-const SCOPE_ZOOM = 3.5;
+
+const DIFF_CONFIG = [
+  {name:'초보',   col:'#10d96e',bgCol:'rgba(16,217,110,.15)',bdCol:'rgba(16,217,110,.35)',
+   resRate:2.2,  botResRate:0.5, botPool:[6,6,6,1],       botDelay:3500,startRes:200,baseHp:1500,bossWave:10},
+  {name:'중급',   col:'#4dabf7',bgCol:'rgba(77,171,247,.15)',bdCol:'rgba(77,171,247,.35)',
+   resRate:1.6,  botResRate:1.0, botPool:[6,7,7,1,8],     botDelay:2300,startRes:150,baseHp:1500,bossWave:8},
+  {name:'어려움', col:'#ff8c42',bgCol:'rgba(255,140,66,.15)',bdCol:'rgba(255,140,66,.35)',
+   resRate:1.1,  botResRate:1.5, botPool:[7,8,8,9,10],    botDelay:1700,startRes:120,baseHp:1500,bossWave:6},
+  {name:'극악',   col:'#ff4560',bgCol:'rgba(255,69,96,.15)',bdCol:'rgba(255,69,96,.35)',
+   resRate:0.9,  botResRate:2.2, botPool:[8,9,9,10,11],   botDelay:1000,startRes:100,baseHp:1500,bossWave:5},
+];
+
+const SHOP_ITEMS = [
+  {id:'u_hp',    em:'❤️', name:'기지 수리',  desc:'아군 기지 HP +300', cost:120,
+   fx:G=>{ G.allyBase=Math.min(G.allyBase+300,G.maxBase); toast('❤️ 기지 수리! +300 HP','good');}},
+  {id:'u_res',   em:'💎', name:'자원 증폭',  desc:'자원 수급량 +30%',  cost:150,repeatable:true,
+   fx:G=>{ G.resBonus=(G.resBonus||1)*1.3; toast('💎 자원 증폭!','good');}},
+  {id:'u_atk',   em:'⚔️', name:'무기 강화',  desc:'아군 공격력 +25%', cost:180,
+   fx:G=>{ G.dmgBonus=(G.dmgBonus||1)*1.25; G.units.filter(u=>u.side===0).forEach(u=>u.atk=Math.round(u.atk*1.25)); toast('⚔️ 무기 강화!','gold');}},
+  {id:'u_snipe', em:'🎯', name:'저격 강화',  desc:'저격 피해 +50%',   cost:160,
+   fx:G=>{ G.snipeDmgBonus=(G.snipeDmgBonus||1)*1.5; toast('🎯 저격 강화!','gold');}},
+  {id:'u_shield',em:'🛡️', name:'장갑 강화',  desc:'아군 HP +25%',     cost:200,
+   fx:G=>{ G.units.filter(u=>u.side===0).forEach(u=>{u.maxHp=Math.round(u.maxHp*1.25);u.hp=Math.round(u.hp*1.25);}); toast('🛡️ 장갑 강화!','good');}},
+  {id:'u_cd',    em:'⚡', name:'스킬 가속',  desc:'스킬 쿨다운 -25%', cost:140,
+   fx:G=>{ G.cdBonus=(G.cdBonus||1)*0.75; toast('⚡ 스킬 가속!','gold');}},
+];
 
 // ═══════════════════════════════════════════════════════
-// STATE
+//  STATE
 // ═══════════════════════════════════════════════════════
-const canvas = document.getElementById('gc');
-const ctx = canvas.getContext('2d');
-let GW, GH;
-let G = null;
-let RAF = null;
-let lastTs = 0;
-let chosenDiff = null;
+let G={}, W=0, H=0, GROUND=0, ALLY_BASE_X=70, ENEMY_BASE_X=700;
+let shopBoughtItems=new Set();
 
-// Mouse
-const mouse = {x:0, y:0, down:false};
-let scoped = false;
-let inCover = false;
-let ammo = AMMO_MAX;
-let reloading = false;
-let reloadStart = 0;
+const canvas=document.getElementById('battlefield');
+const ctx=canvas.getContext('2d');
 
-// ═══════════════════════════════════════════════════════
-// RESIZE
-// ═══════════════════════════════════════════════════════
 function resize(){
-  GW = canvas.width  = window.innerWidth;
-  GH = canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-// ═══════════════════════════════════════════════════════
-// DIFFICULTY SELECT
-// ═══════════════════════════════════════════════════════
-function selectDiff(d){
-  chosenDiff = d;
-  document.getElementById('diff-chosen').textContent = `선택: ${DIFF[d].label}`;
-  document.getElementById('start-btn').style.display = 'block';
-  document.querySelectorAll('.diff-btn').forEach(b=>b.style.opacity='.5');
-  const map = {easy:0,medium:1,hard:2,hell:3};
-  document.querySelectorAll('.diff-btn')[map[d]].style.opacity='1';
-}
-
-function showDiffScreen(){
-  document.getElementById('title-screen').style.display='none';
-  document.getElementById('difficulty-screen').style.display='flex';
-  chosenDiff = null;
-  document.getElementById('start-btn').style.display='none';
-  document.getElementById('diff-chosen').textContent='';
-  document.querySelectorAll('.diff-btn').forEach(b=>b.style.opacity='1');
+  const r=canvas.getBoundingClientRect();
+  W=canvas.width=r.width;H=canvas.height=r.height;
+  GROUND=H*0.72;ALLY_BASE_X=70;ENEMY_BASE_X=W-70;
 }
 
 // ═══════════════════════════════════════════════════════
-// GAME INIT
+//  START
 // ═══════════════════════════════════════════════════════
-function initGame(diff){
-  const dc = DIFF[diff];
-  const allyBaseX = 60;
-  const enemyBaseX = GW - 60;
-  return {
-    diff: diff,
-    dc: dc,
-    units: [],       // ally units
-    enemies: [],     // enemy units
-    bullets: [],     // sniper bullets
-    enemyBullets: [],
-    particles: [],
-    frontline: 0.5,  // 0=ally wins, 1=enemy wins
-    allyBaseHp: dc.baseHp,
-    allyBaseMaxHp: dc.baseHp,
-    enemyBaseHp: dc.baseHp,
-    enemyBaseMaxHp: dc.baseHp,
-    kills: 0,
-    resource: 100,
-    resourceTimer: 0,
-    spawnTimer: 0,
-    gameTimer: GAME_DURATION,
-    over: false,
-    won: null,
-    allyBaseX, enemyBaseX,
-    groundY: GH * 0.72,
+function startGame(diff){
+  const dc=DIFF_CONFIG[diff];
+  shopBoughtItems=new Set();
+  G={
+    running:true,diff,wave:1,
+    resources:dc.startRes,
+    allyBase:dc.baseHp,enemyBase:dc.baseHp,maxBase:dc.baseHp,
+    units:[],bullets:[],effects:[],particles:[],
+    score:0,kills:0,snipes:0,combo:1,comboTimer:0,
+    nextId:0,reloading:false,reloadTimer:0,reloadMax:80,
+    botTimer:0,resTimer:0,waveTimer:0,frame:0,lastTime:0,
+    abilities:[
+      {id:0,cd:0,maxCd:ABILITY_DEFS[0].cd},
+      {id:1,cd:0,maxCd:ABILITY_DEFS[1].cd},
+      {id:2,cd:0,maxCd:ABILITY_DEFS[2].cd},
+    ],
+    trainCooldowns:[0,0,0,0,0,0],
+    blitzEnd:-1,shieldEnd:-1,
+    resBonus:1,dmgBonus:1,snipeDmgBonus:1,cdBonus:1,
+    bossSpawned:false,bossDefeated:false,
+    mouseX:W/2,mouseY:H/2,
   };
+  document.getElementById('diff-select').style.display='none';
+  const gEl=document.getElementById('game');
+  gEl.style.display='flex';gEl.style.flexDirection='column';
+  document.getElementById('result').style.display='none';
+  document.getElementById('boss-alert').style.display='none';
+  const db=document.getElementById('diff-badge');
+  db.textContent=dc.name;
+  db.style.cssText=`background:${dc.bgCol};color:${dc.col};border:1px solid ${dc.bdCol};`;
+  resize();updateHUD();updateButtons();
+  document.getElementById('scope').style.display='block';
+  canvas.style.cursor='none';
+  requestAnimationFrame(loop);
+}
+
+function goMenu(){
+  document.getElementById('result').style.display='none';
+  document.getElementById('diff-select').style.display='flex';
 }
 
 // ═══════════════════════════════════════════════════════
-// START GAME
-// ═══════════════════════════════════════════════════════
-function startGame(){
-  if(!chosenDiff) return;
-  document.getElementById('difficulty-screen').style.display='none';
-  document.getElementById('result-screen').style.display='none';
-  document.getElementById('title-screen').style.display='none';
-  showHUD(true);
-  G = initGame(chosenDiff);
-  ammo = AMMO_MAX;
-  reloading = false;
-  scoped = false;
-  inCover = false;
-  document.getElementById('root').classList.add('in-game');
-  updateAmmoStrip();
-  lastTs = performance.now();
-  if(RAF) cancelAnimationFrame(RAF);
-  RAF = requestAnimationFrame(loop);
-}
-
-function retryGame(){ startGame(); }
-
-function goTitle(){
-  if(RAF){cancelAnimationFrame(RAF);RAF=null;}
-  G=null;
-  showHUD(false);
-  document.getElementById('result-screen').style.display='none';
-  document.getElementById('difficulty-screen').style.display='none';
-  document.getElementById('title-screen').style.display='flex';
-  document.getElementById('root').classList.remove('in-game');
-}
-
-function showHUD(on){
-  const ids=['hud','summon-panel','ally-hp','enemy-hp','cover-btn','ammo-strip'];
-  ids.forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.style.display=on?(id==='hud'?'flex':id==='ammo-strip'?'flex':'block'):'none';
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// UNIT SUMMON
-// ═══════════════════════════════════════════════════════
-function summonUnit(typeIdx){
-  if(!G||G.over) return;
-  const ut = UNIT_TYPES[typeIdx];
-  if(G.resource < ut.cost){ toast('자원 부족!','red'); return; }
-  G.resource -= ut.cost;
-  const hpMul = 1.0; // ally units don't scale with difficulty
-  G.units.push({
-    type: typeIdx, x: G.allyBaseX + 10, y: G.groundY,
-    hp: ut.hp, maxHp: ut.hp, spd: ut.spd,
-    atk: ut.atk, range: ut.range, atkTimer: 0,
-    emoji: ut.emoji, col: ut.col, healer: !!ut.healer,
-    dead: false,
-  });
-  toast(`${ut.emoji} ${ut.name} 소환!`, 'grn');
-  updateSummonBtns();
-}
-
-function updateSummonBtns(){
-  if(!G) return;
-  UNIT_TYPES.forEach((ut,i)=>{
-    const btn = document.getElementById('sb'+(i+1));
-    if(btn) btn.classList.toggle('disabled', G.resource < ut.cost);
-  });
-  document.getElementById('res-count').textContent = Math.floor(G.resource);
-  document.getElementById('h-res').textContent = Math.floor(G.resource);
-}
-
-// ═══════════════════════════════════════════════════════
-// COVER
-// ═══════════════════════════════════════════════════════
-function toggleCover(){
-  inCover = !inCover;
-  document.getElementById('cover-btn').classList.toggle('active', inCover);
-  document.getElementById('cover-vignette').classList.toggle('on', inCover);
-}
-
-// ═══════════════════════════════════════════════════════
-// AMMO / RELOAD
-// ═══════════════════════════════════════════════════════
-function updateAmmoStrip(){
-  const strip = document.getElementById('ammo-strip');
-  if(!strip) return;
-  strip.innerHTML = '';
-  for(let i=0;i<AMMO_MAX;i++){
-    const pip = document.createElement('div');
-    pip.className = 'ammo-pip' + (i >= ammo ? ' empty' : '');
-    strip.appendChild(pip);
-  }
-  document.getElementById('h-ammo').textContent = `${ammo}/${AMMO_MAX}`;
-}
-
-function startReload(){
-  if(reloading||ammo===AMMO_MAX) return;
-  reloading = true;
-  reloadStart = performance.now();
-  toast('장전 중...','blue');
-}
-
-// ═══════════════════════════════════════════════════════
-// SHOOT
-// ═══════════════════════════════════════════════════════
-function tryShoot(){
-  if(!G||G.over) return;
-  if(reloading){ toast('장전 중!','red'); return; }
-  if(ammo<=0){ toast('탄약 없음! R로 재장전','red'); startReload(); return; }
-  if(inCover) return; // can't shoot from cover (need to peek)
-  ammo--;
-  updateAmmoStrip();
-  // Muzzle flash
-  const mf = document.getElementById('muzzle-flash');
-  mf.style.opacity='1'; setTimeout(()=>mf.style.opacity='0',80);
-  // Bullet from bottom-left (sniper position)
-  const bx = 10, by = G.groundY - 20;
-  const tx = scoped ? mouse.x : mouse.x;
-  const ty = scoped ? mouse.y : mouse.y;
-  const dx = tx-bx, dy = ty-by;
-  const len = Math.sqrt(dx*dx+dy*dy)||1;
-  G.bullets.push({
-    x:bx, y:by, vx:(dx/len)*900, vy:(dy/len)*900,
-    mx:tx, my:ty, hit:false,
-  });
-  if(ammo===0) startReload();
-}
-
-// ═══════════════════════════════════════════════════════
-// SPAWN ENEMY
-// ═══════════════════════════════════════════════════════
-function spawnEnemy(){
-  if(!G) return;
-  const t = ENEMY_TYPES[Math.floor(Math.random()*ENEMY_TYPES.length)];
-  const hpMul = G.dc.hpMul;
-  G.enemies.push({
-    x: G.enemyBaseX - 12, y: G.groundY,
-    hp: Math.floor(t.hp * hpMul), maxHp: Math.floor(t.hp * hpMul),
-    spd: t.spd, atk: t.atk, range: t.range,
-    atkTimer: Math.random()*1000,
-    emoji: t.emoji, col: t.col,
-    dead: false,
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// MAIN TICK
-// ═══════════════════════════════════════════════════════
-function tick(dt){
-  if(!G||G.over) return;
-  const dtS = dt/1000;
-
-  // Timer
-  G.gameTimer -= dtS;
-  if(G.gameTimer < 0) G.gameTimer = 0;
-  document.getElementById('h-time').textContent = Math.ceil(G.gameTimer);
-
-  // Resource regen
-  G.resource = Math.min(999, G.resource + dtS * 18 * G.dc.resMul);
-  updateSummonBtns();
-
-  // Spawn enemy
-  G.spawnTimer += dt;
-  const spawnInterval = 3000 * G.dc.spawnMul;
-  if(G.spawnTimer >= spawnInterval){
-    G.spawnTimer = 0;
-    spawnEnemy();
-    if(G.dc.spawnMul < 0.6) spawnEnemy(); // double spawn on hell
-  }
-
-  // Reload
-  if(reloading){
-    const elapsed = performance.now() - reloadStart;
-    const prog = Math.min(1, elapsed / RELOAD_TIME);
-    // show progress via HUD
-    if(prog >= 1){
-      reloading = false;
-      ammo = AMMO_MAX;
-      updateAmmoStrip();
-      toast('장전 완료!','grn');
-    }
-  }
-
-  // Move & fight allies
-  for(const u of G.units){
-    if(u.dead) continue;
-    // Heal nearby allies if healer
-    if(u.healer){
-      for(const a of G.units){
-        if(a.dead||a===u) continue;
-        if(Math.abs(a.x-u.x)<60) a.hp = Math.min(a.maxHp, a.hp + dtS*15);
-      }
-    }
-    // Find nearest enemy
-    let target = null, minD = Infinity;
-    for(const e of G.enemies){
-      if(e.dead) continue;
-      const d = Math.abs(e.x - u.x);
-      if(d < minD){ minD=d; target=e; }
-    }
-    if(target && minD <= u.range){
-      u.atkTimer += dt;
-      if(u.atkTimer >= 1200){
-        u.atkTimer=0;
-        target.hp -= u.atk;
-        if(target.hp<=0){ target.dead=true; G.kills++; G.resource=Math.min(999,G.resource+10); spawnParticle(target.x,target.y,'#ff4400'); }
-      }
-    } else {
-      // Move toward enemy base
-      u.x += u.spd * dtS;
-      if(u.x > G.enemyBaseX - 15){
-        // Hitting enemy base
-        G.enemyBaseHp -= u.atk * dtS * 1.5;
-        if(G.enemyBaseHp <= 0){ G.enemyBaseHp=0; endGame(true); return; }
-      }
-    }
-  }
-
-  // Move & fight enemies
-  for(const e of G.enemies){
-    if(e.dead) continue;
-    let target=null, minD=Infinity;
-    for(const u of G.units){
-      if(u.dead) continue;
-      const d = Math.abs(u.x-e.x);
-      if(d<minD){minD=d;target=u;}
-    }
-    if(target && minD <= e.range){
-      e.atkTimer += dt;
-      if(e.atkTimer >= 1300){
-        e.atkTimer=0;
-        target.hp -= e.atk;
-        if(target.hp<=0) target.dead=true;
-      }
-    } else {
-      e.x -= e.spd * dtS;
-      if(e.x < G.allyBaseX + 15){
-        G.allyBaseHp -= e.atk * dtS * 1.2;
-        if(G.allyBaseHp<=0){G.allyBaseHp=0; endGame(false); return;}
-        if(!inCover){
-          flashWarning();
-          // damage player slightly (visual)
-        }
-      }
-    }
-  }
-
-  // Bullets
-  for(const b of G.bullets){
-    if(b.hit) continue;
-    b.x += b.vx * dtS;
-    b.y += b.vy * dtS;
-    // Hit check vs enemies
-    for(const e of G.enemies){
-      if(e.dead) continue;
-      const dx=e.x-b.x, dy=(e.y-20)-b.y;
-      if(Math.sqrt(dx*dx+dy*dy)<16){
-        e.hp -= (80 + Math.random()*40);
-        b.hit=true;
-        spawnParticle(e.x,e.y,'#ffaa00');
-        addKillFeed();
-        if(e.hp<=0){
-          e.dead=true; G.kills++; G.resource=Math.min(999,G.resource+15);
-          spawnParticle(e.x,e.y,'#ff2244');
-        }
-        break;
-      }
-    }
-    // Hit check vs enemy base
-    if(!b.hit && Math.abs(b.x-G.enemyBaseX)<30 && Math.abs(b.y-(G.groundY-30))<40){
-      G.enemyBaseHp -= 20;
-      b.hit=true;
-      if(G.enemyBaseHp<=0){G.enemyBaseHp=0; endGame(true);}
-    }
-    if(b.x<0||b.x>GW||b.y<0||b.y>GH) b.hit=true;
-  }
-
-  // Particles
-  for(const p of G.particles){
-    p.x+=p.vx*dtS; p.y+=p.vy*dtS;
-    p.vy+=200*dtS;
-    p.life-=dtS;
-  }
-
-  // Cleanup
-  G.units    = G.units.filter(u=>!u.dead);
-  G.enemies  = G.enemies.filter(e=>!e.dead);
-  G.bullets  = G.bullets.filter(b=>!b.hit);
-  G.particles= G.particles.filter(p=>p.life>0);
-
-  // Time over
-  if(G.gameTimer<=0){
-    // Decide winner by frontline
-    const ally_adv = G.allyBaseHp / G.allyBaseMaxHp - G.enemyBaseHp / G.enemyBaseMaxHp;
-    endGame(ally_adv > 0);
-    return;
-  }
-
-  // Update frontline bar
-  const ratio = 1 - (G.enemyBaseHp / G.enemyBaseMaxHp);
-  const fl = 0.2 + ratio * 0.6; // 0.2~0.8
-  document.getElementById('fl-mid').style.left = (fl*100)+'%';
-
-  // Update HP bars
-  const aHpPct = Math.max(0, G.allyBaseHp/G.allyBaseMaxHp*100);
-  const eHpPct = Math.max(0, G.enemyBaseHp/G.enemyBaseMaxHp*100);
-  document.getElementById('ally-fill').style.width = aHpPct+'%';
-  document.getElementById('enemy-fill').style.width = eHpPct+'%';
-  document.getElementById('ally-hp-txt').textContent = Math.ceil(aHpPct)+'%';
-  document.getElementById('enemy-hp-txt').textContent = Math.ceil(eHpPct)+'%';
-  document.getElementById('h-kills').textContent = G.kills;
-}
-
-// ═══════════════════════════════════════════════════════
-// END GAME
-// ═══════════════════════════════════════════════════════
-function endGame(won){
-  if(!G||G.over) return;
-  G.over=true; G.won=won;
-  showHUD(false);
-  document.getElementById('root').classList.remove('in-game');
-
-  const title = won ? '🎉 승리!' : '💀 패배';
-  const color = won ? '#00ff88' : '#ff2244';
-  document.getElementById('result-title').textContent = title;
-  document.getElementById('result-title').style.color = color;
-  document.getElementById('r-kills').textContent = G.kills;
-  document.getElementById('r-hp').textContent = Math.ceil(G.allyBaseHp/G.allyBaseMaxHp*100);
-  document.getElementById('r-diff').textContent = DIFF[G.diff].label;
-
-  // Report to Streamlit
-  try {
-    window.parent.postMessage({
-      type: 'sniper_result',
-      kills: G.kills,
-      won: won,
-      diff: G.diff,
-    }, '*');
-  } catch(e) {}
-
-  document.getElementById('result-screen').style.display = 'flex';
-}
-
-// ═══════════════════════════════════════════════════════
-// DRAW
-// ═══════════════════════════════════════════════════════
-function drawScene(){
-  if(!G){ ctx.fillStyle='#06080a'; ctx.fillRect(0,0,GW,GH); return; }
-
-  // Sky gradient
-  const sky = ctx.createLinearGradient(0,0,0,G.groundY);
-  sky.addColorStop(0,'#060a14');
-  sky.addColorStop(1,'#0a1828');
-  ctx.fillStyle=sky; ctx.fillRect(0,0,GW,GH);
-
-  // Ground
-  const grd = ctx.createLinearGradient(0,G.groundY,0,GH);
-  grd.addColorStop(0,'#1a1200'); grd.addColorStop(1,'#0a0800');
-  ctx.fillStyle=grd; ctx.fillRect(0,G.groundY,GW,GH-G.groundY);
-
-  // Ally base (left castle)
-  drawBase(G.allyBaseX, G.groundY, '#2266ff', '🏰', G.allyBaseHp/G.allyBaseMaxHp);
-  // Enemy base (right castle)
-  drawBase(G.enemyBaseX, G.groundY, '#ff4400', '🏯', G.enemyBaseHp/G.enemyBaseMaxHp);
-
-  // Units
-  for(const u of G.units) drawUnit(u, '#2266ff', false);
-  for(const e of G.enemies) drawUnit(e, e.col, true);
-
-  // Bullets
-  ctx.save();
-  for(const b of G.bullets){
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 3, 0, Math.PI*2);
-    ctx.fillStyle='#ffcc00';
-    ctx.fill();
-    // tracer
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    ctx.lineTo(b.x - b.vx*0.025, b.y - b.vy*0.025);
-    ctx.strokeStyle='rgba(255,200,0,.4)';
-    ctx.lineWidth=1.5;
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  // Particles
-  for(const p of G.particles){
-    ctx.save();
-    ctx.globalAlpha = Math.max(0,p.life);
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fillStyle=p.col; ctx.fill();
-    ctx.restore();
-  }
-
-  // Scope overlay
-  if(scoped) drawScope();
-  else drawCrosshair(mouse.x, mouse.y);
-}
-
-function drawBase(x, groundY, col, emoji, hpRatio){
-  const h = 70 * hpRatio + 20;
-  ctx.save();
-  ctx.strokeStyle=col; ctx.lineWidth=2;
-  ctx.strokeRect(x-18, groundY-h, 36, h);
-  ctx.fillStyle=col+'33'; ctx.fillRect(x-18, groundY-h, 36, h);
-  ctx.font='22px serif'; ctx.textAlign='center';
-  ctx.fillText(emoji, x, groundY-h/2+6);
-  // HP bar above
-  ctx.fillStyle='#333'; ctx.fillRect(x-20, groundY-h-12, 40, 6);
-  ctx.fillStyle=col; ctx.fillRect(x-20, groundY-h-12, 40*hpRatio, 6);
-  ctx.restore();
-}
-
-function drawUnit(u, col, isEnemy){
-  const y = u.y;
-  const x = u.x;
-  ctx.save();
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,.3)';
-  ctx.beginPath(); ctx.ellipse(x,y+2,12,4,0,0,Math.PI*2); ctx.fill();
-  // Body
-  ctx.font='20px serif'; ctx.textAlign='center';
-  ctx.fillText(u.emoji||'👤', x, y-4);
-  // HP bar
-  const bw=24, bh=4;
-  ctx.fillStyle='#222'; ctx.fillRect(x-bw/2, y-30, bw, bh);
-  const hpPct = u.hp/u.maxHp;
-  const hpCol = hpPct>0.5?'#00ff88':hpPct>0.25?'#ffaa00':'#ff2244';
-  ctx.fillStyle=hpCol; ctx.fillRect(x-bw/2, y-30, bw*hpPct, bh);
-  ctx.restore();
-}
-
-function drawCrosshair(cx, cy){
-  const r=14, gap=5;
-  ctx.save();
-  ctx.strokeStyle='rgba(0,255,136,.8)'; ctx.lineWidth=1.5;
-  // Cross lines
-  ctx.beginPath(); ctx.moveTo(cx-(r),cy); ctx.lineTo(cx-gap,cy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx+gap,cy); ctx.lineTo(cx+r,cy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx,cy-r); ctx.lineTo(cx,cy-gap); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx,cy+gap); ctx.lineTo(cx,cy+r); ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx,cy,3,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,255,136,.9)'; ctx.fill();
-  ctx.restore();
-}
-
-function drawScope(){
-  const cx=mouse.x, cy=mouse.y;
-  const R=100;
-  ctx.save();
-
-  // Dark vignette outside scope
-  ctx.fillStyle='rgba(0,0,0,.88)';
-  ctx.fillRect(0,0,GW,GH);
-  ctx.globalCompositeOperation='destination-out';
-  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
-  ctx.globalCompositeOperation='source-over';
-
-  // Draw zoomed scene inside scope
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
-  ctx.translate(cx,cy);
-  ctx.scale(SCOPE_ZOOM,SCOPE_ZOOM);
-  ctx.translate(-cx,-cy);
-  drawScene_noScope(); // draw without scope overlay
-  ctx.restore();
-
-  // Scope ring
-  ctx.strokeStyle='rgba(0,255,136,.7)'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
-  // Scope crosshair
-  ctx.strokeStyle='rgba(0,255,136,.9)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(cx-R,cy); ctx.lineTo(cx+R,cy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx,cy-R); ctx.lineTo(cx,cy+R); ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx,cy,3,0,Math.PI*2);
-  ctx.fillStyle='#ff2244'; ctx.fill();
-
-  ctx.restore();
-}
-
-// Draw scene without scope overlay (used inside scope zoom)
-function drawScene_noScope(){
-  if(!G) return;
-  const sky = ctx.createLinearGradient(0,0,0,G.groundY);
-  sky.addColorStop(0,'#060a14'); sky.addColorStop(1,'#0a1828');
-  ctx.fillStyle=sky; ctx.fillRect(0,0,GW,GH);
-  const grd = ctx.createLinearGradient(0,G.groundY,0,GH);
-  grd.addColorStop(0,'#1a1200'); grd.addColorStop(1,'#0a0800');
-  ctx.fillStyle=grd; ctx.fillRect(0,G.groundY,GW,GH-G.groundY);
-  drawBase(G.allyBaseX, G.groundY, '#2266ff', '🏰', G.allyBaseHp/G.allyBaseMaxHp);
-  drawBase(G.enemyBaseX, G.groundY, '#ff4400', '🏯', G.enemyBaseHp/G.enemyBaseMaxHp);
-  for(const u of G.units) drawUnit(u,'#2266ff',false);
-  for(const e of G.enemies) drawUnit(e,e.col,true);
-}
-
-// ═══════════════════════════════════════════════════════
-// FX
-// ═══════════════════════════════════════════════════════
-function spawnParticle(x,y,col){
-  for(let i=0;i<6;i++){
-    const a=Math.random()*Math.PI*2;
-    const spd=60+Math.random()*120;
-    if(!G) return;
-    G.particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:2+Math.random()*3,col,life:0.6+Math.random()*0.4});
-  }
-}
-
-function flashWarning(){
-  const el=document.getElementById('warning-flash');
-  el.style.opacity='1'; setTimeout(()=>el.style.opacity='0',120);
-}
-
-function addKillFeed(){
-  const kf=document.getElementById('killfeed');
-  const msgs=['적 제거!','헤드샷!','저격 성공!','킬!'];
-  const el=document.createElement('div'); el.className='kf-item';
-  el.textContent='🎯 '+msgs[Math.floor(Math.random()*msgs.length)];
-  kf.appendChild(el);
-  setTimeout(()=>el.remove(),2500);
-}
-
-// ═══════════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════════
-function toast(msg, cls=''){
-  const wrap=document.getElementById('toast-wrap');
-  const el=document.createElement('div'); el.className='toast-item '+(cls||'');
-  el.textContent=msg; wrap.appendChild(el);
-  setTimeout(()=>el.remove(),2100);
-}
-
-// ═══════════════════════════════════════════════════════
-// MAIN LOOP
+//  LOOP
 // ═══════════════════════════════════════════════════════
 function loop(ts){
-  const dt = Math.min(ts-lastTs, 50); lastTs=ts;
-  if(G && !G.over) tick(dt);
-  ctx.clearRect(0,0,GW,GH);
-  drawScene();
-  RAF=requestAnimationFrame(loop);
+  if(!G.running) return;
+  const dt=Math.min((ts-G.lastTime)/16.67,3);
+  G.lastTime=ts;G.frame++;
+  update(dt);render();
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  const dc=DIFF_CONFIG[G.diff];
+
+  // Resources
+  G.resTimer+=dt;
+  const resInterval=60/(dc.resRate*G.resBonus);
+  if(G.resTimer>=resInterval){G.resTimer=0;G.resources=Math.min(G.resources+6,600);updateButtons();}
+
+  // Wave timer
+  G.waveTimer+=dt;
+  if(G.waveTimer>=1800){
+    G.waveTimer=0;G.wave++;
+    G.maxBase+=300;
+    G.allyBase=Math.min(G.allyBase+80,G.maxBase);
+    G.enemyBase=Math.min(G.enemyBase+80,G.maxBase);
+    document.getElementById('wave-badge').textContent='웨이브 '+G.wave;
+    toast('🌊 웨이브 '+G.wave+'! 적이 강해진다!','wave');
+    if(G.wave%dc.bossWave===0 && !G.bossSpawned){spawnBossWave();}
+  }
+
+  // Bot AI
+  G.botTimer+=dt;
+  if(G.botTimer>=dc.botDelay/16.67){G.botTimer=0;botSpawn();}
+
+  // Training cooldowns
+  G.trainCooldowns=G.trainCooldowns.map(c=>Math.max(0,c-dt));
+  [0,1,2,3,4,5].forEach(i=>{
+    const pct=G.trainCooldowns[i]>0?1-G.trainCooldowns[i]/UNIT_DEFS[i].trainTime:1;
+    const el=document.getElementById('cool'+i);
+    if(el) el.style.width=(pct*100)+'%';
+  });
+
+  // Abilities cooldown
+  G.abilities.forEach((a,i)=>{
+    if(a.cd>0){
+      a.cd=Math.max(0,a.cd-dt*G.cdBonus);
+      const el=document.getElementById('abil'+i);
+      el.classList.toggle('cooldown',a.cd>0);
+      const pct=1-a.cd/a.maxCd;
+      const bar=document.getElementById('abar'+i);
+      const lbl=document.getElementById('acool'+i);
+      if(bar) bar.style.width=(pct*100)+'%';
+      if(lbl) lbl.textContent=a.cd>0?Math.ceil(a.cd/60)+'s':['Q 준비','E 준비','R 준비'][i];
+    }
+  });
+
+  // Blitz end
+  if(G.frame===G.blitzEnd){
+    G.units.filter(u=>u.side===0&&u._blitzed).forEach(u=>{u.spd/=2;u._blitzed=false;});
+    toast('⚡ 전격전 종료','');
+  }
+
+  // Combo timer decay
+  if(G.comboTimer>0){G.comboTimer-=dt;if(G.comboTimer<=0){G.combo=1;document.getElementById('combo-val').textContent='×1';}}
+
+  // Reload
+  if(G.reloading){
+    G.reloadTimer+=dt;
+    const pct=G.reloadTimer/G.reloadMax;
+    const rs=document.getElementById('reload-status');
+    rs.textContent='재장전 '+Math.round(pct*100)+'%';
+    rs.style.color='var(--orange)';
+    if(G.reloadTimer>=G.reloadMax){G.reloading=false;G.reloadTimer=0;rs.textContent='준비';rs.style.color='var(--green)';}
+  }
+
+  updateUnits(dt);
+  updateBullets(dt);
+  updateEffects(dt);
+  updateParticles(dt);
+
+  if(G.enemyBase<=0) endGame(true);
+  if(G.allyBase<=0) endGame(false);
+
+  updateHUD();updateButtons();
 }
 
 // ═══════════════════════════════════════════════════════
-// INPUT
+//  UNITS
 // ═══════════════════════════════════════════════════════
-canvas.addEventListener('mousemove',e=>{
-  const r=canvas.getBoundingClientRect();
-  mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top;
-});
-canvas.addEventListener('mousedown',e=>{
-  if(e.button===0) { mouse.down=true; if(G&&!G.over&&!scoped) tryShoot(); }
-  if(e.button===2) { scoped=!scoped; e.preventDefault(); }
-});
-canvas.addEventListener('mouseup',e=>{ if(e.button===0) mouse.down=false; });
-canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.addEventListener('keydown',e=>{
-  const k=e.key.toLowerCase();
-  if(k==='f') scoped=!scoped;
-  if(k==='c') toggleCover();
-  if(k==='r') startReload();
-  if(k===' '||k==='enter'){ if(G&&!G.over) tryShoot(); e.preventDefault(); }
-  if(k==='1') summonUnit(0);
-  if(k==='2') summonUnit(1);
-  if(k==='3') summonUnit(2);
-  if(k==='4') summonUnit(3);
-  if(k==='5') summonUnit(4);
-});
+function spawnUnit(defId,side,x){
+  const def=UNIT_DEFS[defId];
+  const ws=1+(G.wave-1)*0.13;
+  const u={
+    uid:G.nextId++,defId,side,x,y:GROUND-2,
+    hp:Math.round(def.hp*ws*(defId===11?1+G.diff*0.3:1)),
+    maxHp:Math.round(def.hp*ws*(defId===11?1+G.diff*0.3:1)),
+    atk:Math.round(def.atk*ws*(side===0?G.dmgBonus:1)),
+    spd:def.spd,range:def.range,ranged:def.ranged,
+    cooldown:0,em:def.em,pri:def.pri,
+    healer:def.healer||false,reward:def.reward,name:def.name,
+    anim:Math.random()*Math.PI*2,isBoss:def.isBoss||false,
+  };
+  G.units.push(u);
+}
+
+function spawnAlly(defId){
+  const def=UNIT_DEFS[defId];
+  if(G.resources<def.cost){toast('💎 자원 부족!','bad');return;}
+  if(G.trainCooldowns[defId]>0){toast('⏳ 훈련 중!','bad');return;}
+  G.resources-=def.cost;
+  G.trainCooldowns[defId]=def.trainTime;
+  spawnUnit(defId,0,ALLY_BASE_X+55);
+  updateButtons();
+}
+
+function botSpawn(){
+  const dc=DIFF_CONFIG[G.diff];
+  const pool=dc.botPool.filter(id=>id!==11);
+  const botRes=90+G.wave*35*dc.botResRate;
+  const affor=pool.map(id=>UNIT_DEFS[id]).filter(d=>d.cost<=botRes);
+  if(!affor.length) return;
+  let chosen;
+  if(G.diff>=2){affor.sort((a,b)=>b.cost-a.cost);chosen=affor[Math.floor(Math.random()*Math.min(2,affor.length))];}
+  else chosen=affor[Math.floor(Math.random()*affor.length)];
+  spawnUnit(chosen.id,1,ENEMY_BASE_X-55);
+  if(G.diff===3&&Math.random()<0.4) setTimeout(()=>{if(G.running)spawnUnit(chosen.id,1,ENEMY_BASE_X-55);},350);
+}
+
+function spawnBossWave(){
+  G.bossSpawned=true;
+  const ba=document.getElementById('boss-alert');
+  ba.style.display='flex';
+  ba.innerHTML='<div class="boss-alert-box">💀 보스 등장!</div>';
+  setTimeout(()=>{ba.style.display='none';},2200);
+  spawnUnit(11,1,ENEMY_BASE_X-60);
+  for(let i=0;i<3;i++) setTimeout(()=>{if(G.running)spawnUnit(7,1,ENEMY_BASE_X-80-i*30);},i*400);
+  toast('💀 보스 웨이브! 전력을 다하라!','bad');
+}
+
+function updateUnits(dt){
+  G.units.forEach(u=>{
+    u.anim+=dt*0.12;
+    if(u.hp<=0) return;
+
+    if(u.healer){
+      const hurt=G.units.filter(o=>o.side===u.side&&o.hp>0&&o.hp<o.maxHp&&Math.abs(u.x-o.x)<90);
+      if(hurt.length>0){hurt[0].hp=Math.min(hurt[0].maxHp,hurt[0].hp+0.4*dt);return;}
+    }
+
+    const enemies=G.units.filter(o=>o.side!==u.side&&o.hp>0);
+    let target=null,minD=Infinity;
+    if(u.isBoss && enemies.length===0){
+      const dir=u.side===0?1:-1;
+      u.x+=dir*u.spd*dt;
+    } else {
+      enemies.forEach(e=>{const d=Math.abs(u.x-e.x);if(d<minD){minD=d;target=e;}});
+      if(target&&minD<=u.range){
+        u.cooldown-=dt;
+        if(u.cooldown<=0){
+          u.cooldown=30-G.diff*2;
+          if(u.ranged){
+            G.bullets.push({x:u.x,y:u.y-18,tx:target.x,ty:target.y-18,
+              col:u.side===0?'#22d3ee':'#ff4560',dmg:u.atk,targetId:target.uid,fromSide:u.side,spd:8});
+          } else {
+            target.hp-=u.atk;
+            spawnHit(target.x,target.y,u.side===0?'#22d3ee':'#ff4560',u.atk);
+            if(target.hp<=0) killUnit(target,u.side);
+          }
+        }
+      } else {
+        const dir=u.side===0?1:-1;
+        const blocked=G.units.some(o=>o.side!==u.side&&o.hp>0&&Math.abs(u.x-o.x)<28);
+        if(!blocked) u.x+=dir*u.spd*dt;
+      }
+    }
+
+    const shield=G.frame<G.shieldEnd?0.3:1;
+    if(u.side===0&&u.x>=ENEMY_BASE_X-32){G.enemyBase-=u.atk*0.07*dt;spawnHit(ENEMY_BASE_X,GROUND-30,'#ff8c42',0);}
+    if(u.side===1&&u.x<=ALLY_BASE_X+32){G.allyBase-=u.atk*0.07*dt*shield;spawnHit(ALLY_BASE_X,GROUND-30,'#ff4560',0);}
+  });
+  G.units=G.units.filter(u=>u.hp>0);
+}
+
+function killUnit(unit,killerSide){
+  G.score+=unit.reward*G.wave*(killerSide===0?G.combo:1);
+  if(killerSide===0){G.kills++;addKillFeed(unit);}
+  G.resources=Math.min(G.resources+Math.floor(unit.reward*0.35),600);
+  spawnDeath(unit.x,unit.y,unit.isBoss);
+  if(unit.isBoss){toast('💀 보스 처치! 대단하다!','gold');spawnFireworks();}
+  unit.hp=0;
+}
+
+function updateBullets(dt){
+  G.bullets.forEach(b=>{
+    const dx=b.tx-b.x,dy=b.ty-b.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<b.spd*dt*2){
+      const t=G.units.find(u=>u.uid===b.targetId);
+      if(t&&t.hp>0){t.hp-=b.dmg;spawnHit(t.x,t.y,b.col,b.dmg);if(t.hp<=0)killUnit(t,b.fromSide===0?0:1);}
+      b.done=true;
+    } else {b.x+=dx/d*b.spd*dt;b.y+=dy/d*b.spd*dt;}
+  });
+  G.bullets=G.bullets.filter(b=>!b.done);
+}
+
+function updateEffects(dt){
+  G.effects.forEach(e=>{e.r+=dt*1.8;e.alpha-=dt*0.045;if(e.alpha<=0)e.done=true;});
+  G.effects=G.effects.filter(e=>!e.done);
+}
+
+function updateParticles(dt){
+  G.particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=0.15*dt;p.life-=dt;});
+  G.particles=G.particles.filter(p=>p.life>0);
+}
+
+function spawnHit(x,y,col,dmg){
+  G.effects.push({x,y,r:3,col,alpha:0.9,type:'hit'});
+  if(dmg>0){
+    for(let i=0;i<3;i++) G.particles.push({x,y:y-15,vx:(Math.random()-.5)*2,vy:-Math.random()*2,
+      col,life:15,size:2+Math.random()*2});
+  }
+}
+function spawnDeath(x,y,isBoss){
+  const cnt=isBoss?20:8;
+  for(let i=0;i<cnt;i++){
+    const ang=Math.random()*Math.PI*2,spd=1+Math.random()*3;
+    G.particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-2,
+      col:isBoss?'#ffd700':'#ff4560',life:20+Math.random()*20,size:isBoss?6:3});
+    G.effects.push({x:x+(Math.random()-.5)*30,y:y+(Math.random()-.5)*30,r:2,
+      col:isBoss?'#ffd700':'#ff4560',alpha:0.8,type:'death'});
+  }
+}
+
+function airstrikeBomb(x,y,G){
+  G.effects.push({x,y,r:5,col:'#ff8c42',alpha:1,type:'bomb'});
+  G.units.filter(u=>u.side===1&&Math.abs(u.x-x)<60).forEach(u=>{
+    const dmg=Math.round((100+G.wave*20)*G.snipeDmgBonus);
+    u.hp-=dmg;spawnHit(u.x,u.y,'#ff8c42',dmg);
+    if(u.hp<=0)killUnit(u,0);
+  });
+  G.enemyBase-=30;
+  for(let i=0;i<10;i++) G.particles.push({x:x+(Math.random()-.5)*40,y,
+    vx:(Math.random()-.5)*4,vy:-Math.random()*5,col:'#ff8c42',life:25+Math.random()*15,size:4});
+}
 
 // ═══════════════════════════════════════════════════════
-// INIT
+//  SNIPER
 // ═══════════════════════════════════════════════════════
-// Show difficulty screen immediately
-document.getElementById('difficulty-screen').style.display='flex';
-document.getElementById('title-screen').style.display='none';
-loop(performance.now());
+function tryShoot(mx,my){
+  if(G.reloading){toast('🔫 재장전 중!','bad');return;}
+  const R=42;
+  let hit=null,bestPri=-1;
+  G.units.forEach(u=>{
+    if(u.side!==1||u.hp<=0) return;
+    const d=Math.sqrt((mx-u.x)**2+(my-(u.y-18))**2);
+    if(d<R&&u.pri>=bestPri){bestPri=u.pri;hit=u;}
+  });
+
+  const baseDmg=(130+G.diff*35)*G.snipeDmgBonus;
+  if(hit){
+    const dmg=Math.round(baseDmg*(hit.isBoss?0.5:1)*G.combo);
+    G.bullets.push({x:mx,y:my-80,tx:hit.x,ty:hit.y-18,col:'#ffd700',dmg,targetId:hit.uid,fromSide:0,spd:28});
+    G.snipes++;G.score+=Math.round(90*G.wave*G.combo);
+    G.combo=Math.min(G.combo+1,8);G.comboTimer=180;
+    document.getElementById('combo-val').textContent='×'+G.combo;
+    toast(`🎯 저격! ${hit.name} -${dmg}HP ×${G.combo}콤보`,'gold');
+    G.effects.push({x:hit.x,y:hit.y,r:6,col:'#ffd700',alpha:0.9,type:'snipe'});
+    G.effects.push({x:mx,y:my,r:2,col:'#ffd700',alpha:0.7,type:'tracer',ex:hit.x,ey:hit.y-18});
+    G.reloading=true;G.reloadTimer=0;
+    G.reloadMax=Math.max(40,80-G.combo*5);
+  } else if(mx>ENEMY_BASE_X-90){
+    const dmg=Math.round((40+G.diff*12)*G.snipeDmgBonus);
+    G.enemyBase-=dmg;
+    toast('💥 기지 직격! -'+dmg,'good');
+    G.effects.push({x:ENEMY_BASE_X,y:GROUND-40,r:10,col:'#ff8c42',alpha:0.9,type:'snipe'});
+    G.reloading=true;G.reloadTimer=0;G.reloadMax=70;
+    G.combo=1;G.comboTimer=0;document.getElementById('combo-val').textContent='×1';
+  } else {
+    G.combo=1;G.comboTimer=0;document.getElementById('combo-val').textContent='×1';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  ABILITIES
+// ═══════════════════════════════════════════════════════
+function useAbility(i){
+  const a=G.abilities[i];
+  if(a.cd>0){toast('쿨다운 중!','bad');return;}
+  ABILITY_DEFS[i].fx(G,W,H,GROUND);
+  a.cd=a.maxCd;
+}
+
+// ═══════════════════════════════════════════════════════
+//  SHOP
+// ═══════════════════════════════════════════════════════
+function openShop(){
+  document.getElementById('shop-res').textContent=Math.floor(G.resources);
+  const grid=document.getElementById('shop-grid');
+  grid.innerHTML='';
+  SHOP_ITEMS.forEach(item=>{
+    const bought=shopBoughtItems.has(item.id)&&!item.repeatable;
+    const div=document.createElement('div');
+    div.className='shop-item'+(bought?' bought':'');
+    div.innerHTML=`<span class="sem">${item.em}</span><span class="sname">${item.name}</span>
+      <span class="sdesc">${item.desc}</span>
+      <span class="scost">${bought?'구매완료':'💎'+item.cost}</span>`;
+    if(!bought) div.onclick=()=>buyShopItem(item);
+    grid.appendChild(div);
+  });
+  document.getElementById('shop-modal').style.display='flex';
+}
+function closeShop(){document.getElementById('shop-modal').style.display='none';}
+function buyShopItem(item){
+  if(G.resources<item.cost){toast('💎 자원 부족!','bad');return;}
+  G.resources-=item.cost;
+  item.fx(G);
+  if(!item.repeatable) shopBoughtItems.add(item.id);
+  openShop();
+  updateHUD();
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════
+function render(){
+  ctx.clearRect(0,0,W,H);
+
+  // SKY
+  const sky=ctx.createLinearGradient(0,0,0,GROUND);
+  sky.addColorStop(0,'#060a18');sky.addColorStop(1,'#152035');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,GROUND);
+
+  // Stars
+  ctx.fillStyle='rgba(255,255,255,0.55)';
+  for(let i=0;i<50;i++){
+    const sx=(i*137.5+G.frame*0.015)%W,sy=(i*97.3)%(GROUND*0.85);
+    const sz=0.5+Math.sin(G.frame*0.05+i)*0.3;
+    ctx.beginPath();ctx.arc(sx,sy,sz,0,Math.PI*2);ctx.fill();
+  }
+
+  drawMountains();
+
+  // GROUND
+  const grd=ctx.createLinearGradient(0,GROUND,0,H);
+  grd.addColorStop(0,'#253510');grd.addColorStop(0.4,'#172209');grd.addColorStop(1,'#0c1505');
+  ctx.fillStyle=grd;ctx.fillRect(0,GROUND,W,H-GROUND);
+  ctx.strokeStyle='rgba(80,130,35,0.5)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,GROUND);ctx.lineTo(W,GROUND);ctx.stroke();
+  for(let i=0;i<W;i+=25){
+    const h=3+Math.sin(i*0.3)*2;
+    ctx.strokeStyle='rgba(80,140,40,0.35)';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(i,GROUND);ctx.lineTo(i-3,GROUND-h);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(i,GROUND);ctx.lineTo(i+3,GROUND-h-1);ctx.stroke();
+  }
+
+  // Shield glow
+  if(G.frame<G.shieldEnd){
+    const pulse=0.4+Math.sin(G.frame*0.15)*0.3;
+    ctx.shadowBlur=30;ctx.shadowColor='rgba(34,211,238,'+pulse+')';
+    ctx.strokeStyle='rgba(34,211,238,'+pulse+')';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(ALLY_BASE_X,GROUND-45,50,0,Math.PI*2);ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+
+  drawBase(ALLY_BASE_X,'🏰','#10d96e',G.allyBase/G.maxBase);
+  drawBase(ENEMY_BASE_X,'🏯','#ff4560',G.enemyBase/G.maxBase);
+
+  G.units.sort((a,b)=>a.y-b.y).forEach(u=>{if(u.hp>0)drawUnit(u);});
+
+  G.bullets.forEach(b=>{
+    ctx.shadowBlur=8;ctx.shadowColor=b.col;
+    ctx.fillStyle=b.col;
+    ctx.beginPath();ctx.arc(b.x,b.y,b.col==='#ffd700'?5:3.5,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    const tCol=b.col==='#ffd700'?'rgba(255,215,0,0.3)':b.col.replace('rgb','rgba').replace(')',',0.3)');
+    ctx.strokeStyle=tCol;ctx.lineWidth=b.col==='#ffd700'?3:1.5;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(b.x,b.y);
+    const dx=b.tx-b.x,dy=b.ty-b.y,d=Math.sqrt(dx*dx+dy*dy);
+    ctx.lineTo(b.x-dx/d*30,b.y-dy/d*30);ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  G.effects.forEach(e=>{
+    ctx.globalAlpha=Math.max(0,e.alpha);
+    if(e.type==='tracer'&&e.ex!==undefined){
+      ctx.strokeStyle='rgba(255,215,0,'+e.alpha+')';ctx.lineWidth=2.5;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.ex,e.ey);ctx.stroke();
+      ctx.setLineDash([]);
+    } else if(e.type==='bomb'){
+      ctx.shadowBlur=30;ctx.shadowColor='#ff8c42';
+      ctx.fillStyle='rgba(255,140,66,'+e.alpha+')';
+      ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    } else {
+      ctx.strokeStyle=e.col;
+      ctx.lineWidth=e.type==='snipe'?3.5:e.type==='death'?1.5:1.8;
+      ctx.shadowBlur=e.type==='snipe'?20:0;ctx.shadowColor=e.col;
+      ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+    ctx.globalAlpha=1;
+  });
+
+  G.particles.forEach(p=>{
+    ctx.globalAlpha=Math.min(1,p.life/10);
+    ctx.fillStyle=p.col;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  });
+
+  // Scope vignette
+  if(!G.reloading&&G.running){
+    const vg=ctx.createRadialGradient(G.mouseX,G.mouseY,55,G.mouseX,G.mouseY,Math.max(W,H)*0.72);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.42)');
+    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  }
+}
+
+function drawMountains(){
+  ctx.fillStyle='rgba(10,18,38,0.7)';
+  ctx.beginPath();ctx.moveTo(0,GROUND);
+  for(let x=0;x<=W;x+=80){
+    const y=GROUND-50-Math.sin(x*0.01)*35-Math.sin(x*0.025)*20;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,GROUND);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(12,22,44,0.5)';
+  ctx.beginPath();ctx.moveTo(0,GROUND);
+  for(let x=0;x<=W;x+=55){
+    const y=GROUND-25-Math.sin(x*0.018+1)*22-Math.sin(x*0.04)*12;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,GROUND);ctx.closePath();ctx.fill();
+}
+
+function drawBase(x,em,col,hpPct){
+  const bw=64,bh=95;
+  const bx=x<W/2?x-bw/2+12:x-bw/2-12,by=GROUND-bh;
+  ctx.shadowBlur=20;ctx.shadowColor=col;
+  ctx.fillStyle='rgba(15,25,48,0.92)';ctx.strokeStyle=col;ctx.lineWidth=2.2;
+  rr(ctx,bx,by,bw,bh,7);ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;
+  const hbw=bw-10;
+  ctx.fillStyle='rgba(0,0,0,0.55)';rr(ctx,bx+5,by+7,hbw,9,4);ctx.fill();
+  const hcol=hpPct>0.5?col:hpPct>0.25?'#ffd700':'#ff4560';
+  ctx.fillStyle=hcol;rr(ctx,bx+5,by+7,Math.max(0,hbw*hpPct),9,4);ctx.fill();
+  ctx.fillStyle=col;
+  for(let i=0;i<4;i++){const bx2=bx+i*(bw/4);ctx.fillRect(bx2+3,by-6,10,8);}
+  ctx.font='28px sans-serif';ctx.textAlign='center';ctx.fillText(em,bx+bw/2,by+bh-14);
+  if(hpPct<0.35){
+    ctx.strokeStyle='rgba(255,100,50,0.55)';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(bx+14,by+18);ctx.lineTo(bx+22,by+52);ctx.lineTo(bx+18,by+72);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(bx+40,by+25);ctx.lineTo(bx+48,by+48);ctx.stroke();
+  }
+  ctx.font='bold 9px sans-serif';ctx.fillStyle='rgba(255,255,255,0.6)';ctx.textAlign='center';
+  ctx.fillText(Math.round(Math.max(0,x<W/2?G.allyBase:G.enemyBase)),bx+bw/2,by+bh+12);
+}
+
+function drawUnit(u){
+  const x=u.x,y=u.y;
+  const col=u.side===0?'#22d3ee':'#ff4560';
+  const bounce=Math.sin(u.anim)*2.2;
+  const scale=u.isBoss?1.7:1;
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.beginPath();ctx.ellipse(x,y+2,13*scale,4*scale,0,0,Math.PI*2);ctx.fill();
+  const r=14*scale;
+  ctx.fillStyle=u.side===0?'rgba(0,45,75,0.88)':'rgba(75,0,20,0.88)';
+  ctx.strokeStyle=u.isBoss?'#ffd700':col;ctx.lineWidth=u.isBoss?2.5:1.8;
+  ctx.shadowBlur=u.isBoss?18:7;ctx.shadowColor=u.isBoss?'#ffd700':col;
+  ctx.beginPath();ctx.arc(x,y-r+bounce,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.font=(u.isBoss?'22':'14')+'px sans-serif';ctx.textAlign='center';
+  ctx.fillText(u.em,x,y-r+bounce+5);
+  if(u.isBoss){
+    ctx.font='bold 10px "Noto Sans KR"';ctx.fillStyle='#ffd700';
+    ctx.fillText('💀 BOSS',x,y-r*2+bounce-4);
+  }
+  const pct=u.hp/u.maxHp;
+  const bw=u.isBoss?50:28;
+  ctx.fillStyle='rgba(0,0,0,0.5)';rr(ctx,x-bw/2,y-r*2+bounce-2,bw,5,2);ctx.fill();
+  ctx.fillStyle=pct>0.5?'#10d96e':pct>0.25?'#ffd700':'#ff4560';
+  rr(ctx,x-bw/2,y-r*2+bounce-2,Math.max(0,bw*pct),5,2);ctx.fill();
+}
+
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+// ═══════════════════════════════════════════════════════
+//  HUD / BUTTONS
+// ═══════════════════════════════════════════════════════
+function updateHUD(){
+  const ah=Math.max(0,G.allyBase),eh=Math.max(0,G.enemyBase);
+  document.getElementById('ally-hp-val').textContent=Math.round(ah);
+  document.getElementById('enemy-hp-val').textContent=Math.round(eh);
+  document.getElementById('ally-hp-bar').style.width=(ah/G.maxBase*100)+'%';
+  document.getElementById('enemy-hp-bar').style.width=(eh/G.maxBase*100)+'%';
+  document.getElementById('res-val').textContent=Math.floor(G.resources);
+  document.getElementById('score-val').textContent=G.score.toLocaleString();
+  document.getElementById('kills-val').textContent=G.kills;
+}
+
+function updateButtons(){
+  [0,1,2,3,4,5].forEach(i=>{
+    const btn=document.getElementById('btn'+i);
+    if(!btn) return;
+    const cost=UNIT_DEFS[i].cost;
+    btn.disabled=G.resources<cost||!G.running||G.trainCooldowns[i]>0;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  KILL FEED
+// ═══════════════════════════════════════════════════════
+function addKillFeed(unit){
+  const kf=document.getElementById('killfeed');
+  const d=document.createElement('div');d.className='kf-item';
+  d.textContent=`🎯 ${unit.em} ${unit.name} 처치${unit.isBoss?' 🏆':''}`;
+  d.style.borderColor=unit.isBoss?'rgba(255,215,0,.6)':'rgba(255,69,96,.3)';
+  d.style.color=unit.isBoss?'#ffd700':unit.side===1?'#ff4560':'var(--text)';
+  kf.insertBefore(d,kf.firstChild);
+  setTimeout(()=>d.remove(),3000);
+  while(kf.children.length>5)kf.removeChild(kf.lastChild);
+}
+
+// ═══════════════════════════════════════════════════════
+//  GAME END
+// ═══════════════════════════════════════════════════════
+function endGame(win){
+  if(!G.running) return;
+  G.running=false;
+  document.getElementById('scope').style.display='none';
+  canvas.style.cursor='default';
+
+  const maxScore=G.wave*1000*(G.diff+1);
+  const ratio=G.score/Math.max(maxScore,1);
+  const grade=win?(ratio>0.8?'S':ratio>0.6?'A':ratio>0.4?'B':'C'):'D';
+  const gradeCol={S:'#ffd700',A:'#10d96e',B:'#4dabf7',C:'#ff8c42',D:'#ff4560'}[grade];
+
+  const rs=document.getElementById('result');
+  rs.style.display='flex';rs.style.flexDirection='column';rs.style.alignItems='center';rs.style.justifyContent='center';
+  document.getElementById('res-grade').textContent=grade;
+  document.getElementById('res-grade').style.color=gradeCol;
+  document.getElementById('res-title').textContent=win?'🏆 승리!':'💀 패배...';
+  document.getElementById('res-title').style.color=win?'#10d96e':'#ff4560';
+  document.getElementById('res-subtitle').textContent=
+    `${DIFF_CONFIG[G.diff].name} 난이도 · 웨이브 ${G.wave} · 등급 ${grade}`;
+  document.getElementById('st-score').textContent=G.score.toLocaleString();
+  document.getElementById('st-kills').textContent=G.kills;
+  document.getElementById('st-wave').textContent=G.wave;
+  document.getElementById('st-snipes').textContent=G.snipes;
+
+  if(win) spawnFireworks();
+
+  // ── Streamlit 리포트 (score 기반 리더보드) ──
+  try{
+    window.parent.postMessage({
+      type:'sniper_result',
+      score:G.score,
+      kills:G.kills,
+      wave:G.wave,
+      snipes:G.snipes,
+      win:win?1:0,
+      diff:G.diff,
+    },'*');
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════
+//  FIREWORKS
+// ═══════════════════════════════════════════════════════
+function spawnFireworks(){
+  const bg=document.getElementById('fw');
+  const cols=['#ffd700','#ff4560','#4dabf7','#10d96e','#b26cf7','#22d3ee'];
+  for(let f=0;f<10;f++) setTimeout(()=>{
+    const x=10+Math.random()*80,y=5+Math.random()*55;
+    const col=cols[Math.floor(Math.random()*cols.length)];
+    for(let i=0;i<26;i++){
+      const p=document.createElement('div');
+      const ang=(i/26)*Math.PI*2,dist=55+Math.random()*100,dur=0.55+Math.random()*0.65;
+      p.style.cssText=`position:absolute;left:${x}%;top:${y}%;width:5px;height:5px;border-radius:50%;
+        background:${col};animation:fwp ${dur}s ease-out forwards;
+        --dx:${Math.cos(ang)*dist}px;--dy:${Math.sin(ang)*dist}px;`;
+      bg.appendChild(p);setTimeout(()=>p.remove(),(dur+0.1)*1000);
+    }
+  },f*380);
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════
+function toast(txt,type){
+  const w=document.getElementById('twrap');
+  const d=document.createElement('div');d.className='toast';
+  const colors={good:'rgba(16,217,110,.4)',bad:'rgba(255,69,96,.4)',gold:'rgba(255,215,0,.4)',wave:'rgba(178,108,247,.4)'};
+  d.style.borderColor=colors[type]||'rgba(255,255,255,.1)';
+  d.textContent=txt;w.insertBefore(d,w.firstChild);
+  setTimeout(()=>d.remove(),2800);
+  while(w.children.length>5)w.removeChild(w.lastChild);
+}
+
+// ═══════════════════════════════════════════════════════
+//  EVENTS
+// ═══════════════════════════════════════════════════════
+document.addEventListener('mousemove',e=>{
+  G.mouseX=e.clientX;G.mouseY=e.clientY;
+  const sc=document.getElementById('scope');
+  sc.style.left=(e.clientX-65)+'px';sc.style.top=(e.clientY-65)+'px';
+  const col=G.reloading?'rgba(100,100,100,0.5)':'rgba(255,69,96,0.9)';
+  sc.querySelectorAll('circle,line').forEach(el=>{if(el.getAttribute('stroke'))el.setAttribute('stroke',col);});
+});
+
+canvas.addEventListener('click',e=>{
+  if(!G.running) return;
+  const rect=canvas.getBoundingClientRect();
+  tryShoot(e.clientX-rect.left,e.clientY-rect.top);
+});
+
+document.addEventListener('keydown',e=>{
+  if(!G.running) return;
+  const keys={'1':0,'2':1,'3':2,'4':3,'5':4,'6':5};
+  if(keys[e.key]!==undefined){spawnAlly(keys[e.key]);return;}
+  if(e.key.toLowerCase()==='q') useAbility(0);
+  if(e.key.toLowerCase()==='e') useAbility(1);
+  if(e.key.toLowerCase()==='r') useAbility(2);
+  if(e.key.toLowerCase()==='s') openShop();
+});
+
+// DIFF SELECT
+let selDiff=0;
+document.querySelectorAll('.diff-card').forEach(card=>{
+  card.addEventListener('click',()=>{
+    document.querySelectorAll('.diff-card').forEach(c=>c.classList.remove('sel'));
+    card.classList.add('sel');selDiff=parseInt(card.dataset.d);
+  });
+});
+document.getElementById('start-btn').addEventListener('click',()=>startGame(selDiff));
+window.addEventListener('resize',resize);
 </script>
 </body>
 </html>"""
@@ -915,41 +1165,48 @@ def render():
     from utils.core import sync_user_data
     from utils.database import (
         load_db, save_db, load_leaderboard, update_leaderboard,
-        format_leaderboard_score
+        format_leaderboard_score,
     )
     from utils.config import USERS_FILE
-    import json
 
     qp = st.query_params
     GAME_ID = "sniper"
 
-    # ── 결과 처리 ──────────────────────────────────────────
-    if qp.get('sniper_kills'):
+    # ── 결과 처리 (score 기반) ──────────────────────────────
+    if qp.get('sniper_score'):
         try:
-            uid   = st.session_state.get('logged_in_user', '')
-            kills = int(qp.get('sniper_kills', 0))
-            won   = qp.get('sniper_won', 'false') == 'true'
-            if uid and kills > 0:
+            uid     = st.session_state.get('logged_in_user', '')
+            s_score = int(qp.get('sniper_score', 0))
+            s_kills = int(qp.get('sniper_kills', 0))
+            s_wave  = int(qp.get('sniper_wave', 1))
+            s_win   = qp.get('sniper_win', '0') == '1'
+            s_diff  = int(qp.get('sniper_diff', 0))
+
+            if uid and s_score > 0:
                 _users = load_db(USERS_FILE, {})
-                cur_rec = _users.get(uid, {}).get('game_records',
-                          st.session_state.get('game_records', {}))
-                changed = False
-                prev_best = cur_rec.get('sniper', {}).get('score', 0)
-                if kills > prev_best:
-                    cur_rec.setdefault('sniper', {}).update({'score': kills})
-                    changed = True
-                    st.toast(f"🎯 스나이퍼 최고킬 갱신! {kills:,}킬", icon="🎯")
-                if changed:
-                    st.session_state.game_records = cur_rec
-                    if uid in _users:
-                        _users[uid]['game_records'] = cur_rec
+                if uid in _users:
+                    gr = _users[uid].setdefault('game_records', {})
+                    sn = gr.setdefault('sniper', {'score': 0, 'kills': 0, 'wave': 1})
+                    changed = False
+                    if s_score > sn.get('score', 0):
+                        sn['score'] = s_score
+                        sn['kills'] = s_kills
+                        sn['wave']  = s_wave
+                        changed = True
+                        st.toast(f"🎯 저격전 최고점수 갱신! {s_score:,}점", icon="🏆")
+                    if changed:
+                        gr['sniper'] = sn
+                        _users[uid]['game_records'] = gr
                         save_db(USERS_FILE, _users)
-                    sync_user_data()
+                        st.session_state.game_records = gr
+                        sync_user_data()
+
                 # 전역 리더보드 갱신
                 user_name = _users.get(uid, {}).get('nickname', uid) if uid else uid
-                if update_leaderboard(GAME_ID, user_name, kills):
+                if update_leaderboard(GAME_ID, user_name, s_score):
                     st.session_state['sniper_lb_new'] = True
-                    st.toast(f"👑 전국 1위! 라인 배틀 {kills:,}킬", icon="🏆")
+                    st.toast(f"👑 전국 1위! 라인 배틀 {s_score:,}점", icon="🏆")
+
         except Exception:
             pass
         st.query_params.clear()
@@ -961,12 +1218,12 @@ def render():
     if rec:
         score_fmt = format_leaderboard_score(GAME_ID, rec.get('top_score', 0))
         st.markdown(f"""
-        <div style='background:linear-gradient(90deg,rgba(245,197,24,.12),rgba(0,0,0,0));
-          border:1px solid rgba(245,197,24,.35);border-radius:10px;padding:8px 18px;
+        <div style='background:linear-gradient(90deg,rgba(255,140,66,.12),rgba(0,0,0,0));
+          border:1px solid rgba(255,140,66,.35);border-radius:10px;padding:8px 18px;
           margin-bottom:10px;font-family:"Orbitron",sans-serif;font-size:.82rem;'>
-          👑 전국 1위: <b style="color:#f5c518;">{rec.get('top_user','?')}</b>
-          &nbsp;|&nbsp; <span style="color:#00d4ff;">{score_fmt}</span>
-          &nbsp;|&nbsp; <span style="color:#556;">{rec.get('date','')}</span>
+          👑 전국 1위: <b style="color:#ffd700;">{rec.get('top_user','?')}</b>
+          &nbsp;|&nbsp; <span style="color:#22d3ee;">{score_fmt}</span>
+          &nbsp;|&nbsp; <span style="color:#7a8fb5;">{rec.get('date','')}</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -978,17 +1235,21 @@ def render():
     </style>
     """, unsafe_allow_html=True)
 
+    # postMessage → query params 브릿지
     listener_html = """
     <script>
     window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'sniper_result') {
         const url = new URL(window.parent.location.href);
-        url.searchParams.set('sniper_kills', e.data.kills);
-        url.searchParams.set('sniper_won',   e.data.won ? 'true' : 'false');
+        url.searchParams.set('sniper_score',  e.data.score);
+        url.searchParams.set('sniper_kills',  e.data.kills);
+        url.searchParams.set('sniper_wave',   e.data.wave);
+        url.searchParams.set('sniper_win',    e.data.win);
+        url.searchParams.set('sniper_diff',   e.data.diff);
         window.parent.location.href = url.toString();
       }
     });
     </script>
     """
     _cv1.html(listener_html, height=0)
-    components.html(GAME_HTML, height=900, scrolling=False)
+    components.html(GAME_HTML, height=820, scrolling=False)
