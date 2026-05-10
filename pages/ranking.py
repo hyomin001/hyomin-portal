@@ -143,6 +143,118 @@ def render(market, nw):
         else:
             st.info("이번 주 던전런 기록이 없습니다. 지금 바로 도전해보세요! ⚔️")
 
+        # ── 게임별 1위 기록 ──
+        st.markdown("---")
+        st.markdown("### 🎮 게임별 역대 1위 기록")
+
+        GAME_DEFS = [
+            {
+                "key": "sniper",   "icon": "🎯", "name": "라인 배틀 저격전",
+                "score_label": "점수", "score_key": "score",
+                "sub_fn": lambda d: f"킬 {d.get('kills',0)} · Wave {d.get('wave',1)}"
+            },
+            {
+                "key": "zombie",   "icon": "🧟", "name": "좀비 서바이벌",
+                "score_label": "최고 웨이브", "score_key": "wave",
+                "sub_fn": lambda d: f"점수 {d.get('score',0):,} · 킬 {d.get('kills',0)}"
+            },
+            {
+                "key": "racing",   "icon": "🏎️", "name": "익스트림 레이싱",
+                "score_label": "점수", "score_key": "score",
+                "sub_fn": lambda d: f"거리 {d.get('dist',0):.1f}km"
+            },
+            {
+                "key": "fighter",  "icon": "🥊", "name": "격투 토너먼트",
+                "score_label": "점수", "score_key": "score",
+                "sub_fn": lambda d: f"퍼펙트 {d.get('perfects',0)}회"
+            },
+        ]
+
+        cols = st.columns(2)
+        for gi, gdef in enumerate(GAME_DEFS):
+            scores = []
+            for uid_r, udata in users_all.items():
+                if uid_r == "admin": continue
+                rec = udata.get('game_records', {}).get(gdef['key'], {})
+                sv = rec.get(gdef['score_key'], 0)
+                if sv > 0:
+                    scores.append({
+                        'uid': uid_r,
+                        'title': udata.get('equipped_title', '🌱 신규시민'),
+                        'score': sv,
+                        'data': rec,
+                    })
+            scores.sort(key=lambda x: x['score'], reverse=True)
+
+            with cols[gi % 2]:
+                st.markdown(f"#### {gdef['icon']} {gdef['name']}")
+                if not scores:
+                    st.info(f"아직 기록 없음")
+                else:
+                    gmedals = ["🥇","🥈","🥉","4위","5위"]
+                    for i, s in enumerate(scores[:5]):
+                        me = "🫵" if s['uid'] == st.session_state.logged_in_user else ""
+                        col_str = "#FFD600" if i==0 else "#C0C0C0" if i==1 else "#CD7F32" if i==2 else "#00E5FF"
+                        s_uid   = html.escape(s['uid'])
+                        s_ttl   = html.escape(s['title'])
+                        sub_txt = html.escape(gdef['sub_fn'](s['data']))
+                        score_disp = f"{s['score']:,}" if gdef['score_key'] == 'score' else f"Wave {s['score']}"
+                        st.markdown(f"""
+<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;'>
+  <div style='display:flex;align-items:center;gap:8px;'>
+    <span style='font-size:1.1rem;'>{gmedals[i]}</span>
+    <div>
+      <span style='font-weight:900;color:#CBD5E1;margin-right:4px;'>{s_uid} {me}</span>
+      <span style='color:#888;font-size:0.78rem;'>{s_ttl}</span>
+    </div>
+  </div>
+  <div style='text-align:right;'>
+    <div style='font-weight:900;color:{col_str};font-size:0.95rem;'>{gdef["icon"]} {score_disp}점</div>
+    <div style='font-size:0.75rem;color:#666;'>{sub_txt}</div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+        # ── 인베스트 마블 TOP 5 ──
+        st.markdown("---")
+        st.markdown("#### 🌍 인베스트 마블 최고 순자산 TOP 5")
+        marble_scores = []
+        for uid_r, udata in users_all.items():
+            if uid_r == "admin": continue
+            ms = udata.get('marble_stats', {})
+            bw = ms.get('best_net_worth', 0)
+            if bw > 0:
+                marble_scores.append({
+                    'uid': uid_r,
+                    'title': udata.get('equipped_title', '🌱 신규시민'),
+                    'nw': bw,
+                    'wins': ms.get('wins', 0),
+                })
+        marble_scores.sort(key=lambda x: x['nw'], reverse=True)
+        if not marble_scores:
+            st.info("아직 마블 기록이 없습니다. 지금 도전해보세요! 🌍")
+        else:
+            m_medals = ["🥇","🥈","🥉","4위","5위"]
+            m_cols = st.columns(min(len(marble_scores[:5]), 5))
+            for i, m in enumerate(marble_scores[:5]):
+                me = "🫵" if m['uid'] == st.session_state.logged_in_user else ""
+                col_str = "#FFD600" if i==0 else "#C0C0C0" if i==1 else "#CD7F32" if i==2 else "#00E5FF"
+                s_uid = html.escape(m['uid'])
+                s_ttl = html.escape(m['title'])
+                st.markdown(f"""
+<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,0.12);border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;'>
+  <div style='display:flex;align-items:center;gap:8px;'>
+    <span style='font-size:1.1rem;'>{m_medals[i]}</span>
+    <div>
+      <span style='font-weight:900;color:#CBD5E1;margin-right:4px;'>{s_uid} {me}</span>
+      <span style='color:#888;font-size:0.78rem;'>{s_ttl}</span>
+    </div>
+  </div>
+  <div style='text-align:right;'>
+    <div style='font-weight:900;color:{col_str};font-size:0.95rem;'>🌍 ₩{m["nw"]:,}</div>
+    <div style='font-size:0.75rem;color:#666;'>승리 {m["wins"]}회</div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
     # ==========================================
     # 💬 탭 2: 게시판 로직 (완벽 개편)
     # ==========================================
