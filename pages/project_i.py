@@ -428,6 +428,12 @@ html,body{
   <canvas id="battlefield"></canvas>
 
   <div class="bot-panel">
+    <!-- 라인 선택 버튼 -->
+    <div id="lane-selector" style="display:flex;gap:6px;width:100%;margin-bottom:6px;justify-content:center;">
+      <button onclick="selectLane(0)" id="lane-btn-0" style="flex:1;padding:5px 4px;border-radius:8px;border:1.5px solid rgba(178,108,247,0.5);background:rgba(178,108,247,0.15);color:#b26cf7;font-size:0.75rem;font-weight:900;cursor:pointer;transition:all 0.2s;">⬆️ 탑</button>
+      <button onclick="selectLane(1)" id="lane-btn-1" style="flex:1;padding:5px 4px;border-radius:8px;border:2px solid rgba(34,211,238,0.8);background:rgba(34,211,238,0.2);color:#22d3ee;font-size:0.75rem;font-weight:900;cursor:pointer;transition:all 0.2s;">➡️ 미드 ✓</button>
+      <button onclick="selectLane(2)" id="lane-btn-2" style="flex:1;padding:5px 4px;border-radius:8px;border:1.5px solid rgba(16,217,110,0.5);background:rgba(16,217,110,0.15);color:#10d96e;font-size:0.75rem;font-weight:900;cursor:pointer;transition:all 0.2s;">⬇️ 바텀</button>
+    </div>
     <button class="unit-btn" id="btn0" onclick="spawnAlly(0)">
       <span class="key-badge">1</span><span class="uem">🧍</span>
       <span class="uname">보병</span><span class="ucost">💎30</span>
@@ -712,6 +718,14 @@ let shopBoughtItems=new Set();
 let rainDrops=[];
 let animFrameId=null;
 
+// ── 3라인 시스템 ──
+const LANES = [
+  {id:0, name:'탑', em:'⬆️', yFrac:0.42},
+  {id:1, name:'미드', em:'➡️', yFrac:0.62},
+  {id:2, name:'바텀', em:'⬇️', yFrac:0.82},
+];
+let selectedLane = 1; // 기본: 미드
+
 const canvas=document.getElementById('battlefield');
 const ctx=canvas.getContext('2d');
 
@@ -725,10 +739,14 @@ function resize(){
   H = Math.max(rect.height, 200);
   canvas.width  = W;
   canvas.height = H;
-  GROUND = H * 0.72;
+  // GROUND은 미드 라인 기준값으로만 사용 (레인별 Y는 laneY()로 계산)
+  GROUND = H * 0.62;
   ALLY_BASE_X  = 70;
   ENEMY_BASE_X = W - 70;
 }
+
+// 라인별 Y 좌표 반환
+function laneY(laneId){ return H * LANES[laneId].yFrac; }
 
 // ════════════════════════════════════════════════
 //  START
@@ -748,6 +766,10 @@ function startGame(diff){
     running:true,diff,wave:1,
     resources:dc.startRes,
     allyBase:dc.baseHp,enemyBase:dc.baseHp,maxBase:dc.baseHp,
+    // 3라인 기지 HP (각 라인의 타워)
+    laneAllyHp:[dc.baseHp*0.5, dc.baseHp*0.5, dc.baseHp*0.5],
+    laneEnemyHp:[dc.baseHp*0.5, dc.baseHp*0.5, dc.baseHp*0.5],
+    laneMaxTowerHp: dc.baseHp*0.5,
     units:[],bullets:[],effects:[],particles:[],
     score:0,kills:0,snipes:0,headshots:0,combo:1,comboTimer:0,
     nextId:0,reloading:false,reloadTimer:0,reloadMax:80,
@@ -955,14 +977,16 @@ function update(dt){
 // ════════════════════════════════════════════════
 //  UNITS
 // ════════════════════════════════════════════════
-function spawnUnit(defId,side,x){
+function spawnUnit(defId,side,x,lane){\
   const def=UNIT_DEFS[defId];
+  const laneId = (lane !== undefined) ? lane : 1; // 기본 미드
+  const groundY = laneY(laneId);
   const ws=1+(G.wave-1)*0.13;
   const isBoss=def.isBoss||false;
   const isMiniBoss=def.isMiniBoss||false;
   const hpMult=isBoss?(1+G.diff*0.3):(isMiniBoss?(1+G.diff*0.2):1);
   const u={
-    uid:G.nextId++,defId,side,x,y:GROUND-2,
+    uid:G.nextId++,defId,side,x,y:groundY-2,lane:laneId,
     hp:Math.round(def.hp*ws*hpMult),
     maxHp:Math.round(def.hp*ws*hpMult),
     atk:Math.round(def.atk*ws*(side===0?(G.dmgBonus||1):1)),
@@ -986,7 +1010,8 @@ function spawnAlly(defId){
   if(G.trainCooldowns[defId]>0){toast('⏳ 훈련 중!','bad');return;}
   G.resources-=def.cost;
   G.trainCooldowns[defId]=def.trainTime;
-  spawnUnit(defId,0,ALLY_BASE_X+55);
+  spawnUnit(defId,0,ALLY_BASE_X+55, selectedLane);
+  toast(LANES[selectedLane].em+' '+LANES[selectedLane].name+' 라인 파견!','good');
   updateButtons();
 }
 
@@ -1004,19 +1029,34 @@ function botSpawn(){
   } else {
     chosen=affor[Math.floor(Math.random()*affor.length)];
   }
-  spawnUnit(chosen.id,1,ENEMY_BASE_X-55);
+  // 3라인에 랜덤 배치 (AI는 약한 라인 우선 공략)
+  const botLane=pickBotLane();
+  spawnUnit(chosen.id,1,ENEMY_BASE_X-55, botLane);
   if(G.diff===3&&Math.random()<0.4){
-    setTimeout(()=>{if(G.running)spawnUnit(chosen.id,1,ENEMY_BASE_X-55);},350);
+    const lane2=(botLane+1+Math.floor(Math.random()*2))%3;
+    setTimeout(()=>{if(G.running)spawnUnit(chosen.id,1,ENEMY_BASE_X-55,lane2);},350);
   }
+}
+
+// AI가 공략할 라인 결정 (아군 타워 HP가 낮은 라인 우선)
+function pickBotLane(){
+  // 가중치: 아군 타워 HP가 낮을수록 더 많이 공격
+  const weights=G.laneAllyHp.map(hp=>Math.max(1,G.laneMaxTowerHp-hp+50));
+  const total=weights.reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;
+  for(let i=0;i<3;i++){r-=weights[i];if(r<=0)return i;}
+  return Math.floor(Math.random()*3);
 }
 
 function spawnBossWave(){
   const ba=document.getElementById('boss-alert');
   ba.style.display='flex';
-  ba.innerHTML='<div class="boss-alert-box">💀 보스 등장!</div>';
+  ba.innerHTML='<div class="boss-alert-box">💀 보스 등장! 모든 라인 공략!</div>';
   setTimeout(()=>{ba.style.display='none';},2200);
-  spawnUnit(14,1,ENEMY_BASE_X-60);
-  for(let i=0;i<3;i++) setTimeout(()=>{if(G.running)spawnUnit(10,1,ENEMY_BASE_X-80-i*30);},i*400);
+  // 보스는 랜덤 라인에 등장, 미니언은 전 라인
+  const bossLane=Math.floor(Math.random()*3);
+  spawnUnit(14,1,ENEMY_BASE_X-60, bossLane);
+  for(let i=0;i<3;i++) setTimeout(()=>{if(G.running)spawnUnit(10,1,ENEMY_BASE_X-80-i*30, i%3);},i*400);
   toast('💀 보스 웨이브! 전력을 다하라!','bad');
 }
 
@@ -1025,19 +1065,23 @@ function spawnMiniBoss(){
   ba.style.display='flex';
   ba.innerHTML='<div class="miniboss-alert-box">😈 미니보스 출현!</div>';
   setTimeout(()=>{ba.style.display='none';},2000);
-  spawnUnit(15,1,ENEMY_BASE_X-60);
-  for(let i=0;i<2;i++) setTimeout(()=>{if(G.running)spawnUnit(9,1,ENEMY_BASE_X-80-i*25);},i*300);
+  const ml=Math.floor(Math.random()*3);
+  spawnUnit(15,1,ENEMY_BASE_X-60, ml);
+  for(let i=0;i<2;i++) setTimeout(()=>{if(G.running)spawnUnit(9,1,ENEMY_BASE_X-80-i*25,(ml+i)%3);},i*300);
   toast('😈 미니보스 출현! 조심해!','bad');
 }
 
 function spawnEventWave(){
   const ba=document.getElementById('boss-alert');
   ba.style.display='flex';
-  ba.innerHTML='<div class="event-alert-box">🎖️ 아군 지원대 도착!</div>';
+  ba.innerHTML='<div class="event-alert-box">🎖️ 전 라인 아군 지원대 도착!</div>';
   setTimeout(()=>{ba.style.display='none';},2000);
-  [0,1,2,5].forEach((id,i)=>setTimeout(()=>{if(G.running)spawnUnit(id,0,ALLY_BASE_X+55+i*15);},i*300));
+  // 3라인 전체에 지원군 배치
+  [0,1,2].forEach(lane=>{
+    [0,5].forEach((id,i)=>setTimeout(()=>{if(G.running)spawnUnit(id,0,ALLY_BASE_X+55+i*15,lane);},lane*200+i*300));
+  });
   G.resources=Math.min(G.resources+100,800);
-  toast('🎖️ 이벤트! 아군 지원 + 💎100 보너스!','good');
+  toast('🎖️ 전 라인 지원! 💎100 보너스!','good');
 }
 
 function updateUnits(dt,frozen){
@@ -1050,7 +1094,7 @@ function updateUnits(dt,frozen){
     if(u._blitzed) u.spd=u.baseSpd*2;
 
     if(u.healer){
-      const hurt=G.units.filter(o=>o.side===u.side&&o.hp>0&&o.hp<o.maxHp&&Math.abs(u.x-o.x)<90);
+      const hurt=G.units.filter(o=>o.side===u.side&&o.lane===u.lane&&o.hp>0&&o.hp<o.maxHp&&Math.abs(u.x-o.x)<90);
       if(hurt.length>0){hurt[0].hp=Math.min(hurt[0].maxHp,hurt[0].hp+0.5*dt);return;}
     }
 
@@ -1059,12 +1103,14 @@ function updateUnits(dt,frozen){
       if(u.x<=ALLY_BASE_X+40){
         const shield=G.frame<G.shieldEnd?0.3:1;
         G.allyBase-=u.atk*2*shield;
+        G.laneAllyHp[u.lane]=Math.max(0,G.laneAllyHp[u.lane]-u.atk*3*shield);
         spawnDeath(u.x,u.y,false);
         u.hp=0; return;
       }
     }
 
-    const enemies=G.units.filter(o=>o.side!==u.side&&o.hp>0);
+    // 같은 라인의 적만 타겟
+    const enemies=G.units.filter(o=>o.side!==u.side&&o.hp>0&&o.lane===u.lane);
     let target=null,minD=Infinity;
     enemies.forEach(e=>{const d=Math.abs(u.x-e.x);if(d<minD){minD=d;target=e;}});
 
@@ -1073,7 +1119,7 @@ function updateUnits(dt,frozen){
       if(u.cooldown<=0){
         u.cooldown=28-G.diff*2;
         if(u.flamer){
-          const inRange=G.units.filter(o=>o.side!==u.side&&o.hp>0&&Math.abs(u.x-o.x)<u.range);
+          const inRange=G.units.filter(o=>o.side!==u.side&&o.hp>0&&o.lane===u.lane&&Math.abs(u.x-o.x)<u.range);
           inRange.forEach(e=>{
             e.hp-=u.atk*0.5;
             spawnHit(e.x,e.y,'#ff8c42',Math.round(u.atk*0.5));
@@ -1091,14 +1137,21 @@ function updateUnits(dt,frozen){
       }
     } else {
       const dir=u.side===0?1:-1;
-      const blocked=G.units.some(o=>o.side!==u.side&&o.hp>0&&Math.abs(u.x-o.x)<(u.ninja?20:28));
+      const blocked=G.units.some(o=>o.side!==u.side&&o.hp>0&&o.lane===u.lane&&Math.abs(u.x-o.x)<(u.ninja?20:28));
       if(!blocked) u.x+=dir*u.spd*dt;
       if(u.ninja&&blocked) u.x+=dir*u.spd*dt*2;
     }
 
     const shield=G.frame<G.shieldEnd?0.3:1;
-    if(u.side===0&&u.x>=ENEMY_BASE_X-32){G.enemyBase-=u.atk*0.07*dt;}
-    if(u.side===1&&u.x<=ALLY_BASE_X+32){G.allyBase-=u.atk*0.07*dt*shield;}
+    // 라인 타워 + 메인 기지 동시 피해
+    if(u.side===0&&u.x>=ENEMY_BASE_X-32){
+      G.enemyBase-=u.atk*0.07*dt;
+      G.laneEnemyHp[u.lane]=Math.max(0,G.laneEnemyHp[u.lane]-u.atk*0.12*dt);
+    }
+    if(u.side===1&&u.x<=ALLY_BASE_X+32){
+      G.allyBase-=u.atk*0.07*dt*shield;
+      G.laneAllyHp[u.lane]=Math.max(0,G.laneAllyHp[u.lane]-u.atk*0.12*dt*shield);
+    }
   });
   G.units=G.units.filter(u=>u.hp>0);
 }
@@ -1405,6 +1458,47 @@ function render(){
     ctx.shadowBlur=0;
   }
 
+  // ── 3라인 구분선 및 라인 레이블 ──
+  LANES.forEach((lane,li)=>{
+    const ly=laneY(li);
+    const laneColors=['#b26cf7','#22d3ee','#10d96e'];
+    const lc=laneColors[li];
+    // 라인 구분 배경 띠
+    const bandH=H/3;
+    const bandY=li===0?0:(li===1?H*0.33:H*0.66);
+    ctx.fillStyle=li===selectedLane?'rgba(255,255,255,0.025)':'rgba(0,0,0,0)';
+    ctx.fillRect(0,bandY,W,bandH);
+    // 라인 레인 구분선
+    if(li>0){
+      ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;ctx.setLineDash([6,6]);
+      ctx.beginPath();ctx.moveTo(0,bandY);ctx.lineTo(W,bandY);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // 지면 선
+    ctx.strokeStyle=li===selectedLane?lc+'88':'rgba(80,130,35,0.3)';ctx.lineWidth=li===selectedLane?2:1;
+    ctx.beginPath();ctx.moveTo(0,ly);ctx.lineTo(W,ly);ctx.stroke();
+    // 라인 레이블
+    const lbl=lane.name+(li===selectedLane?' ◀':' ');
+    ctx.fillStyle=li===selectedLane?lc:'rgba(255,255,255,0.3)';
+    ctx.font=`bold ${li===selectedLane?13:11}px "Noto Sans KR"`;
+    ctx.textAlign='center';
+    ctx.fillText(lbl,W/2,ly-6);
+    ctx.textAlign='left';
+    // 라인 타워 HP 바 (아군)
+    const allyTowerPct=G.laneAllyHp[li]/G.laneMaxTowerHp;
+    const enemyTowerPct=G.laneEnemyHp[li]/G.laneMaxTowerHp;
+    const barW=60,barH=5,barY=ly-22;
+    // 아군 타워 HP
+    ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(ALLY_BASE_X+5,barY,barW,barH);
+    ctx.fillStyle=allyTowerPct>0.5?'#10d96e':allyTowerPct>0.25?'#ffd700':'#ff4560';
+    ctx.fillRect(ALLY_BASE_X+5,barY,barW*allyTowerPct,barH);
+    // 적 타워 HP
+    ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(ENEMY_BASE_X-65,barY,barW,barH);
+    ctx.fillStyle=enemyTowerPct>0.5?'#ff4560':enemyTowerPct>0.25?'#ffd700':'#10d96e';
+    ctx.fillRect(ENEMY_BASE_X-65,barY,barW*enemyTowerPct,barH);
+  });
+
+  // 메인 기지 그리기
   drawBase(ALLY_BASE_X,'🏰','#10d96e',G.allyBase/G.maxBase,true);
   drawBase(ENEMY_BASE_X,'🏯','#ff4560',G.enemyBase/G.maxBase,false);
 
