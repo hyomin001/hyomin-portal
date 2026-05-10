@@ -849,6 +849,18 @@ html,body{
     <canvas id="bc" width="600" height="600"></canvas>
 
     <div class="spanel">
+      <!-- DICE (상단 고정! 항상 보임) -->
+      <div class="dice-panel" style="border-color:rgba(168,85,247,.5);background:rgba(168,85,247,.08);flex-shrink:0;">
+        <div style="font-size:.58rem;letter-spacing:3px;color:#b26cf7;font-weight:700;margin-bottom:2px;font-family:'Rajdhani',sans-serif;">🎲 DICE ROLL</div>
+        <div class="ddisp" style="margin:6px 0;">
+          <div class="die" id="d1" style="border-color:rgba(168,85,247,.4);">🎲</div>
+          <div class="die" id="d2" style="border-color:rgba(168,85,247,.4);">🎲</div>
+        </div>
+        <div class="die-sum" id="dsum">0</div>
+        <button class="roll-btn" id="rbtn" disabled>🎲 주사위 굴리기</button>
+        <div class="roll-hint" id="dhint"></div>
+      </div>
+
       <!-- STOCK TICKER -->
       <div class="stock-ticker">
         <div class="ticker-label">LIVE MARKET</div>
@@ -862,17 +874,6 @@ html,body{
       <div class="prop-legend">
         <div class="legend-title">PROPERTY MAP</div>
         <div class="legend-grid" id="legendGrid"></div>
-      </div>
-
-      <!-- DICE -->
-      <div class="dice-panel">
-        <div class="ddisp">
-          <div class="die" id="d1">🎲</div>
-          <div class="die" id="d2">🎲</div>
-        </div>
-        <div class="die-sum" id="dsum">0</div>
-        <button class="roll-btn" id="rbtn" disabled>주사위 굴리기</button>
-        <div class="roll-hint" id="dhint"></div>
       </div>
 
       <!-- LOG -->
@@ -1039,34 +1040,42 @@ const RAW_CELLS=[
 
 // ── CHANCE CARDS ──
 const CHANCE=[
-  {txt:'📈 주식 대박!',desc:'강남 아파트 대신 주식으로',fx:p=>{const a=300+Math.floor(Math.random()*400);p.cash+=a;return'+₩'+a;},col:'#00ff88'},
-  {txt:'🎁 경품 당첨!',desc:'연말 추첨 1등 당첨',fx:p=>{p.cash+=1000;return'+₩1,000';},col:'#ffd700'},
-  {txt:'💰 배당금 수령',desc:'전 플레이어에게 배당',fx:(p,ps)=>{let t=0;ps.forEach(o=>{if(o!==p&&o.cash>0){const a=Math.min(o.cash,200);o.cash-=a;p.cash+=a;t+=a;}});return'+₩'+t;},col:'#00ff88'},
-  {txt:'🏛️ 정부 지원금',desc:'소상공인 지원 프로그램',fx:p=>{p.cash+=400;return'+₩400';},col:'#ffd700'},
-  {txt:'🎰 즉석복권',desc:'운이 따른다면...',fx:p=>{const ok=Math.random()<.6;const a=ok?500:-100;p.cash+=a;return(ok?'+':'')+a;},col:'#c084fc'},
-  {txt:'💸 과태료',desc:'신호위반 벌금 납부',fx:p=>{p.cash-=300;return'-₩300';},col:'#ff3355'},
-  {txt:'🚀 출발로 이동!',desc:'빠른 귀환 + 통과 보너스',fx:p=>{p.pos=0;p.cash+=200;return'+₩200 이동';},col:'#ffd700'},
+  {txt:'📈 주식 대박!',desc:'오늘 시장 급등 +20%',fx:p=>{const a=400+Math.floor(Math.random()*500);p.cash+=a;return'+₩'+a;},col:'#00ff88'},
+  {txt:'🎁 경품 당첨!',desc:'연말 황금 추첨 1등',fx:p=>{p.cash+=1500;return'+₩1,500';},col:'#ffd700'},
+  {txt:'💰 배당금 수령',desc:'전 플레이어에게 배당 징수',fx:(p,ps)=>{let t=0;ps.forEach(o=>{if(o!==p&&o.cash>0){const a=Math.min(o.cash,300);o.cash-=a;p.cash+=a;t+=a;}});return'+₩'+t;},col:'#00ff88'},
+  {txt:'🏛️ 정부 지원금',desc:'소상공인 특별 지원',fx:p=>{p.cash+=500;return'+₩500';},col:'#ffd700'},
+  {txt:'🎰 즉석복권',desc:'오늘 운이 따른다면...',fx:p=>{const r=Math.random();const a=r<.1?2000:r<.35?800:r<.7?200:-150;p.cash+=a;return(a>=0?'+':'')+a;},col:'#c084fc'},
+  {txt:'💸 과태료',desc:'신호위반 + 주정차 위반',fx:p=>{p.cash-=350;return'-₩350';},col:'#ff3355'},
+  {txt:'🚀 출발로 이동!',desc:'빠른 귀환 + 통과 보너스',fx:p=>{p.pos=0;p.cash+=300;return'+₩300 이동';},col:'#ffd700'},
   {txt:'🔙 3칸 후진',desc:'갑작스러운 방향 전환',fx:p=>{p.pos=(p.pos-3+40)%40;return'3칸 ↩';},col:'#ff8c42'},
-  {txt:'🎲 한 번 더!',desc:'연속 기회 발동',fx:p=>{p._ex=true;return'추가 턴!';},col:'#22d3ee'},
+  {txt:'🎲 한 번 더!',desc:'연속 기회 발동!',fx:p=>{p._ex=true;return'추가 턴!';},col:'#22d3ee'},
   {txt:'💼 미니게임 찬스',desc:'퀴즈를 맞히면 큰 보상',fx:p=>{p._mg=true;return'도전!';},col:'#22d3ee'},
-  {txt:'🏦 건물 수익 보너스',desc:'모든 건물에서 수익 발생',fx:(p,_,cells)=>{let b=0;cells.forEach(c=>{if(c.own===p.id&&c.t==='prop'){b+=50*((c.hs||0)*1+(c.ho?4:0));}});p.cash+=b;return'+₩'+b;},col:'#ffd700'},
+  {txt:'🏦 건물 수익 보너스',desc:'모든 건물에서 즉시 수익',fx:(p,_,cells)=>{let b=0;cells.forEach(c=>{if(c.own===p.id&&c.t==='prop'){b+=80*((c.hs||0)*1+(c.ho?5:0));}});p.cash+=b;return'+₩'+b;},col:'#ffd700'},
   {txt:'✈️ 최근 공항으로',desc:'비즈니스 클래스 이동',fx:(p,_,cells)=>{const a=[6,15,25,32];let n=a[0],md=99;a.forEach(i=>{const d=(i-p.pos+40)%40;if(d>0&&d<md){md=d;n=i;}});p.pos=n;return'공항 이동';},col:'#22d3ee'},
-  {txt:'🌊 시장 폭락',desc:'글로벌 경기침체 발생',fx:p=>{const a=Math.floor(p.cash*0.15);p.cash-=a;return'-₩'+a;},col:'#ff3355'},
-  {txt:'💡 특허 수익',desc:'혁신 아이디어로 로열티 수령',fx:p=>{p.cash+=600;return'+₩600';},col:'#ffd700'},
+  {txt:'🌊 시장 폭락',desc:'글로벌 경기침체! 자산 손실',fx:p=>{const a=Math.floor(p.cash*0.18);p.cash-=a;return'-₩'+a;},col:'#ff3355'},
+  {txt:'💡 특허 수익',desc:'혁신 아이디어 로열티',fx:p=>{p.cash+=800;return'+₩800';},col:'#ffd700'},
+  {txt:'🤝 기업 합병',desc:'경쟁사 인수로 현금 확보',fx:p=>{const a=600+Math.floor(Math.random()*400);p.cash+=a;return'+₩'+a;},col:'#00ff88'},
+  {txt:'🏗️ 재개발 보상',desc:'도시 재개발 구역 보상금',fx:p=>{p.cash+=700;return'+₩700';},col:'#ffd700'},
+  {txt:'🎪 이벤트 수익',desc:'지역 축제 스폰서십',fx:p=>{p.cash+=450;return'+₩450';},col:'#c084fc'},
+  {txt:'⚡ 전략적 이동',desc:'5칸 앞으로 전진!',fx:p=>{p.pos=(p.pos+5)%40;return'5칸 ↗';},col:'#22d3ee'},
 ];
 
 // ── COMMUNITY CARDS ──
 const COMMUNITY=[
-  {txt:'🏥 의료비 납부',desc:'건강검진 비용',fx:p=>{p.cash-=500;return'-₩500';},col:'#ff3355'},
-  {txt:'🎓 장학금 수령',desc:'성적 우수 장학생 선발',fx:p=>{p.cash+=600;return'+₩600';},col:'#00ff88'},
-  {txt:'🏠 임대수익 공유',desc:'커뮤니티 임대수익 배분',fx:(p,ps)=>{let t=0;ps.forEach(o=>{if(o!==p&&o.cash>0){const a=Math.min(o.cash,150);o.cash-=a;p.cash+=a;t+=a;}});return'+₩'+t;},col:'#00ff88'},
-  {txt:'💸 수리비 청구',desc:'건물 유지보수 비용',fx:(p,_,cells)=>{let c=0;cells.forEach(cl=>{if(cl.own===p.id)c+=cl.hs*80+cl.ho*200;});p.cash-=c;return'-₩'+c;},col:'#ff3355'},
-  {txt:'🎉 생일 축하',desc:'모두에게 축하금 받기',fx:p=>{p.cash+=300;return'+₩300';},col:'#ffd700'},
-  {txt:'📉 주가 폭락',desc:'보유 자산 20% 감소',fx:p=>{const a=Math.floor(p.cash*0.2);p.cash-=a;return'-₩'+a;},col:'#ff3355'},
-  {txt:'🏆 우수 시민상',desc:'지역사회 공헌 수상',fx:p=>{p.cash+=800;return'+₩800';},col:'#ffd700'},
-  {txt:'🔧 긴급 수선',desc:'배관 파손으로 수리',fx:p=>{p.cash-=100;return'-₩100';},col:'#ff8c42'},
-  {txt:'🌱 ESG 보조금',desc:'친환경 인증 보조금',fx:p=>{p.cash+=350;return'+₩350';},col:'#00ff88'},
-  {txt:'💰 로또 1등',desc:'1/8,145,060의 기적',fx:p=>{const ok=Math.random()<.08;const a=ok?2000:0;p.cash+=a;return ok?'+₩2,000 🎊':'꽝...';},col:'#c084fc'},
+  {txt:'🏥 의료비 납부',desc:'종합 건강검진 비용',fx:p=>{p.cash-=450;return'-₩450';},col:'#ff3355'},
+  {txt:'🎓 장학금 수령',desc:'우수 장학생 선발',fx:p=>{p.cash+=700;return'+₩700';},col:'#00ff88'},
+  {txt:'🏠 임대수익 공유',desc:'커뮤니티 임대수익 배분',fx:(p,ps)=>{let t=0;ps.forEach(o=>{if(o!==p&&o.cash>0){const a=Math.min(o.cash,200);o.cash-=a;p.cash+=a;t+=a;}});return'+₩'+t;},col:'#00ff88'},
+  {txt:'💸 수리비 청구',desc:'건물 유지보수 비용',fx:(p,_,cells)=>{let c=0;cells.forEach(cl=>{if(cl.own===p.id)c+=cl.hs*90+cl.ho*220;});p.cash-=c;return'-₩'+c;},col:'#ff3355'},
+  {txt:'🎉 생일 축하!',desc:'모두에게 축하금 받기',fx:p=>{p.cash+=400;return'+₩400';},col:'#ffd700'},
+  {txt:'📉 주가 폭락',desc:'보유 자산 일부 손실',fx:p=>{const a=Math.floor(p.cash*0.18);p.cash-=a;return'-₩'+a;},col:'#ff3355'},
+  {txt:'🏆 우수 시민상',desc:'지역사회 공헌 수상',fx:p=>{p.cash+=900;return'+₩900';},col:'#ffd700'},
+  {txt:'🔧 긴급 수선',desc:'배관 파손으로 긴급 수리',fx:p=>{p.cash-=120;return'-₩120';},col:'#ff8c42'},
+  {txt:'🌱 ESG 보조금',desc:'친환경 기업 인증',fx:p=>{p.cash+=400;return'+₩400';},col:'#00ff88'},
+  {txt:'💰 로또 1등',desc:'기적은 일어난다!',fx:p=>{const ok=Math.random()<.1;const a=ok?2500:0;p.cash+=a;return ok?'+₩2,500 🎊🎊':'아쉽게 꽝...';},col:'#c084fc'},
+  {txt:'🤑 배당 재투자',desc:'주식 배당금 복리 수령',fx:p=>{p.cash+=550;return'+₩550';},col:'#00ff88'},
+  {txt:'🌐 글로벌 수출',desc:'해외 수출 계약 성사',fx:p=>{p.cash+=650;return'+₩650';},col:'#ffd700'},
+  {txt:'🏋️ 자기계발',desc:'역량 개발로 임금 상승',fx:p=>{p.cash+=300;return'+₩300';},col:'#00ff88'},
+  {txt:'💔 이혼 소송',desc:'합의금 지급 (당하는 쪽)',fx:p=>{const a=Math.floor(p.cash*0.12);p.cash-=a;return'-₩'+a;},col:'#ff3355'},
 ];
 
 // ── MINIGAME QUESTIONS ──
@@ -1090,14 +1099,18 @@ const MG=[
 
 // ── GLOBAL ECONOMIC EVENTS ──
 const ECO_EVENTS=[
-  {icon:'📉',type:'위기',title:'글로벌 금융위기',desc:'전 세계 부동산 시장 급락',fx:(cells,players)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*.8;});},dur:3,col:'#ff3355',border:'rgba(255,51,85,.4)'},
-  {icon:'📈',type:'호황',title:'글로벌 경제 호황',desc:'모든 임대료 20% 상승',fx:(cells)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*1.2;});},dur:4,col:'#00ff88',border:'rgba(0,255,136,.4)'},
-  {icon:'🏛️',type:'정책',title:'중앙은행 금리 인상',desc:'건물 건설 비용 15% 상승',fx:(_,__,G)=>{G._buildCostMod=1.15;},dur:3,col:'#fb923c',border:'rgba(251,146,60,.4)'},
-  {icon:'🌪️',type:'재해',title:'자연재해 발생',desc:'무작위 플레이어 건물 파괴',fx:(_,players,G)=>{const alive=players.filter(p=>!p.bkrt);if(alive.length>0){const t=alive[Math.floor(Math.random()*alive.length)];const props=G.cells.filter(c=>c.own===t.id&&c.t==='prop'&&(c.hs>0||c.ho));if(props.length>0){const p=props[Math.floor(Math.random()*props.length)];p.hs=0;p.ho=0;}}},dur:1,col:'#ff3355',border:'rgba(255,51,85,.4)'},
-  {icon:'🚀',type:'혁신',title:'기술 혁신 붐',desc:'모든 플레이어 ₩300 획득',fx:(_,players)=>{players.forEach(p=>{if(!p.bkrt)p.cash+=300;});},dur:1,col:'#ffd700',border:'rgba(255,215,0,.4)'},
-  {icon:'🌐',type:'무역',title:'자유무역 협정',desc:'공항 임대료 2배',fx:(cells)=>{cells.forEach(c=>{if(c.t==='airport')c._airportMod=2;});},dur:4,col:'#22d3ee',border:'rgba(34,211,238,.4)'},
-  {icon:'💹',type:'투자',title:'외국인 직접투자 급증',desc:'무인도 탈출 무료',fx:(_,__,G)=>{G._islandFree=true;},dur:3,col:'#c084fc',border:'rgba(192,132,252,.4)'},
-  {icon:'💰',type:'보너스',title:'국가 배당금 지급',desc:'모든 부동산 소유자에게 ₩200',fx:(cells,players)=>{const owners=new Set();cells.forEach(c=>{if(c.t==='prop'&&c.own>=0)owners.add(c.own);});players.forEach(p=>{if(owners.has(p.id))p.cash+=200;});},dur:1,col:'#ffd700',border:'rgba(255,215,0,.4)'},
+  {icon:'📉',type:'위기',title:'글로벌 금융위기',desc:'전 세계 부동산 임대료 20% 감소',fx:(cells,players)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*.8;});},dur:3,col:'#ff3355',border:'rgba(255,51,85,.4)'},
+  {icon:'📈',type:'호황',title:'글로벌 경제 대호황',desc:'모든 임대료 25% 상승!',fx:(cells)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*1.25;});},dur:4,col:'#00ff88',border:'rgba(0,255,136,.4)'},
+  {icon:'🏛️',type:'정책',title:'중앙은행 금리 인상',desc:'건물 건설 비용 20% 상승',fx:(_,__,G)=>{G._buildCostMod=1.2;},dur:3,col:'#fb923c',border:'rgba(251,146,60,.4)'},
+  {icon:'🌪️',type:'재해',title:'자연재해 발생',desc:'무작위 플레이어 건물 손실',fx:(_,players,G)=>{const alive=players.filter(p=>!p.bkrt);if(alive.length>0){const t=alive[Math.floor(Math.random()*alive.length)];const props=G.cells.filter(c=>c.own===t.id&&c.t==='prop'&&(c.hs>0||c.ho));if(props.length>0){const p=props[Math.floor(Math.random()*props.length)];if(p.ho){p.ho=0;}else{p.hs=Math.max(0,p.hs-1);}}}},dur:1,col:'#ff3355',border:'rgba(255,51,85,.4)'},
+  {icon:'🚀',type:'혁신',title:'AI 기술 혁신 붐',desc:'모든 플레이어 ₩500 획득',fx:(_,players)=>{players.forEach(p=>{if(!p.bkrt)p.cash+=500;});},dur:1,col:'#ffd700',border:'rgba(255,215,0,.4)'},
+  {icon:'🌐',type:'무역',title:'자유무역 협정 체결',desc:'공항 임대료 3배 폭등!',fx:(cells)=>{cells.forEach(c=>{if(c.t==='airport')c._airportMod=3;});},dur:4,col:'#22d3ee',border:'rgba(34,211,238,.4)'},
+  {icon:'💹',type:'투자',title:'외국인 직접투자 급증',desc:'무인도 탈출 무료 + ₩200',fx:(_,__,G)=>{G._islandFree=true;},dur:3,col:'#c084fc',border:'rgba(192,132,252,.4)'},
+  {icon:'💰',type:'보너스',title:'국가 배당금 지급',desc:'부동산 소유자 1인당 ₩300',fx:(cells,players)=>{const owners=new Set();cells.forEach(c=>{if(c.t==='prop'&&c.own>=0)owners.add(c.own);});players.forEach(p=>{if(owners.has(p.id))p.cash+=300;});},dur:1,col:'#ffd700',border:'rgba(255,215,0,.4)'},
+  {icon:'🔥',type:'버블',title:'부동산 버블 붕괴',desc:'전체 임대료 30% 감소!',fx:(cells)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*.7;});},dur:2,col:'#ff6b35',border:'rgba(255,107,53,.4)'},
+  {icon:'💎',type:'황금기',title:'경제 황금기 도래',desc:'임대료 50% 증가 & 배당금!',fx:(cells,players)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*1.5;});players.forEach(p=>{if(!p.bkrt)p.cash+=200;});},dur:3,col:'#ffd700',border:'rgba(255,215,0,.6)'},
+  {icon:'🛢️',type:'에너지',title:'에너지 대란 발생',desc:'세금 2배 & 임대료 감소',fx:(_,__,G)=>{G._taxMod=2;},dur:2,col:'#ff3355',border:'rgba(255,51,85,.4)'},
+  {icon:'🌊',type:'정치',title:'경제 제재 발동',desc:'해외 자산 임대료 40% 감소',fx:(cells)=>{['JP','US','EU','CN','BR','IN'].forEach(ctry=>{cells.forEach(c=>{if(c.t==='prop'&&c.ctry===ctry)c._rentMod=(c._rentMod||1)*.6;});});},dur:2,col:'#ff3355',border:'rgba(255,51,85,.4)'},
 ];
 
 // ── ACHIEVEMENTS ──
@@ -1107,6 +1120,8 @@ const ACHIEVEMENTS=[
   {id:'hotel',icon:'🏨',name:'호텔리어',desc:'첫 번째 호텔을 건설했습니다',check:(_,G)=>G.cells.some(c=>c.own===0&&c.ho>0)},
   {id:'rich10k',icon:'💰',name:'1억 클럽',desc:'순자산 ₩10,000 달성',check:(p)=>nw(p)>=10000},
   {id:'rich20k',icon:'💎',name:'재벌',desc:'순자산 ₩20,000 달성',check:(p)=>nw(p)>=20000},
+  {id:'rich50k',icon:'👑',name:'억만장자',desc:'순자산 ₩50,000 달성',check:(p)=>nw(p)>=50000},
+  {id:'airportKing',icon:'✈️',name:'항공왕',desc:'공항 3개 이상 보유',check:(_,G)=>G.cells.filter(c=>c.own===0&&c.t==='airport').length>=3},
   {id:'mgWin',icon:'🎓',name:'퀴즈왕',desc:'미니게임에서 승리했습니다',check:(p)=>p._mgWins>0},
   {id:'survivor',icon:'🛡️',name:'생존왕',desc:'파산 위기에서 살아남았습니다',check:(p)=>p._survived>0},
   {id:'landlord',icon:'🏙️',name:'건물주',desc:'5개 이상 부동산 보유',check:(_,G)=>G.cells.filter(c=>c.own===0&&c.t==='prop').length>=5},
@@ -1247,40 +1262,75 @@ function wrapText(text,x,y,mw,lh){
 function drawBoard(trail=[],tcol='rgba(255,215,0,0.4)'){
   ctx.clearRect(0,0,S,S);
 
-  // Background
-  ctx.fillStyle='#060916';ctx.fillRect(0,0,S,S);
+  // ── 배경: 다층 그라디언트 ──
+  const bg=ctx.createLinearGradient(0,0,S,S);
+  bg.addColorStop(0,'#04060f');bg.addColorStop(0.5,'#070d1e');bg.addColorStop(1,'#04060f');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,S,S);
 
-  // Inner area gradient
-  const ig=ctx.createRadialGradient(S/2,S/2,0,S/2,S/2,S*.45);
-  ig.addColorStop(0,'#0a1428');ig.addColorStop(1,'#060916');
+  // ── 코너 빛 효과 ──
+  [0,S].forEach(cx=>[0,S].forEach(cy=>{
+    const rg=ctx.createRadialGradient(cx,cy,0,cx,cy,CELL*1.6);
+    rg.addColorStop(0,'rgba(255,215,0,0.06)');rg.addColorStop(1,'transparent');
+    ctx.fillStyle=rg;ctx.fillRect(0,0,S,S);
+  }));
+
+  // ── 내부 영역 ──
+  const ig=ctx.createRadialGradient(S/2,S/2,0,S/2,S/2,S*.48);
+  ig.addColorStop(0,'#0d1930');ig.addColorStop(1,'#06091a');
   ctx.fillStyle=ig;
-  rrRect(ctx,CELL,CELL,S-CELL*2,S-CELL*2,12);ctx.fill();
+  rrRect(ctx,CELL,CELL,S-CELL*2,S-CELL*2,14);ctx.fill();
 
-  // Center decoration
+  // ── 내부 테두리 글로우 ──
+  ctx.save();ctx.shadowBlur=18;ctx.shadowColor='rgba(255,215,0,0.12)';
+  ctx.strokeStyle='rgba(255,215,0,0.1)';ctx.lineWidth=1.5;
+  rrRect(ctx,CELL,CELL,S-CELL*2,S-CELL*2,14);ctx.stroke();
+  ctx.restore();
+
+  // ── 세계지도 격자 무늬 ──
+  ctx.save();ctx.globalAlpha=0.025;ctx.strokeStyle='#4dabf7';ctx.lineWidth=0.5;
+  for(let i=1;i<8;i++){
+    ctx.beginPath();ctx.moveTo(CELL+i*(S-2*CELL)/8,CELL);ctx.lineTo(CELL+i*(S-2*CELL)/8,S-CELL);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(CELL,CELL+i*(S-2*CELL)/8);ctx.lineTo(S-CELL,CELL+i*(S-2*CELL)/8);ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── 중앙 글로브 장식 ──
   ctx.save();
-  ctx.globalAlpha=0.07;
-  ctx.strokeStyle='#ffd700';ctx.lineWidth=1;
-  ctx.beginPath();ctx.arc(S/2,S/2,80,0,Math.PI*2);ctx.stroke();
-  ctx.beginPath();ctx.arc(S/2,S/2,120,0,Math.PI*2);ctx.stroke();
-  ctx.globalAlpha=1;ctx.restore();
+  // 글로브 외곽선들
+  [60,90,118,145].forEach((r,i)=>{
+    ctx.globalAlpha=0.04+i*0.01;
+    ctx.strokeStyle='#ffd700';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(S/2,S/2,r,0,Math.PI*2);ctx.stroke();
+  });
+  // 글로브 경선 (대각선)
+  ctx.globalAlpha=0.04;
+  for(let a=0;a<Math.PI;a+=Math.PI/5){
+    ctx.beginPath();ctx.ellipse(S/2,S/2,145,60,a,0,Math.PI*2);ctx.stroke();
+  }
+  ctx.restore();
 
-  // Center text
+  // ── 중앙 텍스트 ──
   ctx.textAlign='center';
-  ctx.font=`bold ${CELL*.32}px "Black Han Sans"`;
-  ctx.fillStyle='rgba(255,215,0,.14)';
+  ctx.font=`bold ${CELL*.36}px "Black Han Sans"`;
+  ctx.fillStyle='rgba(255,215,0,0.18)';
   ctx.fillText('인베스트',S/2,S/2-8);
-  ctx.fillText('마블',S/2,S/2+CELL*.3);
-  ctx.font=`${CELL*.16}px "Rajdhani"`;
-  ctx.fillStyle='rgba(34,211,238,.1)';
-  ctx.fillText('남은 '+(G.maxT-G.tot)+'턴',S/2,S/2+CELL*.55);
+  ctx.fillText('마블',S/2,S/2+CELL*.32);
+  ctx.font=`700 ${CELL*.15}px "Orbitron"`;
+  ctx.fillStyle='rgba(34,211,238,0.15)';
+  ctx.fillText('ULTRA',S/2,S/2+CELL*.52);
+  ctx.font=`${CELL*.14}px "Rajdhani"`;
+  ctx.fillStyle='rgba(178,108,247,0.2)';
+  ctx.fillText('⏳ '+(G.maxT-G.tot)+'턴 남음',S/2,S/2+CELL*.7);
 
-  // Eco event indicator
+  // ── 경제 이벤트 표시 ──
   if(G.ecoEvent){
-    ctx.font=`${CELL*.18}px sans-serif`;
-    ctx.fillText(G.ecoEvent.icon,S/2,S/2-CELL*.4);
-    ctx.font=`${CELL*.1}px "Noto Sans KR"`;
-    ctx.fillStyle='rgba(255,215,0,.2)';
-    ctx.fillText(G.ecoEvent.title,S/2,S/2-CELL*.22);
+    ctx.save();
+    ctx.shadowBlur=30;ctx.shadowColor='rgba(255,215,0,0.4)';
+    ctx.font=`${CELL*.26}px sans-serif`;ctx.fillText(G.ecoEvent.icon,S/2,S/2-CELL*.52);
+    ctx.shadowBlur=0;
+    ctx.font=`bold ${CELL*.13}px "Noto Sans KR"`;
+    ctx.fillStyle='rgba(255,215,0,0.28)';ctx.fillText(G.ecoEvent.title,S/2,S/2-CELL*.3);
+    ctx.restore();
   }
 
   G.cells.forEach((c,i)=>{
@@ -1398,26 +1448,44 @@ function drawBoard(trail=[],tcol='rgba(255,215,0,0.4)'){
     }
   });
 
-  // PLAYERS
+  // PLAYERS (강화된 토큰)
   G.players.forEach(p=>{
     if(p.bkrt)return;
     const{x,y,w,h}=cellXY(p.pos);
-    const offsets=[[-7,-7],[7,-7],[-7,7],[7,7]];
+    const offsets=[[-8,-8],[8,-8],[-8,8],[8,8]];
     const[ox,oy]=offsets[p.id]||[0,0];
     const px=x+w/2+ox,py=y+h/2+oy;
+    const isActive=G.cur===p.id;
+    const r=isActive?11:8;
 
-    // Shadow/glow
     ctx.save();
-    ctx.shadowBlur=G.cur===p.id?20:8;
-    ctx.shadowColor=p.col+(G.cur===p.id?'cc':'66');
+    // 외곽 글로우 링 (활성 플레이어)
+    if(isActive){
+      ctx.shadowBlur=28;ctx.shadowColor=p.col;
+      // 펄스 링
+      const pulse=0.4+0.6*Math.abs(Math.sin(Date.now()*0.004));
+      ctx.globalAlpha=pulse*0.5;
+      ctx.strokeStyle=p.col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(px,py,r+5,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
 
-    // Circle
-    ctx.fillStyle=G.cur===p.id?p.col:p.col+'88';
-    ctx.beginPath();ctx.arc(px,py,G.cur===p.id?9:7,0,Math.PI*2);ctx.fill();
+    // 토큰 본체 (그라디언트)
+    const tg=ctx.createRadialGradient(px-r*.3,py-r*.3,0,px,py,r);
+    tg.addColorStop(0,p.col+'ff');tg.addColorStop(1,p.col+'88');
+    ctx.shadowBlur=isActive?22:10;ctx.shadowColor=p.col;
+    ctx.fillStyle=isActive?tg:p.col+'77';
+    ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
 
-    // Emoji
-    ctx.shadowBlur=0;ctx.font=(G.cur===p.id?'11':'9')+'px sans-serif';
-    ctx.textAlign='center';ctx.fillText(p.em,px,py+3.5);
+    // 테두리
+    ctx.strokeStyle=isActive?'rgba(255,255,255,0.8)':'rgba(255,255,255,0.3)';
+    ctx.lineWidth=isActive?1.8:1;
+    ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.stroke();
+
+    // 이모지
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+    ctx.font=(isActive?'12':'10')+'px sans-serif';
+    ctx.textAlign='center';ctx.fillText(p.em,px,py+4);
     ctx.restore();
   });
 }
@@ -2269,7 +2337,7 @@ initParticles();
 def render():
     import streamlit.components.v1 as _cv1
     from utils.core import sync_user_data
-    from utils.database import load_db, save_db
+    from utils.database import load_db, save_db, update_leaderboard
     from utils.config import USERS_FILE
 
     qp = st.query_params
@@ -2290,9 +2358,18 @@ def render():
                         ms['best_net_worth'] = m_score
                         st.toast(f"🏆 인베스트마블 최고 순자산 갱신! ₩{m_score:,}", icon="🌍")
                     _users[uid]['marble_stats'] = ms
+                    # game_records에도 저장 (ranking.py 호환)
+                    gr = _users[uid].setdefault('game_records', {})
+                    if m_score > gr.get('invest_marble', {}).get('score', 0):
+                        gr['invest_marble'] = {'score': m_score, 'wins': ms.get('wins', 0)}
+                        _users[uid]['game_records'] = gr
                     save_db(USERS_FILE, _users)
                     st.session_state.marble_stats = ms
                     sync_user_data()
+                    # 전역 리더보드에도 저장
+                    user_name = _users.get(uid, {}).get('nickname', uid)
+                    if update_leaderboard('invest_marble', user_name, m_score):
+                        st.toast(f"👑 인베스트마블 전국 1위! ₩{m_score:,}", icon="🏆")
         except Exception:
             pass
         st.query_params.clear()
