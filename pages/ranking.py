@@ -154,19 +154,31 @@ def render(market, nw):
                 "sub_fn": lambda d: f"킬 {d.get('kills',0)} · Wave {d.get('wave',1)}"
             },
             {
-                "key": "zombie",   "icon": "🧟", "name": "좀비 서바이벌",
+                "key": "zombie",   "icon": "🧟", "name": "좀비 아포칼립스",
                 "score_label": "최고 웨이브", "score_key": "wave",
                 "sub_fn": lambda d: f"점수 {d.get('score',0):,} · 킬 {d.get('kills',0)}"
             },
             {
-                "key": "racing",   "icon": "🏎️", "name": "익스트림 레이싱",
+                "key": "racing",   "icon": "🏎️", "name": "네온 도주 레이싱",
                 "score_label": "점수", "score_key": "score",
                 "sub_fn": lambda d: f"거리 {d.get('dist',0):.1f}km"
             },
             {
-                "key": "fighter",  "icon": "🥊", "name": "격투 토너먼트",
+                "key": "fighter",  "icon": "🥊", "name": "스트리트 파이터 EX",
                 "score_label": "점수", "score_key": "score",
                 "sub_fn": lambda d: f"퍼펙트 {d.get('perfects',0)}회"
+            },
+            {
+                "key": "invest_marble", "icon": "🌍", "name": "인베스트 마블 ULTRA",
+                "score_label": "최고 순자산", "score_key": "score",
+                "fmt_fn": lambda sv: f"₩{sv:,}",
+                "sub_fn": lambda d: f"승리 {d.get('wins',0)}회"
+            },
+            {
+                "key": "terminal", "icon": "💻", "name": "터미널 방탈출",
+                "score_label": "클리어 스테이지", "score_key": "score",
+                "fmt_fn": lambda sv: f"STAGE {sv}/20",
+                "sub_fn": lambda d: f"최고 스테이지 {d.get('stage',0)}"
             },
         ]
 
@@ -198,7 +210,12 @@ def render(market, nw):
                         s_uid   = html.escape(s['uid'])
                         s_ttl   = html.escape(s['title'])
                         sub_txt = html.escape(gdef['sub_fn'](s['data']))
-                        score_disp = f"{s['score']:,}" if gdef['score_key'] == 'score' else f"Wave {s['score']}"
+                        if 'fmt_fn' in gdef:
+                            score_disp = gdef['fmt_fn'](s['score'])
+                        elif gdef['score_key'] == 'score':
+                            score_disp = f"{s['score']:,}"
+                        else:
+                            score_disp = f"Wave {s['score']}"
                         st.markdown(f"""
 <div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;'>
   <div style='display:flex;align-items:center;gap:8px;'>
@@ -209,7 +226,7 @@ def render(market, nw):
     </div>
   </div>
   <div style='text-align:right;'>
-    <div style='font-weight:900;color:{col_str};font-size:0.95rem;'>{gdef["icon"]} {score_disp}점</div>
+    <div style='font-weight:900;color:{col_str};font-size:0.95rem;'>{gdef["icon"]} {score_disp}</div>
     <div style='font-size:0.75rem;color:#666;'>{sub_txt}</div>
   </div>
 </div>""", unsafe_allow_html=True)
