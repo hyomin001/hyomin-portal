@@ -1180,7 +1180,7 @@ showTitle();
 
 def render():
     import streamlit.components.v1 as _cv1
-    from utils.database import load_db, save_db
+    from utils.database import load_db, save_db, update_leaderboard
     from utils.core import sync_user_data
     from utils.config import USERS_FILE
 
@@ -1205,6 +1205,10 @@ def render():
                         save_db(USERS_FILE, _users)
                     sync_user_data()
                     st.toast(f"🏆 레이싱 최고기록 갱신! {r_score:,}점", icon="🏎️")
+                # 리더보드 업데이트
+                user_name = _users.get(uid, {}).get('nickname', uid)
+                if update_leaderboard('racing', user_name, r_score):
+                    st.toast(f"👑 레이싱 전국 1위! {r_score:,}점", icon="🏆")
         except Exception:
             pass
         st.query_params.clear()
