@@ -1116,7 +1116,7 @@ showTitle();
 def render():
     import streamlit.components.v1 as _cv1
     from utils.core import sync_user_data
-    from utils.database import load_db, save_db
+    from utils.database import load_db, save_db, update_leaderboard
     from utils.config import USERS_FILE
 
     # ── 결과 처리 ──
@@ -1139,6 +1139,10 @@ def render():
                         save_db(USERS_FILE, _users)
                     sync_user_data()
                     st.toast(f"🏆 격투 최고기록 갱신! {f_score:,}점", icon="🥊")
+                # 리더보드 업데이트
+                user_name = _users.get(uid, {}).get('nickname', uid)
+                if update_leaderboard('fighter', user_name, f_score):
+                    st.toast(f"👑 격투 전국 1위! {f_score:,}점", icon="🏆")
         except Exception:
             pass
         st.query_params.clear()
