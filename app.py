@@ -515,29 +515,32 @@ if st.session_state.page_view == "portal":
 
     # ── 게임별 1위 랭킹 수집 ──────────────────────────────────
     try:
+        # 유저 DB를 여기서 직접 로드 (위 try 실패해도 독립적으로 동작)
+        _users_db_for_rank = load_db(USERS_FILE, {})
+
         def _get_game_top(stat_key, val_key, val_fmt='score'):
-            best_uid, best_val = '—', None
-            for _uid, _ud in _users_db_for_stats.items():
+            best_uid, best_val = '—', 0
+            for _uid, _ud in _users_db_for_rank.items():
                 if _uid == 'admin': continue
                 v = _ud.get(stat_key, {}).get(val_key, 0)
-                if best_val is None or v > best_val:
+                if isinstance(v, (int, float)) and v > best_val:
                     best_val, best_uid = v, _uid
-            if best_val and best_val > 0:
-                if val_fmt == 'money': disp = format_korean_money(best_val)
+            if best_val > 0:
+                if val_fmt == 'money': disp = format_korean_money(int(best_val))
                 elif val_fmt == 'wave': disp = f'{int(best_val)}웨이브'
                 else: disp = f'{int(best_val):,}점'
                 return best_uid, disp
             return '—', '기록 없음'
 
         def _get_gr_top(game_key, val_key, val_fmt='score'):
-            best_uid, best_val = '—', None
-            for _uid, _ud in _users_db_for_stats.items():
+            best_uid, best_val = '—', 0
+            for _uid, _ud in _users_db_for_rank.items():
                 if _uid == 'admin': continue
                 v = _ud.get('game_records', {}).get(game_key, {}).get(val_key, 0)
-                if best_val is None or v > best_val:
+                if isinstance(v, (int, float)) and v > best_val:
                     best_val, best_uid = v, _uid
-            if best_val and best_val > 0:
-                if val_fmt == 'money': disp = format_korean_money(best_val)
+            if best_val > 0:
+                if val_fmt == 'money': disp = format_korean_money(int(best_val))
                 elif val_fmt == 'wave': disp = f'{int(best_val)}웨이브'
                 else: disp = f'{int(best_val):,}점'
                 return best_uid, disp
@@ -546,15 +549,19 @@ if st.session_state.page_view == "portal":
         _r_marble_uid,  _r_marble_val  = _get_game_top('marble_stats', 'best_net_worth', 'money')
         _r_dungeon_uid, _r_dungeon_val = _get_game_top('dungeon_stats', 'best_score', 'score')
         _r_racing_uid,  _r_racing_val  = _get_gr_top('racing',  'score', 'score')
-        _r_zombie_uid,  _r_zombie_val  = _get_gr_top('zombie',  'score', 'score')
+        _r_zombie_uid,  _r_zombie_val  = _get_gr_top('zombie',  'wave',  'wave')
         _r_fighter_uid, _r_fighter_val = _get_gr_top('fighter', 'score', 'score')
         _r_sniper_uid,  _r_sniper_val  = _get_gr_top('sniper',  'score', 'score')
 
         def _rank_html(uid, val):
-            if uid == '—': return ''
-            return f"<div class='card-rank-badge'>👑 {uid}<br>{val}</div>"
+            if uid == '—':
+                return "<div class='card-rank-badge' style='color:rgba(255,215,0,0.4);border-color:rgba(255,215,0,0.15);'>👑 기록 없음</div>"
+            import html as _html
+            return f"<div class='card-rank-badge'>👑 {_html.escape(str(uid))}<br><span style='color:#fff;font-weight:900;'>{_html.escape(str(val))}</span></div>"
     except Exception as _re:
-        def _rank_html(uid, val): return ''
+        _rank_err = str(_re)
+        def _rank_html(uid, val):
+            return f"<div class='card-rank-badge' style='color:rgba(255,100,100,0.6);font-size:0.6rem;'>⚠️ err</div>"
         _r_marble_uid = _r_dungeon_uid = _r_racing_uid = '—'
         _r_zombie_uid = _r_fighter_uid = _r_sniper_uid = '—'
         _r_marble_val = _r_dungeon_val = _r_racing_val = '—'
