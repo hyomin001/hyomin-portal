@@ -2269,6 +2269,33 @@ def render():
         </div>
         """, unsafe_allow_html=True)
 
+        # ── 전국 1위 & 내 기록 배너 ──
+        try:
+            from utils.database import load_leaderboard
+            _lb = load_leaderboard()
+            _trec = _lb.get('terminal', {})
+            if _trec and _trec.get('top_score', 0) > 0:
+                _top_user  = _trec.get('top_user', '?')
+                _top_score = _trec.get('top_score', 0)
+                _top_date  = _trec.get('date', '')
+                st.markdown(f"""                <div style='background:linear-gradient(90deg,rgba(57,255,20,.1),rgba(0,0,0,0));
+                  border:1px solid rgba(57,255,20,.35);border-radius:10px;
+                  padding:8px 18px;margin-bottom:8px;
+                  font-family:"Orbitron",sans-serif;font-size:.82rem;color:#a0ffa0;'>
+                  👑 전국 1위: <b style="color:#39ff14;">{_top_user}</b>
+                  &nbsp;|&nbsp; <span style="color:#22d3ee;">STAGE {_top_score}/20</span>
+                  &nbsp;|&nbsp; <span style="color:#4a6a4a;font-size:.72rem;">{_top_date}</span>
+                </div>""", unsafe_allow_html=True)
+        except Exception:
+            pass
+        _my_cleared = len(st.session_state.terminal_cleared)
+        if _my_cleared > 0:
+            st.markdown(f"""            <div style='background:rgba(57,255,20,.05);border:1px solid rgba(57,255,20,.2);
+              border-radius:10px;padding:6px 18px;margin-bottom:8px;
+              font-family:"JetBrains Mono",monospace;font-size:.8rem;color:#4ade80;'>
+              📡 내 기록: <b style="color:#39ff14;">STAGE {_my_cleared}/20</b> 클리어
+            </div>""", unsafe_allow_html=True)
+
         cleared_count = len(st.session_state.terminal_cleared)
         total_stages  = len(STAGES)
         progress_pct  = int(cleared_count / total_stages * 100)
