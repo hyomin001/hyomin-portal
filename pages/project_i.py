@@ -977,7 +977,7 @@ function update(dt){
 // ════════════════════════════════════════════════
 //  UNITS
 // ════════════════════════════════════════════════
-function spawnUnit(defId,side,x,lane){\
+function spawnUnit(defId,side,x,lane){
   const def=UNIT_DEFS[defId];
   const laneId = (lane !== undefined) ? lane : 1; // 기본 미드
   const groundY = laneY(laneId);
