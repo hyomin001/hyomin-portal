@@ -980,13 +980,16 @@ function update(dt){
 function spawnUnit(defId,side,x,lane){
   const def=UNIT_DEFS[defId];
   const laneId = (lane !== undefined) ? lane : 1; // 기본 미드
-  const groundY = laneY(laneId);
+
+  const baseY = laneY(1); // 스폰은 무조건 미드 라인(중앙 기지) 기준
+  const targetY = laneY(laneId); // 유닛이 최종적으로 걸어갈 라인의 Y좌표
+
   const ws=1+(G.wave-1)*0.13;
   const isBoss=def.isBoss||false;
   const isMiniBoss=def.isMiniBoss||false;
   const hpMult=isBoss?(1+G.diff*0.3):(isMiniBoss?(1+G.diff*0.2):1);
   const u={
-    uid:G.nextId++,defId,side,x,y:groundY-2,lane:laneId,
+    uid:G.nextId++,defId,side,x,y:baseY-2, targetY:targetY-2, lane:laneId,
     hp:Math.round(def.hp*ws*hpMult),
     maxHp:Math.round(def.hp*ws*hpMult),
     atk:Math.round(def.atk*ws*(side===0?(G.dmgBonus||1):1)),
@@ -1138,7 +1141,21 @@ function updateUnits(dt,frozen){
     } else {
       const dir=u.side===0?1:-1;
       const blocked=G.units.some(o=>o.side!==u.side&&o.hp>0&&o.lane===u.lane&&Math.abs(u.x-o.x)<(u.ninja?20:28));
-      if(!blocked) u.x+=dir*u.spd*dt;
+      if(!blocked) {
+        // 1. 앞으로 전진 (X축 이동)
+        u.x += dir * u.spd * dt;
+        
+        // 2. 각자 배정받은 라인으로 산개 (Y축 대각선 이동)
+        if(u.y !== u.targetY) {
+          const dy = u.targetY - u.y;
+          // 목표 라인과의 거리가 1.5픽셀 이상이면 대각선 이동
+          if(Math.abs(dy) > 1.5) {
+            u.y += Math.sign(dy) * (u.spd * 0.7) * dt; 
+          } else {
+            u.y = u.targetY;
+          }
+        }
+      }
       if(u.ninja&&blocked) u.x+=dir*u.spd*dt*2;
     }
 
