@@ -383,72 +383,76 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 //  UNIT DEFINITIONS
 // ═══════════════════════════════════
 const UNIT_DEFS = [
-  {id:0,name:'보병',    em:'🧍',cost:30, hp:110, atk:12, spd:0.9, range:44, ranged:false,pri:1,reward:12,trainTime:38},
-  {id:1,name:'돌격대',  em:'🪖',cost:60, hp:210, atk:25, spd:1.2, range:54, ranged:false,pri:2,reward:22,trainTime:58},
-  {id:2,name:'중화기',  em:'💪',cost:120,hp:350, atk:48, spd:0.6, range:75, ranged:true, pri:4,reward:45,trainTime:88},
-  {id:3,name:'의무병',  em:'🏥',cost:80, hp:130, atk:4,  spd:0.8, range:70, ranged:false,pri:1,reward:18,trainTime:68,healer:true},
-  {id:4,name:'저격수',  em:'🎯',cost:100,hp:85,  atk:80, spd:0.55,range:240,ranged:true, pri:3,reward:32,trainTime:78},
-  {id:5,name:'전차',    em:'🛡️',cost:200,hp:750, atk:60, spd:0.42,range:95, ranged:false,pri:5,reward:90,trainTime:138},
-  {id:6,name:'기갑',    em:'🤖',cost:160,hp:480, atk:55, spd:0.52,range:80, ranged:false,pri:5,reward:70,trainTime:108,armored:true},
-  {id:7,name:'화염',    em:'🔥',cost:90, hp:155, atk:38, spd:0.72,range:58, ranged:false,pri:3,reward:28,trainTime:63,flamer:true},
-  {id:8,name:'닌자',    em:'🥷',cost:75, hp:95,  atk:50, spd:2.4, range:42, ranged:false,pri:3,reward:24,trainTime:53,ninja:true},
+  {id:0,name:'보병',    em:'🧍',cost:30, hp:130, atk:14, spd:1.0, range:48, ranged:false,pri:1,reward:14,trainTime:32},
+  {id:1,name:'돌격대',  em:'🪖',cost:60, hp:260, atk:30, spd:1.3, range:58, ranged:false,pri:2,reward:25,trainTime:52},
+  {id:2,name:'중화기',  em:'💪',cost:120,hp:420, atk:58, spd:0.65,range:82, ranged:true, pri:4,reward:50,trainTime:80},
+  {id:3,name:'의무병',  em:'🏥',cost:80, hp:160, atk:5,  spd:0.85,range:80, ranged:false,pri:1,reward:20,trainTime:62,healer:true},
+  {id:4,name:'저격수',  em:'🎯',cost:100,hp:100, atk:95, spd:0.58,range:260,ranged:true, pri:3,reward:36,trainTime:72},
+  {id:5,name:'전차',    em:'🛡️',cost:200,hp:900, atk:70, spd:0.45,range:100,ranged:false,pri:5,reward:100,trainTime:128},
+  {id:6,name:'기갑',    em:'🤖',cost:160,hp:580, atk:62, spd:0.56,range:85, ranged:false,pri:5,reward:78,trainTime:98,armored:true},
+  {id:7,name:'화염',    em:'🔥',cost:90, hp:180, atk:44, spd:0.78,range:62, ranged:false,pri:3,reward:32,trainTime:58,flamer:true},
+  {id:8,name:'닌자',    em:'🥷',cost:75, hp:110, atk:58, spd:2.6, range:46, ranged:false,pri:3,reward:28,trainTime:48,ninja:true},
   // ENEMY (9~18)
-  {id:9, name:'적보병', em:'👹',cost:30, hp:100, atk:10, spd:0.9, range:44, ranged:false,pri:1,reward:10},
-  {id:10,name:'장교',   em:'🎖️',cost:150,hp:280, atk:35, spd:0.82,range:60, ranged:false,pri:3,reward:55},
-  {id:11,name:'로켓병', em:'🚀',cost:180,hp:150, atk:75, spd:0.52,range:200,ranged:true, pri:4,reward:65},
-  {id:12,name:'적탱크', em:'🛡️',cost:280,hp:750, atk:62, spd:0.4, range:88, ranged:false,pri:5,reward:110},
-  {id:13,name:'드론',   em:'🛸',cost:120,hp:75,  atk:28, spd:1.6, range:80, ranged:true, pri:3,reward:38},
-  {id:14,name:'보스',   em:'💀',cost:999,hp:3200,atk:85, spd:0.5, range:105,ranged:false,pri:5,reward:300,isBoss:true},
-  {id:15,name:'미니보스',em:'😈',cost:600,hp:1300,atk:58, spd:0.68,range:88, ranged:false,pri:5,reward:160,isMiniBoss:true},
-  {id:16,name:'특공대', em:'💣',cost:200,hp:170, atk:65, spd:1.4, range:46, ranged:false,pri:4,reward:70,kamikaze:true},
-  {id:17,name:'포격수', em:'🎖️',cost:220,hp:190, atk:90, spd:0.47,range:220,ranged:true, pri:5,reward:80},
-  {id:18,name:'사이보그',em:'🦾',cost:240,hp:420, atk:72, spd:0.9, range:70, ranged:false,pri:5,reward:95},
+  {id:9, name:'적보병', em:'👹',cost:30, hp:110, atk:11, spd:0.9, range:44, ranged:false,pri:1,reward:11},
+  {id:10,name:'장교',   em:'🎖️',cost:150,hp:320, atk:40, spd:0.85,range:62, ranged:false,pri:3,reward:60},
+  {id:11,name:'로켓병', em:'🚀',cost:180,hp:175, atk:85, spd:0.55,range:210,ranged:true, pri:4,reward:70},
+  {id:12,name:'적탱크', em:'🛡️',cost:280,hp:900, atk:70, spd:0.42,range:92, ranged:false,pri:5,reward:120},
+  {id:13,name:'드론',   em:'🛸',cost:120,hp:85,  atk:32, spd:1.7, range:85, ranged:true, pri:3,reward:42},
+  {id:14,name:'보스',   em:'💀',cost:999,hp:4000,atk:100,spd:0.5, range:110,ranged:false,pri:5,reward:350,isBoss:true},
+  {id:15,name:'미니보스',em:'😈',cost:600,hp:1600,atk:68, spd:0.72,range:92, ranged:false,pri:5,reward:180,isMiniBoss:true},
+  {id:16,name:'특공대', em:'💣',cost:200,hp:190, atk:75, spd:1.5, range:46, ranged:false,pri:4,reward:78,kamikaze:true},
+  {id:17,name:'포격수', em:'🎖️',cost:220,hp:210, atk:100,spd:0.5, range:230,ranged:true, pri:5,reward:88},
+  {id:18,name:'사이보그',em:'🦾',cost:240,hp:480, atk:80, spd:0.95,range:72, ranged:false,pri:5,reward:105},
 ];
 
 // ═══════════════════════════════════
 //  ABILITIES
 // ═══════════════════════════════════
 const ABILITY_DEFS = [
-  {id:0,name:'공습',em:'💣',key:'q',cd:600,
+  {id:0,name:'공습',em:'💣',key:'q',cd:480,
    fx:()=>{
      const selL=G.selectedLane;
-     for(let i=0;i<6;i++) setTimeout(()=>{
+     for(let i=0;i<8;i++) setTimeout(()=>{
        if(!G.running)return;
        const x=ALLY_BASE_X+80+Math.random()*(W-200);
        airstrikeBomb(x,laneY(selL),selL);
-     },i*180);
+     },i*140);
      toast('💣 공습! '+LANE_NAMES[selL]+' 라인!','gold');
    }},
-  {id:1,name:'전격전',em:'⚡',key:'e',cd:450,
+  {id:1,name:'전격전',em:'⚡',key:'e',cd:400,
    fx:()=>{
-     G.blitzEnd=G.frame+480;
-     G.units.filter(u=>u.side===0).forEach(u=>{if(!u._blitzed){u.spd*=2;u._blitzed=true;}});
-     toast('⚡ 전격전! 전 아군 강화 8초!','gold');
+     G.blitzEnd=G.frame+540;
+     G.units.filter(u=>u.side===0).forEach(u=>{if(!u._blitzed){u.spd*=2.2;u._blitzed=true;}});
+     toast('⚡ 전격전! 전 아군 강화 9초!','gold');
    }},
-  {id:2,name:'방어막',em:'🛡️',key:'r',cd:500,
-   fx:()=>{G.shieldEnd=G.frame+600;toast('🛡️ 방어막 10초!','good');}},
-  {id:3,name:'핵폭탄',em:'☢️',key:'w',cd:1000,
+  {id:2,name:'방어막',em:'🛡️',key:'r',cd:450,
+   fx:()=>{
+     G.shieldEnd=G.frame+720;
+     for(let i=0;i<3;i++) G.allyTowerHp[i]=Math.min(G.allyTowerHp[i]+200,G.maxTowerHp);
+     toast('🛡️ 방어막 12초! + 타워 수리!','good');
+   }},
+  {id:3,name:'핵폭탄',em:'☢️',key:'w',cd:900,
    fx:()=>{
      toast('☢️ 전 라인 핵폭탄!!!','bad');
      setTimeout(()=>{
        if(!G.running)return;
        const fl=document.getElementById('hs-flash');
-       fl.style.background='rgba(255,255,200,0.85)';
-       setTimeout(()=>{fl.style.background='rgba(255,215,0,0)';},400);
+       fl.style.background='rgba(255,255,200,0.92)';
+       setTimeout(()=>{fl.style.background='rgba(255,215,0,0)';},500);
        const toKill=[...G.units.filter(u=>u.side===1&&u.hp>0&&!u.isBoss)];
        toKill.forEach(u=>killUnit(u,0));
        G.units.filter(u=>u.side===1&&u.isBoss&&u.hp>0).forEach(u=>{
-         const dmg=Math.round(u.maxHp*0.38);u.hp-=dmg;spawnHit(u.x,u.y,'#ffd700',dmg);
+         const dmg=Math.round(u.maxHp*0.45);u.hp-=dmg;spawnHit(u.x,u.y,'#ffd700',dmg);
        });
-       for(let li=0;li<3;li++) G.enemyTowerHp[li]=Math.max(0,G.enemyTowerHp[li]-300);
-       for(let i=0;i<50;i++){
+       for(let li=0;li<3;li++) G.enemyTowerHp[li]=Math.max(0,G.enemyTowerHp[li]-400);
+       for(let i=0;i<70;i++){
          const ang=Math.random()*Math.PI*2;
-         G.particles.push({x:W/2+(Math.random()-.5)*W*.65,y:laneY(1),vx:Math.cos(ang)*4,vy:Math.sin(ang)*4-3,col:['#ffd700','#ff8c42','#ff4560'][i%3],life:38,size:6+Math.random()*6});
+         G.particles.push({x:W/2+(Math.random()-.5)*W*.7,y:laneY(1),vx:Math.cos(ang)*5,vy:Math.sin(ang)*5-3,col:['#ffd700','#ff8c42','#ff4560'][i%3],life:42,size:6+Math.random()*8});
        }
-     },800);
+     },700);
    }},
-  {id:4,name:'시간정지',em:'⏸️',key:'t',cd:700,
-   fx:()=>{G.freezeEnd=G.frame+240;toast('⏸️ 전 라인 시간정지! 4초!','wave');}},
+  {id:4,name:'시간정지',em:'⏸️',key:'t',cd:600,
+   fx:()=>{G.freezeEnd=G.frame+300;toast('⏸️ 전 라인 시간정지! 5초!','wave');}},
 ];
 
 // ═══════════════════════════════════
@@ -456,17 +460,17 @@ const ABILITY_DEFS = [
 // ═══════════════════════════════════
 const DIFF_CONFIG = [
   {name:'초보',  col:'#10d96e',bgCol:'rgba(16,217,110,.15)',bdCol:'rgba(16,217,110,.35)',
-   resRate:2.5,botResRate:0.45,botPool:[9,9,9],          botDelay:5000,startRes:220,laneHp:1500,bossWave:12,miniBossWave:6,
-   botStrategyInterval:3000,rushProb:0.1},
+   resRate:2.8,botResRate:0.38,botPool:[9,9,9],           botDelay:5500,startRes:250,laneHp:1800,bossWave:13,miniBossWave:7,
+   botStrategyInterval:3500,rushProb:0.08,maxTowerHp:1800},
   {name:'중급',  col:'#4dabf7',bgCol:'rgba(77,171,247,.15)',bdCol:'rgba(77,171,247,.35)',
-   resRate:1.7,botResRate:0.9, botPool:[9,10,10,11],     botDelay:3200,startRes:160,laneHp:1500,bossWave:9, miniBossWave:5,
-   botStrategyInterval:2000,rushProb:0.25},
+   resRate:1.8,botResRate:0.85,botPool:[9,10,10,11],      botDelay:3400,startRes:180,laneHp:1600,bossWave:10,miniBossWave:5,
+   botStrategyInterval:2200,rushProb:0.22,maxTowerHp:1600},
   {name:'어려움',col:'#ff8c42',bgCol:'rgba(255,140,66,.15)',bdCol:'rgba(255,140,66,.35)',
-   resRate:1.2,botResRate:1.4, botPool:[10,11,11,12,13], botDelay:2000,startRes:130,laneHp:1500,bossWave:7, miniBossWave:4,
-   botStrategyInterval:1200,rushProb:0.45},
+   resRate:1.25,botResRate:1.35,botPool:[10,11,11,12,13], botDelay:2100,startRes:145,laneHp:1400,bossWave:8, miniBossWave:4,
+   botStrategyInterval:1300,rushProb:0.42,maxTowerHp:1400},
   {name:'극악',  col:'#ff4560',bgCol:'rgba(255,69,96,.15)', bdCol:'rgba(255,69,96,.35)',
-   resRate:0.95,botResRate:2.0,botPool:[11,12,13,16,17,18],botDelay:1100,startRes:110,laneHp:1500,bossWave:5,miniBossWave:3,
-   botStrategyInterval:700,rushProb:0.65},
+   resRate:0.98,botResRate:1.9,botPool:[11,12,13,16,17,18],botDelay:1200,startRes:120,laneHp:1200,bossWave:6,miniBossWave:3,
+   botStrategyInterval:750,rushProb:0.62,maxTowerHp:1200},
 ];
 
 // ═══════════════════════════════════
@@ -487,6 +491,10 @@ const SHOP_ITEMS = [
   {id:'u_regen', em:'💚',name:'기지 재생',   desc:'기지 HP 초당 3씩 회복',    cost:180,fx:()=>{G.baseRegen=(G.baseRegen||0)+3;toast('💚 기지 재생!','good');}},
   {id:'u_crit',  em:'💥',name:'크리티컬',    desc:'저격 치명타율 +25%',       cost:190,repeatable:true,fx:()=>{G.critBonus=(G.critBonus||0)+0.25;toast('💥 크리티컬 강화!','gold');}},
   {id:'u_aoe',   em:'💫',name:'범위 저격',   desc:'저격 반경 30 범위 피해',   cost:260,fx:()=>{G.aoeSnipe=true;toast('💫 범위 저격!','gold');}},
+  {id:'u_tower_atk',em:'🏰',name:'타워 반격',   desc:'아군 타워 자동 공격 활성화', cost:300,fx:()=>{G.towerAttack=true;toast('🏰 타워 반격 활성화!','good');}},
+  {id:'u_spawn_boost',em:'⚡',name:'연속 생산',  desc:'유닛 생산 속도 +40%',       cost:220,fx:()=>{G.spawnBoost=(G.spawnBoost||1)*0.72;toast('⚡ 유닛 생산 가속!','good');}},
+  {id:'u_double_res',em:'💠',name:'자원 2배',    desc:'다음 15초 자원 2배',        cost:160,repeatable:true,fx:()=>{G.doubleResEnd=G.frame+900;toast('💠 자원 2배 발동!','gold');}},
+  {id:'u_massacre',em:'🔱',name:'학살 모드',    desc:'아군 공격력 일시 +100%',    cost:350,fx:()=>{G.massacreEnd=G.frame+480;toast('🔱 학살 모드 15초!','bad');}},
 ];
 
 // ═══════════════════════════════════
@@ -589,6 +597,9 @@ function startGame(diff){
     ],
     trainCooldowns:[0,0,0,0,0,0,0,0,0],
     blitzEnd:-1,shieldEnd:-1,freezeEnd:-1,
+    massacreEnd:-1,doubleResEnd:-1,
+    towerAttack:false,towerAttackTimer:0,
+    spawnBoost:1,
     resBonus:1,dmgBonus:1,snipeDmgBonus:1,cdBonus:1,spdBonus:1,
     pierceCount:1,multiSnipe:false,aoeSnipe:false,critBonus:0,baseRegen:0,
     turretLevel:0,turretTimer:0,
@@ -668,8 +679,41 @@ function update(dt){
 
   // Resources
   G.resTimer+=dt;
-  const resInterval=60/(dc.resRate*(G.resBonus||1));
+  const doubleRes=(G.doubleResEnd>0&&G.frame<G.doubleResEnd)?2:1;
+  const resInterval=60/(dc.resRate*(G.resBonus||1)*doubleRes);
   if(G.resTimer>=resInterval){G.resTimer=0;G.resources=Math.min(G.resources+7,900);}
+
+  // Massacre Mode - 학살 모드
+  if(G.massacreEnd>0){
+    G.units.filter(u=>u.side===0&&u.hp>0&&!u._massBoosted).forEach(u=>{
+      u.atk=Math.round(u.atk*2); u._massBoosted=true;
+    });
+    if(G.frame>=G.massacreEnd){
+      G.units.filter(u=>u.side===0&&u.hp>0&&u._massBoosted).forEach(u=>{
+        u.atk=Math.round(u.atk*0.5); u._massBoosted=false;
+      });
+      G.massacreEnd=-1; toast('학살 모드 종료','wave');
+    }
+  }
+
+  // Tower Attack - 타워 반격 (아군 타워에서 적 공격)
+  if(G.towerAttack){
+    G.towerAttackTimer=(G.towerAttackTimer||0)+dt;
+    if(G.towerAttackTimer>45){
+      G.towerAttackTimer=0;
+      for(let li=0;li<3;li++){
+        if(G.allyTowerHp[li]<=0) continue;
+        const towerX=ALLY_BASE_X+BASE_W+20;
+        const tgts=G.units.filter(u=>u.side===1&&u.hp>0&&u.laneIdx===li&&u.x<towerX+180);
+        if(tgts.length>0){
+          const t=tgts.reduce((a,b)=>a.x<b.x?a:b);
+          const dmg=Math.round(40*(G.dmgBonus||1));
+          t.hp-=dmg; spawnHit(t.x,t.y,'#ffd700',dmg);
+          G.particles.push({x:towerX,y:laneY(li),vx:2,vy:0,col:'#ffd700',life:12,size:3});
+        }
+      }
+    }
+  }
 
   // Base regen
   if(G.baseRegen>0) G.allyBase=Math.min(G.allyBase+G.baseRegen*dt/60,G.maxBase);
@@ -838,7 +882,7 @@ function spawnAlly(defId){
   if(G.resources<def.cost){toast('💎 자원 부족!','bad');return;}
   if(G.trainCooldowns[defId]>0){toast('⏳ 훈련 중!','bad');return;}
   G.resources-=def.cost;
-  G.trainCooldowns[defId]=def.trainTime;
+  G.trainCooldowns[defId]=Math.round(def.trainTime*(G.spawnBoost||1));
   spawnUnit(defId,0,G.selectedLane);
   updateButtons();
 }
@@ -977,6 +1021,38 @@ function updateUnits(dt,frozen){
           // 아군이 적 타워 공격
           G.enemyTowerHp[u.laneIdx]=Math.max(0,G.enemyTowerHp[u.laneIdx]-u.atk*0.55);
           spawnHit(gateX,laneY(u.laneIdx),'#22d3ee',Math.round(u.atk*0.55));
+
+          // ★ 라인 클리어 시 복귀 & 지원 AI ★
+          // 적 타워가 완전히 부서졌고, 이 라인에 적이 없으면 → 가장 위기인 라인으로 이동
+          if(G.enemyTowerHp[u.laneIdx]<=0 && !u._roaming){
+            const enemiesOnLane=G.units.filter(o=>o.side===1&&o.hp>0&&o.laneIdx===u.laneIdx).length;
+            if(enemiesOnLane===0){
+              // 가장 약한 아군 타워 라인 찾기 (현재 라인 제외)
+              let worstLane=-1, worstHp=Infinity;
+              for(let wi=0;wi<3;wi++){
+                if(wi===u.laneIdx) continue;
+                const lHp=G.allyTowerHp[wi];
+                const lEnemies=G.units.filter(o=>o.side===1&&o.hp>0&&o.laneIdx===wi).length;
+                if(lEnemies>0&&lHp<worstHp){worstHp=lHp;worstLane=wi;}
+              }
+              if(worstLane===-1){
+                // 적 전방 타워 남아있는 라인으로 지원
+                for(let wi=0;wi<3;wi++){
+                  if(wi===u.laneIdx) continue;
+                  const eHp=G.enemyTowerHp[wi];
+                  if(eHp>0&&eHp<worstHp){worstHp=eHp;worstLane=wi;}
+                }
+              }
+              if(worstLane!==-1){
+                u._roaming=true;
+                u._roamTarget=worstLane;
+                u.laneIdx=worstLane; // 라인 전환
+                u.reachedLane=false; // 라인 Y 재설정 트리거
+                u.atBaseGate=false;
+                toast('🔀 ['+LANE_NAMES[u.laneIdx]+'] 라인 지원!','good');
+              }
+            }
+          }
         } else {
           // 적이 아군 타워 공격
           G.allyTowerHp[u.laneIdx]=Math.max(0,G.allyTowerHp[u.laneIdx]-u.atk*0.55*shield);
@@ -986,6 +1062,24 @@ function updateUnits(dt,frozen){
     } else {
       // 전진
       u.atBaseGate=false;
+
+      // ★ 로밍 유닛: 기지 방향으로 복귀 후 새 라인으로 이동 ★
+      if(u._roaming && u.side===0 && u.reachedLane){
+        const homeX=ALLY_BASE_X+BASE_W/2+10;
+        const distHome=Math.abs(u.x-homeX);
+        if(distHome>30){
+          // 기지로 복귀 중
+          u.x-=u.spd*dt*1.2;
+          u.y=laneY(u.laneIdx);
+          return; // forEach 콜백에서 return = continue
+        } else {
+          // 기지 도착 → 새 라인 진입
+          u._roaming=false;
+          u.reachedLane=false;
+          u.x=homeX;
+        }
+      }
+
       const dir=u.side===0?1:-1;
       const blocked=G.units.some(o=>o.side!==u.side&&o.hp>0&&o.laneIdx===u.laneIdx&&o.reachedLane&&Math.abs(u.x-o.x)<(u.ninja?22:30));
       if(!blocked) u.x+=dir*u.spd*dt;
