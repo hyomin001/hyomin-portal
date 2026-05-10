@@ -2641,6 +2641,21 @@ def render():
             log_tx(uid, "터미널", f"STAGE {stage_num} 클리어 보상{bonus_str}", total_reward)
             st.success(f"💰 STAGE {stage_num} 클리어 보상: +{total_reward:,}원{bonus_str}")
 
+        # ── 리더보드 업데이트 ──
+        from utils.database import load_db, save_db, update_leaderboard
+        from utils.config import USERS_FILE as _UF
+        _users_c = load_db(_UF, {})
+        _uname = _users_c.get(uid, {}).get('nickname', uid)
+        _cleared_cnt = len(st.session_state.terminal_cleared)
+        update_leaderboard('terminal', _uname, _cleared_cnt)
+        # game_records에도 저장
+        if uid in _users_c:
+            _gr = _users_c[uid].setdefault('game_records', {})
+            if _cleared_cnt > _gr.get('terminal', {}).get('score', 0):
+                _gr['terminal'] = {'score': _cleared_cnt, 'stage': stage_num}
+                _users_c[uid]['game_records'] = _gr
+                save_db(_UF, _users_c)
+
         sync_user_data()
 
         # 풍선은 한 번만
