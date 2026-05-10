@@ -527,8 +527,26 @@ async function land(pi,dbl){
       let rent=c.rent[Math.min(ri,5)];
       if(mono(c.own,c.ctry))rent=Math.floor(rent*2);
       if(ow.bk==='rent')rent=Math.floor(rent*1.1);
-      p.cash-=rent;ow.cash+=rent;
       addLog(p.em+' → '+ow.em+' 임대료 ₩'+rent,'bad');toast('💸 임대료 -₩'+rent,'bad');
+      // [모두의마블 규칙] 잔고 부족 시 재산 강제매각 후 지불, 그래도 부족하면 파산
+      if(p.cash<rent){
+        G.cells.forEach(cell=>{
+          if(cell.own===pi&&cell.t==='prop'&&p.cash<rent){
+            const sv=Math.floor(cell.price*.5);
+            p.cash+=sv;cell.own=-1;cell.hs=0;cell.ho=0;
+            addLog(p.em+' 긴급매각 '+cell.name+' +₩'+sv,'sys');
+          }
+        });
+      }
+      if(p.cash<rent){
+        ow.cash+=p.cash;
+        addLog(p.em+' 💀 파산! 남은 ₩'+p.cash+' → '+ow.em,'bad');
+        toast(p.em+' '+p.name+' 파산! 💀','bad');
+        p.cash=0;p.bkrt=true;
+        G.cells.forEach(cell=>{if(cell.own===pi){cell.own=c.own;addLog(ow.em+' '+cell.name+' 몰수','sys');}});
+        drawBoard();renderPCards();endAct(pi,dbl);return;
+      }
+      p.cash-=rent;ow.cash+=rent;
       ckBk(pi);drawBoard();renderPCards();endAct(pi,dbl);
     }
   }
