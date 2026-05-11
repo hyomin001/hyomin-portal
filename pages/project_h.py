@@ -1158,15 +1158,15 @@ def render():
 
     listener_html = f"""
     <script>
-    window.parent.addEventListener('message', function(e) {
-      if (e.data && e.data.type === 'fighter_result') {
+    window.parent.addEventListener('message', function(e) {{
+      if (e.data && e.data.type === 'fighter_result') {{
         const url = new URL(window.parent.location.href);
         url.searchParams.set('fighter_score',    e.data.score);
         url.searchParams.set('fighter_perfects',  e.data.perfects);
         url.searchParams.set('_gr_uid', '{_cur_uid}');
         window.parent.location.href = url.toString();
-      }
-    });
+      }}
+    }});
     </script>
     """
     _cv1.html(listener_html, height=0)
