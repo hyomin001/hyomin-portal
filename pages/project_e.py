@@ -2222,24 +2222,45 @@ def render():
 
     st.caption("🎮 WASD/방향키: 이동 | 자동 공격 | Q E R: 스킬 | 레벨업 시 무기 선택! | 🏆 클리어 보상 2억원!")
 
-    # postMessage 수신 리스너 (결과 → query param, replaceState + reload 방식)
-    listener_html = f"""
-    <script>
-    window.addEventListener('message', function(e) {{
-      if (e.data && e.data.type === 'dungeon_result') {{
-        const d = e.data;
-        const url = new URL(window.parent.location.href);
-        url.searchParams.set('dungeon_win',   d.win ? 'true' : 'false');
-        url.searchParams.set('dungeon_score', d.score);
-        url.searchParams.set('dungeon_kills', d.kills);
-        url.searchParams.set('_gr_uid', '{_cur_uid}');
-        window.parent.history.replaceState(null, '', url.toString());
-        window.parent.location.reload();
-      }}
-    }});
-    </script>
-    """
-    st.components.v1.html(listener_html, height=0)
+    # ── 게임 결과 수신: st_javascript 비동기 postMessage 리스너 ──
+    try:
+        from streamlit_javascript import st_javascript
+        import json as _json
+        _js_val = st_javascript(
+            """await new Promise(resolve => {
+  window.addEventListener('message', function _h(e) {
+    if (e.data && e.data.type === 'dungeon_result') {
+      window.removeEventListener('message', _h);
+      resolve(JSON.stringify({win: e.data.win, score: e.data.score, kills: e.data.kills}));
+    }
+  });
+})""",
+            key=f"dungeon_{_cur_uid}"
+        )
+        if _js_val and _js_val != 0 and not st.session_state.get('_dungeon_saved'):
+            st.session_state['_dungeon_saved'] = True
+            _data    = _json.loads(_js_val) if isinstance(_js_val, str) else _js_val
+            _d_win   = bool(_data.get('win', False))
+            _d_score = int(_data.get('score', 0))
+            _d_kills = int(_data.get('kills', 0))
+            if _d_score > 0 and uid:
+                from utils.database import load_db, save_db, update_leaderboard
+                from utils.config import USERS_FILE as _UF
+                _users_c = load_db(_UF, {})
+                _uname   = _users_c.get(uid, {}).get('nickname', uid)
+                update_leaderboard('dungeon', _uname, _d_score)
+                if uid in _users_c:
+                    _gr = _users_c[uid].setdefault('game_records', {})
+                    if _d_score > _gr.get('dungeon', {}).get('score', 0):
+                        _gr['dungeon'] = {'score': _d_score, 'kills': _d_kills, 'clears': _gr.get('dungeon',{}).get('clears',0) + (1 if _d_win else 0)}
+                        _users_c[uid]['game_records'] = _gr
+                        save_db(_UF, _users_c)
+                        st.toast(f"⚔️ 던전 최고기록 {_d_score:,}점 저장!", icon="🏆")
+        if not _js_val or _js_val == 0:
+            st.session_state.pop('_dungeon_saved', None)
+    except Exception as _e:
+        import logging; logging.error(f"[dungeon] {_e}")
+
     components.html(GAME_HTML, height=840, scrolling=False)
 
 if __name__ == "__main__":
