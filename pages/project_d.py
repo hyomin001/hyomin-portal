@@ -2394,7 +2394,7 @@ def render():
         const url = new URL(window.parent.location.href);
         url.searchParams.set('marble_score', e.data.score);
         url.searchParams.set('marble_wins',  e.data.wins ?? 0);
-        url.searchParams.set('_gr_uid', window._gr_uid||'');
+        url.searchParams.set('_gr_uid', window.parent._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
