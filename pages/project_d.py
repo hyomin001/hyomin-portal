@@ -2387,14 +2387,14 @@ def render():
     if _cur_uid:
         _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
 
-    listener_html = """
+    listener_html = f"""
     <script>
     window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'marble_result') {
         const url = new URL(window.parent.location.href);
         url.searchParams.set('marble_score', e.data.score);
         url.searchParams.set('marble_wins',  e.data.wins ?? 0);
-        url.searchParams.set('_gr_uid', window.parent._gr_uid||'');
+        url.searchParams.set('_gr_uid', '{_cur_uid}');
         window.parent.location.href = url.toString();
       }
     });
