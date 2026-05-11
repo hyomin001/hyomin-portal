@@ -2340,8 +2340,6 @@ def render():
     from utils.database import load_db, save_db, update_leaderboard
     from utils.config import USERS_FILE
 
-    # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
-
     st.markdown("""
     <style>
     #MainMenu{visibility:hidden;}footer{visibility:hidden;}header{visibility:hidden;}
@@ -2349,20 +2347,53 @@ def render():
     </style>
     """, unsafe_allow_html=True)
 
-    # uid를 JS 전역변수로 주입
     _cur_uid = st.session_state.get('logged_in_user', '')
-    if _cur_uid:
-        _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
+
+    # ── 게임 결과 처리 ──
+    _qp = st.query_params
+    if _qp.get('marble_score') and not st.session_state.get('_marble_saved'):
+        st.session_state['_marble_saved'] = True
+        try:
+            from utils.database import update_leaderboard, _get_col
+            _uid    = _qp.get('_gr_uid', _cur_uid) or _cur_uid
+            _m_score = int(_qp.get('marble_score', 0))
+            _m_wins  = int(_qp.get('marble_wins', 0))
+            if _uid:
+                _col  = _get_col(USERS_FILE)
+                _doc  = _col.find_one({"_id": "main"}, {_uid: 1})
+                if _doc and _uid in _doc:
+                    _udata = _doc[_uid]
+                    _ms = _udata.get('marble_stats', {'wins': 0, 'losses': 0, 'games_played': 0, 'best_net_worth': 0})
+                    _new_played = _ms.get('games_played', 0) + 1
+                    _new_wins   = _ms.get('wins', 0) + _m_wins
+                    _set_fields = {
+                        f"{_uid}.marble_stats.games_played": _new_played,
+                        f"{_uid}.marble_stats.wins":         _new_wins,
+                    }
+                    if _m_score > _ms.get('best_net_worth', 0):
+                        _set_fields[f"{_uid}.marble_stats.best_net_worth"]      = _m_score
+                        _set_fields[f"{_uid}.game_records.invest_marble.score"] = _m_score
+                        _set_fields[f"{_uid}.game_records.invest_marble.wins"]  = _new_wins
+                        update_leaderboard('invest_marble', _udata.get('nickname', _uid), _m_score)
+                        st.toast(f"🌍 마블 최고 순자산 ₩{_m_score:,} 저장!", icon="🏆")
+                    _col.update_one({"_id": "main"}, {"$set": _set_fields})
+        except Exception as _e:
+            import logging; logging.error(f"[marble save] {_e}")
+        st.query_params.clear()
+        st.rerun()
+    elif not _qp.get('marble_score'):
+        st.session_state.pop('_marble_saved', None)
 
     listener_html = f"""
     <script>
-    window.parent.addEventListener('message', function(e) {{
+    window.addEventListener('message', function(e) {{
       if (e.data && e.data.type === 'marble_result') {{
         const url = new URL(window.parent.location.href);
         url.searchParams.set('marble_score', e.data.score);
         url.searchParams.set('marble_wins',  e.data.wins ?? 0);
         url.searchParams.set('_gr_uid', '{_cur_uid}');
-        window.parent.location.href = url.toString();
+        window.parent.history.replaceState(null, '', url.toString());
+        window.parent.location.reload();
       }}
     }});
     </script>
