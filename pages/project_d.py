@@ -2343,7 +2343,7 @@ def render():
     qp = st.query_params
     if qp.get('marble_score'):
         try:
-            uid = st.session_state.get('logged_in_user', '')
+            uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
             m_score = int(qp.get('marble_score', 0))
             m_wins  = int(qp.get('marble_wins', 0))
             if uid and m_score > 0:
@@ -2382,6 +2382,11 @@ def render():
     </style>
     """, unsafe_allow_html=True)
 
+    # uid를 JS 전역변수로 주입
+    _cur_uid = st.session_state.get('logged_in_user', '')
+    if _cur_uid:
+        _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
+
     listener_html = """
     <script>
     window.parent.addEventListener('message', function(e) {
@@ -2389,6 +2394,7 @@ def render():
         const url = new URL(window.parent.location.href);
         url.searchParams.set('marble_score', e.data.score);
         url.searchParams.set('marble_wins',  e.data.wins ?? 0);
+        url.searchParams.set('_gr_uid', window._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
