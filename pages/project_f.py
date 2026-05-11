@@ -1180,30 +1180,57 @@ showTitle();
 
 def render():
     import streamlit.components.v1 as _cv1
-    from utils.database import load_db, save_db, update_leaderboard
-    from utils.core import sync_user_data
+    from utils.database import update_leaderboard, get_mongo_client, _get_col
     from utils.config import USERS_FILE
-
-    # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
-    # (location.href 리로드 후 새 세션에서 app.py가 먼저 실행되므로 여기서 중복 처리 불필요)
 
     st.markdown("<style>iframe{border:none!important;}</style>", unsafe_allow_html=True)
     st.caption("🏎️ ← → / A D: 레인전환 | SPACE/⚡: 니트로 | 🏆 최고기록은 자동 저장됩니다")
 
-    # uid를 JS 전역변수로 주입 (location.href 리로드 후 uid 복원용)
     _cur_uid = st.session_state.get('logged_in_user', '')
-    if _cur_uid:
-        _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
+
+    # ── 게임 결과 처리 (query_params 방식 — replaceState로 새로고침 없이 전달) ──
+    _qp = st.query_params
+    if _qp.get('racing_score') and not st.session_state.get('_racing_saved'):
+        st.session_state['_racing_saved'] = True
+        try:
+            _uid  = _qp.get('_gr_uid', _cur_uid) or _cur_uid
+            _r_score = int(_qp.get('racing_score', 0))
+            _r_dist  = float(_qp.get('racing_dist', 0.0))
+            if _r_score > 0 and _uid:
+                _col  = _get_col(USERS_FILE)
+                _doc  = _col.find_one({"_id": "main"}, {_uid: 1})
+                if _doc and _uid in _doc:
+                    _udata = _doc[_uid]
+                    _cur_best = _udata.get('game_records', {}).get('racing', {}).get('score', 0)
+                    if _r_score > _cur_best:
+                        _col.update_one(
+                            {"_id": "main"},
+                            {"$set": {
+                                f"{_uid}.game_records.racing.score": _r_score,
+                                f"{_uid}.game_records.racing.dist":  _r_dist,
+                            }}
+                        )
+                        update_leaderboard('racing', _udata.get('nickname', _uid), _r_score)
+                        st.toast(f"🏎️ 레이싱 최고기록 {_r_score:,}점 저장!", icon="🏆")
+                        st.session_state.setdefault('game_records', {}).setdefault('racing', {}).update(
+                            {'score': _r_score, 'dist': _r_dist})
+        except Exception as _e:
+            import logging; logging.error(f"[racing save] {_e}")
+        st.query_params.clear()
+        st.rerun()
+    elif not _qp.get('racing_score'):
+        st.session_state.pop('_racing_saved', None)
 
     listener_html = f"""
     <script>
-    window.parent.addEventListener('message', function(e) {{
+    window.addEventListener('message', function(e) {{
       if (e.data && e.data.type === 'racing_result') {{
         const url = new URL(window.parent.location.href);
         url.searchParams.set('racing_score', e.data.score);
         url.searchParams.set('racing_dist',  e.data.dist);
         url.searchParams.set('_gr_uid', '{_cur_uid}');
-        window.parent.location.href = url.toString();
+        window.parent.history.replaceState(null, '', url.toString());
+        window.parent.location.reload();
       }}
     }});
     </script>
