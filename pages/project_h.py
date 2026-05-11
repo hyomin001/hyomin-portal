@@ -728,6 +728,10 @@ function stageWon(){
 }
 
 function stageLost(){
+  // 게임오버 시에도 현재 점수 포털로 전송 (중간 기록 저장)
+  if(arcadeScore>0){
+    try{window.parent.postMessage({type:'fighter_result',score:arcadeScore,perfects:arcadePerfects},'*');}catch(e){}
+  }
   showStageScreen('lose');
 }
 
@@ -1138,7 +1142,8 @@ def render():
                     _doc = _col.find_one({"_id": "main"}, {_cur_uid: 1})
                     if _doc and _cur_uid in _doc:
                         _udata = _doc[_cur_uid]
-                        if _f_score > _udata.get('game_records', {}).get('fighter', {}).get('score', 0):
+                        _is_fighter_best = _f_score > _udata.get('game_records', {}).get('fighter', {}).get('score', 0)
+                        if _is_fighter_best:
                             _col.update_one({"_id": "main"}, {"$set": {
                                 f"{_cur_uid}.game_records.fighter.score":    _f_score,
                                 f"{_cur_uid}.game_records.fighter.perfects": _f_perfects,
