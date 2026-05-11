@@ -1762,10 +1762,7 @@ def render():
     """, unsafe_allow_html=True)
 
     _cur_uid = st.session_state.get('logged_in_user', '')
-    if _cur_uid:
-        _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
-
-    listener_html = """
+    listener_html = f"""
     <script>
     window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'sniper_result') {
@@ -1775,7 +1772,7 @@ def render():
         url.searchParams.set('sniper_wave',   e.data.wave);
         url.searchParams.set('sniper_win',    e.data.win);
         url.searchParams.set('sniper_diff',   e.data.diff);
-        url.searchParams.set('_gr_uid', window.parent._gr_uid||'');
+        url.searchParams.set('_gr_uid', '{_cur_uid}');
         window.parent.location.href = url.toString();
       }
     });
