@@ -2820,3 +2820,4 @@ def render():
                     """, unsafe_allow_html=True)
 
     st.markdown(TERMINAL_JS, unsafe_allow_html=True)
+ 
