@@ -2110,7 +2110,7 @@ def render():
     from utils.core import sync_user_data
     from datetime import datetime, timedelta
 
-    uid = st.session_state.get('logged_in_user', '')
+    uid = st.session_state.get('logged_in_user', '') or st.query_params.get('_gr_uid', '')
 
     # ── 던전 통계 로드 ──
     # [BUG FIX] 항상 DB에서 최신 dungeon_stats를 읽어옴
@@ -2223,6 +2223,11 @@ def render():
     # ✅ [BUG FIX] 리스너를 게임 iframe보다 먼저 렌더링하면 별도 iframe이라 메시지를 못 받을 수 있음
     # window.parent 기준으로 수신하므로 순서 상관없이 동작하지만,
     # 안전하게 게임 결과 수신 시 dungeon_result_processed 플래그도 초기화
+    import streamlit.components.v1 as _cv1_e
+    _cur_uid_e = st.session_state.get('logged_in_user', '')
+    if _cur_uid_e:
+        _cv1_e.html('<script>window.parent._gr_uid="' + _cur_uid_e + '";</script>', height=0)
+
     listener_html = """
     <script>
     window.parent.addEventListener('message', function(e) {
@@ -2232,6 +2237,7 @@ def render():
         url.searchParams.set('dungeon_win',   d.win ? 'true' : 'false');
         url.searchParams.set('dungeon_score', d.score);
         url.searchParams.set('dungeon_kills', d.kills);
+        url.searchParams.set('_gr_uid', window.parent._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
