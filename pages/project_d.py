@@ -2179,7 +2179,7 @@ function endGame(reason){
     <div class="rstat"><div class="rstat-v">${youP._mgWins}</div><div class="rstat-l">퀴즈 승리</div></div>
   `;
 
-  try{window.parent.postMessage({type:'marble_result',score:nw(winner),wins:winner.id===0?1:0},'*');}catch(e){}
+  try{window.parent.postMessage({type:'marble_result',score:nw(G.players[0]),wins:winner.id===0?1:0},'*');}catch(e){}
   if(!winner.bkrt)fireworks();
 }
 
@@ -2370,14 +2370,17 @@ def render():
                             f"{_cur_uid}.marble_stats.games_played": _new_played,
                             f"{_cur_uid}.marble_stats.wins":         _new_wins,
                         }
-                        if _m_score > _ms.get('best_net_worth', 0):
+                        _is_marble_best = _m_score > _ms.get('best_net_worth', 0)
+                        if _is_marble_best:
                             _set_fields[f"{_cur_uid}.marble_stats.best_net_worth"]      = _m_score
-                            _set_fields[f"{_cur_uid}.game_records.invest_marble.score"] = _m_score
-                            _set_fields[f"{_cur_uid}.game_records.invest_marble.wins"]  = _new_wins
+                        # 항상 game_records 저장 (기록없음 방지)
+                        _set_fields[f"{_cur_uid}.game_records.invest_marble.score"] = max(_m_score, _ms.get('best_net_worth', 0))
+                        _set_fields[f"{_cur_uid}.game_records.invest_marble.wins"]  = _new_wins
+                        _col.update_one({"_id": "main"}, {"$set": _set_fields})  # rerun 전에 반드시 저장
+                        if _is_marble_best:
                             update_leaderboard('invest_marble', _udata.get('nickname', _cur_uid), _m_score)
                             st.toast(f"🌍 마블 최고 순자산 ₩{_m_score:,} 저장!", icon="🏆")
                             st.rerun()
-                        _col.update_one({"_id": "main"}, {"$set": _set_fields})
             except Exception as _e:
                 import logging; logging.error(f"[marble save] {_e}")
     if not _result:
