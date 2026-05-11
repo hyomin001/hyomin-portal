@@ -274,3 +274,75 @@ def format_leaderboard_score(game_id: str, score) -> str:
         return meta["fmt"](int(score))
     except Exception:
         return str(score)
+
+
+# ══════════════════════════════════════════════════════════════
+# 🎮 게임 기록 원자적 업데이트 — Race Condition 완전 방어
+# replace_one 대신 $set으로 특정 필드만 업데이트
+# ══════════════════════════════════════════════════════════════
+
+def atomic_set_game_record(uid: str, game_key: str, record: dict) -> bool:
+    """
+    game_records.{game_key}를 MongoDB $set으로 원자적 업데이트.
+    전체 document replace 없이 해당 필드만 교체 → Race Condition 없음.
+    """
+    client = get_mongo_client()
+    if client is None: return False
+    try:
+        col = _get_col(USERS_FILE)
+        col.update_one(
+            {"_id": "main"},
+            {"$set": {f"{uid}.game_records.{game_key}": record}},
+        )
+        return True
+    except Exception as e:
+        logging.error(f"[atomic_set_game_record] {uid}/{game_key} 실패: {e}")
+        return False
+
+
+def atomic_set_user_field(uid: str, field: str, value) -> bool:
+    """
+    users.{uid}.{field}를 MongoDB $set으로 원자적 업데이트.
+    dungeon_stats, marble_stats 등 중첩 필드에 사용.
+    """
+    client = get_mongo_client()
+    if client is None: return False
+    try:
+        col = _get_col(USERS_FILE)
+        col.update_one(
+            {"_id": "main"},
+            {"$set": {f"{uid}.{field}": value}},
+        )
+        return True
+    except Exception as e:
+        logging.error(f"[atomic_set_user_field] {uid}/{field} 실패: {e}")
+        return False
+
+
+def get_user_game_record(uid: str, game_key: str) -> dict:
+    """DB에서 특정 유저의 특정 게임 기록만 빠르게 읽어옴."""
+    client = get_mongo_client()
+    if client is None: return {}
+    try:
+        col = _get_col(USERS_FILE)
+        proj = {f"{uid}.game_records.{game_key}": 1}
+        doc = col.find_one({"_id": "main"}, proj)
+        if not doc: return {}
+        return doc.get(uid, {}).get("game_records", {}).get(game_key, {})
+    except Exception as e:
+        logging.error(f"[get_user_game_record] {uid}/{game_key} 실패: {e}")
+        return {}
+
+
+def get_user_field(uid: str, field: str):
+    """DB에서 특정 유저의 특정 필드만 빠르게 읽어옴."""
+    client = get_mongo_client()
+    if client is None: return None
+    try:
+        col = _get_col(USERS_FILE)
+        doc = col.find_one({"_id": "main"}, {f"{uid}.{field}": 1})
+        if not doc: return None
+        return doc.get(uid, {}).get(field)
+    except Exception as e:
+        logging.error(f"[get_user_field] {uid}/{field} 실패: {e}")
+        return None
