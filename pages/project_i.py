@@ -1698,46 +1698,7 @@ def render():
     )
     from utils.config import USERS_FILE
 
-    qp = st.query_params
-    GAME_ID = "sniper"
-
-    if qp.get('sniper_score'):
-        try:
-            uid     = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
-            s_score = int(qp.get('sniper_score', 0))
-            s_kills = int(qp.get('sniper_kills', 0))
-            s_wave  = int(qp.get('sniper_wave', 1))
-            s_win   = qp.get('sniper_win', '0') == '1'
-            s_diff  = int(qp.get('sniper_diff', 0))
-
-            if uid and s_score > 0:
-                _users = load_db(USERS_FILE, {})
-                if uid in _users:
-                    gr = _users[uid].setdefault('game_records', {})
-                    sn = gr.setdefault('sniper', {'score': 0, 'kills': 0, 'wave': 1})
-                    changed = False
-                    if s_score > sn.get('score', 0):
-                        sn['score'] = s_score
-                        sn['kills'] = s_kills
-                        sn['wave']  = s_wave
-                        changed = True
-                        st.toast(f"🎯 전장 저격전 최고점수 갱신! {s_score:,}점", icon="🏆")
-                    if changed:
-                        gr['sniper'] = sn
-                        _users[uid]['game_records'] = gr
-                        save_db(USERS_FILE, _users)
-                        st.session_state.game_records = gr
-                        sync_user_data()
-
-                user_name = _users.get(uid, {}).get('nickname', uid) if uid else uid
-                if update_leaderboard(GAME_ID, user_name, s_score):
-                    st.session_state['sniper_lb_new'] = True
-                    st.toast(f"👑 전국 1위! 전장 저격전 {s_score:,}점", icon="🏆")
-
-        except Exception:
-            pass
-        st.query_params.clear()
-        st.rerun()
+    # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
 
     lb = load_leaderboard()
     rec = lb.get(GAME_ID, {})
