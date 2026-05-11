@@ -1699,6 +1699,7 @@ def render():
     from utils.config import USERS_FILE
 
     # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
+    GAME_ID = "sniper"
 
     lb = load_leaderboard()
     rec = lb.get(GAME_ID, {})
