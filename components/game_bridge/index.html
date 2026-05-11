@@ -3,10 +3,9 @@
 <head><meta charset="UTF-8"></head>
 <body>
 <script>
-const GAME_TYPES = [
-  'racing_result','zombie_result','fighter_result',
-  'sniper_result','marble_result','dungeon_result'
-];
+// 이 컴포넌트가 받을 게임 타입을 Python에서 주입받음
+// Streamlit이 args로 전달한 값에서 game_type을 읽음
+var myGameType = null;
 
 function setComponentValue(val) {
   window.parent.postMessage({
@@ -17,23 +16,37 @@ function setComponentValue(val) {
   }, "*");
 }
 
-// window.parent에 리스너를 딱 한 번만 등록
-// (Streamlit rerun으로 이 iframe이 재마운트돼도 parent 리스너는 유지)
-if (!window.parent._gameBridgeInstalled) {
-  window.parent._gameBridgeInstalled = true;
+// 이 iframe 고유 ID (컴포넌트 인스턴스마다 다름)
+var myId = Math.random().toString(36).slice(2);
+
+// window.parent에 단일 dispatcher 등록 (최초 1회)
+if (!window.parent._gameBridgeDispatcher) {
+  window.parent._gameBridgeDispatcher = {};
   window.parent.addEventListener('message', function(e) {
     if (!e.data || !e.data.type) return;
-    if (GAME_TYPES.indexOf(e.data.type) === -1) return;
-    if (typeof window.parent._gameBridgeSend === 'function') {
-      window.parent._gameBridgeSend(e.data);
+    var t = e.data.type;
+    // 해당 게임 타입을 기다리는 모든 브리지에 전달
+    if (window.parent._gameBridgeDispatcher[t]) {
+      window.parent._gameBridgeDispatcher[t](e.data);
     }
   });
 }
 
-// 현재 마운트된 이 iframe 인스턴스를 활성 브리지로 등록
-window.parent._gameBridgeSend = function(data) {
-  setComponentValue(data);
-};
+// Streamlit에서 args로 game_type 받기
+function onStreamlitRender(event) {
+  if (!event.data || event.data.type !== 'streamlit:render') return;
+  var args = event.data.args || {};
+  myGameType = args.game_type || null;
+
+  // 이 게임 타입의 dispatcher 등록
+  if (myGameType) {
+    window.parent._gameBridgeDispatcher[myGameType] = function(data) {
+      setComponentValue(data);
+    };
+  }
+}
+
+window.addEventListener('message', onStreamlitRender);
 
 // Streamlit에 준비 완료 알림
 window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");

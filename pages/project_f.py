@@ -1191,7 +1191,7 @@ def render():
     # ── declare_component 브리지로 게임 결과 수신 ──
     _bridge_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'components', 'game_bridge')
     _bridge = st.components.v1.declare_component("game_bridge_racing", path=_bridge_dir)
-    _result = _bridge(key=f"bridge_racing_{_cur_uid}", default=None)
+    _result = _bridge(game_type="racing_result", key=f"bridge_racing_{_cur_uid}", default=None)
 
     if _result and isinstance(_result, dict) and _result.get('type') == 'racing_result':
         if not st.session_state.get('_racing_saved'):

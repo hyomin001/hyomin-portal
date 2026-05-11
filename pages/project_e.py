@@ -2127,18 +2127,15 @@ def render():
 
     dstats = st.session_state.dungeon_stats
 
-    # ── 게임 결과 수신 처리 ──
-    qp = st.query_params
-    # [BUG FIX] query param이 없으면 잔류 플래그를 항상 초기화
-    # 문제: 포털 메인으로 나갔다가 다시 들어오면 dungeon_result_processed 플래그가
-    #       세션에 남아있어서 다음 게임 결과가 영원히 처리되지 않음
-    if not qp.get('dungeon_score'):
-        st.session_state.pop('dungeon_result_processed', None)
-    if qp.get('dungeon_score') and not st.session_state.get('dungeon_result_processed'):
+    # ── 게임 결과 수신 처리 (브리지 컴포넌트 방식) ──
+    # _dresult는 render() 하단 declare_component에서 수신
+    # 여기선 session_state에 임시 저장된 결과를 처리
+    _pending = st.session_state.pop('_dungeon_pending', None)
+    if _pending and not st.session_state.get('dungeon_result_processed'):
         st.session_state.dungeon_result_processed = True
-        is_win = qp.get('dungeon_win') == 'true'
-        score  = int(qp.get('dungeon_score', 0))
-        kills  = int(qp.get('dungeon_kills', 0))
+        is_win = bool(_pending.get('win', False))
+        score  = int(_pending.get('score', 0))
+        kills  = int(_pending.get('kills', 0))
 
         dstats['games_played'] = dstats.get('games_played', 0) + 1
         if score > dstats.get('best_score', 0):
@@ -2226,37 +2223,15 @@ def render():
     import os as _os
     _bridge_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'components', 'game_bridge')
     _bridge = st.components.v1.declare_component("game_bridge_dungeon", path=_bridge_dir)
-    _dresult = _bridge(key=f"bridge_dungeon_{_cur_uid}", default=None)
+    _dresult = _bridge(game_type="dungeon_result", key=f"bridge_dungeon_{_cur_uid}", default=None)
 
     if _dresult and isinstance(_dresult, dict) and _dresult.get('type') == 'dungeon_result':
-        if not st.session_state.get('_dungeon_saved'):
-            st.session_state['_dungeon_saved'] = True
-            try:
-                _d_win   = bool(_dresult.get('win', False))
-                _d_score = int(_dresult.get('score', 0))
-                _d_kills = int(_dresult.get('kills', 0))
-                if _d_score > 0 and uid:
-                    from utils.database import load_db, save_db, update_leaderboard
-                    from utils.config import USERS_FILE as _UF
-                    _users_c = load_db(_UF, {})
-                    _uname   = _users_c.get(uid, {}).get('nickname', uid)
-                    update_leaderboard('dungeon', _uname, _d_score)
-                    if uid in _users_c:
-                        _gr = _users_c[uid].setdefault('game_records', {})
-                        if _d_score > _gr.get('dungeon', {}).get('score', 0):
-                            _prev_clears = _gr.get('dungeon', {}).get('clears', 0)
-                            _gr['dungeon'] = {
-                                'score':  _d_score,
-                                'kills':  _d_kills,
-                                'clears': _prev_clears + (1 if _d_win else 0),
-                            }
-                            _users_c[uid]['game_records'] = _gr
-                            save_db(_UF, _users_c)
-                            st.toast(f"⚔️ 던전 최고기록 {_d_score:,}점 저장!", icon="🏆")
-                            st.rerun()
-            except Exception as _e:
-                import logging; logging.error(f"[dungeon save] {_e}")
+        if not st.session_state.get('dungeon_result_processed'):
+            # 결과를 session_state에 저장 → 상단 처리 로직이 다음 rerun에서 처리
+            st.session_state['_dungeon_pending'] = _dresult
+            st.session_state.pop('dungeon_result_processed', None)
+            st.rerun()
     if not _dresult:
-        st.session_state.pop('_dungeon_saved', None)
+        st.session_state.pop('dungeon_result_processed', None)
 
     components.html(GAME_HTML, height=840, scrolling=False)
