@@ -1724,9 +1724,46 @@ def render():
     """, unsafe_allow_html=True)
 
     _cur_uid = st.session_state.get('logged_in_user', '')
+
+    # ── 게임 결과 처리 ──
+    _qp = st.query_params
+    if _qp.get('sniper_score') and not st.session_state.get('_sniper_saved'):
+        st.session_state['_sniper_saved'] = True
+        try:
+            from utils.database import update_leaderboard, _get_col
+            _uid    = _qp.get('_gr_uid', _cur_uid) or _cur_uid
+            _s_score = int(_qp.get('sniper_score', 0))
+            _s_kills = int(_qp.get('sniper_kills', 0))
+            _s_wave  = int(_qp.get('sniper_wave', 1))
+            if _s_score > 0 and _uid:
+                _col  = _get_col(USERS_FILE)
+                _doc  = _col.find_one({"_id": "main"}, {_uid: 1})
+                if _doc and _uid in _doc:
+                    _udata = _doc[_uid]
+                    _cur_best = _udata.get('game_records', {}).get('sniper', {}).get('score', 0)
+                    if _s_score > _cur_best:
+                        _col.update_one(
+                            {"_id": "main"},
+                            {"$set": {
+                                f"{_uid}.game_records.sniper.score": _s_score,
+                                f"{_uid}.game_records.sniper.kills": _s_kills,
+                                f"{_uid}.game_records.sniper.wave":  _s_wave,
+                            }}
+                        )
+                        update_leaderboard('sniper', _udata.get('nickname', _uid), _s_score)
+                        st.toast(f"🎯 저격전 최고기록 {_s_score:,}점 저장!", icon="🏆")
+                        st.session_state.setdefault('game_records', {}).setdefault('sniper', {}).update(
+                            {'score': _s_score, 'kills': _s_kills, 'wave': _s_wave})
+        except Exception as _e:
+            import logging; logging.error(f"[sniper save] {_e}")
+        st.query_params.clear()
+        st.rerun()
+    elif not _qp.get('sniper_score'):
+        st.session_state.pop('_sniper_saved', None)
+
     listener_html = f"""
     <script>
-    window.parent.addEventListener('message', function(e) {{
+    window.addEventListener('message', function(e) {{
       if (e.data && e.data.type === 'sniper_result') {{
         const url = new URL(window.parent.location.href);
         url.searchParams.set('sniper_score',  e.data.score);
@@ -1735,7 +1772,8 @@ def render():
         url.searchParams.set('sniper_win',    e.data.win);
         url.searchParams.set('sniper_diff',   e.data.diff);
         url.searchParams.set('_gr_uid', '{_cur_uid}');
-        window.parent.location.href = url.toString();
+        window.parent.history.replaceState(null, '', url.toString());
+        window.parent.location.reload();
       }}
     }});
     </script>
