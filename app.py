@@ -56,6 +56,8 @@ def _save_game_result():
         return False
 
     try:
+        import logging as _logging
+        _logging.warning(f"[DEBUG_SAVE] 진입 params={dict(st.query_params)}")
         from utils.database import (
             get_mongo_client, _get_col, update_leaderboard, load_db
         )
@@ -63,6 +65,7 @@ def _save_game_result():
 
         # uid: session_state 우선, 없으면 URL 파라미터에서 복원
         uid = st.session_state.get('logged_in_user', '') or qp.get('_gr_uid', '')
+        _logging.warning(f"[DEBUG_SAVE] uid='{uid}' session_uid='{st.session_state.get('logged_in_user','')}' qp_uid='{qp.get('_gr_uid','')}' ")
         if not uid:
             st.query_params.clear()
             return False
@@ -221,6 +224,7 @@ def _save_game_result():
     except Exception as _ge:
         import logging
         logging.error(f"[_save_game_result] {_ge}")
+        logging.warning(f"[DEBUG_SAVE] 예외발생: {type(_ge).__name__}: {_ge}")
 
     st.query_params.clear()
     return True
