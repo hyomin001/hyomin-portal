@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
+<script>
+const GAME_TYPES = [
+  'racing_result','zombie_result','fighter_result',
+  'sniper_result','marble_result','dungeon_result'
+];
+
+function setComponentValue(val) {
+  window.parent.postMessage({
+    isStreamlitMessage: true,
+    type: "streamlit:setComponentValue",
+    value: val,
+    dataUrls: []
+  }, "*");
+}
+
+// window.parent에 리스너를 딱 한 번만 등록
+// (Streamlit rerun으로 이 iframe이 재마운트돼도 parent 리스너는 유지)
+if (!window.parent._gameBridgeInstalled) {
+  window.parent._gameBridgeInstalled = true;
+  window.parent.addEventListener('message', function(e) {
+    if (!e.data || !e.data.type) return;
+    if (GAME_TYPES.indexOf(e.data.type) === -1) return;
+    if (typeof window.parent._gameBridgeSend === 'function') {
+      window.parent._gameBridgeSend(e.data);
+    }
+  });
+}
+
+// 현재 마운트된 이 iframe 인스턴스를 활성 브리지로 등록
+window.parent._gameBridgeSend = function(data) {
+  setComponentValue(data);
+};
+
+// Streamlit에 준비 완료 알림
+window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
+window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: 0 }, "*");
+</script>
+</body>
+</html>
