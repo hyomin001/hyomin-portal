@@ -42,6 +42,106 @@ if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
 if "page_view" not in st.session_state:
     st.session_state.page_view = "portal"
 
+# ══════════════════════════════════════════════════════════════
+# 🎮 게임 결과 처리 — location.href 리로드 후 query_params 저장
+# page_view와 무관하게 앱 진입 시 최우선으로 처리
+# ══════════════════════════════════════════════════════════════
+def _save_game_result():
+    """게임 종료 후 URL query_params로 전달된 점수를 MongoDB에 직접 저장."""
+    qp = st.query_params
+    # 처리할 게임 파라미터가 없으면 즉시 반환
+    _GAME_PARAMS = ['racing_score','zombie_wave','fighter_score','sniper_score','marble_score']
+    if not any(qp.get(p) for p in _GAME_PARAMS):
+        return False
+
+    try:
+        from utils.database import load_db, save_db, update_leaderboard
+        _users = load_db(USERS_FILE, {})
+        # uid: session_state 우선, 없으면 URL 파라미터에서 복원
+        uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
+        if not uid or uid not in _users:
+            st.query_params.clear()
+            return False
+
+        udata = _users[uid]
+        gr = udata.setdefault('game_records', {})
+        user_name = udata.get('nickname', uid)
+        changed = False
+
+        # ── 레이싱 ──
+        if qp.get('racing_score'):
+            r_score = int(qp.get('racing_score', 0))
+            r_dist  = float(qp.get('racing_dist', 0.0))
+            if r_score > 0 and r_score > gr.get('racing', {}).get('score', 0):
+                gr.setdefault('racing', {}).update({'score': r_score, 'dist': r_dist})
+                changed = True
+                update_leaderboard('racing', user_name, r_score)
+                st.toast(f"🏎️ 레이싱 최고기록 {r_score:,}점 저장!", icon="🏆")
+
+        # ── 좀비 ──
+        if qp.get('zombie_wave'):
+            z_wave  = int(qp.get('zombie_wave', 0))
+            z_score = int(qp.get('zombie_score', 0))
+            z_kills = int(qp.get('zombie_kills', 0))
+            if z_wave > 0 and z_wave > gr.get('zombie', {}).get('wave', 0):
+                gr.setdefault('zombie', {}).update({'wave': z_wave, 'score': z_score, 'kills': z_kills})
+                changed = True
+                update_leaderboard('zombie', user_name, z_wave)
+                st.toast(f"🧟 좀비 최고기록 Wave {z_wave} 저장!", icon="🏆")
+
+        # ── 격투 ──
+        if qp.get('fighter_score'):
+            f_score    = int(qp.get('fighter_score', 0))
+            f_perfects = int(qp.get('fighter_perfects', 0))
+            if f_score > 0 and f_score > gr.get('fighter', {}).get('score', 0):
+                gr.setdefault('fighter', {}).update({'score': f_score, 'perfects': f_perfects})
+                changed = True
+                update_leaderboard('fighter', user_name, f_score)
+                st.toast(f"🥊 격투 최고기록 {f_score:,}점 저장!", icon="🏆")
+
+        # ── 저격전 ──
+        if qp.get('sniper_score'):
+            s_score = int(qp.get('sniper_score', 0))
+            s_kills = int(qp.get('sniper_kills', 0))
+            s_wave  = int(qp.get('sniper_wave', 1))
+            if s_score > 0 and s_score > gr.get('sniper', {}).get('score', 0):
+                gr.setdefault('sniper', {}).update({'score': s_score, 'kills': s_kills, 'wave': s_wave})
+                changed = True
+                update_leaderboard('sniper', user_name, s_score)
+                st.toast(f"🎯 저격전 최고기록 {s_score:,}점 저장!", icon="🏆")
+
+        # ── 인베스트 마블 ──
+        if qp.get('marble_score'):
+            m_score = int(qp.get('marble_score', 0))
+            m_wins  = int(qp.get('marble_wins', 0))
+            ms = udata.setdefault('marble_stats', {'wins':0,'losses':0,'games_played':0,'best_net_worth':0})
+            ms['games_played'] = ms.get('games_played', 0) + 1
+            ms['wins'] = ms.get('wins', 0) + m_wins
+            if m_score > ms.get('best_net_worth', 0):
+                ms['best_net_worth'] = m_score
+                gr.setdefault('invest_marble', {}).update({'score': m_score, 'wins': ms['wins']})
+                changed = True
+                update_leaderboard('invest_marble', user_name, m_score)
+                st.toast(f"🌍 마블 최고 순자산 ₩{m_score:,} 저장!", icon="🏆")
+            udata['marble_stats'] = ms
+
+        if changed:
+            udata['game_records'] = gr
+            _users[uid] = udata
+            save_db(USERS_FILE, _users)
+            # session_state도 갱신 (로그인 상태면)
+            if st.session_state.get('logged_in_user') == uid:
+                st.session_state.game_records = gr
+
+    except Exception as _ge:
+        import logging
+        logging.error(f"[_save_game_result] {_ge}")
+
+    st.query_params.clear()
+    return True
+
+_game_saved = _save_game_result()
+
 
 # ==============================
 # _merge_game_records — game_records 기본값 보장 (clears 필드 포함)
