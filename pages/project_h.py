@@ -1119,34 +1119,7 @@ def render():
     from utils.database import load_db, save_db, update_leaderboard
     from utils.config import USERS_FILE
 
-    # ── 결과 처리 ──
-    qp = st.query_params
-    if qp.get('fighter_score'):
-        try:
-            uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
-            f_score    = int(qp.get('fighter_score', 0))
-            f_perfects = int(qp.get('fighter_perfects', 0))
-            if uid and f_score > 0:
-                # [BUG FIX] DB에서 최신 game_records 로드 후 비교
-                _users = load_db(USERS_FILE, {})
-                cur_rec = _users.get(uid, {}).get('game_records', st.session_state.get('game_records', {}))
-                if f_score > cur_rec.get('fighter', {}).get('score', 0):
-                    cur_rec.setdefault('fighter', {}).update({'score': f_score, 'perfects': f_perfects})
-                    st.session_state.game_records = cur_rec
-                    # [BUG FIX] DB에 직접 저장
-                    if uid in _users:
-                        _users[uid]['game_records'] = cur_rec
-                        save_db(USERS_FILE, _users)
-                    sync_user_data()
-                    st.toast(f"🏆 격투 최고기록 갱신! {f_score:,}점", icon="🥊")
-                # 리더보드 업데이트
-                user_name = _users.get(uid, {}).get('nickname', uid)
-                if update_leaderboard('fighter', user_name, f_score):
-                    st.toast(f"👑 격투 전국 1위! {f_score:,}점", icon="🏆")
-        except Exception:
-            pass
-        st.query_params.clear()
-        st.rerun()
+    # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🥊 P1: A/D이동 W점프 Z펀치 X발차기 C필살 V슈퍼 | P2: ←→이동 ↑점프 1펀치 2발차기 3필살 4슈퍼")
