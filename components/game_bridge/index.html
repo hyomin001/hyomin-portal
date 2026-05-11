@@ -3,9 +3,8 @@
 <head><meta charset="UTF-8"></head>
 <body>
 <script>
-// 이 컴포넌트가 받을 게임 타입을 Python에서 주입받음
-// Streamlit이 args로 전달한 값에서 game_type을 읽음
 var myGameType = null;
+var myHandler  = null;
 
 function setComponentValue(val) {
   window.parent.postMessage({
@@ -16,39 +15,32 @@ function setComponentValue(val) {
   }, "*");
 }
 
-// 이 iframe 고유 ID (컴포넌트 인스턴스마다 다름)
-var myId = Math.random().toString(36).slice(2);
-
-// window.parent에 단일 dispatcher 등록 (최초 1회)
-if (!window.parent._gameBridgeDispatcher) {
-  window.parent._gameBridgeDispatcher = {};
-  window.parent.addEventListener('message', function(e) {
-    if (!e.data || !e.data.type) return;
-    var t = e.data.type;
-    // 해당 게임 타입을 기다리는 모든 브리지에 전달
-    if (window.parent._gameBridgeDispatcher[t]) {
-      window.parent._gameBridgeDispatcher[t](e.data);
-    }
-  });
-}
-
 // Streamlit에서 args로 game_type 받기
 function onStreamlitRender(event) {
   if (!event.data || event.data.type !== 'streamlit:render') return;
   var args = event.data.args || {};
-  myGameType = args.game_type || null;
+  var newGameType = args.game_type || null;
+  if (!newGameType || newGameType === myGameType) return;
 
-  // 이 게임 타입의 dispatcher 등록
-  if (myGameType) {
-    window.parent._gameBridgeDispatcher[myGameType] = function(data) {
-      setComponentValue(data);
-    };
+  // 이전 handler 제거
+  if (myHandler) {
+    window.parent.removeEventListener('message', myHandler);
+    myHandler = null;
   }
+
+  myGameType = newGameType;
+
+  // 새 handler 등록 — window.parent에 직접
+  myHandler = function(e) {
+    if (e.data && e.data.type === myGameType) {
+      setComponentValue(e.data);
+    }
+  };
+  window.parent.addEventListener('message', myHandler);
 }
 
 window.addEventListener('message', onStreamlitRender);
 
-// Streamlit에 준비 완료 알림
 window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
 window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: 0 }, "*");
 </script>
