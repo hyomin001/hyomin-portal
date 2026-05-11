@@ -1703,7 +1703,7 @@ def render():
 
     if qp.get('sniper_score'):
         try:
-            uid     = st.session_state.get('logged_in_user', '')
+            uid     = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
             s_score = int(qp.get('sniper_score', 0))
             s_kills = int(qp.get('sniper_kills', 0))
             s_wave  = int(qp.get('sniper_wave', 1))
@@ -1771,6 +1771,7 @@ def render():
         url.searchParams.set('sniper_wave',   e.data.wave);
         url.searchParams.set('sniper_win',    e.data.win);
         url.searchParams.set('sniper_diff',   e.data.diff);
+        url.searchParams.set('_gr_uid', window._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
