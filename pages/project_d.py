@@ -2335,10 +2335,9 @@ initParticles();
 </html>"""
 
 def render():
-    import streamlit.components.v1 as _cv1
+    import os as _os
     from utils.database import update_leaderboard, _get_col
     from utils.config import USERS_FILE
-    import json as _json
 
     st.markdown("""
     <style>
@@ -2349,51 +2348,39 @@ def render():
 
     _cur_uid = st.session_state.get('logged_in_user', '')
 
-    # ── 게임 결과 수신: st_javascript 비동기 postMessage 리스너 ──
-    try:
-        from streamlit_javascript import st_javascript
-        _js_val = st_javascript(
-            """await new Promise(resolve => {
-  window.addEventListener('message', function _h(e) {
-    if (e.data && e.data.type === 'marble_result') {
-      window.removeEventListener('message', _h);
-      resolve(JSON.stringify({score: e.data.score, wins: e.data.wins ?? 0}));
-    }
-  });
-})""",
-            key=f"marble_{_cur_uid}"
-        )
-        if _js_val and _js_val != 0 and not st.session_state.get('_marble_saved'):
+    _bridge_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'components', 'game_bridge')
+    _bridge = st.components.v1.declare_component("game_bridge_marble", path=_bridge_dir)
+    _result = _bridge(key=f"bridge_marble_{_cur_uid}", default=None)
+
+    if _result and isinstance(_result, dict) and _result.get('type') == 'marble_result':
+        if not st.session_state.get('_marble_saved'):
             st.session_state['_marble_saved'] = True
-            _data    = _json.loads(_js_val) if isinstance(_js_val, str) else _js_val
-            _m_score = int(_data.get('score', 0))
-            _m_wins  = int(_data.get('wins', 0))
-            if _cur_uid:
-                _col  = _get_col(USERS_FILE)
-                _doc  = _col.find_one({"_id": "main"}, {_cur_uid: 1})
-                if _doc and _cur_uid in _doc:
-                    _udata = _doc[_cur_uid]
-                    _ms = _udata.get('marble_stats', {'wins': 0, 'losses': 0, 'games_played': 0, 'best_net_worth': 0})
-                    _new_played = _ms.get('games_played', 0) + 1
-                    _new_wins   = _ms.get('wins', 0) + _m_wins
-                    _set_fields = {
-                        f"{_cur_uid}.marble_stats.games_played": _new_played,
-                        f"{_cur_uid}.marble_stats.wins":         _new_wins,
-                    }
-                    if _m_score > _ms.get('best_net_worth', 0):
-                        _set_fields[f"{_cur_uid}.marble_stats.best_net_worth"]      = _m_score
-                        _set_fields[f"{_cur_uid}.game_records.invest_marble.score"] = _m_score
-                        _set_fields[f"{_cur_uid}.game_records.invest_marble.wins"]  = _new_wins
-                        update_leaderboard('invest_marble', _udata.get('nickname', _cur_uid), _m_score)
-                        st.toast(f"🌍 마블 최고 순자산 ₩{_m_score:,} 저장!", icon="🏆")
-                    _col.update_one({"_id": "main"}, {"$set": _set_fields})
-        if not _js_val or _js_val == 0:
-            st.session_state.pop('_marble_saved', None)
-    except Exception as _e:
-        import logging; logging.error(f"[marble] {_e}")
+            try:
+                _m_score = int(_result.get('score', 0))
+                _m_wins  = int(_result.get('wins', 0))
+                if _cur_uid:
+                    _col  = _get_col(USERS_FILE)
+                    _doc  = _col.find_one({"_id": "main"}, {_cur_uid: 1})
+                    if _doc and _cur_uid in _doc:
+                        _udata = _doc[_cur_uid]
+                        _ms = _udata.get('marble_stats', {'wins':0,'losses':0,'games_played':0,'best_net_worth':0})
+                        _new_played = _ms.get('games_played', 0) + 1
+                        _new_wins   = _ms.get('wins', 0) + _m_wins
+                        _set_fields = {
+                            f"{_cur_uid}.marble_stats.games_played": _new_played,
+                            f"{_cur_uid}.marble_stats.wins":         _new_wins,
+                        }
+                        if _m_score > _ms.get('best_net_worth', 0):
+                            _set_fields[f"{_cur_uid}.marble_stats.best_net_worth"]      = _m_score
+                            _set_fields[f"{_cur_uid}.game_records.invest_marble.score"] = _m_score
+                            _set_fields[f"{_cur_uid}.game_records.invest_marble.wins"]  = _new_wins
+                            update_leaderboard('invest_marble', _udata.get('nickname', _cur_uid), _m_score)
+                            st.toast(f"🌍 마블 최고 순자산 ₩{_m_score:,} 저장!", icon="🏆")
+                            st.rerun()
+                        _col.update_one({"_id": "main"}, {"$set": _set_fields})
+            except Exception as _e:
+                import logging; logging.error(f"[marble save] {_e}")
+    if not _result:
+        st.session_state.pop('_marble_saved', None)
 
     components.html(GAME_HTML, height=960, scrolling=True)
-
-
-if __name__ == "__main__":
-    render()

@@ -1690,81 +1690,43 @@ window.addEventListener('resize',()=>{if(G.running)resize();});
 
 
 def render():
-    import streamlit.components.v1 as _cv1
-    from utils.core import sync_user_data
-    from utils.database import (
-        load_db, save_db, load_leaderboard, update_leaderboard,
-        format_leaderboard_score,
-    )
+    import os as _os
+    from utils.database import update_leaderboard, _get_col
     from utils.config import USERS_FILE
 
-    # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
-    GAME_ID = "sniper"
-
-    lb = load_leaderboard()
-    rec = lb.get(GAME_ID, {})
-    if rec:
-        score_fmt = format_leaderboard_score(GAME_ID, rec.get('top_score', 0))
-        st.markdown(f"""
-        <div style='background:linear-gradient(90deg,rgba(255,140,66,.12),rgba(0,0,0,0));
-          border:1px solid rgba(255,140,66,.35);border-radius:10px;padding:8px 18px;
-          margin-bottom:10px;font-family:"Orbitron",sans-serif;font-size:.82rem;'>
-          👑 전국 1위: <b style="color:#ffd700;">{rec.get('top_user','?')}</b>
-          &nbsp;|&nbsp; <span style="color:#22d3ee;">{score_fmt}</span>
-          &nbsp;|&nbsp; <span style="color:#7a8fb5;">{rec.get('date','')}</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <style>
-    #MainMenu{visibility:hidden;}footer{visibility:hidden;}header{visibility:hidden;}
-    .block-container{padding:0!important;max-width:100%!important;}
-    iframe{border:none!important;}
-    </style>
-    """, unsafe_allow_html=True)
+    st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
+    st.caption("🎯 마우스: 조준 | 클릭: 발사 | R: 재장전 | 스테이지 클리어로 진행")
 
     _cur_uid = st.session_state.get('logged_in_user', '')
 
-    # ── 게임 결과 수신: st_javascript 비동기 postMessage 리스너 ──
-    try:
-        from streamlit_javascript import st_javascript
-        import json as _json
-        _js_val = st_javascript(
-            """await new Promise(resolve => {
-  window.addEventListener('message', function _h(e) {
-    if (e.data && e.data.type === 'sniper_result') {
-      window.removeEventListener('message', _h);
-      resolve(JSON.stringify({score: e.data.score, kills: e.data.kills, wave: e.data.wave}));
-    }
-  });
-})""",
-            key=f"sniper_{_cur_uid}"
-        )
-        if _js_val and _js_val != 0 and not st.session_state.get('_sniper_saved'):
+    _bridge_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'components', 'game_bridge')
+    _bridge = st.components.v1.declare_component("game_bridge_sniper", path=_bridge_dir)
+    _result = _bridge(key=f"bridge_sniper_{_cur_uid}", default=None)
+
+    if _result and isinstance(_result, dict) and _result.get('type') == 'sniper_result':
+        if not st.session_state.get('_sniper_saved'):
             st.session_state['_sniper_saved'] = True
-            _data    = _json.loads(_js_val) if isinstance(_js_val, str) else _js_val
-            _s_score = int(_data.get('score', 0))
-            _s_kills = int(_data.get('kills', 0))
-            _s_wave  = int(_data.get('wave', 1))
-            if _s_score > 0 and _cur_uid:
-                from utils.database import update_leaderboard, _get_col
-                _col  = _get_col(USERS_FILE)
-                _doc  = _col.find_one({"_id": "main"}, {_cur_uid: 1})
-                if _doc and _cur_uid in _doc:
-                    _udata = _doc[_cur_uid]
-                    if _s_score > _udata.get('game_records', {}).get('sniper', {}).get('score', 0):
-                        _col.update_one({"_id": "main"}, {"$set": {
-                            f"{_cur_uid}.game_records.sniper.score": _s_score,
-                            f"{_cur_uid}.game_records.sniper.kills": _s_kills,
-                            f"{_cur_uid}.game_records.sniper.wave":  _s_wave,
-                        }})
-                        update_leaderboard('sniper', _udata.get('nickname', _cur_uid), _s_score)
-                        st.toast(f"🎯 저격전 최고기록 {_s_score:,}점 저장!", icon="🏆")
-                        st.session_state.setdefault('game_records', {}).setdefault('sniper', {}).update(
-                            {'score': _s_score, 'kills': _s_kills, 'wave': _s_wave})
-        if not _js_val or _js_val == 0:
-            st.session_state.pop('_sniper_saved', None)
-    except Exception as _e:
-        import logging; logging.error(f"[sniper] {_e}")
+            try:
+                _s_score = int(_result.get('score', 0))
+                _s_kills = int(_result.get('kills', 0))
+                _s_wave  = int(_result.get('wave', 1))
+                if _s_score > 0 and _cur_uid:
+                    _col = _get_col(USERS_FILE)
+                    _doc = _col.find_one({"_id": "main"}, {_cur_uid: 1})
+                    if _doc and _cur_uid in _doc:
+                        _udata = _doc[_cur_uid]
+                        if _s_score > _udata.get('game_records', {}).get('sniper', {}).get('score', 0):
+                            _col.update_one({"_id": "main"}, {"$set": {
+                                f"{_cur_uid}.game_records.sniper.score": _s_score,
+                                f"{_cur_uid}.game_records.sniper.kills": _s_kills,
+                                f"{_cur_uid}.game_records.sniper.wave":  _s_wave,
+                            }})
+                            update_leaderboard('sniper', _udata.get('nickname', _cur_uid), _s_score)
+                            st.toast(f"🎯 저격전 최고기록 {_s_score:,}점 저장!", icon="🏆")
+                            st.rerun()
+            except Exception as _e:
+                import logging; logging.error(f"[sniper save] {_e}")
+    if not _result:
+        st.session_state.pop('_sniper_saved', None)
 
     components.html(GAME_HTML, height=920, scrolling=False)

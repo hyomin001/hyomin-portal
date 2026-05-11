@@ -1114,51 +1114,41 @@ showTitle();
 </html>"""
 
 def render():
+    import os as _os
     from utils.database import update_leaderboard, _get_col
     from utils.config import USERS_FILE
-    import json as _json
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🥊 P1: A/D이동 W점프 Z펀치 X발차기 C필살 V슈퍼 | P2: ←→이동 ↑점프 1펀치 2발차기 3필살 4슈퍼")
 
     _cur_uid = st.session_state.get('logged_in_user', '')
 
-    # ── 게임 결과 수신: st_javascript 비동기 postMessage 리스너 ──
-    try:
-        from streamlit_javascript import st_javascript
-        _js_val = st_javascript(
-            """await new Promise(resolve => {
-  window.addEventListener('message', function _h(e) {
-    if (e.data && e.data.type === 'fighter_result') {
-      window.removeEventListener('message', _h);
-      resolve(JSON.stringify({score: e.data.score, perfects: e.data.perfects}));
-    }
-  });
-})""",
-            key=f"fighter_{_cur_uid}"
-        )
-        if _js_val and _js_val != 0 and not st.session_state.get('_fighter_saved'):
+    _bridge_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'components', 'game_bridge')
+    _bridge = st.components.v1.declare_component("game_bridge_fighter", path=_bridge_dir)
+    _result = _bridge(key=f"bridge_fighter_{_cur_uid}", default=None)
+
+    if _result and isinstance(_result, dict) and _result.get('type') == 'fighter_result':
+        if not st.session_state.get('_fighter_saved'):
             st.session_state['_fighter_saved'] = True
-            _data      = _json.loads(_js_val) if isinstance(_js_val, str) else _js_val
-            _f_score   = int(_data.get('score', 0))
-            _f_perfects = int(_data.get('perfects', 0))
-            if _f_score > 0 and _cur_uid:
-                _col  = _get_col(USERS_FILE)
-                _doc  = _col.find_one({"_id": "main"}, {_cur_uid: 1})
-                if _doc and _cur_uid in _doc:
-                    _udata = _doc[_cur_uid]
-                    if _f_score > _udata.get('game_records', {}).get('fighter', {}).get('score', 0):
-                        _col.update_one({"_id": "main"}, {"$set": {
-                            f"{_cur_uid}.game_records.fighter.score":    _f_score,
-                            f"{_cur_uid}.game_records.fighter.perfects": _f_perfects,
-                        }})
-                        update_leaderboard('fighter', _udata.get('nickname', _cur_uid), _f_score)
-                        st.toast(f"🥊 격투 최고기록 {_f_score:,}점 저장!", icon="🏆")
-                        st.session_state.setdefault('game_records', {}).setdefault('fighter', {}).update(
-                            {'score': _f_score, 'perfects': _f_perfects})
-        if not _js_val or _js_val == 0:
-            st.session_state.pop('_fighter_saved', None)
-    except Exception as _e:
-        import logging; logging.error(f"[fighter] {_e}")
+            try:
+                _f_score    = int(_result.get('score', 0))
+                _f_perfects = int(_result.get('perfects', 0))
+                if _f_score > 0 and _cur_uid:
+                    _col = _get_col(USERS_FILE)
+                    _doc = _col.find_one({"_id": "main"}, {_cur_uid: 1})
+                    if _doc and _cur_uid in _doc:
+                        _udata = _doc[_cur_uid]
+                        if _f_score > _udata.get('game_records', {}).get('fighter', {}).get('score', 0):
+                            _col.update_one({"_id": "main"}, {"$set": {
+                                f"{_cur_uid}.game_records.fighter.score":    _f_score,
+                                f"{_cur_uid}.game_records.fighter.perfects": _f_perfects,
+                            }})
+                            update_leaderboard('fighter', _udata.get('nickname', _cur_uid), _f_score)
+                            st.toast(f"🥊 격투 최고기록 {_f_score:,}점 저장!", icon="🏆")
+                            st.rerun()
+            except Exception as _e:
+                import logging; logging.error(f"[fighter save] {_e}")
+    if not _result:
+        st.session_state.pop('_fighter_saved', None)
 
     components.html(GAME_HTML, height=730, scrolling=False)

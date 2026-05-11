@@ -1173,53 +1173,43 @@ showTitle();
 </html>"""
 
 def render():
+    import os as _os
     from utils.database import update_leaderboard, _get_col
     from utils.config import USERS_FILE
-    import json as _json
 
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🧟 WASD/조이스틱: 이동 | 마우스/터치: 조준·사격 | 1~5: 무기 전환 | Q: 화염탄 E: 섬광 T: 공습")
 
     _cur_uid = st.session_state.get('logged_in_user', '')
 
-    # ── 게임 결과 수신: st_javascript 비동기 postMessage 리스너 ──
-    try:
-        from streamlit_javascript import st_javascript
-        _js_val = st_javascript(
-            """await new Promise(resolve => {
-  window.addEventListener('message', function _h(e) {
-    if (e.data && e.data.type === 'zombie_result') {
-      window.removeEventListener('message', _h);
-      resolve(JSON.stringify({wave: e.data.wave, score: e.data.score, kills: e.data.kills}));
-    }
-  });
-})""",
-            key=f"zombie_{_cur_uid}"
-        )
-        if _js_val and _js_val != 0 and not st.session_state.get('_zombie_saved'):
+    _bridge_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'components', 'game_bridge')
+    _bridge = st.components.v1.declare_component("game_bridge_zombie", path=_bridge_dir)
+    _result = _bridge(key=f"bridge_zombie_{_cur_uid}", default=None)
+
+    if _result and isinstance(_result, dict) and _result.get('type') == 'zombie_result':
+        if not st.session_state.get('_zombie_saved'):
             st.session_state['_zombie_saved'] = True
-            _data    = _json.loads(_js_val) if isinstance(_js_val, str) else _js_val
-            _z_wave  = int(_data.get('wave', 0))
-            _z_score = int(_data.get('score', 0))
-            _z_kills = int(_data.get('kills', 0))
-            if _z_wave > 0 and _cur_uid:
-                _col  = _get_col(USERS_FILE)
-                _doc  = _col.find_one({"_id": "main"}, {_cur_uid: 1})
-                if _doc and _cur_uid in _doc:
-                    _udata = _doc[_cur_uid]
-                    if _z_wave > _udata.get('game_records', {}).get('zombie', {}).get('wave', 0):
-                        _col.update_one({"_id": "main"}, {"$set": {
-                            f"{_cur_uid}.game_records.zombie.wave":  _z_wave,
-                            f"{_cur_uid}.game_records.zombie.score": _z_score,
-                            f"{_cur_uid}.game_records.zombie.kills": _z_kills,
-                        }})
-                        update_leaderboard('zombie', _udata.get('nickname', _cur_uid), _z_wave)
-                        st.toast(f"🧟 좀비 최고기록 Wave {_z_wave} 저장!", icon="🏆")
-                        st.session_state.setdefault('game_records', {}).setdefault('zombie', {}).update(
-                            {'wave': _z_wave, 'score': _z_score, 'kills': _z_kills})
-        if not _js_val or _js_val == 0:
-            st.session_state.pop('_zombie_saved', None)
-    except Exception as _e:
-        import logging; logging.error(f"[zombie] {_e}")
+            try:
+                _z_wave  = int(_result.get('wave', 0))
+                _z_score = int(_result.get('score', 0))
+                _z_kills = int(_result.get('kills', 0))
+                if _z_wave > 0 and _cur_uid:
+                    _col = _get_col(USERS_FILE)
+                    _doc = _col.find_one({"_id": "main"}, {_cur_uid: 1})
+                    if _doc and _cur_uid in _doc:
+                        _udata = _doc[_cur_uid]
+                        if _z_wave > _udata.get('game_records', {}).get('zombie', {}).get('wave', 0):
+                            _col.update_one({"_id": "main"}, {"$set": {
+                                f"{_cur_uid}.game_records.zombie.wave":  _z_wave,
+                                f"{_cur_uid}.game_records.zombie.score": _z_score,
+                                f"{_cur_uid}.game_records.zombie.kills": _z_kills,
+                            }})
+                            update_leaderboard('zombie', _udata.get('nickname', _cur_uid), _z_wave)
+                            st.toast(f"🧟 좀비 최고기록 Wave {_z_wave} 저장!", icon="🏆")
+                            st.rerun()
+            except Exception as _e:
+                import logging; logging.error(f"[zombie save] {_e}")
+    if not _result:
+        st.session_state.pop('_zombie_saved', None)
 
     components.html(GAME_HTML, height=730, scrolling=False)
