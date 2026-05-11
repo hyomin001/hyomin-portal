@@ -2176,17 +2176,19 @@ def render():
                 log_tx(uid, "던전", f"던전런 종료 (점수:{score}, 킬:{kills})", 0)
         st.session_state.dungeon_stats = dstats
 
-        # ── dungeon_weekly를 users DB에 직접 반영 ──
-        from utils.database import load_db, save_db
-        _users = load_db(USERS_FILE, {})
-        if uid in _users:
-            _users[uid]['dungeon_stats'] = dstats
-            _users[uid]['dungeon_weekly'] = st.session_state.get('dungeon_weekly', {})
-            save_db(USERS_FILE, _users)
-
-        # ✅ [BUG FIX] dungeon_stats는 sync_user_data()에 포함되므로 별도 save_db 불필요
-        # sync_user_data()가 dungeon_stats를 포함하여 저장함 (core.py 수정 연동)
-        sync_user_data()
+        # ── dungeon_weekly를 users DB에 $set으로 원자적 저장 ──
+        from utils.database import get_mongo_client, _get_col
+        from utils.config import USERS_FILE as _UF
+        _client = get_mongo_client()
+        if _client:
+            _col = _get_col(_UF)
+            _col.update_one(
+                {"_id": "main"},
+                {"$set": {
+                    f"{uid}.dungeon_stats":  dstats,
+                    f"{uid}.dungeon_weekly": st.session_state.get('dungeon_weekly', {}),
+                }}
+            )
 
         # ✅ [BUG FIX] 처리 후 query params 클리어 → 새로고침/재진입 시 중복 처리 방지
         st.query_params.clear()
