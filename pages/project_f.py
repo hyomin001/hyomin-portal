@@ -1188,7 +1188,7 @@ def render():
     qp = st.query_params
     if qp.get('racing_score'):
         try:
-            uid = st.session_state.get('logged_in_user', '')
+            uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
             r_score = int(qp.get('racing_score', 0))
             r_dist  = float(qp.get('racing_dist', 0.0))
             if uid and r_score > 0:
@@ -1217,6 +1217,11 @@ def render():
     st.markdown("<style>iframe{border:none!important;}</style>", unsafe_allow_html=True)
     st.caption("🏎️ ← → / A D: 레인전환 | SPACE/⚡: 니트로 | 🏆 최고기록은 자동 저장됩니다")
 
+    # uid를 JS 전역변수로 주입 (location.href 리로드 후 uid 복원용)
+    _cur_uid = st.session_state.get('logged_in_user', '')
+    if _cur_uid:
+        _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
+
     listener_html = """
     <script>
     window.parent.addEventListener('message', function(e) {
@@ -1224,6 +1229,7 @@ def render():
         const url = new URL(window.parent.location.href);
         url.searchParams.set('racing_score', e.data.score);
         url.searchParams.set('racing_dist',  e.data.dist);
+        url.searchParams.set('_gr_uid', window._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
