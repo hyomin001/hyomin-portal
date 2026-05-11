@@ -653,6 +653,22 @@ if st.session_state.page_view == "portal":
         _r_fighter_uid, _r_fighter_val = _get_gr_top('fighter', 'score', 'score')
         _r_sniper_uid,  _r_sniper_val  = _get_gr_top('sniper',  'score', 'score')
 
+        # 터미널: game_records에서 클리어 스테이지 수 기준
+        def _get_terminal_top():
+            best_uid, best_val = '—', 0
+            for _uid, _ud in _users_db_for_rank.items():
+                if _uid == 'admin': continue
+                v = _ud.get('game_records', {}).get('terminal', {}).get('score', 0)
+                # fallback: terminal_cleared 리스트 길이
+                if v == 0:
+                    v = len(_ud.get('terminal_cleared', []))
+                if isinstance(v, (int, float)) and v > best_val:
+                    best_val, best_uid = v, _uid
+            if best_val > 0:
+                return best_uid, f'STAGE {int(best_val)}/20'
+            return '—', '기록 없음'
+        _r_terminal_uid, _r_terminal_val = _get_terminal_top()
+
         def _rank_html(uid, val):
             if uid == '—':
                 return "<div class='card-rank-badge' style='color:rgba(255,215,0,0.4);border-color:rgba(255,215,0,0.15);'>👑 기록 없음</div>"
@@ -663,9 +679,10 @@ if st.session_state.page_view == "portal":
         def _rank_html(uid, val):
             return f"<div class='card-rank-badge' style='color:rgba(255,100,100,0.6);font-size:0.6rem;'>⚠️ err</div>"
         _r_marble_uid = _r_dungeon_uid = _r_racing_uid = '—'
-        _r_zombie_uid = _r_fighter_uid = _r_sniper_uid = '—'
+        _r_zombie_uid = _r_fighter_uid = _r_sniper_uid = _r_terminal_uid = '—'
         _r_marble_val = _r_dungeon_val = _r_racing_val = '—'
         _r_zombie_val = _r_fighter_val = _r_sniper_val = '—'
+        _r_terminal_val = '기록 없음'
 
 
     hud_user_txt = f"👤 {st.session_state.logged_in_user}님 접속 중" if st.session_state.get('logged_in_user') else "🔒 비로그인"
@@ -835,9 +852,10 @@ if st.session_state.page_view == "portal":
             st.rerun()
 
     with col3:
-        st.markdown("""
+        st.markdown(f"""
         <div class='game-card card-terminal' style='position:relative;'>
           <div class='card-badge badge-new'>💡 도전</div>
+          {_rank_html(_r_terminal_uid, _r_terminal_val)}
           <div class='card-icon'>💻</div>
           <div class='card-title'>THE TERMINAL</div>
           <div class='card-desc'>커맨드라인 방탈출 어드벤처<br>20 스테이지 · 타임어택 모드</div>
