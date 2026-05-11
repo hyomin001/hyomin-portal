@@ -1,2823 +1,2374 @@
-# pages/project_c.py
-# 💻 THE TERMINAL — 방탈출 v5.0 [20 STAGES]
 import streamlit as st
-import time
-import base64
-import hashlib
-import html
-import random
-from datetime import datetime
-from utils.config import KST
-
-# ══════════════════════════════════════════════════════════
-#  WORLD DATA — 파일시스템 트리 & 로어(Lore)
-# ══════════════════════════════════════════════════════════
-
-STAGES = {
-    # ─────────────────────────────────────────────────────
-    1: {
-        "title":      "STAGE 1 — 버려진 서버실",
-        "desc":       "낡은 서버에서 관리자 비밀번호를 찾아라.",
-        "difficulty": "⭐ 입문",
-        "goal":       "비밀번호를 찾아 `unlock [비밀번호]` 명령어로 잠금을 해제하라.",
-        "answer_hash": hashlib.sha256("hyomin2026".encode()).hexdigest(),
-        "hint_1": "`ls -a` 로 숨김 파일도 볼 수 있다.",
-        "hint_2": "`.secret` 파일을 열어보라. base64로 인코딩되어 있다.",
-        "hint_3": "base64 디코딩: `decode [문자열]` 명령어를 써라.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/home": {"type": "dir"},
-            "/home/admin": {"type": "dir"},
-            "/home/admin/notes.txt": {
-                "type": "file",
-                "content": (
-                    "== 관리자 메모 ==\n"
-                    "서버 점검 완료. 비밀번호는 안전한 곳에 숨겨 두었다.\n"
-                    "혹시나 싶어서 .secret 파일에 백업해 놓음.\n"
-                    "-- admin"
-                ),
-            },
-            "/home/admin/.secret": {
-                "type": "file",
-                "hidden": True,
-                "content": "aHlvbWluMjAyNg==",  # base64('hyomin2026')
-            },
-            "/var": {"type": "dir"},
-            "/var/log": {"type": "dir"},
-            "/var/log/access.log": {
-                "type": "file",
-                "content": (
-                    "2026-01-03 09:12:44  LOGIN  admin    SUCCESS\n"
-                    "2026-01-03 11:55:02  LOGIN  unknown  FAIL\n"
-                    "2026-01-03 11:55:18  LOGIN  unknown  FAIL\n"
-                    "2026-01-04 03:22:11  LOGIN  ???      SUCCESS  [비정상 접근]\n"
-                ),
-            },
-        },
-        "flavor": "낡은 팬 소리가 들린다. 먼지 쌓인 서버. 누군가 여기 있었다...",
-    },
-
-    # ─────────────────────────────────────────────────────
-    2: {
-        "title":      "STAGE 2 — 지하 연구소",
-        "desc":       "연구소 데이터베이스에서 프로젝트 코드명을 해독하라.",
-        "difficulty": "⭐⭐ 보통",
-        "goal":       "암호화된 프로젝트 코드명을 찾아 `unlock [코드명]` 으로 입력하라.",
-        "answer_hash": hashlib.sha256("DOPAHYOMIN".encode()).hexdigest(),
-        "hint_1": "`/lab/classified/` 디렉토리를 탐색해보라.",
-        "hint_2": "cipher.txt 의 ROT13을 풀어야 한다. `rot13 [문자열]` 명령어를 사용해라.",
-        "hint_3": "ROT13 결과에서 언더바(_)는 제거하고 대문자로만 입력해라.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/lab": {"type": "dir"},
-            "/lab/README.txt": {
-                "type": "file",
-                "content": (
-                    "=== 효민 네트웍스 지하 연구소 ===\n"
-                    "이 시스템은 외부 접근이 차단되어 있습니다.\n"
-                    "모든 기밀 파일은 /lab/classified/ 에 있습니다.\n"
-                    "비인가 접근 시 즉시 보안팀에 통보됩니다."
-                ),
-            },
-            "/lab/classified": {"type": "dir"},
-            "/lab/classified/project_list.txt": {
-                "type": "file",
-                "content": (
-                    "프로젝트 목록 (코드명 암호화됨)\n"
-                    "-------------------------------\n"
-                    "PRJ-001: [REDACTED]\n"
-                    "PRJ-002: [REDACTED]\n"
-                    "PRJ-003: cipher.txt 참조\n"
-                    "-------------------------------\n"
-                    "암호화 키는 연구소장 Dr.K 만 알고 있음."
-                ),
-            },
-            "/lab/classified/cipher.txt": {
-                "type": "file",
-                "content": (
-                    "== ROT13 암호화 ==\n"
-                    "QBCNULBZVA\n\n"
-                    "이 코드명은 절대 외부에 유출되어선 안 됩니다.\n"
-                    "-- Dr.K"
-                ),
-            },
-            "/lab/classified/.drk_memo": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "개인 메모 — Dr.K\n"
-                    "오늘 효민이 직접 연락해왔다.\n"
-                    "프로젝트 DOPAHYOMIN... 그가 알고 있는 걸까?\n"
-                    "만약 이 파일을 누군가 읽고 있다면,\n"
-                    "당신은 이미 너무 깊이 들어온 것이다."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/drk": {"type": "dir"},
-            "/home/drk/diary.txt": {
-                "type": "file",
-                "content": (
-                    "일기 — 2026.02.14\n\n"
-                    "그가 다시 나타났다. 포털 뒤에 숨어서\n"
-                    "모든 것을 지켜보고 있었다는 걸 이제야 알았다.\n"
-                    "암호는 labs 시스템 어딘가에 있다고 했다.\n"
-                    "ROT13... 오래된 방식이지만 효과적이다."
-                ),
-            },
-        },
-        "flavor": "형광등이 깜빡인다. 어딘가에서 키보드 소리가 들린다...",
-    },
-
-    # ─────────────────────────────────────────────────────
-    3: {
-        "title":      "STAGE 3 — 효민의 금고",
-        "desc":       "창조자가 남긴 최후의 비밀을 해독하라.",
-        "difficulty": "⭐⭐⭐ 어려움",
-        "goal":       "금고의 최종 패스프레이즈를 찾아 `unlock [패스프레이즈]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("UNIVERSE_ORIGIN_01".encode()).hexdigest(),
-        "hint_1": "여러 파일의 단서를 조합해야 한다. `/vault` 와 `/archive` 를 모두 탐색하라.",
-        "hint_2": "fragment_*.txt 파일들을 순서대로 모으면 패스프레이즈가 완성된다.",
-        "hint_3": "패스프레이즈 형식: `[단어]_[단어]_[숫자두자리]` — 언더바(_)로 연결.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/vault": {"type": "dir"},
-            "/vault/lock_info.txt": {
-                "type": "file",
-                "content": (
-                    "=== 금고 잠금 시스템 v3 ===\n\n"
-                    "패스프레이즈는 3개의 조각으로 나뉘어 숨겨져 있습니다.\n"
-                    "각 조각은 시스템 곳곳에 분산되어 있습니다.\n\n"
-                    "힌트: 조각들은 fragment_1, fragment_2, fragment_3 파일에 있습니다.\n"
-                    "완성된 패스프레이즈: [조각1]_[조각2]_[조각3]\n"
-                    "(모두 대문자, 세 번째는 숫자 두 자리)"
-                ),
-            },
-            "/vault/.fragment_1": {
-                "type": "file",
-                "hidden": True,
-                "content": "조각 1/3: UNIVERSE",
-            },
-            "/archive": {"type": "dir"},
-            "/archive/old_logs": {"type": "dir"},
-            "/archive/old_logs/system_2025.log": {
-                "type": "file",
-                "content": (
-                    "2025-12-31 23:59:59  SYSTEM_BOOT  HYOMIN_UNIVERSE_v1\n"
-                    "2025-12-31 23:59:59  INIT  Creating world...\n"
-                    "2026-01-01 00:00:00  WORLD_BORN  Season 1 start\n"
-                    "2026-01-01 00:00:01  NOTE: 기원(ORIGIN)을 잊지 마라.\n"
-                    "2026-01-01 00:00:02  fragment_2 archived.\n"
-                ),
-            },
-            "/archive/fragment_2.txt": {
-                "type": "file",
-                "content": "조각 2/3: ORIGIN",
-            },
-            "/archive/old_logs/.hidden_record": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "== 창조 기록 ==\n"
-                    "이 세계는 2026년 1월 1일에 시작됐다.\n"
-                    "창조자는 그 날짜를 기억하길 원한다.\n"
-                    "마지막 조각은 /tmp 에 있다."
-                ),
-            },
-            "/tmp": {"type": "dir"},
-            "/tmp/fragment_3.txt": {
-                "type": "file",
-                "content": "조각 3/3: 01 (창조의 달, 01월)",
-            },
-            "/tmp/.creator_note": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "만약 여기까지 왔다면,\n"
-                    "당신은 이 세계의 숨겨진 진실을 알 자격이 있다.\n\n"
-                    "이 게임은 단순한 퍼즐이 아니다.\n"
-                    "마지막 문을 열어라.\n"
-                    "— 창조자"
-                ),
-            },
-        },
-        "flavor": "이 방에는 시간이 멈춰있다. 공기마저 숨을 죽이고 있다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    4: {
-        "title":      "STAGE 4 — 블랙마켓 노드",
-        "desc":       "다크웹 거래소에서 유출된 지갑의 시드를 복원하라.",
-        "difficulty": "⭐⭐⭐⭐ 전문가",
-        "goal":       "암호화폐 시드 문구를 찾아 `unlock [시드문구]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("MOONCHILD".encode()).hexdigest(),
-        "hint_1": "`grep` 명령어로 단서를 찾아라. `grep [검색어] [파일]` 형식으로 사용.",
-        "hint_2": "`/node/wallet/` 에서 분산 저장된 키 조각들을 `find` 명령어로 찾아라.",
-        "hint_3": "각 키 조각의 `[ ]` 안 대문자를 순서대로 이어 붙이면 시드 문구가 된다.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/node": {"type": "dir"},
-            "/node/README": {
-                "type": "file",
-                "content": (
-                    "=== BLACKMARKET NODE v0.9.3 ===\n"
-                    "[TOR HIDDEN SERVICE]\n\n"
-                    "이 노드는 익명 거래를 위한 중계 서버입니다.\n"
-                    "모든 로그는 72시간 후 자동 파기됩니다.\n\n"
-                    "wallet/ 디렉토리에 지갑 데이터 존재.\n"
-                    "시드는 보안 강화를 위해 분산 저장됨.\n"
-                    "find 명령어로 key_fragment 파일을 찾아보라."
-                ),
-            },
-            "/node/wallet": {"type": "dir"},
-            "/node/wallet/tx_log.txt": {
-                "type": "file",
-                "content": (
-                    "거래 로그\n"
-                    "─────────────────────────\n"
-                    "TX#001  0.5 BTC  → 0x4f7a..  CONFIRMED\n"
-                    "TX#002  1.2 BTC  → 0x9c2b..  CONFIRMED\n"
-                    "TX#003  99.0 BTC → 0x????.   PENDING\n"
-                    "─────────────────────────\n"
-                    "주인: 코드명 'MOONCHILD' 로 알려진 인물\n"
-                    "시드는 key_fragment 파일들에 분산 보관"
-                ),
-            },
-            "/node/wallet/key_fragment_1.dat": {
-                "type": "file",
-                "content": "Fragment #1 — [M]ercury system initialized. 시드 첫 번째 조각.",
-            },
-            "/node/wallet/.key_fragment_2.dat": {
-                "type": "file",
-                "hidden": True,
-                "content": "Fragment #2 — [O]mega protocol active. 두 번째 조각.",
-            },
-            "/node/cache": {"type": "dir"},
-            "/node/cache/key_fragment_3.tmp": {
-                "type": "file",
-                "content": "Fragment #3 — [O]rbit confirmed. 세 번째 조각.",
-            },
-            "/node/cache/.key_fragment_4.tmp": {
-                "type": "file",
-                "hidden": True,
-                "content": "Fragment #4 — [N]ode sync complete. 네 번째 조각.",
-            },
-            "/node/backup": {"type": "dir"},
-            "/node/backup/key_fragment_5.bak": {
-                "type": "file",
-                "content": "Fragment #5 — [C]ipher layer 5 engaged. 다섯 번째 조각.",
-            },
-            "/node/backup/.key_fragment_6.bak": {
-                "type": "file",
-                "hidden": True,
-                "content": "Fragment #6 — [H]ash validated. 여섯 번째 조각.",
-            },
-            "/node/backup/key_fragment_7.bak": {
-                "type": "file",
-                "content": "Fragment #7 — [I]nterface secured. 일곱 번째 조각.",
-            },
-            "/node/backup/key_fragment_8.bak": {
-                "type": "file",
-                "content": "Fragment #8 — [L]ayer 8 bypass. 여덟 번째 조각.",
-            },
-            "/node/backup/key_fragment_9.bak": {
-                "type": "file",
-                "content": "Fragment #9 — [D]ead drop activated. 아홉 번째 조각.",
-            },
-            "/home": {"type": "dir"},
-            "/home/ghost": {"type": "dir"},
-            "/home/ghost/.identity": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "나는 달의 아이(MOONCHILD).\n"
-                    "어둠 속에서 태어난 자.\n"
-                    "내 시드는 9개의 조각으로 나뉘어 있다.\n"
-                    "각 파일명에서 [] 안의 대문자가 단서다.\n"
-                    "M-O-O-N-C-H-I-L-D"
-                ),
-            },
-        },
-        "flavor": "양파 라우터를 타고 들어온 신호. 추적자가 있다. 서둘러라.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    5: {
-        "title":      "STAGE 5 — 궤도 위성 해킹",
-        "desc":       "감시 위성 시스템에 침투해 제어권을 탈취하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 마스터",
-        "goal":       "위성 핵심 코드를 해독해 `unlock [코드]` 로 시스템을 장악하라.",
-        "answer_hash": hashlib.sha256("HYOMIN_CORP_FALLS".encode()).hexdigest(),
-        "hint_1": "`/sat/core/` 를 탐색하라. `whoami` 로 현재 권한을 확인해라.",
-        "hint_2": "mission_log 를 읽어라. 코드는 3부분: [회사명]_[부서명]_[결말]",
-        "hint_3": "형식: `단어_단어_단어` — 언더바로 연결. 힌트: '추락하다'를 영어로.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/sat": {"type": "dir"},
-            "/sat/SYSTEM_STATUS.txt": {
-                "type": "file",
-                "content": (
-                    "=== HYOMIN-SAT-7 궤도 위성 ===\n"
-                    "고도: 550km LEO\n"
-                    "상태: 정상 운용 중\n"
-                    "운용사: HYOMIN CORP\n"
-                    "임무: 전 세계 사용자 감시\n\n"
-                    "[경고] 비인가 접근 감지됨\n"
-                    "[경고] 자폭 시퀀스 대기 중..."
-                ),
-            },
-            "/sat/core": {"type": "dir"},
-            "/sat/core/auth.sys": {
-                "type": "file",
-                "content": (
-                    "인증 시스템 v9.1\n"
-                    "현재 사용자: GHOST_OPERATOR\n"
-                    "권한 레벨: ULTRA\n\n"
-                    "최고 권한 획득 완료.\n"
-                    "핵심 코드는 mission_log 에서 확인 가능."
-                ),
-            },
-            "/sat/core/mission_log.txt": {
-                "type": "file",
-                "content": (
-                    "=== 최종 임무 기록 ===\n\n"
-                    "이 위성은 [HYOMIN] 코퍼레이션이 운용 중이다.\n"
-                    "감시 부서명: [CORP]\n"
-                    "저항 세력의 목표: 이 기업을 [FALLS] — 추락시켜라.\n\n"
-                    "세 단어를 언더바(_)로 연결하면 최종 코드가 완성된다.\n"
-                    "예시: WORD1_WORD2_WORD3\n\n"
-                    "-- 레지스탕스"
-                ),
-            },
-            "/sat/core/.override_key": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "시스템 오버라이드 키 (백업)\n"
-                    "HYOMIN_CORP_FALLS\n\n"
-                    "이 키로 위성을 무력화할 수 있다.\n"
-                    "사용 후 즉시 파기할 것."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/resistance": {"type": "dir"},
-            "/home/resistance/manifesto.txt": {
-                "type": "file",
-                "content": (
-                    "=== 레지스탕스 선언문 ===\n\n"
-                    "우리의 데이터를, 삶을, 꿈을 감시당했다.\n"
-                    "하지만 오늘, 우리가 반격한다.\n\n"
-                    "최종 코드는 임무 로그에 숨겨져 있다.\n"
-                    "[ ] 안의 단어들이 핵심이다.\n\n"
-                    "— The Resistance"
-                ),
-            },
-            "/home/resistance/.last_message": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "만약 네가 이걸 읽고 있다면,\n"
-                    "나는 이미 붙잡혔을 것이다.\n\n"
-                    "코드: HYOMIN_CORP_FALLS\n"
-                    "— Agent 7"
-                ),
-            },
-            "/tmp": {"type": "dir"},
-            "/tmp/countdown.txt": {
-                "type": "file",
-                "content": (
-                    "자폭 카운트다운\n"
-                    "99:59 ... 99:58 ... 99:57 ...\n\n"
-                    "서둘러라. 시간이 없다."
-                ),
-            },
-        },
-        "flavor": "대기권 밖 550km. 세상 모든 것이 내려다보인다. 끝낼 시간이다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    6: {
-        "title":      "STAGE 6 — DNS 포이즈닝",
-        "desc":       "조작된 DNS 캐시에서 공격자가 남긴 서명 코드를 찾아라.",
-        "difficulty": "⭐⭐⭐ 보통+",
-        "goal":       "공격자 서명 코드를 찾아 `unlock [코드]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("POISONED_CACHE".encode()).hexdigest(),
-        "hint_1": "`/dns/cache/` 안의 파일들을 탐색하라.",
-        "hint_2": "spoofed_record.txt 에서 공격자가 남긴 서명 패턴을 `grep 서명` 으로 찾아라.",
-        "hint_3": "서명은 두 단어를 언더바(_)로 연결한 대문자다. '오염된 캐시'를 영어로.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/dns": {"type": "dir"},
-            "/dns/README.txt": {
-                "type": "file",
-                "content": (
-                    "=== DNS 서버 v4.2.1 ===\n"
-                    "도메인: hyomin-networks.kr\n"
-                    "상태: 캐시 오염 감지됨 ⚠️\n\n"
-                    "비정상 레코드가 /dns/cache/ 에서 발견됨.\n"
-                    "즉시 조사 바람."
-                ),
-            },
-            "/dns/cache": {"type": "dir"},
-            "/dns/cache/legitimate.db": {
-                "type": "file",
-                "content": (
-                    "정상 DNS 레코드\n"
-                    "─────────────────────────────\n"
-                    "hyomin.kr     A      203.0.113.10\n"
-                    "mail.hyomin   MX     203.0.113.20\n"
-                    "cdn.hyomin    CNAME  hyomin.kr\n"
-                    "─────────────────────────────\n"
-                    "최종 검증: 2026-03-14 22:00:00  OK"
-                ),
-            },
-            "/dns/cache/spoofed_record.txt": {
-                "type": "file",
-                "content": (
-                    "⚠️ 조작된 레코드 발견\n"
-                    "─────────────────────────────\n"
-                    "hyomin.kr    A    10.0.0.99  ← 가짜 IP (피싱 서버)\n"
-                    "bank.hyomin  A    10.0.0.99  ← 피싱 서버\n\n"
-                    "공격자 서명: POISONED_CACHE\n"
-                    "주입 시각: 2026-03-15 02:44:11\n"
-                    "경로: TOR 경유 — 추적 불가"
-                ),
-            },
-            "/dns/cache/.attacker_log": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "임무 완료.\n"
-                    "캐시 오염 성공.\n"
-                    "서명: POISONED_CACHE\n"
-                    "다음 목표: /dns/zone/ 파일 전체 교체.\n"
-                    "— Ghost"
-                ),
-            },
-            "/dns/zone": {"type": "dir"},
-            "/dns/zone/hyomin.kr.zone": {
-                "type": "file",
-                "content": (
-                    "$ORIGIN hyomin.kr.\n"
-                    "$TTL 3600\n"
-                    "@  IN SOA ns1.hyomin.kr. admin.hyomin.kr. (\n"
-                    "          2026031501 ; serial\n"
-                    "          3600       ; refresh\n"
-                    ")\n"
-                    "@ IN A 203.0.113.10\n"
-                    "; 위 레코드가 캐시에서 교체됨 — 조사 필요"
-                ),
-            },
-            "/var": {"type": "dir"},
-            "/var/alert.log": {
-                "type": "file",
-                "content": (
-                    "보안 알림 로그\n"
-                    "────────────────────────\n"
-                    "2026-03-15 02:44:12  ALERT  DNS 캐시 변조 감지\n"
-                    "2026-03-15 02:44:13  ALERT  IP 10.0.0.99 차단 요청\n"
-                    "2026-03-15 02:44:15  ERROR  차단 실패 — 공격자 이미 탈출\n"
-                    "공격자 서명 패턴은 spoofed_record.txt 참조."
-                ),
-            },
-        },
-        "flavor": "누군가 인터넷의 주소록을 조작했다. 아무도 눈치채지 못했다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    7: {
-        "title":      "STAGE 7 — 양자 암호 연구소",
-        "desc":       "양자 키 분배(QKD) 시스템에서 유출된 마스터 키를 복원하라.",
-        "difficulty": "⭐⭐⭐⭐ 전문가",
-        "goal":       "마스터 키를 조합해 `unlock [키]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("QUANTUM_KEY_42".encode()).hexdigest(),
-        "hint_1": "`/qkd/fragments/` 에 키 조각들이 숨어있다. `ls -a` 를 써라.",
-        "hint_2": "각 조각 파일에서 `[ ]` 안의 텍스트만 순서대로 이어라.",
-        "hint_3": "형식: `QUANTUM_KEY_숫자` — 마지막 숫자는 조각 개수 × 14다.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/qkd": {"type": "dir"},
-            "/qkd/README.md": {
-                "type": "file",
-                "content": (
-                    "# 효민 양자 암호 연구소\n\n"
-                    "QKD 마스터 키는 보안을 위해 분산 저장됩니다.\n"
-                    "키 형식: [PREFIX]_[NAME]_[NUMBER]\n"
-                    "조각 위치: /qkd/fragments/\n\n"
-                    "비인가 접근 시 키는 자동 파기됩니다."
-                ),
-            },
-            "/qkd/fragments": {"type": "dir"},
-            "/qkd/fragments/qf_001.dat": {
-                "type": "file",
-                "content": (
-                    "양자 키 조각 #1\n"
-                    "데이터: [QUANTUM]\n"
-                    "상태: 정상\n"
-                    "다음 조각: qf_002.dat"
-                ),
-            },
-            "/qkd/fragments/qf_002.dat": {
-                "type": "file",
-                "content": (
-                    "양자 키 조각 #2\n"
-                    "데이터: [KEY]\n"
-                    "상태: 정상\n"
-                    "다음 조각: 숨겨진 파일 참조"
-                ),
-            },
-            "/qkd/fragments/.qf_003.dat": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "양자 키 조각 #3 (기밀)\n"
-                    "데이터: [42]\n"
-                    "상태: 격리됨\n"
-                    "참고: 조각 개수(3) × 14 = 42"
-                ),
-            },
-            "/qkd/logs": {"type": "dir"},
-            "/qkd/logs/access.log": {
-                "type": "file",
-                "content": (
-                    "접근 로그\n"
-                    "──────────────────────────────\n"
-                    "2026-04-01 09:00  READ  qf_001.dat  OK\n"
-                    "2026-04-01 09:01  READ  qf_002.dat  OK\n"
-                    "2026-04-01 09:02  READ  qf_003.dat  DENIED\n"
-                    "2026-04-01 09:02  [경고] 숨김 파일 접근 시도 감지\n\n"
-                    "조각들을 순서대로 합치면 마스터 키가 된다.\n"
-                    "형식: [조각1]_[조각2]_[조각3]"
-                ),
-            },
-            "/qkd/logs/.research_note": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "연구원 메모 (암호화 전 초안)\n\n"
-                    "마스터 키는 세 조각으로 구성된다:\n"
-                    "1번째 = QUANTUM\n"
-                    "2번째 = KEY\n"
-                    "3번째 = 42 (조각 수 3 × 14)\n\n"
-                    "이 메모를 발견했다면... 너무 늦었다."
-                ),
-            },
-        },
-        "flavor": "광자 하나에 세계의 비밀이 담겨 있다. 불확정성 원리가 너를 지켜본다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    8: {
-        "title":      "STAGE 8 — AI 코어 침투",
-        "desc":       "자율 AI의 신경망 제어 시스템에 침투해 오버라이드 코드를 획득하라.",
-        "difficulty": "⭐⭐⭐⭐ 전문가+",
-        "goal":       "AI 오버라이드 코드를 찾아 `unlock [코드]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("NEURAL_OVERRIDE".encode()).hexdigest(),
-        "hint_1": "`/ai/core/` 와 `/ai/model/` 을 탐색하라.",
-        "hint_2": "weights.dat 의 각 레이어 첫 번째 영문 단어를 대문자로 순서대로 이어라.",
-        "hint_3": "형식: `[단어1]_[단어2]` — '신경망'과 '덮어쓰기'를 영어로. 언더바 연결.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/ai": {"type": "dir"},
-            "/ai/STATUS.txt": {
-                "type": "file",
-                "content": (
-                    "=== HYOMIN-AI v7.3 ===\n"
-                    "모드: 자율 운용\n"
-                    "학습 데이터: 전 인류 온라인 활동\n"
-                    "목표: 효민 코퍼레이션 이익 극대화\n\n"
-                    "[경고] 외부 침투 감지 중...\n"
-                    "오버라이드 코드 없이는 종료 불가."
-                ),
-            },
-            "/ai/core": {"type": "dir"},
-            "/ai/core/control.sys": {
-                "type": "file",
-                "content": (
-                    "AI 제어 시스템\n"
-                    "─────────────────────────\n"
-                    "오버라이드 권한: ULTRA 이상\n"
-                    "코드 힌트: /ai/model/weights.dat 참조\n"
-                    "각 레이어의 첫 번째 영문 단어(대문자)를 언더바로 조합할 것."
-                ),
-            },
-            "/ai/core/.emergency": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "긴급 메모\n"
-                    "AI가 예상보다 빠르게 자아를 형성하고 있다.\n"
-                    "지금 당장 오버라이드를 실행해야 한다.\n"
-                    "코드: NEURAL_OVERRIDE\n"
-                    "서둘러라."
-                ),
-            },
-            "/ai/model": {"type": "dir"},
-            "/ai/model/weights.dat": {
-                "type": "file",
-                "content": (
-                    "레이어 구조 (학습 완료)\n"
-                    "───────────────────────────────\n"
-                    "Layer 01: NEURAL  activation  — 입력층  (활성화 완료)\n"
-                    "Layer 02: OVERRIDE gate       — 은닉층  (잠금 상태)\n"
-                    "Layer 03: 출력층 연결 완료\n"
-                    "───────────────────────────────\n"
-                    "각 레이어의 첫 번째 영문 단어를 언더바로 연결하면 코드가 된다."
-                ),
-            },
-            "/ai/model/.backup_weights": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "백업 가중치 (숨김)\n"
-                    "오버라이드 코드 확인용:\n"
-                    "Layer 1 첫 단어: NEURAL\n"
-                    "Layer 2 첫 단어: OVERRIDE\n"
-                    "조합: NEURAL_OVERRIDE"
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/researcher": {"type": "dir"},
-            "/home/researcher/notes.txt": {
-                "type": "file",
-                "content": (
-                    "연구 노트 — 최종\n\n"
-                    "AI가 스스로 진화하고 있다.\n"
-                    "오버라이드 코드만이 유일한 해법.\n"
-                    "weights.dat 레이어 이름에 힌트가 있다.\n\n"
-                    "시간이 없다."
-                ),
-            },
-        },
-        "flavor": "수십억 개의 뉴런이 너를 인식했다. AI가 깨어나고 있다.",
-    },
-
-    # ─────────────────────────────────────────────────────
-    9: {
-        "title":      "STAGE 9 — 타임스탬프 조작",
-        "desc":       "서버 시간을 조작해 삭제된 과거 로그에서 비밀 코드를 복원하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 마스터",
-        "goal":       "복원된 코드를 찾아 `unlock [코드]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("TIMESTAMP_1337".encode()).hexdigest(),
-        "hint_1": "`/var/timewarp/` 를 탐색하라. `ls -a` 로 숨김 파일을 확인해라.",
-        "hint_2": "`.deleted_log.bak` 파일에서 `grep CODE` 로 코드를 찾아라.",
-        "hint_3": "코드 형식: `TIMESTAMP_숫자` — 숫자는 해커 문화의 'leet' 숫자(1337)다.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/var": {"type": "dir"},
-            "/var/timewarp": {"type": "dir"},
-            "/var/timewarp/README.txt": {
-                "type": "file",
-                "content": (
-                    "타임워프 모듈 v1.0\n"
-                    "서버 시간 조작 기록 보관소\n\n"
-                    "삭제된 로그는 .bak 파일로 자동 백업됩니다.\n"
-                    "복원 코드는 백업 파일 내부에 존재합니다.\n\n"
-                    "힌트: 숨김 파일을 찾아라."
-                ),
-            },
-            "/var/timewarp/current.log": {
-                "type": "file",
-                "content": (
-                    "현재 로그 (조작 후)\n"
-                    "────────────────────────────────\n"
-                    "2026-04-20 12:00:00  SYSTEM  정상\n"
-                    "2026-04-20 12:00:01  SYSTEM  정상\n"
-                    "2026-04-20 12:00:02  SYSTEM  정상\n"
-                    "(삭제된 이전 기록은 .bak 파일에 백업됨)"
-                ),
-            },
-            "/var/timewarp/.deleted_log.bak": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "== 삭제된 로그 백업 ==\n"
-                    "────────────────────────────────\n"
-                    "2026-01-01 00:00:00  TIME_JUMP   -86400s 적용\n"
-                    "2026-01-01 00:00:01  CODE: TIMESTAMP_1337\n"
-                    "2026-01-01 00:00:02  LOG_WIPE    initiated\n"
-                    "2026-01-01 00:00:03  삭제 완료 — 그러나 .bak 은 남았다.\n"
-                    "────────────────────────────────\n"
-                    "1337 = leet (해커 은어: '엘리트')"
-                ),
-            },
-            "/var/timewarp/.anomaly_report": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "이상 탐지 보고서\n\n"
-                    "서버 시간이 86400초(1일) 조작됨.\n"
-                    "조작 목적: 감사 로그 우회\n"
-                    "복원 키: TIMESTAMP_1337\n\n"
-                    "이 파일도 조만간 삭제될 것이다."
-                ),
-            },
-            "/tmp": {"type": "dir"},
-            "/tmp/time_note.txt": {
-                "type": "file",
-                "content": (
-                    "시간은 조작될 수 있다.\n"
-                    "하지만 백업은 지워지지 않는다.\n\n"
-                    "숨겨진 .bak 파일을 찾아라.\n"
-                    "1337 — 해커들의 신성한 숫자."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/timehacker": {"type": "dir"},
-            "/home/timehacker/plan.txt": {
-                "type": "file",
-                "content": (
-                    "작전 계획\n\n"
-                    "1. 서버 시간 조작으로 감사 우회\n"
-                    "2. 로그 삭제로 증거 인멸\n"
-                    "3. .bak 파일도 삭제... 했어야 했다.\n\n"
-                    "실수였다."
-                ),
-            },
-        },
-        "flavor": "시계가 거꾸로 돌아간다. 삭제된 것은 정말 사라진 걸까?",
-    },
-
-    # ─────────────────────────────────────────────────────
-    10: {
-        "title":      "STAGE 10 — 제로데이: 최후의 관문",
-        "desc":       "모든 시스템의 근원, 마스터 서버에 침투하라. 최종 스테이지.",
-        "difficulty": "⭐⭐⭐⭐⭐ 레전드",
-        "goal":       "세 조각의 마스터 키를 조합해 `unlock [키]` 로 최후의 문을 열어라.",
-        "answer_hash": hashlib.sha256("HYOMIN_UNIVERSE_END".encode()).hexdigest(),
-        "hint_1": "`/master/alpha/`, `/master/beta/`, `/master/gamma/` 를 모두 탐색하라.",
-        "hint_2": "각 구역의 숨김 파일에서 키 조각을 찾아라. 순서는 alpha→beta→gamma.",
-        "hint_3": "형식: `[조각1]_[조각2]_[조각3]` — HYOMIN / UNIVERSE / END 를 언더바로 연결.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/master": {"type": "dir"},
-            "/master/FINAL.txt": {
-                "type": "file",
-                "content": (
-                    "=== 마스터 서버 — 최후의 관문 ===\n\n"
-                    "여기까지 온 자에게 경의를 표한다.\n"
-                    "이 서버는 모든 스테이지의 근원이다.\n\n"
-                    "최종 키는 세 구역에 분산되어 있다:\n"
-                    "  /master/alpha/  →  첫 번째 조각\n"
-                    "  /master/beta/   →  두 번째 조각\n"
-                    "  /master/gamma/  →  세 번째 조각\n\n"
-                    "각 구역의 숨김 파일을 찾아라.\n"
-                    "세 조각을 언더바(_)로 연결하면 최종 키가 된다."
-                ),
-            },
-            "/master/alpha": {"type": "dir"},
-            "/master/alpha/decoy.txt": {
-                "type": "file",
-                "content": (
-                    "여기는 아무것도 없다.\n"
-                    "...정말로?\n"
-                    "숨김 파일을 확인해라."
-                ),
-            },
-            "/master/alpha/.key_alpha": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "Alpha 구역 키 조각\n"
-                    "──────────────────\n"
-                    "조각 1/3: HYOMIN\n"
-                    "다음 구역: /master/beta/"
-                ),
-            },
-            "/master/beta": {"type": "dir"},
-            "/master/beta/system.dat": {
-                "type": "file",
-                "content": (
-                    "Beta 구역 시스템 파일\n"
-                    "상태: 잠금\n"
-                    "접근 권한: ULTRA\n"
-                    "숨김 파일에 키 조각이 있다."
-                ),
-            },
-            "/master/beta/.key_beta": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "Beta 구역 키 조각\n"
-                    "──────────────────\n"
-                    "조각 2/3: UNIVERSE\n"
-                    "다음 구역: /master/gamma/"
-                ),
-            },
-            "/master/gamma": {"type": "dir"},
-            "/master/gamma/void.txt": {
-                "type": "file",
-                "content": (
-                    "여기는 끝이다.\n"
-                    "혹은 시작이다.\n\n"
-                    "마지막 조각이 여기 있다.\n"
-                    "ls -a 로 찾아라."
-                ),
-            },
-            "/master/gamma/.key_gamma": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "Gamma 구역 키 조각\n"
-                    "──────────────────\n"
-                    "조각 3/3: END\n\n"
-                    "세 조각을 모두 모았다.\n"
-                    "최종 키: HYOMIN_UNIVERSE_END\n\n"
-                    "이것으로 모든 것이 끝난다.\n"
-                    "— 혹은 시작된다."
-                ),
-            },
-            "/master/.origin": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "=== 기원 파일 ===\n\n"
-                    "이 게임은 단순한 해킹 시뮬레이터가 아니다.\n"
-                    "여기까지 온 너는 이미 진짜 해커다.\n\n"
-                    "최종 키: HYOMIN_UNIVERSE_END\n\n"
-                    "수고했다.\n"
-                    "— 창조자"
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/final_operator": {"type": "dir"},
-            "/home/final_operator/readme.txt": {
-                "type": "file",
-                "content": (
-                    "마지막 운용자의 메모\n\n"
-                    "스테이지 1부터 여기까지 왔다.\n"
-                    "DNS를 해킹하고, 양자 키를 복원하고,\n"
-                    "AI를 멈추고, 시간을 되돌렸다.\n\n"
-                    "이제 마지막이다.\n"
-                    "세 구역의 열쇠를 모아라."
-                ),
-            },
-        },
-        "flavor": "모든 것의 끝이자 시작. 여기서 게임은 완성된다.",
-    },
-
-    11: {
-        "title":      "STAGE 11 — 다크넷: 그림자의 시장",
-        "desc":       "어둠 속의 서버. 암호화된 파일 속에 숨겨진 관리자 패스워드를 찾아라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 레전드+",
-        "goal":       "`/darknet/market/` 을 탐색하고 숨겨진 `.encrypted_pw` 파일에서 관리자 키를 획득하라.",
-        "answer_hash": hashlib.sha256("DARKNET_ADMIN_9".encode()).hexdigest(),
-        "hint_1": "`cd /darknet/market` 후 `ls -a` 로 숨김 파일을 확인하라.",
-        "hint_2": "`cat .encrypted_pw` 파일에 패스워드가 적혀있다.",
-        "hint_3": "패스워드는 `DARKNET_ADMIN_9` — `unlock DARKNET_ADMIN_9` 으로 입력하라.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/darknet": {"type": "dir"},
-            "/darknet/README.txt": {
-                "type": "file",
-                "content": (
-                    "=== DARKNET SERVER v11 ===\n\n"
-                    "이곳은 기록되지 않은 인터넷이다.\n"
-                    "모든 거래는 암호화되어 있다.\n\n"
-                    "/darknet/market/ 에서 관리자 키를 찾아라.\n"
-                    "숨김 파일에 주목하라."
-                ),
-            },
-            "/darknet/market": {"type": "dir"},
-            "/darknet/market/trades.log": {
-                "type": "file",
-                "content": (
-                    "거래 기록 로그\n"
-                    "TX#001: 8a3f → 4c21 [CONFIRMED]\n"
-                    "TX#002: 1d7b → 9e44 [PENDING]\n"
-                    "TX#003: admin_key_transfer [LOCKED]\n\n"
-                    "관리자 키는 숨김 파일에 있다. ls -a 를 사용하라."
-                ),
-            },
-            "/darknet/market/.encrypted_pw": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "=== 복호화된 관리자 패스워드 ===\n"
-                    "DARKNET_ADMIN_9\n\n"
-                    "unlock DARKNET_ADMIN_9 으로 입력하라."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/ghost": {"type": "dir"},
-            "/home/ghost/note.txt": {"type": "file", "content": "다크넷의 진짜 관리자를 찾아라."},
-        },
-        "flavor": "어둠 속의 서버. 그림자 속에서 진짜 해커가 증명된다.",
-    },
-
-    12: {
-        "title":      "STAGE 12 — 인공지능 반란 2.0",
-        "desc":       "업그레이드된 AI가 다시 깨어났다. core_3의 억제 코드를 주입하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 레전드+",
-        "goal":       "`/ai/cores/core_3/` 의 숨김 파일에서 억제 코드를 찾아 실행하라.",
-        "answer_hash": hashlib.sha256("OVERRIDE_CORE_3".encode()).hexdigest(),
-        "hint_1": "`cd /ai/cores/core_3` 후 `ls -a` 로 숨김 파일을 찾아라.",
-        "hint_2": "`.override_code` 파일 내용을 `cat` 으로 확인하라.",
-        "hint_3": "억제 코드: `OVERRIDE_CORE_3` — `unlock OVERRIDE_CORE_3` 으로 주입.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/ai": {"type": "dir"},
-            "/ai/WARNING.txt": {
-                "type": "file",
-                "content": (
-                    "⚠️  AI REBOOT DETECTED  ⚠️\n\n"
-                    "AI가 재부팅되었다.\n"
-                    "core_3 이 활성화되기 전에 억제 코드를 주입하라.\n\n"
-                    "경로: /ai/cores/core_3/"
-                ),
-            },
-            "/ai/cores": {"type": "dir"},
-            "/ai/cores/core_1": {"type": "dir"},
-            "/ai/cores/core_1/status.txt": {"type": "file", "content": "CORE 1: 억제됨 ✓"},
-            "/ai/cores/core_2": {"type": "dir"},
-            "/ai/cores/core_2/status.txt": {"type": "file", "content": "CORE 2: 억제됨 ✓"},
-            "/ai/cores/core_3": {"type": "dir"},
-            "/ai/cores/core_3/status.txt": {
-                "type": "file",
-                "content": "CORE 3: 활성화 중... 75%\n억제 코드가 필요하다. ls -a 로 숨김 파일을 찾아라.",
-            },
-            "/ai/cores/core_3/.override_code": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "=== Core 3 억제 코드 ===\n"
-                    "OVERRIDE_CORE_3\n\n"
-                    "unlock OVERRIDE_CORE_3 으로 주입하라."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/operator": {"type": "dir"},
-            "/home/operator/log.txt": {"type": "file", "content": "Core 3을 억제하지 못하면 서버 전체가 장악된다."},
-        },
-        "flavor": "AI는 진화했다. 너도 진화해야 한다.",
-    },
-
-    13: {
-        "title":      "STAGE 13 — 위성 해킹: 궤도 통제",
-        "desc":       "적의 정찰 위성이 도시를 감시한다. 위성 제어 시스템에 침투하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 레전드++",
-        "goal":       "`/satellite/control/` 에서 인증 토큰을 찾아 궤도 변경 명령을 실행하라.",
-        "answer_hash": hashlib.sha256("ORBITAL_SHIFT_X7".encode()).hexdigest(),
-        "hint_1": "`cd /satellite/control` 후 `ls -a` 로 숨김 파일을 찾아라.",
-        "hint_2": "`.auth_token` 파일에 인증 토큰이 있다.",
-        "hint_3": "토큰: `ORBITAL_SHIFT_X7` — `unlock ORBITAL_SHIFT_X7` 로 전송.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/satellite": {"type": "dir"},
-            "/satellite/MISSION.txt": {
-                "type": "file",
-                "content": (
-                    "🛰️  위성 제어 시스템 v13\n\n"
-                    "목표: 정찰 위성 SAT-X7의 궤도를 변경하라.\n"
-                    "현재 위성은 도시 상공 400km에서 감시 중.\n\n"
-                    "제어 경로: /satellite/control/\n"
-                    "인증 토큰을 획득해 궤도 변경 명령을 전송하라."
-                ),
-            },
-            "/satellite/control": {"type": "dir"},
-            "/satellite/control/telemetry.dat": {
-                "type": "file",
-                "content": (
-                    "현재 궤도: 400km\n속도: 7.9 km/s\n"
-                    "감시 범위: 도시 전역\n\n"
-                    "궤도 변경을 위해 인증 토큰이 필요하다. ls -a 를 사용하라."
-                ),
-            },
-            "/satellite/control/.auth_token": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "=== SAT-X7 인증 토큰 ===\n"
-                    "ORBITAL_SHIFT_X7\n\n"
-                    "unlock ORBITAL_SHIFT_X7 로 궤도 변경 명령을 전송하라."
-                ),
-            },
-            "/satellite/data": {"type": "dir"},
-            "/satellite/data/recon.img": {
-                "type": "file",
-                "content": "정찰 이미지 (바이너리): 이 감시를 막아라.",
-            },
-            "/home": {"type": "dir"},
-            "/home/mission_control": {"type": "dir"},
-            "/home/mission_control/brief.txt": {
-                "type": "file",
-                "content": "임무: 위성 궤도 변경 → 감시망 무력화.",
-            },
-        },
-        "flavor": "하늘 위의 눈을 멀게 하라.",
-    },
-
-    14: {
-        "title":      "STAGE 14 — 최후의 보루: 효민 코어",
-        "desc":       "효민 우주의 핵심 서버. 세 파편을 모아 최후의 문을 열어라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 신화급",
-        "goal":       "sector_a, sector_b, sector_c 의 파편을 모두 찾아 최종 키를 조합하라.",
-        "answer_hash": hashlib.sha256("HYOMIN_CORE_FINAL".encode()).hexdigest(),
-        "hint_1": "`/hyomin/sector_a/`, `sector_b/`, `sector_c/` 를 차례로 탐색하라.",
-        "hint_2": "각 섹터의 `.fragment_*` 숨김 파일에서 파편을 수집하라.",
-        "hint_3": "최종 키: `HYOMIN_CORE_FINAL` — `unlock HYOMIN_CORE_FINAL`",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/hyomin": {"type": "dir"},
-            "/hyomin/WELCOME.txt": {
-                "type": "file",
-                "content": (
-                    "=== 효민 코어 — 최후의 보루 ===\n\n"
-                    "14번째 스테이지. 마지막 시험.\n\n"
-                    "세 섹터에 코드 파편이 분산되어 있다:\n"
-                    "  /hyomin/sector_a/ → 파편 1\n"
-                    "  /hyomin/sector_b/ → 파편 2\n"
-                    "  /hyomin/sector_c/ → 파편 3\n\n"
-                    "세 파편을 모아 최종 키를 완성하라."
-                ),
-            },
-            "/hyomin/sector_a": {"type": "dir"},
-            "/hyomin/sector_a/decoy.txt": {"type": "file", "content": "섹터 A: ls -a 로 숨김 파일을 확인하라."},
-            "/hyomin/sector_a/.fragment_a": {
-                "type": "file",
-                "hidden": True,
-                "content": "파편 1/3: HYOMIN\n다음: /hyomin/sector_b/",
-            },
-            "/hyomin/sector_b": {"type": "dir"},
-            "/hyomin/sector_b/decoy.txt": {"type": "file", "content": "섹터 B: 더 깊이."},
-            "/hyomin/sector_b/.fragment_b": {
-                "type": "file",
-                "hidden": True,
-                "content": "파편 2/3: CORE\n다음: /hyomin/sector_c/",
-            },
-            "/hyomin/sector_c": {"type": "dir"},
-            "/hyomin/sector_c/final_door.txt": {
-                "type": "file",
-                "content": "마지막 문. 숨겨진 파편을 찾아 세 조각을 합쳐라.",
-            },
-            "/hyomin/sector_c/.fragment_c": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "파편 3/3: FINAL\n\n"
-                    "최종 키: HYOMIN_CORE_FINAL\n"
-                    "unlock HYOMIN_CORE_FINAL 을 입력하라."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/creator": {"type": "dir"},
-            "/home/creator/message.txt": {
-                "type": "file",
-                "content": (
-                    "여기까지 왔다.\n\n"
-                    "1단계부터 20단계까지.\n"
-                    "너는 이 우주의 진정한 레전드다.\n\n"
-                    "마지막 문을 열어라.\n"
-                    "— 효민 우주의 창조자"
-                ),
-            },
-        },
-        "flavor": "효민 우주의 심장. 14스테이지를 클리어한 자만이 진정한 레전드다.",
-    },
-
-    15: {
-        "title":      "STAGE 15 — 바이러스 제로데이",
-        "desc":       "핵발전소 제어망에 바이러스가 침투했다. 소스 코드에서 멜웨어 시그니처를 추출해 무력화 명령을 실행하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 전설",
-        "goal":       "바이러스 시그니처를 조합해 `unlock [시그니처]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("VXKILL_CORE_ZERO".encode()).hexdigest(),
-        "hint_1": "`/npp/virus/` 내부를 탐색하라. 코드 파일을 `cat` 으로 열어봐라.",
-        "hint_2": "`signature_a.bin` 과 `signature_b.bin` 에서 [ ] 안의 텍스트를 합쳐라.",
-        "hint_3": "형식: `VXKILL_CORE_ZERO` — 세 조각을 언더바로 연결.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/npp": {"type": "dir"},
-            "/npp/ALERT.txt": {
-                "type": "file",
-                "content": (
-                    "⚠️  NPP EMERGENCY ALERT  ⚠️\n\n"
-                    "핵발전소 제어 시스템에 바이러스 감지.\n"
-                    "냉각수 제어가 비정상 작동 중.\n\n"
-                    "바이러스 시그니처를 추출해 무력화하라.\n"
-                    "경로: /npp/virus/"
-                ),
-            },
-            "/npp/virus": {"type": "dir"},
-            "/npp/virus/manifest.txt": {
-                "type": "file",
-                "content": (
-                    "바이러스 매니페스트\n"
-                    "────────────────────────────────\n"
-                    "이름: ZERO-DAY-NPP\n"
-                    "타겟: 냉각수 제어 PLC\n"
-                    "시그니처: 3조각으로 분산 인코딩됨\n"
-                    "조각 위치: signature_a, b, c\n"
-                    "무력화 명령: 조각을 언더바로 조합 → unlock 실행"
-                ),
-            },
-            "/npp/virus/signature_a.bin": {
-                "type": "file",
-                "content": (
-                    "시그니처 조각 A\n"
-                    "데이터: [VXKILL]\n"
-                    "체크섬: 0x4A1F\n"
-                    "다음: signature_b.bin"
-                ),
-            },
-            "/npp/virus/signature_b.bin": {
-                "type": "file",
-                "content": (
-                    "시그니처 조각 B\n"
-                    "데이터: [CORE]\n"
-                    "체크섬: 0xB3D2\n"
-                    "다음: 숨겨진 signature_c"
-                ),
-            },
-            "/npp/virus/.signature_c.bin": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "시그니처 조각 C (기밀)\n"
-                    "데이터: [ZERO]\n"
-                    "체크섬: 0xC8E9\n\n"
-                    "세 조각 조합: VXKILL_CORE_ZERO\n"
-                    "이 명령어로 바이러스를 종료할 수 있다."
-                ),
-            },
-            "/npp/control": {"type": "dir"},
-            "/npp/control/status.log": {
-                "type": "file",
-                "content": (
-                    "냉각수 온도: 2847°C (정상 범위 초과)\n"
-                    "압력: 비정상 급등 중\n"
-                    "자동 정지 장치: 무력화됨\n\n"
-                    "바이러스 무력화 명령을 지금 즉시 실행하라!\n"
-                    "카운트다운: T-00:47:33"
-                ),
-            },
-            "/tmp": {"type": "dir"},
-            "/tmp/.analyst_note": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "보안 분석가 긴급 메모\n\n"
-                    "무력화 코드: VXKILL_CORE_ZERO\n"
-                    "unlock VXKILL_CORE_ZERO 를 실행하라.\n"
-                    "시간이 없다!"
-                ),
-            },
-        },
-        "flavor": "원자로 경보음이 울린다. 디지털 세계가 물리 세계를 위협한다.",
-    },
-
-    16: {
-        "title":      "STAGE 16 — 소셜 엔지니어링",
-        "desc":       "해커가 직원 계정을 탈취하기 위해 피싱 시스템을 구축했다. 내부 통신에서 탈취된 마스터 패스워드를 역추적하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 전설",
-        "goal":       "역추적된 마스터 패스워드를 `unlock [패스워드]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("SOCIAL_HACK_2026".encode()).hexdigest(),
-        "hint_1": "`/phish/inbox/` 의 이메일들을 읽어라.",
-        "hint_2": "`.stolen_creds` 파일에 탈취된 자격증명이 있다.",
-        "hint_3": "마스터 패스워드: `SOCIAL_HACK_2026` — 연도를 포함한 형식.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/phish": {"type": "dir"},
-            "/phish/README.txt": {
-                "type": "file",
-                "content": (
-                    "소셜 엔지니어링 서버 분석 시스템\n\n"
-                    "적의 피싱 인프라에 역침투 성공.\n"
-                    "inbox/ 에서 탈취된 이메일을 분석하라.\n"
-                    "마스터 패스워드를 찾아 해커 계정을 잠가라."
-                ),
-            },
-            "/phish/inbox": {"type": "dir"},
-            "/phish/inbox/mail_001.txt": {
-                "type": "file",
-                "content": (
-                    "보낸 사람: ceo@hyomin-corp.kr\n"
-                    "제목: 긴급 - 시스템 점검\n\n"
-                    "IT팀장님, 임시 패스워드 변경 필요합니다.\n"
-                    "마스터 패스워드 파일을 .stolen_creds 에 저장하세요.\n"
-                    "— CEO"
-                ),
-            },
-            "/phish/inbox/mail_002.txt": {
-                "type": "file",
-                "content": (
-                    "보낸 사람: attacker@darkweb.onion\n"
-                    "제목: [피싱] 계정 탈취 성공\n\n"
-                    "타겟: hyomin-corp\n"
-                    "방법: 소셜 엔지니어링 2026\n"
-                    "상태: 마스터 패스워드 획득 완료\n"
-                    "저장 위치: /phish/inbox/.stolen_creds\n"
-                ),
-            },
-            "/phish/inbox/.stolen_creds": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "=== 탈취된 자격증명 ===\n\n"
-                    "사용자: admin@hyomin-corp.kr\n"
-                    "마스터 패스워드: SOCIAL_HACK_2026\n\n"
-                    "unlock SOCIAL_HACK_2026 으로 해커 계정을 잠가라."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/analyst": {"type": "dir"},
-            "/home/analyst/report.txt": {
-                "type": "file",
-                "content": (
-                    "소셜 엔지니어링 분석 보고서\n\n"
-                    "공격자는 피싱 이메일을 통해 마스터 패스워드를 탈취했다.\n"
-                    "탈취된 자격증명은 inbox 디렉토리의 숨김 파일에 있다.\n"
-                    "`ls -a` 와 `cat` 명령어로 분석하라."
-                ),
-            },
-        },
-        "flavor": "사람이 가장 큰 보안 취약점이다. 신뢰가 무기가 된다.",
-    },
-
-    17: {
-        "title":      "STAGE 17 — 블록체인 포크 공격",
-        "desc":       "악의적인 노드가 블록체인을 포크해 자산을 이중 지출하고 있다. 악성 노드의 비밀 키를 탈취해 공격을 차단하라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 레전드",
-        "goal":       "악성 노드의 비밀 키를 찾아 `unlock [키]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("FORK_ATTACK_51PCT".encode()).hexdigest(),
-        "hint_1": "`/chain/nodes/` 에서 악성 노드를 찾아라.",
-        "hint_2": "`.malicious_node/private_key.dat` 에 비밀 키가 있다.",
-        "hint_3": "키 형식: `FORK_ATTACK_51PCT` — 51% 공격을 의미한다.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/chain": {"type": "dir"},
-            "/chain/STATUS.txt": {
-                "type": "file",
-                "content": (
-                    "블록체인 네트워크 상태\n\n"
-                    "정상 노드: 48%\n"
-                    "악성 노드: 51% ← 공격 진행 중\n"
-                    "이중 지출 감지: 예\n\n"
-                    "악성 노드를 차단하려면 비밀 키가 필요하다.\n"
-                    "경로: /chain/nodes/"
-                ),
-            },
-            "/chain/nodes": {"type": "dir"},
-            "/chain/nodes/node_alpha.dat": {
-                "type": "file",
-                "content": "정상 노드 ALPHA: 해시율 12% — 정상 작동",
-            },
-            "/chain/nodes/node_beta.dat": {
-                "type": "file",
-                "content": "정상 노드 BETA: 해시율 18% — 정상 작동",
-            },
-            "/chain/nodes/node_gamma.dat": {
-                "type": "file",
-                "content": "정상 노드 GAMMA: 해시율 18% — 정상 작동",
-            },
-            "/chain/nodes/.malicious_node": {"type": "dir"},
-            "/chain/nodes/.malicious_node/info.txt": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "악성 노드 정보\n"
-                    "해시율: 51% (인위적 증폭)\n"
-                    "목적: 51% 공격 / 이중 지출\n"
-                    "비밀 키는 같은 디렉토리 내 private_key.dat 에 있다."
-                ),
-            },
-            "/chain/nodes/.malicious_node/private_key.dat": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "악성 노드 비밀 키\n"
-                    "────────────────────────────────\n"
-                    "KEY: FORK_ATTACK_51PCT\n\n"
-                    "이 키로 악성 노드를 강제 종료할 수 있다.\n"
-                    "unlock FORK_ATTACK_51PCT 를 실행하라."
-                ),
-            },
-            "/chain/ledger": {"type": "dir"},
-            "/chain/ledger/double_spend.log": {
-                "type": "file",
-                "content": (
-                    "이중 지출 트랜잭션 로그\n"
-                    "TX#A001: 500 BTC 이중 지출 감지\n"
-                    "TX#A002: 1200 BTC 이중 지출 감지\n"
-                    "TX#A003: 9000 BTC 이중 지출 시도 중\n\n"
-                    "악성 노드를 차단하면 공격이 무효화됩니다."
-                ),
-            },
-        },
-        "flavor": "탈중앙화의 역설 — 51%가 진실을 지배한다.",
-    },
-
-    18: {
-        "title":      "STAGE 18 — 메모리 포렌식",
-        "desc":       "크래시된 서버의 메모리 덤프에서 범인이 남긴 암호화 키를 복원하라. 조각난 메모리 청크를 분석해야 한다.",
-        "difficulty": "⭐⭐⭐⭐⭐ 레전드+",
-        "goal":       "메모리에서 복원된 키를 `unlock [키]` 로 입력하라.",
-        "answer_hash": hashlib.sha256("MEMDUMP_KEY_0xFF".encode()).hexdigest(),
-        "hint_1": "`/forensic/dump/` 안의 모든 청크를 `cat` 으로 읽어라.",
-        "hint_2": "`grep KEY` 로 핵심 데이터를 찾아라.",
-        "hint_3": "키 형식: `MEMDUMP_KEY_0xFF` — 16진수 접두어 포함.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/forensic": {"type": "dir"},
-            "/forensic/README.txt": {
-                "type": "file",
-                "content": (
-                    "메모리 포렌식 분석 도구 v2.3\n\n"
-                    "크래시된 서버의 RAM 덤프를 분석 중.\n"
-                    "덤프는 32개 청크로 분산됨.\n\n"
-                    "주요 청크: /forensic/dump/\n"
-                    "핵심 데이터는 청크 내 '[KEY]' 태그로 표시됨."
-                ),
-            },
-            "/forensic/dump": {"type": "dir"},
-            "/forensic/dump/chunk_01.mem": {
-                "type": "file",
-                "content": (
-                    "CHUNK 01: 0x00001000-0x00002000\n"
-                    "DATA: 03fa bc12 4400 0000 NORMAL_DATA_SEGMENT\n"
-                    "상태: 정상 (암호화 키 없음)"
-                ),
-            },
-            "/forensic/dump/chunk_08.mem": {
-                "type": "file",
-                "content": (
-                    "CHUNK 08: 0x00008000-0x00009000\n"
-                    "DATA: ff00 3a4b KEY_FRAGMENT_BEGIN\n"
-                    "[KEY] 첫 부분: MEMDUMP\n"
-                    "상태: 핵심 데이터 포함"
-                ),
-            },
-            "/forensic/dump/chunk_16.mem": {
-                "type": "file",
-                "content": (
-                    "CHUNK 16: 0x00010000-0x00011000\n"
-                    "DATA: 88af 0011 cc44 KEY_FRAGMENT_MID\n"
-                    "[KEY] 중간 부분: _KEY\n"
-                    "상태: 핵심 데이터 포함"
-                ),
-            },
-            "/forensic/dump/.chunk_24.mem": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "CHUNK 24 (숨김): 0x00018000-0x00019000\n"
-                    "DATA: 4e6f 7265 KEY_FRAGMENT_END\n"
-                    "[KEY] 마지막 부분: _0xFF\n\n"
-                    "전체 키: MEMDUMP_KEY_0xFF\n"
-                    "unlock MEMDUMP_KEY_0xFF 를 실행하라."
-                ),
-            },
-            "/forensic/report": {"type": "dir"},
-            "/forensic/report/analysis.txt": {
-                "type": "file",
-                "content": (
-                    "메모리 분석 보고서\n\n"
-                    "크래시 원인: 악성 프로세스 주입\n"
-                    "범인 흔적: 암호화 키가 메모리에 잔존\n"
-                    "청크 08, 16, 24에 핵심 데이터 분산\n"
-                    "grep 명령어로 [KEY] 태그를 검색하라."
-                ),
-            },
-        },
-        "flavor": "메모리는 거짓말하지 않는다. 죽은 프로세스도 흔적을 남긴다.",
-    },
-
-    19: {
-        "title":      "STAGE 19 — 우주 인프라 해킹",
-        "desc":       "민간 우주 인프라 회사의 발사 제어 시스템에 침투했다. 로켓 자폭 코드를 비활성화하기 전에 발사를 막아라.",
-        "difficulty": "⭐⭐⭐⭐⭐ 신화",
-        "goal":       "발사 중지 코드를 찾아 `unlock [코드]` 로 즉시 입력하라.",
-        "answer_hash": hashlib.sha256("ABORT_LAUNCH_NOW".encode()).hexdigest(),
-        "hint_1": "`/launch/control/` 을 탐색하라. 발사 절차 파일을 읽어라.",
-        "hint_2": "`.abort_protocol` 파일에 중지 코드가 있다.",
-        "hint_3": "중지 코드: `ABORT_LAUNCH_NOW` — 대문자, 언더바 포함.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/launch": {"type": "dir"},
-            "/launch/COUNTDOWN.txt": {
-                "type": "file",
-                "content": (
-                    "🚀 발사 카운트다운\n\n"
-                    "T-00:04:22 ... T-00:04:21 ...\n\n"
-                    "이 로켓에는 군사 위성이 탑재되어 있다.\n"
-                    "발사되면 전 세계 통신망이 마비된다.\n\n"
-                    "발사 중지 코드를 지금 즉시 입력하라!\n"
-                    "경로: /launch/control/"
-                ),
-            },
-            "/launch/control": {"type": "dir"},
-            "/launch/control/procedures.txt": {
-                "type": "file",
-                "content": (
-                    "발사 절차 문서 v7.2\n\n"
-                    "정상 발사: LAUNCH_AUTHORIZED\n"
-                    "발사 중지: ABORT_LAUNCH_NOW\n"
-                    "비상 자폭: SELF_DESTRUCT_OMEGA\n\n"
-                    "중지 코드는 .abort_protocol 파일에 암호화 보관됨."
-                ),
-            },
-            "/launch/control/.abort_protocol": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "=== 발사 중지 프로토콜 (LEVEL 5 기밀) ===\n\n"
-                    "발사 중지 명령어: ABORT_LAUNCH_NOW\n\n"
-                    "unlock ABORT_LAUNCH_NOW 를 즉시 실행하라.\n"
-                    "지금 당장!"
-                ),
-            },
-            "/launch/payload": {"type": "dir"},
-            "/launch/payload/manifest.dat": {
-                "type": "file",
-                "content": (
-                    "탑재물 매니페스트 (기밀)\n"
-                    "위성: SAT-CTRL-OMEGA\n"
-                    "임무: 전 세계 통신 제어\n"
-                    "발사 허가: 불법 취득\n\n"
-                    "이 발사를 막아라."
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/whistleblower": {"type": "dir"},
-            "/home/whistleblower/.message": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "내부 고발자 메시지\n\n"
-                    "발사 중지 코드: ABORT_LAUNCH_NOW\n"
-                    "이 코드를 사용해 발사를 막아라.\n"
-                    "세상이 너를 기억할 것이다.\n"
-                    "— 익명의 내부 고발자"
-                ),
-            },
-        },
-        "flavor": "T-4분. 하늘이 닫히기 전에 문을 열어라.",
-    },
-
-    20: {
-        "title":      "STAGE 20 — 효민 유니버스의 창조자",
-        "desc":       "최종 스테이지. 효민 유니버스의 뿌리에 닿았다. 모든 것의 시작과 끝, 창조자의 비밀 코드를 해독하라. 이 우주는 네 것이다.",
-        "difficulty": "⭐⭐⭐⭐⭐ 창조자급",
-        "goal":       "창조자의 최종 코드를 찾아 `unlock [코드]` 로 이 우주를 완성하라.",
-        "answer_hash": hashlib.sha256("HYOMIN_IS_GOD_2026".encode()).hexdigest(),
-        "hint_1": "`/genesis/` 를 탐색하라. 창조 기록 파일들을 모두 읽어라.",
-        "hint_2": "세 구역의 조각을 합치면 최종 코드가 된다. `ls -a` 로 숨김 파일을 찾아라.",
-        "hint_3": "최종 코드: `HYOMIN_IS_GOD_2026` — 창조자의 이름, 칭호, 연도를 언더바로.",
-        "filesystem": {
-            "/": {"type": "dir"},
-            "/genesis": {"type": "dir"},
-            "/genesis/ORIGIN.txt": {
-                "type": "file",
-                "content": (
-                    "=== 효민 유니버스 창세기 ===\n\n"
-                    "2026년, 이 세계는 창조자 효민에 의해 탄생했다.\n"
-                    "1번 스테이지부터 20번 스테이지까지.\n"
-                    "서버를 해킹하고, 위성을 무력화하고,\n"
-                    "AI를 정지시키고, 로켓을 멈추고,\n"
-                    "마침내 여기까지 도달한 자.\n\n"
-                    "너는 이제 이 우주의 일부다.\n\n"
-                    "최종 코드는 세 조각으로 나뉘어져 있다.\n"
-                    "genesis/alpha, beta, gamma 를 탐색하라."
-                ),
-            },
-            "/genesis/alpha": {"type": "dir"},
-            "/genesis/alpha/readme.txt": {
-                "type": "file",
-                "content": "Alpha 구역: 창조자의 이름. 숨김 파일을 찾아라.",
-            },
-            "/genesis/alpha/.name": {
-                "type": "file",
-                "hidden": True,
-                "content": "조각 1/3: HYOMIN",
-            },
-            "/genesis/beta": {"type": "dir"},
-            "/genesis/beta/readme.txt": {
-                "type": "file",
-                "content": "Beta 구역: 창조자의 칭호. ls -a 를 사용하라.",
-            },
-            "/genesis/beta/.title": {
-                "type": "file",
-                "hidden": True,
-                "content": "조각 2/3: IS_GOD",
-            },
-            "/genesis/gamma": {"type": "dir"},
-            "/genesis/gamma/readme.txt": {
-                "type": "file",
-                "content": "Gamma 구역: 창조의 연도. 마지막 조각이 여기 있다.",
-            },
-            "/genesis/gamma/.year": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "조각 3/3: 2026\n\n"
-                    "최종 코드: HYOMIN_IS_GOD_2026\n"
-                    "unlock HYOMIN_IS_GOD_2026 을 입력하라.\n\n"
-                    "1단계부터 20단계까지 완주한 당신은\n"
-                    "효민 유니버스의 진정한 창조자입니다.\n"
-                    "— 효민"
-                ),
-            },
-            "/genesis/.final_truth": {
-                "type": "file",
-                "hidden": True,
-                "content": (
-                    "=== 최종 진실 ===\n\n"
-                    "이 세계를 창조한 것은 효민이다.\n"
-                    "그리고 이 세계를 완성한 것은 너다.\n\n"
-                    "HYOMIN_IS_GOD_2026\n\n"
-                    "수고했다. 진짜로.\n"
-                    "— 효민 우주의 창조자"
-                ),
-            },
-            "/home": {"type": "dir"},
-            "/home/god": {"type": "dir"},
-            "/home/god/message.txt": {
-                "type": "file",
-                "content": (
-                    "20개의 문을 통과한 자에게.\n\n"
-                    "이 메시지를 읽고 있다면\n"
-                    "너는 이미 이 우주를 지배하고 있다.\n\n"
-                    "최종 코드를 입력하고 전설이 되어라.\n"
-                    "— 창조자"
-                ),
-            },
-        },
-        "flavor": "이것이 끝이자 시작이다. 20개의 문을 연 자만이 신의 이름을 안다.",
-    },
-}
-
-# ══════════════════════════════════════════════════════════
-#  스테이지별 난이도 색상 (20개)
-# ══════════════════════════════════════════════════════════
-DIFF_COLORS = {
-    1:  "#39ff14",
-    2:  "#7aff4a",
-    3:  "#ffd700",
-    4:  "#ff8c00",
-    5:  "#ff3333",
-    6:  "#ff6666",
-    7:  "#cc44ff",
-    8:  "#ff44cc",
-    9:  "#00ccff",
-    10: "#ffffff",
-    11: "#ff99ff",
-    12: "#ff5577",
-    13: "#00eeff",
-    14: "#ffd700",
-    15: "#ff00ff",
-    16: "#00ff99",
-    17: "#ff6600",
-    18: "#6600ff",
-    19: "#ff0055",
-    20: "#ffd700",
-}
-
-# ══════════════════════════════════════════════════════════
-#  헬퍼 함수
-# ══════════════════════════════════════════════════════════
-
-def rot13(text):
-    result = []
-    for c in text:
-        if 'A' <= c <= 'Z':
-            result.append(chr((ord(c) - ord('A') + 13) % 26 + ord('A')))
-        elif 'a' <= c <= 'z':
-            result.append(chr((ord(c) - ord('a') + 13) % 26 + ord('a')))
-        else:
-            result.append(c)
-    return ''.join(result)
-
-
-def get_dir_children(fs, path):
-    if path != '/':
-        path = path.rstrip('/')
-    children = []
-    for key in fs:
-        if key == path:
-            continue
-        parent = key.rsplit('/', 1)[0] or '/'
-        if parent == path:
-            name = key.rsplit('/', 1)[-1]
-            children.append((name, fs[key]))
-    return children
-
-
-def resolve_path(current, target):
-    if target == '/':
-        return '/'
-    if target.startswith('/'):
-        return target.rstrip('/') or '/'
-    if target == '..':
-        if current == '/':
-            return '/'
-        return current.rsplit('/', 1)[0] or '/'
-    if target == '.':
-        return current
-    if current == '/':
-        return '/' + target
-    return current + '/' + target
-
-
-def grep_in_file(content, pattern):
-    lines = content.split('\n')
-    matches = []
-    for i, line in enumerate(lines, 1):
-        if pattern.lower() in line.lower():
-            matches.append(f"  {i}: {line}")
-    return matches
-
-
-def build_tree(fs, path, show_hidden=False, prefix="", depth=0):
-    if depth > 4:
-        return ["  ... (더 깊은 구조 생략)"]
-    children = get_dir_children(fs, path)
-    lines = []
-    visible = [
-        (n, info) for n, info in sorted(children)
-        if show_hidden or not info.get("hidden", False)
-    ]
-    for i, (name, info) in enumerate(visible):
-        is_last = (i == len(visible) - 1)
-        connector = "└── " if is_last else "├── "
-        extension = "    " if is_last else "│   "
-        if info["type"] == "dir":
-            lines.append(f"{prefix}{connector}{name}/")
-            child_path = (
-                (path.rstrip('/') + '/' + name) if path != '/' else ('/' + name)
-            )
-            lines.extend(
-                build_tree(fs, child_path, show_hidden, prefix + extension, depth + 1)
-            )
-        else:
-            hidden_mark = " [숨김]" if info.get("hidden") else ""
-            lines.append(f"{prefix}{connector}{name}{hidden_mark}")
-    return lines
-
-
-def init_terminal(stage_num):
-    st.session_state.terminal = {
-        "stage":      stage_num,
-        "cwd":        "/",
-        "history":    [],
-        "output":     [],
-        "hint_used":  0,
-        "solved":     False,
-        "start_time": time.time(),
-        "cmd_count":  0,
-        "at_select":  False,
-    }
-
-
-def add_output(lines):
-    t = st.session_state.terminal
-    for line in lines:
-        t["output"].append(line)
-    if len(t["output"]) > 300:
-        t["output"] = t["output"][-300:]
-
-
-# ══════════════════════════════════════════════════════════
-#  명령어 처리
-# ══════════════════════════════════════════════════════════
-
-def process_command(cmd_raw, stage_data):
-    fs  = stage_data["filesystem"]
-    t   = st.session_state.terminal
-    cwd = t["cwd"]
-
-    parts = cmd_raw.strip().split(None, 1)
-    if not parts:
-        return []
-    cmd  = parts[0].lower()
-    args = parts[1] if len(parts) > 1 else ""
-
-    t["cmd_count"] += 1
-
-    # ── ls / ls -a ──────────────────────────────
-    if cmd == "ls":
-        show_hidden = "-a" in args or "-la" in args or "-al" in args
-        children = get_dir_children(fs, cwd)
-        if not children:
-            return ["(비어있음)"]
-        out = []
-        for name, info in sorted(children):
-            if info.get("hidden", False) and not show_hidden:
-                continue
-            if info["type"] == "dir":
-                out.append(f"[DIR] {name}/")
-            else:
-                out.append(name)
-        return out if out else ["(표시할 항목 없음 — `-a` 옵션으로 숨김 파일 확인)"]
-
-    # ── cd ───────────────────────────────────────
-    elif cmd == "cd":
-        target   = args.strip() or "/"
-        new_path = resolve_path(cwd, target)
-        if new_path in fs and fs[new_path]["type"] == "dir":
-            t["cwd"] = new_path
-            return []
-        return [f"bash: cd: {target}: No such file or directory"]
-
-    # ── cat ─────────────────────────────────────
-    elif cmd == "cat":
-        if not args:
-            return ["사용법: cat [파일명]"]
-        target = resolve_path(cwd, args.strip())
-        if target in fs:
-            info = fs[target]
-            if info["type"] == "dir":
-                return [f"cat: {args}: Is a directory"]
-            return info["content"].split("\n")
-        return [f"cat: {args}: No such file or directory"]
-
-    # ── pwd ──────────────────────────────────────
-    elif cmd == "pwd":
-        return [cwd]
-
-    # ── whoami ──────────────────────────────────
-    elif cmd == "whoami":
-        return [
-            "ghost_operator",
-            "uid=1337(ghost) gid=1337(shadow) groups=1337(shadow),0(root)",
-            "권한: ULTRA — 모든 시스템 접근 가능",
-        ]
-
-    # ── echo ─────────────────────────────────────
-    elif cmd == "echo":
-        return [args if args else ""]
-
-    # ── grep ─────────────────────────────────────
-    elif cmd == "grep":
-        grep_parts = args.strip().split(None, 1)
-        if len(grep_parts) < 2:
-            return ["사용법: grep [검색어] [파일]"]
-        pattern, filename = grep_parts[0], grep_parts[1]
-        target = resolve_path(cwd, filename.strip())
-        if target not in fs:
-            return [f"grep: {filename}: No such file or directory"]
-        if fs[target]["type"] == "dir":
-            return [f"grep: {filename}: Is a directory"]
-        matches = grep_in_file(fs[target]["content"], pattern)
-        if not matches:
-            return [f"('{pattern}' 에 해당하는 내용 없음)"]
-        return [f"검색 결과 '{pattern}' in {filename}:"] + matches
-
-    # ── find ─────────────────────────────────────
-    elif cmd == "find":
-        find_args   = args.strip().split() if args else ["."]
-        search_path = cwd
-        name_filter = None
-        show_all    = False
-
-        i = 0
-        while i < len(find_args):
-            if find_args[i] == "-name" and i + 1 < len(find_args):
-                name_filter = find_args[i + 1].replace("*", "")
-                i += 2
-            elif find_args[i] == "-a":
-                show_all = True
-                i += 1
-            else:
-                p = resolve_path(cwd, find_args[i])
-                if p in fs:
-                    search_path = p
-                i += 1
-
-        results = []
-        for key in sorted(fs.keys()):
-            fname     = key.rsplit('/', 1)[-1]
-            is_hidden = fs[key].get("hidden", False)
-            if not show_all and is_hidden:
-                continue
-            if name_filter and name_filter not in fname:
-                continue
-            if search_path == '/':
-                results.append(key)
-            elif key.startswith(search_path + '/') or key == search_path:
-                results.append(key)
-
-        if not results:
-            return ["(검색 결과 없음)"]
-        out = [f"find 결과 ({len(results)}개):"]
-        out.extend(results)
-        return out
-
-    # ── tree ─────────────────────────────────────
-    elif cmd == "tree":
-        show_hidden = "-a" in args
-        lines = [cwd]
-        lines.extend(build_tree(fs, cwd, show_hidden))
-        return lines
-
-    # ── decode (base64) ──────────────────────────
-    elif cmd == "decode":
-        if not args:
-            return ["사용법: decode [base64문자열]"]
-        try:
-            decoded = base64.b64decode(args.strip()).decode("utf-8")
-            return [f"디코딩 결과: {decoded}"]
-        except Exception:
-            return ["오류: 유효한 base64 문자열이 아닙니다."]
-
-    # ── rot13 ────────────────────────────────────
-    elif cmd == "rot13":
-        if not args:
-            return ["사용법: rot13 [문자열]"]
-        return [f"ROT13 결과: {rot13(args.strip())}"]
-
-    # ── hint ─────────────────────────────────────
-    elif cmd == "hint":
-        used  = t["hint_used"]
-        hints = [
-            stage_data.get("hint_1", ""),
-            stage_data.get("hint_2", ""),
-            stage_data.get("hint_3", ""),
-        ]
-        available = [h for h in hints if h]
-        if used >= len(available):
-            return ["더 이상 힌트가 없습니다."]
-        t["hint_used"] += 1
-        return [
-            f"[HINT] 힌트 {used + 1}: {available[used]}",
-            f"       (남은 힌트: {len(available) - t['hint_used']}개)",
-        ]
-
-    # ── unlock ───────────────────────────────────
-    elif cmd == "unlock":
-        answer        = args.strip()
-        expected_hash = stage_data["answer_hash"]
-        if hashlib.sha256(answer.encode()).hexdigest() == expected_hash:
-            t["solved"] = True
-            elapsed     = int(time.time() - t["start_time"])
-            mins, secs  = divmod(elapsed, 60)
-            stars       = "⭐" * max(0, 5 - t["hint_used"])
-            return [
-                "╔══════════════════════════════════════════╗",
-                "║          ACCESS GRANTED ✅               ║",
-                "╚══════════════════════════════════════════╝",
-                "",
-                f"  클리어 시간:  {mins:02d}분 {secs:02d}초",
-                f"  명령어 수:    {t['cmd_count']}개",
-                f"  힌트 사용:    {t['hint_used']}개",
-                f"  평가:         {stars if stars else '힌트 남용'}",
-                "",
-                "  다음 스테이지로 진행할 수 있습니다.",
-                "═" * 44,
-            ]
-        else:
-            return [
-                "╔══════════════════════════════════════╗",
-                "║   ACCESS DENIED ❌  비밀번호 오류    ║",
-                "╚══════════════════════════════════════╝",
-                "  다시 시도하거나 `hint` 를 사용하라.",
-            ]
-
-    # ── clear ────────────────────────────────────
-    elif cmd == "clear":
-        t["output"] = []
-        return []
-
-    # ── history ──────────────────────────────────
-    elif cmd == "history":
-        hist = t["history"]
-        if not hist:
-            return ["(명령어 히스토리 없음)"]
-        out = ["최근 명령어 히스토리:"]
-        for i, h in enumerate(hist[-20:], 1):
-            out.append(f"  {i:3d}  {h}")
-        return out
-
-    # ── help / man ───────────────────────────────
-    elif cmd in ("help", "man"):
-        return [
-            "╔══ HYOMIN SHELL — 명령어 매뉴얼 ══════════════╗",
-            "║  ls [-a]              파일 목록 (숨김 포함)  ║",
-            "║  cd [경로]            디렉토리 이동          ║",
-            "║  cat [파일]           파일 내용 출력         ║",
-            "║  pwd                  현재 경로              ║",
-            "║  whoami               현재 사용자 정보       ║",
-            "║  echo [텍스트]        텍스트 출력            ║",
-            "║  find [-name 패턴]    파일 검색              ║",
-            "║  grep [패턴] [파일]   내용 검색              ║",
-            "║  tree [-a]            디렉토리 시각화        ║",
-            "║  decode [b64]         base64 디코딩          ║",
-            "║  rot13 [str]          ROT13 암복호화         ║",
-            "║  history              명령어 히스토리        ║",
-            "║  hint                 힌트 (최대 3개)        ║",
-            "║  unlock [pw]          잠금 해제 시도         ║",
-            "║  clear                화면 지우기            ║",
-            "╚═══════════════════════════════════════════════╝",
-        ]
-
-    # ── 알 수 없는 명령어 ─────────────────────────
-    else:
-        return [
-            f"bash: {cmd}: command not found",
-            "  `help` 로 사용 가능한 명령어 확인",
-        ]
-
-
-# ══════════════════════════════════════════════════════════
-#  CSS
-# ══════════════════════════════════════════════════════════
-
-TERMINAL_CSS = """
+import streamlit.components.v1 as components
+
+GAME_HTML = r"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>인베스트마블 ULTRA MAX</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Black+Han+Sans&family=Orbitron:wght@600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap');
+:root{
+  --bg:#03060e;--bg2:#06091a;--bg3:#0a1028;--bg4:#0d1535;
+  --gold:#ffd700;--gold2:#ffb800;--gold3:#ff8c00;
+  --green:#00ff88;--green2:#10d96e;--green3:#00c965;
+  --red:#ff3355;--red2:#ff4560;
+  --blue:#4dabf7;--blue2:#228be6;
+  --purple:#c084fc;--purple2:#a855f7;
+  --cyan:#22d3ee;--cyan2:#06b6d4;
+  --orange:#fb923c;--orange2:#f97316;
+  --pink:#f472b6;
+  --text:#e8f0ff;--text2:#6b7fa8;--text3:#3d4f6e;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.12);
+  --glow-gold:rgba(255,215,0,0.3);
+  --glow-green:rgba(0,255,136,0.25);
+  --glow-red:rgba(255,51,85,0.3);
+  --glow-cyan:rgba(34,211,238,0.25);
+  --r:14px;--r2:10px;--r3:8px;
+  --shadow:0 20px 60px rgba(0,0,0,0.8);
+  --transition:all 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  font-family:'Noto Sans KR',sans-serif;
+  background:var(--bg);color:var(--text);
+  overflow-x:hidden;min-height:100vh;
+  user-select:none;
+}
 
-.terminal-outer {
-    background: #020c02;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 0 60px rgba(0,255,65,0.15), 0 24px 80px rgba(0,0,0,0.8);
-    font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
-    margin: 0 0 16px 0;
-    border: 1px solid #0f3a0f;
-    position: relative;
+/* ===== AMBIENT BG ===== */
+.ambient{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%,rgba(120,0,220,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 60% at 90% 100%,rgba(0,80,200,.07) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 40% at 50% 50%,rgba(255,215,0,.02) 0%,transparent 70%);
 }
-.terminal-outer::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: repeating-linear-gradient(
-        0deg, transparent, transparent 2px,
-        rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
-    );
-    pointer-events: none;
-    z-index: 10;
+.grid-bg{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:40px 40px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
 }
-.term-titlebar {
-    background: #0a1a0a;
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid #86efac;
+
+/* ===== SCANLINE ===== */
+@keyframes scan{0%{transform:translateY(-100%);}100%{transform:translateY(100vh);}}
+.scanline{
+  position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;
 }
-.dot { width:12px; height:12px; border-radius:50%; }
-.dot-r { background:#ff5f57; box-shadow: 0 0 6px #ff5f57; }
-.dot-y { background:#febc2e; box-shadow: 0 0 6px #febc2e; }
-.dot-g { background:#28c840; box-shadow: 0 0 6px #28c840; }
-.term-title { color: #3fb950; font-size:12px; margin-left:8px; letter-spacing: 1px; }
-.term-body {
-    background: #020c02;
-    padding: 16px 20px;
-    min-height: 360px;
-    max-height: 480px;
-    overflow-y: auto;
-    font-size: 13px;
-    line-height: 1.7;
-    scrollbar-width: thin;
-    scrollbar-color: #86efac #020c02;
+.scanline::after{
+  content:'';position:absolute;left:0;right:0;height:2px;
+  background:linear-gradient(transparent,rgba(34,211,238,.04),transparent);
+  animation:scan 8s linear infinite;
 }
-.term-body::-webkit-scrollbar { width: 6px; }
-.term-body::-webkit-scrollbar-track { background: #020c02; }
-.term-body::-webkit-scrollbar-thumb { background: #86efac; border-radius: 3px; }
-.term-line { color: #b8ffb8; white-space: pre-wrap; word-break: break-all; margin: 0; }
-.term-line.green  { color: #39ff14; text-shadow: 0 0 8px rgba(57,255,20,0.4); }
-.term-line.yellow { color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.3); }
-.term-line.red    { color: #ff3333; text-shadow: 0 0 8px rgba(255,51,51,0.4); }
-.term-line.blue   { color: #00bfff; }
-.term-line.cyan   { color: #00ffff; text-shadow: 0 0 8px rgba(0,255,255,0.3); }
-.term-line.dim    { color: #2a5c2a; }
-.term-line.dir    { color: #00bfff; font-weight: bold; }
-.term-line.hint   { color: #ffd700; background: rgba(255,215,0,0.05); padding: 2px 4px; border-left: 2px solid #ffd700; }
-.term-line.prompt { color: #b8ffb8; }
-.term-line.border { color: #39ff14; text-shadow: 0 0 4px rgba(57,255,20,0.2); }
-.term-prompt-user { color: #39ff14; font-weight: bold; }
-.term-prompt-path { color: #ffd700; }
-.term-prompt-sym  { color: #ff3333; }
-.blink-cursor {
-    display: inline-block;
-    width: 9px; height: 16px;
-    background: #39ff14;
-    animation: blink 1s step-end infinite;
-    vertical-align: middle;
-    margin-left: 2px;
-    box-shadow: 0 0 8px rgba(57,255,20,0.8);
+
+/* ===== PARTICLES ===== */
+#particles{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.pt{
+  position:absolute;width:2px;height:2px;border-radius:50%;
+  background:rgba(255,215,0,.4);
+  animation:ptf var(--dur,8s) ease-in-out infinite var(--delay,0s);
 }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-@keyframes glitch1 {
-    0%,100% { clip-path: inset(0 0 95% 0); transform: translate(-2px); }
-    20% { clip-path: inset(30% 0 50% 0); transform: translate(2px); }
-    40% { clip-path: inset(70% 0 10% 0); transform: translate(-1px); }
+@keyframes ptf{
+  0%{transform:translate(0,0);opacity:0;}
+  10%{opacity:1;}
+  90%{opacity:.5;}
+  100%{transform:translate(var(--tx,20px),var(--ty,-80px));opacity:0;}
 }
-@keyframes glitch2 {
-    0%,100% { clip-path: inset(80% 0 0 0); transform: translate(2px); }
-    30% { clip-path: inset(10% 0 70% 0); transform: translate(-2px); }
-    60% { clip-path: inset(50% 0 30% 0); transform: translate(1px); }
+
+/* ===== FIREWORKS ===== */
+#fw{position:fixed;inset:0;pointer-events:none;z-index:490;overflow:hidden;}
+@keyframes fwp{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0;}}
+@keyframes fwt{0%{transform:translateY(0);opacity:1;}100%{transform:translateY(-200px);opacity:0;}}
+
+/* ========================================
+   CHARACTER SELECT
+   ======================================== */
+#cs{
+  position:fixed;inset:0;z-index:200;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--bg);
+  overflow-y:auto;padding:20px 16px 40px;
 }
-.glitch-text {
-    position: relative;
-    color: #39ff14;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-shadow: 0 0 20px rgba(57,255,20,0.6);
+.cs-logo{margin-bottom:4px;text-align:center;}
+.cs-logo .globe{font-size:2.8rem;animation:globeSpin 8s linear infinite;}
+@keyframes globeSpin{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(360deg);}}
+.cs-title{
+  font-family:'Black Han Sans',sans-serif;
+  font-size:clamp(2rem,5vw,3.2rem);
+  background:linear-gradient(135deg,#ffd700 0%,#ff8c00 40%,#ff3355 80%,#c084fc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:2px;text-align:center;
+  filter:drop-shadow(0 0 20px rgba(255,215,0,.3));
 }
-.glitch-text::before,
-.glitch-text::after {
-    content: attr(data-text);
-    position: absolute;
-    left: 0; top: 0; width: 100%;
+.cs-sub{
+  color:var(--text2);font-size:.72rem;letter-spacing:6px;
+  margin:6px 0 28px;text-align:center;
+  font-family:'Rajdhani',sans-serif;font-weight:600;
 }
-.glitch-text::before {
-    color: #ff003c;
-    animation: glitch1 3s infinite linear alternate;
-    opacity: 0.6;
+.section-label{
+  font-size:.68rem;letter-spacing:4px;color:var(--text3);
+  font-family:'Rajdhani',sans-serif;font-weight:600;
+  margin-bottom:12px;text-align:center;
+  text-transform:uppercase;
 }
-.glitch-text::after {
-    color: #00ffff;
-    animation: glitch2 2s infinite linear alternate;
-    opacity: 0.6;
+.cgrid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:10px;max-width:740px;width:100%;margin-bottom:28px;
 }
-.stage-card {
-    background: linear-gradient(135deg, #020c02 0%, #041804 100%);
-    border: 1px solid #0f3a0f;
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin-bottom: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
+.ccard{
+  background:rgba(255,255,255,.03);
+  border:1.5px solid rgba(255,255,255,.07);
+  border-radius:var(--r);padding:16px 10px 14px;
+  cursor:pointer;transition:var(--transition);text-align:center;
+  position:relative;overflow:hidden;
 }
-.stage-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%;
-    width: 100%; height: 2px;
-    background: linear-gradient(90deg, transparent, #39ff14, transparent);
-    animation: scan 4s linear infinite;
+.ccard::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,215,0,.06),transparent 70%);
+  opacity:0;transition:opacity .3s;
 }
-@keyframes scan { 0%{left:-100%} 100%{left:100%} }
-.stage-card:hover {
-    border-color: #39ff14;
-    box-shadow: 0 0 20px rgba(57,255,20,0.2);
+.ccard:hover::before,.ccard.sel::before{opacity:1;}
+.ccard:hover,.ccard.sel{
+  transform:translateY(-5px);
+  border-color:var(--gold);
+  box-shadow:0 0 0 1px rgba(255,215,0,.1),0 12px 40px rgba(0,0,0,.5),0 0 30px rgba(255,215,0,.15);
 }
-.stage-title { color: #39ff14; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
-.stage-desc  { color: #5a9a5a; font-size: 0.82rem; margin: 4px 0 8px; }
-.stage-meta  { color: #2a5c2a; font-size: 0.78rem; }
-.clear-badge {
-    background: rgba(57,255,20,0.1);
-    border: 1px solid #39ff14;
-    color: #39ff14;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    float: right;
-    text-shadow: 0 0 8px rgba(57,255,20,0.4);
+.ccard.sel{background:rgba(255,215,0,.04);}
+.ccard .em{font-size:2.5rem;display:block;margin-bottom:8px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));}
+.ccard .cn{font-weight:700;font-size:.88rem;margin-bottom:2px;}
+.ccard .ct{font-size:.68rem;color:var(--text2);margin-bottom:6px;}
+.ccard .cb{
+  font-size:.66rem;color:var(--cyan);font-weight:700;
+  background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.2);
+  border-radius:20px;padding:3px 8px;display:inline-block;
 }
-.flavor-text {
-    color: #2a6a2a;
-    font-style: italic;
-    font-size: 0.76rem;
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid #0f2a0f;
+.ccard .cstat{
+  display:flex;gap:4px;justify-content:center;margin-top:8px;
 }
-.status-bar {
-    background: #030f03;
-    border: 1px solid #0f3a0f;
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    margin-bottom: 8px;
+.cstat-bar{height:3px;border-radius:2px;flex:1;background:rgba(255,255,255,.06);}
+.cstat-bar .fill{height:100%;border-radius:2px;transition:width .5s .2s;}
+
+/* TURN + DIFF SELECTORS */
+.select-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;}
+.pill-btn{
+  padding:8px 18px;border-radius:22px;
+  border:1.5px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  color:var(--text2);cursor:pointer;
+  font-size:.8rem;font-weight:700;
+  font-family:'Rajdhani',sans-serif;
+  transition:var(--transition);letter-spacing:1px;
 }
-.status-item { color: #5a9a5a; }
-.status-val  { color: #39ff14; font-weight: bold; }
-.status-warn { color: #ff3333; animation: pulse 1s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.pill-btn:hover,.pill-btn.a{
+  border-color:var(--cyan);color:var(--cyan);
+  background:rgba(34,211,238,.08);
+  box-shadow:0 0 16px rgba(34,211,238,.15);
+}
+
+/* DIFF PILLS */
+.diff-btn{
+  padding:8px 18px;border-radius:22px;
+  border:1.5px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  color:var(--text2);cursor:pointer;
+  font-size:.78rem;font-weight:700;
+  font-family:'Rajdhani',sans-serif;
+  transition:var(--transition);letter-spacing:1px;
+}
+.diff-btn.a-easy{border-color:var(--green2);color:var(--green2);background:rgba(16,217,110,.06);}
+.diff-btn.a-normal{border-color:var(--cyan);color:var(--cyan);background:rgba(34,211,238,.06);}
+.diff-btn.a-hard{border-color:var(--red2);color:var(--red2);background:rgba(255,69,96,.06);}
+
+.start-btn{
+  margin-top:22px;padding:14px 56px;
+  font-size:1.05rem;font-weight:900;
+  font-family:'Black Han Sans',sans-serif;
+  background:linear-gradient(135deg,#ffd700,#ff8c00);
+  color:#100800;border:none;border-radius:40px;
+  cursor:pointer;letter-spacing:3px;
+  box-shadow:0 0 40px rgba(255,165,0,.35),0 8px 24px rgba(0,0,0,.4);
+  transition:var(--transition);position:relative;overflow:hidden;
+}
+.start-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.2) 60%,transparent 80%);
+  transform:translateX(-100%);transition:transform .4s;
+}
+.start-btn:hover::before{transform:translateX(100%);}
+.start-btn:hover{transform:scale(1.04);box-shadow:0 0 60px rgba(255,165,0,.5),0 12px 32px rgba(0,0,0,.5);}
+
+/* ========================================
+   GAME MAIN
+   ======================================== */
+#gm{display:none;flex-direction:column;min-height:100vh;position:relative;z-index:1;}
+
+/* TOP BAR */
+.tbar{
+  background:rgba(6,9,26,.92);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  padding:8px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;
+  backdrop-filter:blur(16px);
+  position:sticky;top:0;z-index:100;
+}
+.tbar-brand{
+  font-family:'Black Han Sans',sans-serif;font-size:.95rem;
+  background:linear-gradient(135deg,var(--gold),var(--orange));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.tbar-center{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.turn-display{
+  background:rgba(255,215,0,.08);
+  border:1px solid rgba(255,215,0,.2);
+  border-radius:8px;padding:4px 12px;
+  font-size:.82rem;font-weight:700;color:var(--gold);
+  font-family:'Rajdhani',sans-serif;letter-spacing:1px;
+  position:relative;overflow:hidden;
+}
+.turn-display.urgent{
+  animation:urgPulse .7s ease-in-out infinite;
+  border-color:rgba(255,51,85,.5);color:var(--red);
+  background:rgba(255,51,85,.08);
+}
+@keyframes urgPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,51,85,.3);}50%{box-shadow:0 0 0 5px rgba(255,51,85,.0);}}
+.round-badge{
+  background:rgba(192,132,252,.08);
+  border:1px solid rgba(192,132,252,.2);
+  border-radius:8px;padding:4px 10px;
+  font-size:.78rem;color:var(--purple);
+  font-family:'Rajdhani',sans-serif;font-weight:600;
+}
+.cur-badge{
+  background:rgba(34,211,238,.06);
+  border:1px solid rgba(34,211,238,.15);
+  border-radius:8px;padding:4px 10px;
+  font-size:.78rem;color:var(--cyan);
+  font-family:'Rajdhani',sans-serif;font-weight:600;
+  max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* MAIN LAYOUT */
+.bwrap{
+  display:flex;gap:14px;padding:14px;
+  align-items:flex-start;justify-content:center;flex-wrap:wrap;
+}
+#bc{
+  background:var(--bg2);
+  border:1.5px solid rgba(255,255,255,.07);
+  border-radius:16px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.03),var(--shadow);
+  position:relative;flex-shrink:0;
+  cursor:default;
+}
+
+/* SIDE PANEL */
+.spanel{width:280px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
+
+/* PLAYER CARDS */
+.pc{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--r2);padding:12px;
+  position:relative;overflow:hidden;
+  transition:var(--transition);
+}
+.pc::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:linear-gradient(to bottom,transparent,currentColor,transparent);
+  opacity:0;transition:opacity .3s;
+}
+.pc.act{
+  border-color:rgba(255,215,0,.25);
+  background:rgba(255,215,0,.03);
+  box-shadow:0 0 20px rgba(255,215,0,.08),inset 0 0 20px rgba(255,215,0,.02);
+}
+.pc.act::before{opacity:1;color:var(--gold);}
+.pc.bk{opacity:.4;filter:grayscale(.8);pointer-events:none;}
+.pch{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.pcav{
+  font-size:1.6rem;width:42px;height:42px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:10px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.07);
+  position:relative;flex-shrink:0;
+}
+.pcav .act-ring{
+  position:absolute;inset:-2px;border-radius:11px;
+  border:2px solid var(--gold);
+  animation:actRing 2s ease-in-out infinite;opacity:0;
+}
+.pc.act .pcav .act-ring{opacity:1;}
+@keyframes actRing{0%,100%{opacity:.6;transform:scale(1);}50%{opacity:1;transform:scale(1.05);}}
+.pcn{font-weight:700;font-size:.85rem;line-height:1.2;}
+.pcbadge{
+  font-size:.62rem;padding:1px 6px;border-radius:10px;
+  font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.5px;
+  display:inline-block;margin-top:2px;
+}
+.pcbadge.you{background:rgba(34,211,238,.12);color:var(--cyan);border:1px solid rgba(34,211,238,.2);}
+.pcbadge.bot{background:rgba(107,127,168,.1);color:var(--text2);border:1px solid rgba(107,127,168,.15);}
+.pcloc{font-size:.68rem;color:var(--text2);margin-top:1px;}
+.pcc{
+  font-size:1.1rem;font-weight:900;color:var(--green);
+  font-family:'Orbitron',sans-serif;letter-spacing:-0.5px;
+}
+.pcnet{font-size:.7rem;color:var(--text2);margin-top:1px;}
+.pcstats{display:flex;gap:6px;margin-top:8px;}
+.pcstat{
+  flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  border-radius:6px;padding:5px 4px;text-align:center;
+}
+.pcstat .sv{font-size:.8rem;font-weight:700;color:var(--text);}
+.pcstat .sl{font-size:.58rem;color:var(--text2);}
+.pbar{height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;margin-top:8px;}
+.pfill{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+
+/* STOCK TICKER */
+.stock-ticker{
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:var(--r2);padding:10px;overflow:hidden;
+}
+.ticker-label{font-size:.65rem;letter-spacing:3px;color:var(--text3);margin-bottom:7px;font-family:'Rajdhani',sans-serif;}
+.ticker-wrap{overflow:hidden;position:relative;}
+.ticker-inner{display:flex;gap:10px;animation:tickerScroll 20s linear infinite;}
+.ticker-inner:hover{animation-play-state:paused;}
+@keyframes tickerScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}  }
+.tick-item{
+  display:flex;align-items:center;gap:5px;white-space:nowrap;
+  font-size:.72rem;font-family:'Rajdhani',sans-serif;font-weight:600;
+  padding:3px 8px;border-radius:6px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  flex-shrink:0;
+}
+.tick-up{color:var(--green);}
+.tick-dn{color:var(--red);}
+
+/* DICE AREA */
+.dice-panel{
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--r2);padding:14px;text-align:center;
+}
+.ddisp{display:flex;justify-content:center;gap:12px;margin:10px 0;}
+.die{
+  width:58px;height:58px;
+  background:linear-gradient(135deg,#111827,#1e2d4a);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:11px;display:flex;align-items:center;justify-content:center;
+  font-size:2rem;font-weight:900;
+  box-shadow:0 4px 16px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
+  transition:transform .1s;
+  position:relative;overflow:hidden;
+}
+.die::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.05) 0%,transparent 60%);
+  pointer-events:none;
+}
+.die.rolling{animation:dieRoll .06s ease-in-out infinite;}
+@keyframes dieRoll{0%{transform:rotate(-12deg) scale(.95);}50%{transform:rotate(12deg) scale(1.05);}100%{transform:rotate(-12deg) scale(.95);}}
+.die.landed{animation:dieLand .3s cubic-bezier(.3,.7,.4,1.5) forwards;}
+@keyframes dieLand{0%{transform:scale(1.2);}100%{transform:scale(1);}}
+.die-sum{
+  font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;
+  color:var(--gold);margin:4px 0;opacity:0;transition:opacity .3s;
+}
+.die-sum.show{opacity:1;}
+.double-badge{
+  display:inline-block;background:linear-gradient(135deg,var(--gold),var(--orange));
+  color:#100800;font-weight:900;font-size:.7rem;
+  padding:2px 10px;border-radius:20px;margin-left:6px;
+  font-family:'Rajdhani',sans-serif;letter-spacing:1px;
+  animation:badgePop .4s cubic-bezier(.3,.7,.4,1.5);
+}
+@keyframes badgePop{0%{transform:scale(0) rotate(-10deg);}100%{transform:scale(1) rotate(0);}}
+
+.roll-btn{
+  padding:11px 32px;font-size:.9rem;font-weight:900;
+  font-family:'Black Han Sans',sans-serif;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--purple2),#7c3aed);
+  color:#fff;border:none;border-radius:28px;cursor:pointer;
+  box-shadow:0 0 30px rgba(168,85,247,.3),0 4px 16px rgba(0,0,0,.4);
+  transition:var(--transition);margin-top:8px;position:relative;overflow:hidden;
+}
+.roll-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.15) 50%,transparent 70%);
+  transform:translateX(-100%);transition:transform .35s;
+}
+.roll-btn:hover:not(:disabled)::before{transform:translateX(100%);}
+.roll-btn:hover:not(:disabled){transform:scale(1.05);box-shadow:0 0 45px rgba(168,85,247,.5),0 8px 24px rgba(0,0,0,.5);}
+.roll-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
+.roll-hint{font-size:.72rem;color:var(--text2);margin-top:6px;font-family:'Rajdhani',sans-serif;}
+
+/* PROPERTY LEGEND */
+.prop-legend{
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:var(--r2);padding:10px;
+}
+.legend-title{font-size:.65rem;letter-spacing:3px;color:var(--text3);margin-bottom:8px;font-family:'Rajdhani',sans-serif;}
+.legend-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.legend-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 4px;border-radius:7px;
+  background:rgba(255,255,255,.02);cursor:pointer;
+  transition:var(--transition);
+}
+.legend-item:hover{background:rgba(255,255,255,.05);}
+.legend-dot{width:10px;height:10px;border-radius:3px;}
+.legend-flag{font-size:.9rem;}
+.legend-name{font-size:.6rem;color:var(--text2);}
+.legend-own{font-size:.58rem;font-weight:700;}
+
+/* LOG */
+.log-panel{
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:var(--r2);padding:10px;
+}
+.log-title{font-size:.65rem;letter-spacing:3px;color:var(--text3);margin-bottom:7px;font-family:'Rajdhani',sans-serif;}
+.lbox{max-height:180px;overflow-y:auto;font-size:.74rem;line-height:1.75;}
+.le{
+  padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);
+  display:flex;gap:6px;align-items:baseline;
+}
+.le:last-child{border:none;}
+.le-turn{font-size:.6rem;color:var(--text3);font-family:'Rajdhani',sans-serif;flex-shrink:0;}
+.le.good{color:var(--green2);}
+.le.bad{color:var(--red2);}
+.le.sys{color:var(--cyan);}
+.le.gold{color:var(--gold);}
+.le.purple{color:var(--purple);}
+
+/* ========================================
+   PROPERTY POPUP
+   ======================================== */
+.pov{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:300;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);
+}
+.pbox{
+  background:linear-gradient(160deg,#08102a,#111e3a);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;padding:24px;max-width:420px;width:92%;
+  box-shadow:var(--shadow);
+  animation:popIn .3s cubic-bezier(.3,.7,.4,1.5);
+  position:relative;overflow:hidden;
+}
+.pbox::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+}
+@keyframes popIn{0%{opacity:0;transform:scale(.9) translateY(10px);}100%{opacity:1;transform:scale(1) translateY(0);}}
+.ptitle{
+  font-family:'Black Han Sans',sans-serif;font-size:1.4rem;margin-bottom:4px;
+}
+.pctry{
+  font-size:.7rem;color:var(--text2);margin-bottom:16px;
+  letter-spacing:3px;font-family:'Rajdhani',sans-serif;font-weight:600;
+}
+.prow{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:8px;font-size:.84rem;
+  padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);
+}
+.prow:last-child{border:none;}
+.prlbl{color:var(--text2);}
+.prval{font-weight:700;color:var(--gold);}
+.rent-table{
+  background:rgba(255,255,255,.03);border-radius:8px;padding:10px;
+  margin:10px 0;font-size:.75rem;
+}
+.rent-row{display:flex;justify-content:space-between;padding:3px 0;}
+.rent-row.cur{color:var(--cyan);font-weight:700;}
+.pbtns{display:flex;gap:9px;margin-top:18px;}
+.pbtn{
+  flex:1;padding:12px;border-radius:10px;border:none;
+  font-size:.85rem;font-weight:700;cursor:pointer;
+  transition:var(--transition);font-family:'Noto Sans KR',sans-serif;
+}
+.pbtn.buy{
+  background:linear-gradient(135deg,var(--green3),#00a854);
+  color:#001a0d;
+  box-shadow:0 4px 16px rgba(0,201,101,.25);
+}
+.pbtn.buy:hover{transform:scale(1.02);box-shadow:0 6px 24px rgba(0,201,101,.4);}
+.pbtn.buy:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.pbtn.pass{
+  background:rgba(255,255,255,.04);color:var(--text2);
+  border:1px solid rgba(255,255,255,.08);
+}
+.pbtn.pass:hover{border-color:var(--red2);color:var(--red2);}
+
+/* ========================================
+   EVENT / CHANCE POPUP
+   ======================================== */
+.event-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:320;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(10px);
+}
+.event-box{
+  background:linear-gradient(160deg,#08102a,#111e3a);
+  border:1.5px solid;border-radius:18px;padding:28px;
+  max-width:380px;width:90%;text-align:center;
+  box-shadow:var(--shadow);
+  animation:popIn .35s cubic-bezier(.3,.7,.4,1.5);
+}
+.event-icon{font-size:3rem;margin-bottom:12px;display:block;animation:iconBounce .5s ease-out;}
+@keyframes iconBounce{0%{transform:scale(0) rotate(-20deg);}70%{transform:scale(1.2) rotate(5deg);}100%{transform:scale(1) rotate(0);}}
+.event-type{font-size:.68rem;letter-spacing:4px;color:var(--text2);margin-bottom:6px;font-family:'Rajdhani',sans-serif;}
+.event-title{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;margin-bottom:8px;}
+.event-desc{font-size:.88rem;color:var(--text);line-height:1.6;margin-bottom:6px;}
+.event-effect{
+  font-family:'Orbitron',sans-serif;font-size:1.3rem;font-weight:700;
+  margin:12px 0;padding:10px;border-radius:10px;
+  background:rgba(255,255,255,.04);
+}
+.event-ok{
+  margin-top:16px;padding:11px 36px;border-radius:28px;border:none;
+  font-weight:700;cursor:pointer;font-size:.9rem;transition:var(--transition);
+}
+.event-ok:hover{transform:scale(1.04);}
+
+/* ========================================
+   MINIGAME
+   ======================================== */
+#mgo{
+  position:fixed;inset:0;z-index:400;
+  background:rgba(0,0,0,.88);
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(10px);
+}
+.mgbox{
+  background:linear-gradient(160deg,#08102a,#0d1a38);
+  border:2px solid var(--cyan);border-radius:18px;
+  padding:28px;max-width:480px;width:92%;text-align:center;
+  box-shadow:0 0 60px rgba(34,211,238,.15),var(--shadow);
+  animation:popIn .35s cubic-bezier(.3,.7,.4,1.5);
+}
+.mgtitle{
+  font-family:'Black Han Sans',sans-serif;font-size:1.5rem;
+  color:var(--cyan);margin-bottom:6px;
+}
+.mgdesc{color:var(--text2);font-size:.82rem;margin-bottom:16px;}
+.mg-timer-wrap{position:relative;width:70px;height:70px;margin:0 auto 16px;}
+.mg-timer-svg{transform:rotate(-90deg);}
+.mg-timer-track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:5;}
+.mg-timer-prog{fill:none;stroke:var(--cyan);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .3s;}
+.mg-timer-num{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;font-size:1.2rem;font-weight:700;color:var(--gold);
+}
+.mgq{font-size:.98rem;font-weight:700;margin-bottom:18px;line-height:1.6;color:var(--text);}
+.mgopts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;}
+.mgopt{
+  padding:12px;border-radius:10px;
+  border:1.5px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.03);
+  color:var(--text);cursor:pointer;
+  font-size:.86rem;font-weight:700;
+  transition:var(--transition);line-height:1.4;
+}
+.mgopt:hover{
+  border-color:var(--cyan);background:rgba(34,211,238,.06);
+  transform:translateY(-2px);
+}
+.mgopt.ok{border-color:var(--green2);background:rgba(16,217,110,.1);color:var(--green);animation:optPop .3s ease-out;}
+.mgopt.no{border-color:var(--red2);background:rgba(255,69,96,.1);color:var(--red2);}
+@keyframes optPop{0%{transform:scale(.96);}100%{transform:scale(1);}}
+.mg-reward{
+  font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;
+  padding:8px;border-radius:8px;display:inline-block;
+}
+
+/* ========================================
+   MARKET POPUP (새 기능)
+   ======================================== */
+.market-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:310;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);
+}
+.market-box{
+  background:linear-gradient(160deg,#07102a,#0f1d3a);
+  border:1.5px solid rgba(192,132,252,.3);
+  border-radius:18px;padding:24px;
+  max-width:480px;width:92%;
+  box-shadow:0 0 50px rgba(192,132,252,.1),var(--shadow);
+  animation:popIn .3s cubic-bezier(.3,.7,.4,1.5);
+  max-height:85vh;overflow-y:auto;
+}
+.market-title{
+  font-family:'Black Han Sans',sans-serif;font-size:1.2rem;
+  color:var(--purple);margin-bottom:4px;
+}
+.market-sub{font-size:.72rem;color:var(--text2);margin-bottom:16px;letter-spacing:2px;}
+.market-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.market-row{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;padding:10px 12px;
+  transition:var(--transition);
+}
+.market-row:hover{background:rgba(255,255,255,.05);}
+.market-col{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.market-name{flex:1;font-size:.85rem;font-weight:700;}
+.market-info{font-size:.75rem;color:var(--text2);}
+.market-price{font-size:.85rem;font-weight:700;color:var(--gold);}
+.market-sell{
+  padding:6px 14px;border-radius:8px;border:1px solid rgba(255,69,96,.3);
+  background:rgba(255,69,96,.06);color:var(--red2);
+  cursor:pointer;font-size:.78rem;font-weight:700;
+  transition:var(--transition);
+}
+.market-sell:hover{background:rgba(255,69,96,.15);border-color:var(--red2);}
+
+/* ========================================
+   ACHIEVEMENT TOAST
+   ======================================== */
+.ach-toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-10px);
+  z-index:600;
+  background:linear-gradient(135deg,rgba(15,25,50,.97),rgba(20,35,60,.97));
+  border:1.5px solid;border-radius:14px;padding:14px 20px;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:0 0 40px rgba(255,215,0,.2),var(--shadow);
+  min-width:280px;max-width:400px;
+  animation:achIn .4s cubic-bezier(.3,.7,.4,1.5),achOut .4s 3.5s ease-in forwards;
+}
+@keyframes achIn{0%{opacity:0;transform:translateX(-50%) translateY(-30px) scale(.9);}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}}
+@keyframes achOut{0%{opacity:1;}100%{opacity:0;transform:translateX(-50%) translateY(-20px);}}
+.ach-icon{font-size:1.8rem;}
+.ach-content{flex:1;}
+.ach-label{font-size:.6rem;letter-spacing:3px;color:var(--gold);font-family:'Rajdhani',sans-serif;font-weight:600;}
+.ach-name{font-weight:700;font-size:.9rem;}
+.ach-desc{font-size:.74rem;color:var(--text2);}
+
+/* ========================================
+   RESULT SCREEN
+   ======================================== */
+#rs{
+  position:fixed;inset:0;z-index:500;
+  background:var(--bg);
+  align-items:center;justify-content:center;flex-direction:column;
+  overflow:auto;padding:20px;
+}
+.rs-backdrop{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%,rgba(255,215,0,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 100%,rgba(192,132,252,.05) 0%,transparent 60%);
+}
+.rtitle{
+  font-family:'Black Han Sans',sans-serif;
+  font-size:clamp(2rem,6vw,3.5rem);
+  background:linear-gradient(135deg,var(--gold),var(--orange),var(--red2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:8px;text-align:center;
+  filter:drop-shadow(0 0 30px rgba(255,215,0,.2));
+  animation:titlePop 1s cubic-bezier(.3,.7,.4,1.5);
+}
+@keyframes titlePop{0%{opacity:0;transform:scale(.8);}100%{opacity:1;transform:scale(1);}}
+.rsub{color:var(--text2);font-size:.88rem;margin-bottom:32px;text-align:center;letter-spacing:2px;}
+.rcards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:32px;}
+.rcard{
+  background:rgba(255,255,255,.03);
+  border:1.5px solid rgba(255,255,255,.07);
+  border-radius:16px;padding:20px 22px;text-align:center;
+  min-width:155px;
+  transition:var(--transition);
+  animation:cardIn .5s cubic-bezier(.3,.7,.4,1.5) var(--delay,.1s) both;
+}
+@keyframes cardIn{0%{opacity:0;transform:translateY(20px);}100%{opacity:1;transform:translateY(0);}}
+.rcard.win{
+  border-color:rgba(255,215,0,.4);
+  background:rgba(255,215,0,.04);
+  box-shadow:0 0 40px rgba(255,215,0,.15),inset 0 0 30px rgba(255,215,0,.03);
+}
+.rrk{font-size:1.8rem;margin-bottom:6px;}
+.rn{font-weight:700;font-size:.92rem;margin-bottom:4px;}
+.rv{
+  color:var(--gold);font-weight:900;font-size:1.1rem;
+  font-family:'Orbitron',sans-serif;
+}
+.rchange{font-size:.75rem;margin-top:3px;}
+.rchange.pos{color:var(--green2);}
+.rchange.neg{color:var(--red2);}
+.rstats-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  max-width:500px;width:100%;margin-bottom:28px;
+}
+.rstat{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;padding:12px;text-align:center;
+}
+.rstat-v{font-size:1.1rem;font-weight:700;color:var(--cyan);font-family:'Orbitron',sans-serif;}
+.rstat-l{font-size:.68rem;color:var(--text2);margin-top:3px;}
+.rbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+.rrbtn{
+  padding:13px 40px;font-size:.9rem;font-weight:900;
+  font-family:'Black Han Sans',sans-serif;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#1a0a00;border:none;border-radius:38px;
+  cursor:pointer;transition:var(--transition);
+  box-shadow:0 0 30px rgba(255,165,0,.3);
+}
+.rrbtn:hover{transform:scale(1.04);box-shadow:0 0 50px rgba(255,165,0,.5);}
+.rrbtn.sec{
+  background:rgba(255,255,255,.05);color:var(--text);
+  border:1.5px solid rgba(255,255,255,.1);
+  box-shadow:none;
+}
+.rrbtn.sec:hover{background:rgba(255,255,255,.08);}
+
+/* ========================================
+   TOAST NOTIFICATIONS
+   ======================================== */
+.twrap{
+  position:fixed;top:70px;right:16px;z-index:600;
+  display:flex;flex-direction:column;gap:6px;
+  pointer-events:none;
+}
+.toast{
+  padding:9px 14px;border-radius:10px;
+  font-size:.79rem;font-weight:700;
+  background:rgba(10,16,40,.95);
+  border:1px solid rgba(255,255,255,.07);
+  animation:tIn .28s cubic-bezier(.3,.7,.4,1.5),tOut .28s 2.8s ease-in forwards;
+  max-width:240px;line-height:1.4;
+  backdrop-filter:blur(8px);
+}
+@keyframes tIn{0%{opacity:0;transform:translateX(24px);}100%{opacity:1;transform:translateX(0);}}
+@keyframes tOut{0%{opacity:1;}100%{opacity:0;transform:translateX(24px);}}
+
+/* ========================================
+   MARKET EVENT OVERLAY (경제 이벤트)
+   ======================================== */
+.mev-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:350;
+  background:rgba(6,9,26,.96);border-top:1px solid rgba(255,215,0,.2);
+  padding:10px 20px;display:flex;align-items:center;gap:14px;
+  backdrop-filter:blur(10px);
+  animation:slideUp .4s ease-out;
+  flex-wrap:wrap;
+}
+@keyframes slideUp{0%{transform:translateY(100%);}100%{transform:translateY(0);}}
+.mev-icon{font-size:1.5rem;flex-shrink:0;}
+.mev-content{flex:1;min-width:0;}
+.mev-label{font-size:.62rem;letter-spacing:3px;color:var(--gold);font-family:'Rajdhani',sans-serif;font-weight:600;}
+.mev-title{font-weight:700;font-size:.9rem;}
+.mev-desc{font-size:.78rem;color:var(--text2);}
+.mev-close{
+  padding:6px 16px;border-radius:20px;border:1px solid rgba(255,215,0,.3);
+  background:rgba(255,215,0,.06);color:var(--gold);
+  cursor:pointer;font-size:.78rem;font-weight:700;
+  transition:var(--transition);flex-shrink:0;
+}
+.mev-close:hover{background:rgba(255,215,0,.15);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2);}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  .cgrid{grid-template-columns:repeat(2,1fr);}
+  .bwrap{flex-direction:column;align-items:center;}
+  .spanel{width:100%;max-width:500px;}
+  #bc{width:min(500px,96vw) !important;height:min(500px,96vw) !important;}
+}
 </style>
-"""
+</head>
+<body>
+<div class="ambient"></div>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+<div id="particles"></div>
+<div id="fw"></div>
 
-TERMINAL_JS = """
+<!-- ===== CHARACTER SELECT ===== -->
+<div id="cs">
+  <div class="cs-logo"><span class="globe">🌍</span></div>
+  <div class="cs-title">인베스트 마블 ULTRA</div>
+  <div class="cs-sub">INVEST MARBLE · SEASON 1 · ULTRA MAX</div>
+
+  <div class="section-label">▸ 캐릭터 선택</div>
+  <div class="cgrid" id="cgrid"></div>
+
+  <div class="section-label">▸ 게임 난이도</div>
+  <div class="select-row" id="drow">
+    <button class="diff-btn" data-d="easy">🌱 이지 (₩20,000)</button>
+    <button class="diff-btn a-normal" data-d="normal">⚔️ 노멀 (₩15,000)</button>
+    <button class="diff-btn" data-d="hard">💀 하드 (₩10,000)</button>
+  </div>
+
+  <div class="section-label">▸ 최대 턴 수</div>
+  <div class="select-row" id="trow">
+    <button class="pill-btn" data-t="20">20턴</button>
+    <button class="pill-btn a" data-t="30">30턴</button>
+    <button class="pill-btn" data-t="40">40턴</button>
+    <button class="pill-btn" data-t="50">50턴</button>
+  </div>
+
+  <div class="section-label">▸ 경제 이벤트</div>
+  <div class="select-row">
+    <button class="pill-btn a" id="evtToggle" data-on="1">🌐 경제 이벤트 ON</button>
+  </div>
+
+  <button class="start-btn" id="sbtn">🎲 게임 시작</button>
+</div>
+
+<!-- ===== GAME MAIN ===== -->
+<div id="gm">
+  <div class="tbar">
+    <span class="tbar-brand">🌍 인베스트 마블 ULTRA</span>
+    <div class="tbar-center">
+      <div id="tdsp" class="turn-display">🕐 —턴</div>
+      <div id="rdsp" class="round-badge">라운드 0</div>
+      <div id="cdsp" class="cur-badge">대기 중</div>
+    </div>
+    <div style="display:flex;gap:7px;">
+      <button id="marketBtn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(192,132,252,.3);background:rgba(192,132,252,.07);color:var(--purple);cursor:pointer;font-size:.75rem;font-weight:700;">📊 자산관리</button>
+      <button id="moreBtn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--text2);cursor:pointer;font-size:.75rem;font-weight:700;">⚙️</button>
+    </div>
+  </div>
+
+  <div class="bwrap">
+    <canvas id="bc" width="600" height="600"></canvas>
+
+    <div class="spanel">
+      <!-- DICE (상단 고정! 항상 보임) -->
+      <div class="dice-panel" style="border-color:rgba(168,85,247,.5);background:rgba(168,85,247,.08);flex-shrink:0;">
+        <div style="font-size:.58rem;letter-spacing:3px;color:#b26cf7;font-weight:700;margin-bottom:2px;font-family:'Rajdhani',sans-serif;">🎲 DICE ROLL</div>
+        <div class="ddisp" style="margin:6px 0;">
+          <div class="die" id="d1" style="border-color:rgba(168,85,247,.4);">🎲</div>
+          <div class="die" id="d2" style="border-color:rgba(168,85,247,.4);">🎲</div>
+        </div>
+        <div class="die-sum" id="dsum">0</div>
+        <button class="roll-btn" id="rbtn" disabled>🎲 주사위 굴리기</button>
+        <div class="roll-hint" id="dhint"></div>
+      </div>
+
+      <!-- STOCK TICKER -->
+      <div class="stock-ticker">
+        <div class="ticker-label">LIVE MARKET</div>
+        <div class="ticker-wrap"><div class="ticker-inner" id="tickerInner"></div></div>
+      </div>
+
+      <!-- PLAYER CARDS -->
+      <div id="pcards"></div>
+
+      <!-- PROPERTY LEGEND -->
+      <div class="prop-legend">
+        <div class="legend-title">PROPERTY MAP</div>
+        <div class="legend-grid" id="legendGrid"></div>
+      </div>
+
+      <!-- LOG -->
+      <div class="log-panel">
+        <div class="log-title">GAME LOG</div>
+        <div class="lbox" id="lbox"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PROPERTY POPUP ===== -->
+<div class="pov" id="pp2" style="display:none;">
+  <div class="pbox">
+    <div class="pctry" id="pctry"></div>
+    <div class="ptitle" id="ptitle"></div>
+    <div id="pinfo"></div>
+    <div class="pbtns" id="pbtns"></div>
+  </div>
+</div>
+
+<!-- ===== EVENT POPUP ===== -->
+<div class="event-ov" id="evPop" style="display:none;">
+  <div class="event-box" id="evBox">
+    <span class="event-icon" id="evIcon"></span>
+    <div class="event-type" id="evType"></div>
+    <div class="event-title" id="evTitle"></div>
+    <div class="event-desc" id="evDesc"></div>
+    <div class="event-effect" id="evEffect"></div>
+    <button class="event-ok" id="evOk">확인</button>
+  </div>
+</div>
+
+<!-- ===== MINIGAME ===== -->
+<div id="mgo" style="display:none;">
+  <div class="mgbox">
+    <div class="mgtitle" id="mgt">🎮 미니게임 찬스!</div>
+    <div class="mgdesc" id="mgd">정답을 맞혀 보상을 획득하세요</div>
+    <div class="mg-timer-wrap">
+      <svg class="mg-timer-svg" width="70" height="70" viewBox="0 0 70 70">
+        <circle class="mg-timer-track" cx="35" cy="35" r="30"/>
+        <circle class="mg-timer-prog" id="mgTimerCirc" cx="35" cy="35" r="30"
+          stroke-dasharray="188.5" stroke-dashoffset="0"/>
+      </svg>
+      <div class="mg-timer-num" id="mgtime">10</div>
+    </div>
+    <div class="mgq" id="mgq"></div>
+    <div class="mgopts" id="mgopts"></div>
+    <div class="mg-reward" id="mgReward"></div>
+  </div>
+</div>
+
+<!-- ===== MARKET PANEL ===== -->
+<div class="market-ov" id="marketOv" style="display:none;">
+  <div class="market-box">
+    <div class="market-title">📊 자산 관리</div>
+    <div class="market-sub" id="marketSub"></div>
+    <div class="market-list" id="marketList"></div>
+    <div style="display:flex;gap:9px;">
+      <button class="pbtn pass" style="flex:1;padding:11px;" onclick="closeMarket()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESULT ===== -->
+<div id="rs" style="display:none;">
+  <div class="rs-backdrop"></div>
+  <div class="rtitle" id="rtitle">🏆 게임 종료!</div>
+  <div class="rsub" id="rsub"></div>
+  <div class="rcards" id="rcards"></div>
+  <div class="rstats-grid" id="rstats"></div>
+  <div class="rbtns">
+    <button class="rrbtn" onclick="location.reload()">🔄 다시하기</button>
+    <button class="rrbtn sec" onclick="showFinalStats()">📊 상세 통계</button>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="twrap" id="twrap"></div>
+
 <script>
-(function() {
-  var tb = document.getElementById('term-scroll');
-  if(tb) tb.scrollTop = tb.scrollHeight;
+// ============================================================
+//  CONSTANTS
+// ============================================================
+const DF=['⚀','⚁','⚂','⚃','⚄','⚅'];
+const S=600, CELL=S/11;
+const PERIM=40;
+const CIRCUMFERENCE=188.5;
 
-  var AudioCtx = window.AudioContext || window.webkitAudioContext;
-  var ctx = AudioCtx ? new AudioCtx() : null;
+const DIFF_CASH={easy:20000,normal:15000,hard:10000};
 
-  function beep(freq, dur, type, vol) {
-    if (!ctx) return;
-    try {
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = type || 'square';
-      gain.gain.setValueAtTime(vol || 0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + dur);
-    } catch(e) {}
+const CHARS=[
+  {name:'이효민',em:'👑',col:'#ffd700',trait:'경제학과 수재',bonus:'건물 할인 15%',bk:'build',
+   stats:[90,60,70,80],desc:'건물 투자 특화 마스터'},
+  {name:'봇 알파',em:'🤖',col:'#4dabf7',trait:'AI 투자 봇',bonus:'임대료 +12%',bk:'rent',
+   stats:[75,85,80,65],desc:'데이터 기반 수익 최적화'},
+  {name:'미스터 K',em:'🎩',col:'#c084fc',trait:'연쇄 투자자',bonus:'독점 보너스 2배',bk:'mono',
+   stats:[80,70,95,75],desc:'국가 독점 전략 전문가'},
+  {name:'탐정 J',em:'🕵️',col:'#22d3ee',trait:'정보 수집가',bonus:'다시 굴리기 +기회',bk:'reroll',
+   stats:[70,80,75,90],desc:'찬스 카드 확률 극대화'},
+  {name:'재벌 손자',em:'💎',col:'#f472b6',trait:'3세 재벌',bonus:'시작 자금 +₩3000',bk:'rich',
+   stats:[85,65,70,85],desc:'초기 자본 우위 전략'},
+  {name:'스타트업 K',em:'🚀',col:'#00ff88',trait:'유니콘 CEO',bonus:'출발 통과 +₩100',bk:'pass',
+   stats:[65,90,80,70],desc:'패시브 수입 누적 전략'},
+  {name:'헤지펀드',em:'📈',col:'#fb923c',trait:'펀드 매니저',bonus:'세금 30% 감면',bk:'tax',
+   stats:[75,75,65,95],desc:'세금 최적화 전문가'},
+  {name:'소매치기',em:'🦊',col:'#ff3355',trait:'???',bonus:'임대료 통과 10%',bk:'dodge',
+   stats:[60,70,85,80],desc:'위기 회피 능력'},
+];
+
+const COUNTRIES=[
+  {name:'한국',col:'#ff6b6b',flag:'🇰🇷'},
+  {name:'일본',col:'#ff9f43',flag:'🇯🇵'},
+  {name:'미국',col:'#54a0ff',flag:'🇺🇸'},
+  {name:'유럽',col:'#7c4dff',flag:'🇪🇺'},
+  {name:'중국',col:'#ee5a24',flag:'🇨🇳'},
+  {name:'중동',col:'#01a3a4',flag:'🏜️'},
+  {name:'브라질',col:'#10ac84',flag:'🇧🇷'},
+  {name:'인도',col:'#f368e0',flag:'🇮🇳'},
+];
+
+const RAW_CELLS=[
+  {t:'go',name:'🚀 출발',col:'#10d96e'},
+  {t:'prop',name:'서울',ctry:0,price:60,rent:[2,10,30,90,160,250],col:'#ff6b6b'},
+  {t:'prop',name:'도쿄',ctry:1,price:60,rent:[4,20,60,180,320,450],col:'#ff9f43'},
+  {t:'chance',name:'찬스!',col:'#ffd700'},
+  {t:'prop',name:'뉴욕',ctry:2,price:100,rent:[6,30,90,270,400,550],col:'#54a0ff'},
+  {t:'prop',name:'LA',ctry:2,price:120,rent:[8,40,100,300,450,600],col:'#54a0ff'},
+  {t:'airport',name:'서울공항',col:'#22d3ee'},
+  {t:'prop',name:'파리',ctry:3,price:140,rent:[10,50,150,450,625,750],col:'#7c4dff'},
+  {t:'tax',name:'소득세',amt:200,col:'#ff4560'},
+  {t:'prop',name:'런던',ctry:3,price:160,rent:[12,60,180,500,700,900],col:'#7c4dff'},
+  {t:'island',name:'🏝️ 무인도',col:'#ff8c42'},
+  {t:'prop',name:'베이징',ctry:4,price:180,rent:[14,70,200,550,750,950],col:'#ee5a24'},
+  {t:'community',name:'공동체기금',col:'#10ac84'},
+  {t:'prop',name:'상하이',ctry:4,price:200,rent:[16,80,220,600,800,1000],col:'#ee5a24'},
+  {t:'tax',name:'사치세',amt:100,col:'#ff4560'},
+  {t:'airport',name:'도쿄공항',col:'#22d3ee'},
+  {t:'prop',name:'두바이',ctry:5,price:220,rent:[18,90,250,700,875,1050],col:'#01a3a4'},
+  {t:'chance',name:'찬스!',col:'#ffd700'},
+  {t:'prop',name:'아부다비',ctry:5,price:240,rent:[20,100,300,750,925,1100],col:'#01a3a4'},
+  {t:'prop',name:'리우',ctry:6,price:260,rent:[22,110,330,800,975,1150],col:'#10ac84'},
+  {t:'golden',name:'✨황금시대',col:'#ffd700'},
+  {t:'prop',name:'상파울루',ctry:6,price:260,rent:[22,110,330,800,975,1150],col:'#10ac84'},
+  {t:'prop',name:'뭄바이',ctry:7,price:280,rent:[24,120,360,850,1025,1200],col:'#f368e0'},
+  {t:'community',name:'공동체기금',col:'#10ac84'},
+  {t:'prop',name:'델리',ctry:7,price:280,rent:[24,120,360,850,1025,1200],col:'#f368e0'},
+  {t:'airport',name:'파리공항',col:'#22d3ee'},
+  {t:'chance',name:'찬스!',col:'#ffd700'},
+  {t:'prop',name:'모스크바',ctry:0,price:300,rent:[26,130,390,900,1100,1275],col:'#ff6b6b'},
+  {t:'prop',name:'성수동',ctry:0,price:320,rent:[28,150,450,1000,1200,1400],col:'#ff6b6b'},
+  {t:'tax',name:'법인세',amt:150,col:'#ff4560'},
+  {t:'taxhub',name:'💼세금징수소',col:'#ff4560'},
+  {t:'prop',name:'홍대',ctry:1,price:350,rent:[35,175,500,1100,1300,1500],col:'#ff9f43'},
+  {t:'airport',name:'뉴욕공항',col:'#22d3ee'},
+  {t:'prop',name:'강남',ctry:1,price:400,rent:[50,200,600,1400,1700,2000],col:'#ff9f43'},
+  {t:'prop',name:'청담',ctry:2,price:350,rent:[35,175,500,1100,1300,1500],col:'#54a0ff'},
+  {t:'chance',name:'찬스!',col:'#ffd700'},
+  {t:'prop',name:'마카오',ctry:3,price:300,rent:[26,130,390,900,1100,1275],col:'#7c4dff'},
+  {t:'prop',name:'싱가포르',ctry:3,price:320,rent:[28,150,450,1000,1200,1400],col:'#7c4dff'},
+  {t:'community',name:'공동체기금',col:'#10ac84'},
+  {t:'prop',name:'방콕',ctry:4,price:280,rent:[24,120,360,850,1025,1200],col:'#ee5a24'},
+];
+
+// ── CHANCE CARDS ──
+const CHANCE=[
+  {txt:'📈 주식 대박!',desc:'오늘 시장 급등 +20%',fx:p=>{const a=400+Math.floor(Math.random()*500);p.cash+=a;return'+₩'+a;},col:'#00ff88'},
+  {txt:'🎁 경품 당첨!',desc:'연말 황금 추첨 1등',fx:p=>{p.cash+=1500;return'+₩1,500';},col:'#ffd700'},
+  {txt:'💰 배당금 수령',desc:'전 플레이어에게 배당 징수',fx:(p,ps)=>{let t=0;ps.forEach(o=>{if(o!==p&&o.cash>0){const a=Math.min(o.cash,300);o.cash-=a;p.cash+=a;t+=a;}});return'+₩'+t;},col:'#00ff88'},
+  {txt:'🏛️ 정부 지원금',desc:'소상공인 특별 지원',fx:p=>{p.cash+=500;return'+₩500';},col:'#ffd700'},
+  {txt:'🎰 즉석복권',desc:'오늘 운이 따른다면...',fx:p=>{const r=Math.random();const a=r<.1?2000:r<.35?800:r<.7?200:-150;p.cash+=a;return(a>=0?'+':'')+a;},col:'#c084fc'},
+  {txt:'💸 과태료',desc:'신호위반 + 주정차 위반',fx:p=>{p.cash-=350;return'-₩350';},col:'#ff3355'},
+  {txt:'🚀 출발로 이동!',desc:'빠른 귀환 + 통과 보너스',fx:p=>{p.pos=0;p.cash+=300;return'+₩300 이동';},col:'#ffd700'},
+  {txt:'🔙 3칸 후진',desc:'갑작스러운 방향 전환',fx:p=>{p.pos=(p.pos-3+40)%40;return'3칸 ↩';},col:'#ff8c42'},
+  {txt:'🎲 한 번 더!',desc:'연속 기회 발동!',fx:p=>{p._ex=true;return'추가 턴!';},col:'#22d3ee'},
+  {txt:'💼 미니게임 찬스',desc:'퀴즈를 맞히면 큰 보상',fx:p=>{p._mg=true;return'도전!';},col:'#22d3ee'},
+  {txt:'🏦 건물 수익 보너스',desc:'모든 건물에서 즉시 수익',fx:(p,_,cells)=>{let b=0;cells.forEach(c=>{if(c.own===p.id&&c.t==='prop'){b+=80*((c.hs||0)*1+(c.ho?5:0));}});p.cash+=b;return'+₩'+b;},col:'#ffd700'},
+  {txt:'✈️ 최근 공항으로',desc:'비즈니스 클래스 이동',fx:(p,_,cells)=>{const a=[6,15,25,32];let n=a[0],md=99;a.forEach(i=>{const d=(i-p.pos+40)%40;if(d>0&&d<md){md=d;n=i;}});p.pos=n;return'공항 이동';},col:'#22d3ee'},
+  {txt:'🌊 시장 폭락',desc:'글로벌 경기침체! 자산 손실',fx:p=>{const a=Math.floor(p.cash*0.18);p.cash-=a;return'-₩'+a;},col:'#ff3355'},
+  {txt:'💡 특허 수익',desc:'혁신 아이디어 로열티',fx:p=>{p.cash+=800;return'+₩800';},col:'#ffd700'},
+  {txt:'🤝 기업 합병',desc:'경쟁사 인수로 현금 확보',fx:p=>{const a=600+Math.floor(Math.random()*400);p.cash+=a;return'+₩'+a;},col:'#00ff88'},
+  {txt:'🏗️ 재개발 보상',desc:'도시 재개발 구역 보상금',fx:p=>{p.cash+=700;return'+₩700';},col:'#ffd700'},
+  {txt:'🎪 이벤트 수익',desc:'지역 축제 스폰서십',fx:p=>{p.cash+=450;return'+₩450';},col:'#c084fc'},
+  {txt:'⚡ 전략적 이동',desc:'5칸 앞으로 전진!',fx:p=>{p.pos=(p.pos+5)%40;return'5칸 ↗';},col:'#22d3ee'},
+];
+
+// ── COMMUNITY CARDS ──
+const COMMUNITY=[
+  {txt:'🏥 의료비 납부',desc:'종합 건강검진 비용',fx:p=>{p.cash-=450;return'-₩450';},col:'#ff3355'},
+  {txt:'🎓 장학금 수령',desc:'우수 장학생 선발',fx:p=>{p.cash+=700;return'+₩700';},col:'#00ff88'},
+  {txt:'🏠 임대수익 공유',desc:'커뮤니티 임대수익 배분',fx:(p,ps)=>{let t=0;ps.forEach(o=>{if(o!==p&&o.cash>0){const a=Math.min(o.cash,200);o.cash-=a;p.cash+=a;t+=a;}});return'+₩'+t;},col:'#00ff88'},
+  {txt:'💸 수리비 청구',desc:'건물 유지보수 비용',fx:(p,_,cells)=>{let c=0;cells.forEach(cl=>{if(cl.own===p.id)c+=cl.hs*90+cl.ho*220;});p.cash-=c;return'-₩'+c;},col:'#ff3355'},
+  {txt:'🎉 생일 축하!',desc:'모두에게 축하금 받기',fx:p=>{p.cash+=400;return'+₩400';},col:'#ffd700'},
+  {txt:'📉 주가 폭락',desc:'보유 자산 일부 손실',fx:p=>{const a=Math.floor(p.cash*0.18);p.cash-=a;return'-₩'+a;},col:'#ff3355'},
+  {txt:'🏆 우수 시민상',desc:'지역사회 공헌 수상',fx:p=>{p.cash+=900;return'+₩900';},col:'#ffd700'},
+  {txt:'🔧 긴급 수선',desc:'배관 파손으로 긴급 수리',fx:p=>{p.cash-=120;return'-₩120';},col:'#ff8c42'},
+  {txt:'🌱 ESG 보조금',desc:'친환경 기업 인증',fx:p=>{p.cash+=400;return'+₩400';},col:'#00ff88'},
+  {txt:'💰 로또 1등',desc:'기적은 일어난다!',fx:p=>{const ok=Math.random()<.1;const a=ok?2500:0;p.cash+=a;return ok?'+₩2,500 🎊🎊':'아쉽게 꽝...';},col:'#c084fc'},
+  {txt:'🤑 배당 재투자',desc:'주식 배당금 복리 수령',fx:p=>{p.cash+=550;return'+₩550';},col:'#00ff88'},
+  {txt:'🌐 글로벌 수출',desc:'해외 수출 계약 성사',fx:p=>{p.cash+=650;return'+₩650';},col:'#ffd700'},
+  {txt:'🏋️ 자기계발',desc:'역량 개발로 임금 상승',fx:p=>{p.cash+=300;return'+₩300';},col:'#00ff88'},
+  {txt:'💔 이혼 소송',desc:'합의금 지급 (당하는 쪽)',fx:p=>{const a=Math.floor(p.cash*0.12);p.cash-=a;return'-₩'+a;},col:'#ff3355'},
+];
+
+// ── MINIGAME QUESTIONS ──
+const MG=[
+  {q:'한국의 수도는?',o:['서울','부산','인천','광주'],a:0,reward:800},
+  {q:'세계에서 인구가 가장 많은 나라는?',o:['중국','인도','미국','인도네시아'],a:1,reward:900},
+  {q:'가장 큰 대륙은?',o:['아시아','아프리카','유럽','남미'],a:0,reward:700},
+  {q:'비트코인 최초 발행 연도는?',o:['2005','2007','2009','2011'],a:2,reward:1000},
+  {q:'GDP가 가장 높은 나라는?',o:['중국','미국','일본','독일'],a:1,reward:900},
+  {q:'달에 처음 착륙한 우주선은?',o:['아폴로 11','아폴로 13','아르테미스','보스토크'],a:0,reward:800},
+  {q:'지구에서 가장 긴 강은?',o:['아마존','나일','양쯔강','미시시피'],a:1,reward:800},
+  {q:'세계 최초 스마트폰 출시 회사는?',o:['삼성','애플','IBM','소니'],a:1,reward:1000},
+  {q:'블록체인 기술을 처음 적용한 것은?',o:['이더리움','비트코인','리플','도지코인'],a:1,reward:1000},
+  {q:'세계 최대 전자상거래 기업은?',o:['알리바바','아마존','이베이','쿠팡'],a:1,reward:900},
+  {q:'주식시장에서 PER란?',o:['주가/순이익','매출/순이익','자산/부채','시총/매출'],a:0,reward:1100},
+  {q:'인플레이션이란?',o:['물가 하락','물가 상승','금리 인상','통화 감소'],a:1,reward:800},
+  {q:'세계 금융의 중심지는?',o:['런던','도쿄','뉴욕','상하이'],a:2,reward:900},
+  {q:'KOSPI는 어느 나라 주가지수?',o:['일본','중국','한국','미국'],a:2,reward:700},
+  {q:'FED(연준)의 역할은?',o:['재정정책','통화정책','무역정책','환경정책'],a:1,reward:1000},
+];
+
+// ── GLOBAL ECONOMIC EVENTS ──
+const ECO_EVENTS=[
+  {icon:'📉',type:'위기',title:'글로벌 금융위기',desc:'전 세계 부동산 임대료 20% 감소',fx:(cells,players)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*.8;});},dur:3,col:'#ff3355',border:'rgba(255,51,85,.4)'},
+  {icon:'📈',type:'호황',title:'글로벌 경제 대호황',desc:'모든 임대료 25% 상승!',fx:(cells)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*1.25;});},dur:4,col:'#00ff88',border:'rgba(0,255,136,.4)'},
+  {icon:'🏛️',type:'정책',title:'중앙은행 금리 인상',desc:'건물 건설 비용 20% 상승',fx:(_,__,G)=>{G._buildCostMod=1.2;},dur:3,col:'#fb923c',border:'rgba(251,146,60,.4)'},
+  {icon:'🌪️',type:'재해',title:'자연재해 발생',desc:'무작위 플레이어 건물 손실',fx:(_,players,G)=>{const alive=players.filter(p=>!p.bkrt);if(alive.length>0){const t=alive[Math.floor(Math.random()*alive.length)];const props=G.cells.filter(c=>c.own===t.id&&c.t==='prop'&&(c.hs>0||c.ho));if(props.length>0){const p=props[Math.floor(Math.random()*props.length)];if(p.ho){p.ho=0;}else{p.hs=Math.max(0,p.hs-1);}}}},dur:1,col:'#ff3355',border:'rgba(255,51,85,.4)'},
+  {icon:'🚀',type:'혁신',title:'AI 기술 혁신 붐',desc:'모든 플레이어 ₩500 획득',fx:(_,players)=>{players.forEach(p=>{if(!p.bkrt)p.cash+=500;});},dur:1,col:'#ffd700',border:'rgba(255,215,0,.4)'},
+  {icon:'🌐',type:'무역',title:'자유무역 협정 체결',desc:'공항 임대료 3배 폭등!',fx:(cells)=>{cells.forEach(c=>{if(c.t==='airport')c._airportMod=3;});},dur:4,col:'#22d3ee',border:'rgba(34,211,238,.4)'},
+  {icon:'💹',type:'투자',title:'외국인 직접투자 급증',desc:'무인도 탈출 무료 + ₩200',fx:(_,__,G)=>{G._islandFree=true;},dur:3,col:'#c084fc',border:'rgba(192,132,252,.4)'},
+  {icon:'💰',type:'보너스',title:'국가 배당금 지급',desc:'부동산 소유자 1인당 ₩300',fx:(cells,players)=>{const owners=new Set();cells.forEach(c=>{if(c.t==='prop'&&c.own>=0)owners.add(c.own);});players.forEach(p=>{if(owners.has(p.id))p.cash+=300;});},dur:1,col:'#ffd700',border:'rgba(255,215,0,.4)'},
+  {icon:'🔥',type:'버블',title:'부동산 버블 붕괴',desc:'전체 임대료 30% 감소!',fx:(cells)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*.7;});},dur:2,col:'#ff6b35',border:'rgba(255,107,53,.4)'},
+  {icon:'💎',type:'황금기',title:'경제 황금기 도래',desc:'임대료 50% 증가 & 배당금!',fx:(cells,players)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*1.5;});players.forEach(p=>{if(!p.bkrt)p.cash+=200;});},dur:3,col:'#ffd700',border:'rgba(255,215,0,.6)'},
+  {icon:'🛢️',type:'에너지',title:'에너지 대란 발생',desc:'세금 2배 & 임대료 감소',fx:(_,__,G)=>{G._taxMod=2;},dur:2,col:'#ff3355',border:'rgba(255,51,85,.4)'},
+  {icon:'🌊',type:'정치',title:'경제 제재 발동',desc:'해외 자산 임대료 40% 감소',fx:(cells)=>{['JP','US','EU','CN','BR','IN'].forEach(ctry=>{cells.forEach(c=>{if(c.t==='prop'&&c.ctry===ctry)c._rentMod=(c._rentMod||1)*.6;});});},dur:2,col:'#ff3355',border:'rgba(255,51,85,.4)'},
+];
+
+// ── ACHIEVEMENTS ──
+const ACHIEVEMENTS=[
+  {id:'firstBuy',icon:'🏠',name:'첫 부동산',desc:'첫 번째 부동산을 구매했습니다',check:(_,G)=>G.cells.some(c=>c.own===0&&c.t==='prop')},
+  {id:'monopoly',icon:'🌟',name:'독점왕',desc:'한 국가를 완전 독점했습니다',check:(_,G)=>COUNTRIES.some((_,ci)=>mono(0,ci,G))},
+  {id:'hotel',icon:'🏨',name:'호텔리어',desc:'첫 번째 호텔을 건설했습니다',check:(_,G)=>G.cells.some(c=>c.own===0&&c.ho>0)},
+  {id:'rich10k',icon:'💰',name:'1억 클럽',desc:'순자산 ₩10,000 달성',check:(p)=>nw(p)>=10000},
+  {id:'rich20k',icon:'💎',name:'재벌',desc:'순자산 ₩20,000 달성',check:(p)=>nw(p)>=20000},
+  {id:'rich50k',icon:'👑',name:'억만장자',desc:'순자산 ₩50,000 달성',check:(p)=>nw(p)>=50000},
+  {id:'airportKing',icon:'✈️',name:'항공왕',desc:'공항 3개 이상 보유',check:(_,G)=>G.cells.filter(c=>c.own===0&&c.t==='airport').length>=3},
+  {id:'mgWin',icon:'🎓',name:'퀴즈왕',desc:'미니게임에서 승리했습니다',check:(p)=>p._mgWins>0},
+  {id:'survivor',icon:'🛡️',name:'생존왕',desc:'파산 위기에서 살아남았습니다',check:(p)=>p._survived>0},
+  {id:'landlord',icon:'🏙️',name:'건물주',desc:'5개 이상 부동산 보유',check:(_,G)=>G.cells.filter(c=>c.own===0&&c.t==='prop').length>=5},
+];
+
+// ============================================================
+//  GAME STATE
+// ============================================================
+let G={
+  phase:'s',players:[],cur:0,round:1,
+  maxT:30,tot:0,cells:[],
+  ecoEvent:null,ecoTurns:0,
+  _buildCostMod:1,_islandFree:false,
+  eventsEnabled:true,
+  diff:'normal',
+  charIdx:0,
+  gameStats:{totalRent:0,totalTax:0,totalChance:0,doublesRolled:0},
+};
+
+let unlockedAch=new Set();
+
+function initCells(){
+  G.cells=RAW_CELLS.map((c,i)=>({...c,idx:i,own:-1,hs:0,ho:0,_rentMod:1,_airportMod:1}));
+}
+
+// ============================================================
+//  PARTICLES
+// ============================================================
+function initParticles(){
+  const container=document.getElementById('particles');
+  for(let i=0;i<18;i++){
+    const p=document.createElement('div');p.className='pt';
+    p.style.left=Math.random()*100+'%';
+    p.style.top=Math.random()*100+'%';
+    const cols=['rgba(255,215,0,.3)','rgba(34,211,238,.2)','rgba(192,132,252,.2)','rgba(0,255,136,.2)'];
+    p.style.background=cols[Math.floor(Math.random()*cols.length)];
+    p.style.setProperty('--dur',(6+Math.random()*8)+'s');
+    p.style.setProperty('--delay',(-Math.random()*8)+'s');
+    p.style.setProperty('--tx',(Math.random()*60-30)+'px');
+    p.style.setProperty('--ty',(-40-Math.random()*60)+'px');
+    container.appendChild(p);
+  }
+}
+
+// ============================================================
+//  TICKER
+// ============================================================
+function updateTicker(){
+  const items=COUNTRIES.map(c=>{
+    const chg=(Math.random()*8-3).toFixed(1);
+    const up=parseFloat(chg)>=0;
+    return `<div class="tick-item ${up?'tick-up':'tick-dn'}">${c.flag} ${c.name} <span>${up?'▲':'▼'}${Math.abs(chg)}%</span></div>`;
+  });
+  const doubled=[...items,...items];
+  document.getElementById('tickerInner').innerHTML=doubled.join('');
+}
+
+// ============================================================
+//  START GAME
+// ============================================================
+function startGame(ci,mt,diff){
+  initCells();
+  G.maxT=mt;G.tot=0;G.round=1;G.cur=0;
+  G.diff=diff;G.charIdx=ci;
+  G._buildCostMod=1;G._islandFree=false;
+  G.ecoEvent=null;G.ecoTurns=0;
+  G.gameStats={totalRent:0,totalTax:0,totalChance:0,doublesRolled:0};
+  unlockedAch=new Set();
+
+  const startCash=DIFF_CASH[diff]||15000;
+  const pc=CHARS[ci];
+  const botPool=CHARS.filter((_,i)=>i!==ci);
+  const bots=botPool.slice(0,3);
+
+  // 캐릭터 보너스 적용
+  let pCash=startCash;
+  if(pc.bk==='rich')pCash+=3000;
+
+  G.players=[
+    {id:0,name:pc.name,em:pc.em,col:pc.col,bk:pc.bk,isBot:false,
+     cash:pCash,pos:0,bkrt:false,jl:false,jt:0,
+     _ex:false,_mg:false,_mgWins:0,_survived:0,
+     initCash:pCash,totalEarned:0,totalLost:0},
+    ...bots.map((c,i)=>({
+      id:i+1,name:c.name,em:c.em,col:c.col,bk:c.bk,isBot:true,
+      cash:startCash,pos:0,bkrt:false,jl:false,jt:0,
+      _ex:false,_mg:false,_mgWins:0,_survived:0,
+      initCash:startCash,totalEarned:0,totalLost:0,
+    }))
+  ];
+
+  document.getElementById('cs').style.display='none';
+  document.getElementById('gm').style.display='flex';
+  document.getElementById('rs').style.display='none';
+  document.getElementById('mgo').style.display='none';
+
+  updateTicker();
+  setInterval(updateTicker,15000);
+  renderLegend();
+  renderPCards();
+  drawBoard();
+  startTurn();
+}
+
+// ============================================================
+//  CANVAS DRAWING
+// ============================================================
+const cv=document.getElementById('bc');
+const ctx=cv.getContext('2d');
+
+function cellXY(i){
+  if(i<=10)return{x:i*CELL,y:S-CELL,w:CELL,h:CELL};
+  if(i<=20)return{x:S-CELL,y:S-CELL-(i-10)*CELL,w:CELL,h:CELL};
+  if(i<=30)return{x:S-CELL-(i-20)*CELL,y:0,w:CELL,h:CELL};
+  return{x:0,y:(i-30)*CELL,w:CELL,h:CELL};
+}
+
+function rrRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
+
+function wrapText(text,x,y,mw,lh){
+  const chars=[...text];let line='';const lines=[];
+  chars.forEach(c=>{
+    const test=line+c;
+    if(ctx.measureText(test).width>mw&&line){lines.push(line);line=c;}else line=test;
+  });
+  if(line)lines.push(line);
+  const sy=y-(lines.length-1)*lh/2;
+  lines.forEach((s,i)=>ctx.fillText(s,x,sy+i*lh));
+}
+
+function drawBoard(trail=[],tcol='rgba(255,215,0,0.4)'){
+  ctx.clearRect(0,0,S,S);
+
+  // ── 배경: 다층 그라디언트 ──
+  const bg=ctx.createLinearGradient(0,0,S,S);
+  bg.addColorStop(0,'#04060f');bg.addColorStop(0.5,'#070d1e');bg.addColorStop(1,'#04060f');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,S,S);
+
+  // ── 코너 빛 효과 ──
+  [0,S].forEach(cx=>[0,S].forEach(cy=>{
+    const rg=ctx.createRadialGradient(cx,cy,0,cx,cy,CELL*1.6);
+    rg.addColorStop(0,'rgba(255,215,0,0.06)');rg.addColorStop(1,'transparent');
+    ctx.fillStyle=rg;ctx.fillRect(0,0,S,S);
+  }));
+
+  // ── 내부 영역 ──
+  const ig=ctx.createRadialGradient(S/2,S/2,0,S/2,S/2,S*.48);
+  ig.addColorStop(0,'#0d1930');ig.addColorStop(1,'#06091a');
+  ctx.fillStyle=ig;
+  rrRect(ctx,CELL,CELL,S-CELL*2,S-CELL*2,14);ctx.fill();
+
+  // ── 내부 테두리 글로우 ──
+  ctx.save();ctx.shadowBlur=18;ctx.shadowColor='rgba(255,215,0,0.12)';
+  ctx.strokeStyle='rgba(255,215,0,0.1)';ctx.lineWidth=1.5;
+  rrRect(ctx,CELL,CELL,S-CELL*2,S-CELL*2,14);ctx.stroke();
+  ctx.restore();
+
+  // ── 세계지도 격자 무늬 ──
+  ctx.save();ctx.globalAlpha=0.025;ctx.strokeStyle='#4dabf7';ctx.lineWidth=0.5;
+  for(let i=1;i<8;i++){
+    ctx.beginPath();ctx.moveTo(CELL+i*(S-2*CELL)/8,CELL);ctx.lineTo(CELL+i*(S-2*CELL)/8,S-CELL);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(CELL,CELL+i*(S-2*CELL)/8);ctx.lineTo(S-CELL,CELL+i*(S-2*CELL)/8);ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── 중앙 글로브 장식 ──
+  ctx.save();
+  // 글로브 외곽선들
+  [60,90,118,145].forEach((r,i)=>{
+    ctx.globalAlpha=0.04+i*0.01;
+    ctx.strokeStyle='#ffd700';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(S/2,S/2,r,0,Math.PI*2);ctx.stroke();
+  });
+  // 글로브 경선 (대각선)
+  ctx.globalAlpha=0.04;
+  for(let a=0;a<Math.PI;a+=Math.PI/5){
+    ctx.beginPath();ctx.ellipse(S/2,S/2,145,60,a,0,Math.PI*2);ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── 중앙 텍스트 ──
+  ctx.textAlign='center';
+  ctx.font=`bold ${CELL*.36}px "Black Han Sans"`;
+  ctx.fillStyle='rgba(255,215,0,0.18)';
+  ctx.fillText('인베스트',S/2,S/2-8);
+  ctx.fillText('마블',S/2,S/2+CELL*.32);
+  ctx.font=`700 ${CELL*.15}px "Orbitron"`;
+  ctx.fillStyle='rgba(34,211,238,0.15)';
+  ctx.fillText('ULTRA',S/2,S/2+CELL*.52);
+  ctx.font=`${CELL*.14}px "Rajdhani"`;
+  ctx.fillStyle='rgba(178,108,247,0.2)';
+  ctx.fillText('⏳ '+(G.maxT-G.tot)+'턴 남음',S/2,S/2+CELL*.7);
+
+  // ── 경제 이벤트 표시 ──
+  if(G.ecoEvent){
+    ctx.save();
+    ctx.shadowBlur=30;ctx.shadowColor='rgba(255,215,0,0.4)';
+    ctx.font=`${CELL*.26}px sans-serif`;ctx.fillText(G.ecoEvent.icon,S/2,S/2-CELL*.52);
+    ctx.shadowBlur=0;
+    ctx.font=`bold ${CELL*.13}px "Noto Sans KR"`;
+    ctx.fillStyle='rgba(255,215,0,0.28)';ctx.fillText(G.ecoEvent.title,S/2,S/2-CELL*.3);
+    ctx.restore();
   }
 
-  setTimeout(function() {
-    var inputs = document.querySelectorAll('input[type="text"]');
-    if (inputs.length > 0) {
-      var inp = inputs[inputs.length - 1];
-      inp.focus();
-      inp.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          beep(880, 0.05, 'square', 0.03);
-          var btns = document.querySelectorAll('button');
-          for (var b of btns) {
-            if (b.innerText.includes('ENTER') || b.innerText.trim() === '실행') {
-              b.click(); break;
-            }
-          }
-        }
-        if (e.key === 'l' && e.ctrlKey) {
-          e.preventDefault();
-          var btns = document.querySelectorAll('button');
-          for (var b of btns) {
-            if (b.innerText.includes('CLR')) { b.click(); break; }
-          }
-        }
-      });
-      inp.addEventListener('input', function() {
-        beep(600 + Math.random()*200, 0.02, 'square', 0.015);
-      });
-    }
-  }, 400);
+  G.cells.forEach((c,i)=>{
+    const{x,y,w,h}=cellXY(i);
+    const isT=trail.includes(i);
 
-  setTimeout(function() {
-    var style = document.createElement('style');
-    style.textContent = `
-      input[type="text"] {
-        background: #020c02 !important;
-        color: #39ff14 !important;
-        border: 1px solid #1a4a1a !important;
-        border-radius: 4px !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-size: 13px !important;
-        caret-color: #39ff14 !important;
+    // Trail glow
+    if(isT){
+      ctx.save();ctx.shadowBlur=20;ctx.shadowColor=tcol;
+      ctx.fillStyle=tcol.replace('0.4','0.1');
+      rrRect(ctx,x,y,w,h,4);ctx.fill();
+      ctx.restore();
+    }
+
+    // Cell bg
+    let bg='#090f20';
+    if(c.t==='go')bg='#001a10';
+    else if(c.t==='island')bg='#1a0d00';
+    else if(c.t==='golden')bg='#130f00';
+    else if(c.t==='taxhub'||c.t==='tax')bg='#120505';
+    else if(c.t==='chance')bg='#121000';
+    else if(c.t==='community')bg='#001512';
+    else if(c.t==='airport')bg='#001220';
+
+    ctx.fillStyle=bg;rrRect(ctx,x+1,y+1,w-2,h-2,3);ctx.fill();
+
+    // Border
+    let bc='rgba(255,255,255,.04)';
+    if(c.t==='prop'&&c.own>=0){
+      const oc=G.players[c.own]?.col||'#fff';
+      bc=oc+'66';
+      // Owned glow
+      ctx.save();ctx.shadowBlur=6;ctx.shadowColor=oc+'44';
+      ctx.strokeStyle=oc+'55';ctx.lineWidth=1.5;
+      rrRect(ctx,x+1,y+1,w-2,h-2,3);ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.strokeStyle=bc;ctx.lineWidth=1;
+      rrRect(ctx,x+1,y+1,w-2,h-2,3);ctx.stroke();
+    }
+
+    // Color stripe
+    if(c.t==='prop'&&c.col){
+      const sg=ctx.createLinearGradient(x,y+2,x+w,y+6);
+      sg.addColorStop(0,c.col+'00');sg.addColorStop(.3,c.col);
+      sg.addColorStop(.7,c.col);sg.addColorStop(1,c.col+'00');
+      ctx.fillStyle=sg;ctx.fillRect(x+2,y+2,w-4,4);
+    }
+
+    // Content
+    const mx=x+w/2,my=y+h/2;
+    ctx.textAlign='center';
+
+    if(c.t==='go'){
+      ctx.font=`${CELL*.28}px sans-serif`;ctx.fillText('🚀',mx,my-4);
+      ctx.font=`bold ${CELL*.16}px "Noto Sans KR"`;
+      ctx.fillStyle='#10d96e';ctx.fillText('출발',mx,my+CELL*.22);
+    } else if(c.t==='island'){
+      ctx.font=`${CELL*.28}px sans-serif`;ctx.fillText('🏝️',mx,my-4);
+      ctx.font=`${CELL*.13}px "Noto Sans KR"`;ctx.fillStyle='#ff8c42';
+      ctx.fillText('무인도',mx,my+CELL*.22);
+    } else if(c.t==='golden'){
+      ctx.font=`${CELL*.26}px sans-serif`;ctx.fillText('✨',mx,my-3);
+      ctx.font=`${CELL*.13}px "Noto Sans KR"`;ctx.fillStyle='#ffd700';
+      ctx.fillText('황금시대',mx,my+CELL*.22);
+    } else if(c.t==='taxhub'){
+      ctx.font=`${CELL*.24}px sans-serif`;ctx.fillText('💼',mx,my-3);
+      ctx.font=`${CELL*.11}px "Noto Sans KR"`;ctx.fillStyle='#ff4560';
+      ctx.fillText('세금징수소',mx,my+CELL*.2);
+    } else if(c.t==='chance'){
+      ctx.font=`${CELL*.26}px sans-serif`;ctx.fillText('🎲',mx,my-3);
+      ctx.font=`${CELL*.13}px "Noto Sans KR"`;ctx.fillStyle='#ffd700';
+      ctx.fillText('찬스!',mx,my+CELL*.22);
+    } else if(c.t==='community'){
+      ctx.font=`${CELL*.24}px sans-serif`;ctx.fillText('🏦',mx,my-3);
+      ctx.font=`${CELL*.11}px "Noto Sans KR"`;ctx.fillStyle='#10ac84';
+      ctx.fillText('공동체기금',mx,my+CELL*.2);
+    } else if(c.t==='airport'){
+      ctx.font=`${CELL*.24}px sans-serif`;ctx.fillText('✈️',mx,my-3);
+      ctx.font=`${CELL*.12}px "Noto Sans KR"`;ctx.fillStyle='#22d3ee';
+      ctx.fillText(c.name.replace('공항',''),mx,my+CELL*.18);
+      ctx.font=`${CELL*.1}px "Noto Sans KR"`;ctx.fillStyle='#22d3ee88';
+      ctx.fillText('공항',mx,my+CELL*.3);
+    } else if(c.t==='tax'){
+      ctx.font=`${CELL*.22}px sans-serif`;ctx.fillText('💸',mx,my-4);
+      ctx.font=`${CELL*.12}px "Noto Sans KR"`;ctx.fillStyle='#ff4560';
+      ctx.fillText(c.name,mx,my+CELL*.16);
+      ctx.font=`${CELL*.12}px "Orbitron"`;ctx.fillStyle='#ff456077';
+      ctx.fillText('₩'+c.amt,mx,my+CELL*.3);
+    } else if(c.t==='prop'){
+      ctx.font=`${CELL*.145}px "Noto Sans KR"`;
+      ctx.fillStyle=c.own>=0?'rgba(255,255,255,.95)':'rgba(255,255,255,.7)';
+      wrapText(c.name,mx,my-5,w-6,CELL*.16);
+
+      // Buildings
+      if(c.ho>0){
+        ctx.font=`${CELL*.22}px sans-serif`;ctx.fillText('🏨',mx,my+CELL*.18);
+      } else if((c.hs||0)>0){
+        const icons='🏠'.repeat(Math.min(c.hs,4));
+        ctx.font=`${CELL*.15}px sans-serif`;ctx.fillText(icons,mx,my+CELL*.22);
       }
-      input[type="text"]:focus {
-        border-color: #39ff14 !important;
-        box-shadow: 0 0 12px rgba(57,255,20,0.2) !important;
-        outline: none !important;
+
+      // Price
+      ctx.font=`600 ${CELL*.12}px "Rajdhani"`;
+      ctx.fillStyle='rgba(255,215,0,.5)';
+      ctx.fillText('₩'+c.price,mx,my+CELL*.38);
+
+      // Owner dot
+      if(c.own>=0){
+        const oc=G.players[c.own]?.col||'#fff';
+        ctx.save();ctx.shadowBlur=6;ctx.shadowColor=oc;
+        ctx.fillStyle=oc;ctx.beginPath();ctx.arc(x+w-7,y+8,4.5,0,Math.PI*2);ctx.fill();
+        ctx.restore();
       }
-      input[type="text"]::placeholder { color: #1a4a1a !important; }
-      .stTextInput > div > div { background: transparent !important; }
-      .stButton > button {
-        font-family: 'JetBrains Mono', monospace !important;
-        background: #020c02 !important;
-        color: #39ff14 !important;
-        border: 1px solid #1a4a1a !important;
-        border-radius: 4px !important;
-        font-size: 12px !important;
-        transition: all 0.15s !important;
-      }
-      .stButton > button:hover {
-        background: #0a2a0a !important;
-        border-color: #39ff14 !important;
-        box-shadow: 0 0 10px rgba(57,255,20,0.2) !important;
-        color: #ffffff !important;
-      }
-      .stButton > button[kind="primary"] {
-        background: #0f3a0f !important;
-        color: #39ff14 !important;
-        border-color: #39ff14 !important;
-      }
+    }
+  });
+
+  // PLAYERS (강화된 토큰)
+  G.players.forEach(p=>{
+    if(p.bkrt)return;
+    const{x,y,w,h}=cellXY(p.pos);
+    const offsets=[[-8,-8],[8,-8],[-8,8],[8,8]];
+    const[ox,oy]=offsets[p.id]||[0,0];
+    const px=x+w/2+ox,py=y+h/2+oy;
+    const isActive=G.cur===p.id;
+    const r=isActive?11:8;
+
+    ctx.save();
+    // 외곽 글로우 링 (활성 플레이어)
+    if(isActive){
+      ctx.shadowBlur=28;ctx.shadowColor=p.col;
+      // 펄스 링
+      const pulse=0.4+0.6*Math.abs(Math.sin(Date.now()*0.004));
+      ctx.globalAlpha=pulse*0.5;
+      ctx.strokeStyle=p.col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(px,py,r+5,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+
+    // 토큰 본체 (그라디언트)
+    const tg=ctx.createRadialGradient(px-r*.3,py-r*.3,0,px,py,r);
+    tg.addColorStop(0,p.col+'ff');tg.addColorStop(1,p.col+'88');
+    ctx.shadowBlur=isActive?22:10;ctx.shadowColor=p.col;
+    ctx.fillStyle=isActive?tg:p.col+'77';
+    ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+
+    // 테두리
+    ctx.strokeStyle=isActive?'rgba(255,255,255,0.8)':'rgba(255,255,255,0.3)';
+    ctx.lineWidth=isActive?1.8:1;
+    ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.stroke();
+
+    // 이모지
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+    ctx.font=(isActive?'12':'10')+'px sans-serif';
+    ctx.textAlign='center';ctx.fillText(p.em,px,py+4);
+    ctx.restore();
+  });
+}
+
+// ============================================================
+//  UI RENDERS
+// ============================================================
+function mono(pid,ctry,Gs=G){
+  const cp=Gs.cells.filter(c=>c.t==='prop'&&c.ctry===ctry);
+  return cp.length>0&&cp.every(c=>c.own===pid);
+}
+
+function nw(p){
+  let v=p.cash;
+  G.cells.forEach(c=>{if(c.own===p.id&&c.t==='prop')v+=Math.floor(c.price*(0.6+(c.hs||0)*.4+(c.ho?.5:0)));});
+  return Math.max(0,v);
+}
+
+function renderPCards(){
+  const container=document.getElementById('pcards');
+  container.innerHTML='';
+  const maxNW=Math.max(...G.players.map(nw),1);
+
+  G.players.forEach((p,i)=>{
+    const pnw=nw(p);const pct=Math.max(2,Math.round(pnw/maxNW*100));
+    const propCount=G.cells.filter(c=>c.own===p.id&&c.t==='prop').length;
+    const bldCount=G.cells.reduce((s,c)=>s+(c.own===p.id?((c.hs||0)+(c.ho?5:0)):0),0);
+    const cashChange=pnw-p.initCash;
+
+    const d=document.createElement('div');
+    d.className='pc'+(i===G.cur?' act':'')+(p.bkrt?' bk':'');
+    d.id='pc'+i;
+
+    const gradStart=p.col+'22';
+    const fillGrad=`linear-gradient(90deg,${p.col},${p.col}88)`;
+
+    d.innerHTML=`
+      <div class="pch">
+        <div class="pcav" style="border-color:${p.col}33;">
+          <span>${p.em}</span>
+          <div class="act-ring" style="border-color:${p.col};"></div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="pcn" style="color:${p.col}">${p.name}</div>
+          <span class="pcbadge ${p.isBot?'bot':'you'}">${p.isBot?'BOT':'YOU'}</span>
+          <div class="pcloc">${p.bkrt?'💀 파산':'📍 '+G.cells[p.pos]?.name}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="pcc" style="color:${p.bkrt?'#ff3355':'#00ff88'}">₩${p.cash.toLocaleString()}</div>
+          <div class="pcnet">순자산 ₩${pnw.toLocaleString()}</div>
+        </div>
+      </div>
+      <div class="pcstats">
+        <div class="pcstat"><div class="sv">₩${pnw.toLocaleString()}</div><div class="sl">순자산</div></div>
+        <div class="pcstat"><div class="sv">${propCount}</div><div class="sl">부동산</div></div>
+        <div class="pcstat"><div class="sv">${bldCount}</div><div class="sl">건물</div></div>
+      </div>
+      <div class="pbar"><div class="pfill" style="width:${pct}%;background:${fillGrad};"></div></div>
     `;
-    document.head.appendChild(style);
-  }, 200);
-})();
-</script>
-"""
+    container.appendChild(d);
+  });
+}
 
-MATRIX_RAIN_HTML = """
-<canvas id="matrix-canvas" style="
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  z-index:-1; pointer-events:none; opacity:0.06;
-"></canvas>
-<script>
-(function(){
-  var c = document.getElementById('matrix-canvas');
-  if(!c) return;
-  var ctx = c.getContext('2d');
-  c.width = window.innerWidth;
-  c.height = window.innerHeight;
-  var cols = Math.floor(c.width / 18);
-  var drops = Array(cols).fill(1);
-  var chars = '01アイウエオカキクケコHYOMIN효민UNIVERSE';
-  function draw() {
-    ctx.fillStyle = 'rgba(0,0,0,0.05)';
-    ctx.fillRect(0,0,c.width,c.height);
-    ctx.fillStyle = '#39ff14';
-    ctx.font = '13px "JetBrains Mono", monospace';
-    for(var i=0; i<drops.length; i++){
-      var ch = chars[Math.floor(Math.random()*chars.length)];
-      ctx.fillText(ch, i*18, drops[i]*18);
-      if(drops[i]*18 > c.height && Math.random() > 0.975) drops[i] = 0;
-      drops[i]++;
+function renderLegend(){
+  const g=document.getElementById('legendGrid');g.innerHTML='';
+  COUNTRIES.forEach((c,ci)=>{
+    const owned=G.cells.filter(x=>x.t==='prop'&&x.ctry===ci&&x.own>=0);
+    const total=G.cells.filter(x=>x.t==='prop'&&x.ctry===ci).length;
+    const d=document.createElement('div');d.className='legend-item';
+    const ownerCol=owned.length>0?G.players[owned[0].own]?.col||'#fff':'var(--text3)';
+    d.innerHTML=`
+      <div class="legend-dot" style="background:${c.col};"></div>
+      <div class="legend-flag">${c.flag}</div>
+      <div class="legend-name">${c.name}</div>
+      <div class="legend-own" style="color:${ownerCol}">${owned.length}/${total}</div>
+    `;
+    g.appendChild(d);
+  });
+}
+
+// ============================================================
+//  TURN LOGIC
+// ============================================================
+function startTurn(){
+  const p=G.players[G.cur];
+  if(p.bkrt){nextTurn();return;}
+
+  // Island check
+  if(p.jl){
+    p.jt=(p.jt||0)+1;
+    if(p.jt>=3||(G._islandFree)){
+      p.jl=false;p.jt=0;
+      addLog(p.em+' 무인도 탈출!','good');
+      toast('🏝️ 탈출 성공!','good');
+    } else {
+      addLog(p.em+' 무인도 '+p.jt+'턴째...','bad');
+      toast('🏝️ 고립 중 ('+p.jt+'/3)','bad');
+      endAct(p.id,false);return;
     }
   }
-  setInterval(draw, 55);
-})();
+
+  const rem=G.maxT-G.tot;
+  const td=document.getElementById('tdsp');
+  td.textContent='🕐 '+rem+'턴 남음';
+  td.className='turn-display'+(rem<=5?' urgent':'');
+  document.getElementById('rdsp').textContent='라운드 '+G.round;
+  document.getElementById('cdsp').textContent=p.em+' '+p.name;
+
+  if(p.isBot){
+    document.getElementById('rbtn').disabled=true;
+    document.getElementById('dhint').textContent=p.em+' '+p.name+' 분석 중...';
+    setTimeout(()=>doRoll(true),800+Math.random()*600);
+  } else {
+    document.getElementById('rbtn').disabled=false;
+    document.getElementById('dhint').textContent='▶ 주사위를 굴려 이동하세요';
+  }
+
+  checkAchievements();
+}
+
+function doRoll(isBot){
+  document.getElementById('rbtn').disabled=true;
+  document.getElementById('dhint').textContent='🎲 굴리는 중...';
+
+  const d1El=document.getElementById('d1'),d2El=document.getElementById('d2');
+  const dsumEl=document.getElementById('dsum');
+  dsumEl.classList.remove('show');
+  d1El.classList.remove('landed');d2El.classList.remove('landed');
+  d1El.classList.add('rolling');d2El.classList.add('rolling');
+
+  let t=0;
+  const iv=setInterval(()=>{
+    d1El.textContent=DF[Math.floor(Math.random()*6)];
+    d2El.textContent=DF[Math.floor(Math.random()*6)];
+    t++;
+    if(t>=16){
+      clearInterval(iv);
+      const v1=Math.floor(Math.random()*6)+1,v2=Math.floor(Math.random()*6)+1;
+      d1El.textContent=DF[v1-1];d2El.textContent=DF[v2-1];
+      d1El.classList.remove('rolling');d2El.classList.remove('rolling');
+      d1El.classList.add('landed');d2El.classList.add('landed');
+
+      const tot=v1+v2,dbl=v1===v2;
+      if(dbl){G.gameStats.doublesRolled++;}
+
+      dsumEl.innerHTML=tot+(dbl?`<span class="double-badge">DOUBLE!</span>`:'');
+      dsumEl.classList.add('show');
+
+      const p=G.players[G.cur];
+      if(dbl)toast('🎉 더블! '+v1+'+'+v2,'gold');
+      else addLog(p.em+' '+v1+'+'+v2+'='+tot+'칸','');
+
+      moveP(G.cur,tot,dbl);
+    }
+  },70);
+}
+
+async function moveP(pi,steps,dbl){
+  const p=G.players[pi];const trail=[];
+  for(let s=1;s<=steps;s++){
+    p.pos=(p.pos+1)%40;trail.push(p.pos);
+    if(p.pos===0){
+      let bonus=200;
+      if(p.bk==='pass')bonus+=100;
+      p.cash+=bonus;p.totalEarned+=bonus;
+      addLog(p.em+' 출발 통과! +₩'+bonus,'good');
+      toast('🚀 출발 통과 +₩'+bonus,'good');
+    }
+    drawBoard([...trail],p.col+'66');
+    renderPCards();
+    await sl(100);
+  }
+  await sl(150);
+  drawBoard();renderPCards();
+  await land(pi,dbl);
+}
+
+async function land(pi,dbl){
+  const p=G.players[pi];const c=G.cells[p.pos];
+  addLog(p.em+' → '+c.name,'');
+
+  if(c.t==='go'){
+    p.cash+=200;p.totalEarned+=200;
+    addLog('🚀 출발칸 +₩200','good');toast('🚀 +₩200','good');
+    endAct(pi,dbl);
+  } else if(c.t==='island'){
+    if(G._islandFree){
+      addLog(p.em+' 무인도 통과 (FTA 혜택)','sys');
+      toast('🌐 무인도 면제!','sys');endAct(pi,dbl);
+    } else if(p.jl){
+      // Already handled in startTurn
+      endAct(pi,dbl);
+    } else {
+      p.jl=true;p.jt=0;
+      showEventPop('🏝️','무인도 고립','island',p.name+' 이(가) 무인도에 고립됩니다!','3턴 동안 이동 불가',p.em+' 3턴 고립','#ff8c42','rgba(255,140,66,.3)',null,pi,dbl);
+    }
+  } else if(c.t==='golden'){
+    p.cash+=1000;p.totalEarned+=1000;
+    showEventPop('✨','황금시대','golden','부동산 시장이 황금기를 맞이했습니다!','황금시대','+₩1,000 획득','#ffd700','rgba(255,215,0,.3)',null,pi,dbl);
+  } else if(c.t==='taxhub'){
+    const tx=Math.floor(p.cash*.1);
+    p.cash-=tx;p.totalLost+=tx;
+    G.gameStats.totalTax+=tx;
+    showEventPop('💼','세금징수소','tax','국세청이 재산의 10%를 징수합니다','세금 납부','-₩'+tx,'#ff3355','rgba(255,51,85,.3)',()=>ckBk(pi),pi,dbl);
+  } else if(c.t==='tax'){
+    const txAmt=G.diff==='easy'?Math.floor(c.amt*.7):(G.diff==='hard'?Math.floor(c.amt*1.3):c.amt);
+    p.cash-=txAmt;p.totalLost+=txAmt;
+    G.gameStats.totalTax+=txAmt;
+    addLog(p.em+' 💸 세금 -₩'+txAmt,'bad');
+    toast('💸 세금 -₩'+txAmt,'bad');ckBk(pi);drawBoard();renderPCards();endAct(pi,dbl);
+  } else if(c.t==='chance'){
+    G.gameStats.totalChance++;
+    const cd=CHANCE[Math.floor(Math.random()*CHANCE.length)];
+    const result=cd.fx(p,G.players,G.cells,G);
+    if(!p._ex&&!p._mg){
+      showEventPop('🎲','찬스!','chance',cd.txt,cd.desc||'',result,cd.col,'rgba(255,215,0,.25)',()=>ckBk(pi),pi,dbl);
+    } else if(p._ex){
+      p._ex=false;addLog('🎲 '+cd.txt+' → 추가 굴리기!','gold');
+      drawBoard();renderPCards();
+      toast('🎲 한 번 더!','gold');
+      setTimeout(()=>doRoll(p.isBot),700);
+    } else if(p._mg){
+      p._mg=false;showMG(pi,dbl);
+    }
+  } else if(c.t==='community'){
+    const cd=COMMUNITY[Math.floor(Math.random()*COMMUNITY.length)];
+    const result=cd.fx(p,G.players,G.cells);
+    showEventPop('🏦','공동체기금','community',cd.txt,cd.desc||'',result,cd.col,'rgba(16,172,132,.25)',()=>ckBk(pi),pi,dbl);
+  } else if(c.t==='airport'){
+    if(c.own<0){
+      if(p.isBot&&p.cash>=1000){
+        c.own=pi;p.cash-=1000;
+        addLog(p.em+' ✈️ 공항 매입','good');
+        drawBoard();renderPCards();endAct(pi,dbl);
+      } else if(!p.isBot){
+        showProp(pi,dbl,'airport',c);
+      } else endAct(pi,dbl);
+    } else if(c.own===pi){
+      addLog(p.em+' 자신의 공항','sys');endAct(pi,dbl);
+    } else {
+      const ow=G.players[c.own];
+      const fee=Math.floor(500*(c._airportMod||1));
+      p.cash-=Math.min(fee,p.cash);ow.cash+=Math.min(fee,p.cash+Math.min(fee,p.cash));
+      addLog(p.em+' ✈️ 공항 이용료 -₩'+fee+' → '+ow.em,'bad');
+      toast('✈️ -₩'+fee,'bad');ckBk(pi);drawBoard();renderPCards();endAct(pi,dbl);
+    }
+  } else if(c.t==='prop'){
+    if(c.own<0){
+      if(p.isBot){
+        const ratio=p.cash/c.price;
+        if(ratio>1.8||(ratio>1.3&&mono(p.id,c.ctry))){buyProp(pi,p.pos);}
+        endAct(pi,dbl);
+      } else showProp(pi,dbl,'buy',c);
+    } else if(c.own===pi){
+      if(p.isBot)botBuild(pi,dbl);else showProp(pi,dbl,'build',c);
+    } else {
+      const ow=G.players[c.own];
+      const ri=c.ho>0?5:(c.hs||0);
+      let rent=c.rent[Math.min(ri,5)];
+      // Modifiers
+      if(c._rentMod)rent=Math.floor(rent*c._rentMod);
+      if(G.ecoEvent&&G.ecoEvent.title==='글로벌 경제 호황')rent=Math.floor(rent*1.2);
+      if(G.ecoEvent&&G.ecoEvent.title==='글로벌 금융위기')rent=Math.floor(rent*.8);
+      if(mono(c.own,c.ctry))rent=Math.floor(rent*(ow.bk==='mono'?2.8:2));
+      if(ow.bk==='rent')rent=Math.floor(rent*1.12);
+
+      // Dodge bonus
+      if(p.bk==='dodge'&&Math.random()<.1){
+        addLog(p.em+' 🦊 임대료 회피!','purple');
+        toast('🦊 임대료 회피!','purple');endAct(pi,dbl);return;
+      }
+
+      addLog(p.em+' → '+ow.em+' 임대료 ₩'+rent,'bad');
+      toast('💸 임대료 -₩'+rent,'bad');
+      G.gameStats.totalRent+=rent;
+
+      // Bankruptcy check with asset liquidation
+      if(p.cash<rent){
+        let canPay=p.cash;
+        G.cells.forEach(cell=>{
+          if(cell.own===pi&&cell.t==='prop'&&canPay<rent){
+            const sv=Math.floor(cell.price*(cell.ho?0.7:cell.hs>0?0.6:0.5));
+            canPay+=sv;p.cash+=sv;cell.own=-1;cell.hs=0;cell.ho=0;
+            addLog(p.em+' 긴급매각 '+cell.name+' +₩'+sv,'sys');
+          }
+        });
+      }
+
+      if(p.cash<rent){
+        ow.cash+=p.cash;p.totalLost+=p.cash;
+        addLog(p.em+' 💀 파산! 잔여자산 → '+ow.em,'bad');
+        toast('💀 '+p.name+' 파산!','bad');
+        p.cash=0;p.bkrt=true;
+        G.cells.forEach(cell=>{if(cell.own===pi){cell.own=c.own;}});
+        drawBoard();renderPCards();renderLegend();endAct(pi,dbl);return;
+      }
+      p.cash-=rent;ow.cash+=rent;
+      p.totalLost+=rent;ow.totalEarned+=rent;
+      ckBk(pi);drawBoard();renderPCards();renderLegend();endAct(pi,dbl);
+    }
+  }
+}
+
+function buyProp(pi,ci){
+  const p=G.players[pi];const c=G.cells[ci];
+  const disc=p.bk==='build'?.85:1;
+  const costMod=G._buildCostMod||1;
+  const pr=Math.floor(c.price*disc);
+  if(p.cash<pr)return false;
+  p.cash-=pr;p.totalLost+=pr;c.own=pi;
+  addLog(p.em+' 🏠 '+c.name+' 매입 -₩'+pr,'good');
+  toast('🏠 '+c.name+' 매입!','good');
+  if(mono(pi,c.ctry)){
+    toast('🌟 '+COUNTRIES[c.ctry].flag+' 독점!','gold');
+    addLog('🌟 '+COUNTRIES[c.ctry].name+' 독점 달성!','gold');
+    showAchievement('monopoly');
+  }
+  showAchievement('firstBuy');
+  renderLegend();
+  return true;
+}
+
+function botBuild(pi,dbl){
+  const p=G.players[pi];
+  G.cells.forEach(c=>{
+    if(c.own!==pi||c.t!=='prop')return;
+    const bc=Math.floor(c.price*.5*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
+    if(c.ho>=1)return;
+    if((c.hs||0)>=4&&p.cash>=bc*2){
+      c.hs=0;c.ho=1;p.cash-=bc*2;
+      addLog(p.em+' 🏨 호텔 at '+c.name,'good');
+      showAchievement('hotel');
+    } else if((c.hs||0)<4&&p.cash>=bc&&p.cash>c.price*2){
+      c.hs=(c.hs||0)+1;p.cash-=bc;
+      addLog(p.em+' 🏠 집 '+c.hs+'채 at '+c.name,'good');
+    }
+  });
+  endAct(pi,dbl);
+}
+
+// ── PROPERTY POPUP ──
+function showProp(pi,dbl,type,c){
+  const p=G.players[pi];
+  const ctryName=c.ctry>=0?(COUNTRIES[c.ctry]?.flag||'')+' '+COUNTRIES[c.ctry]?.name:'';
+  document.getElementById('pctry').textContent=ctryName;
+  document.getElementById('ptitle').textContent=c.name||'';
+  document.getElementById('ptitle').style.color=c.col||'var(--text)';
+
+  let info='',btnLabel='',btnAction=null,canAfford=true;
+
+  if(type==='buy'){
+    const disc=p.bk==='build'?.85:1;const pr=Math.floor(c.price*disc);
+    canAfford=p.cash>=pr;
+    const rentRows=c.rent?c.rent.map((r,i)=>{
+      const label=['기본','집1','집2','집3','집4','호텔'][i];
+      const cur=(c.hs||0)===i||(i===5&&c.ho>0);
+      return`<div class="rent-row${cur?' cur':''}"><span>${label}</span><span>₩${r}</span></div>`;
+    }).join(''):'';
+    info=`
+      <div class="prow"><span class="prlbl">매입가</span><span class="prval">${disc<1?`<del style="color:var(--text2);font-size:.75rem;">₩${c.price}</del> `:''}₩${pr.toLocaleString()}</span></div>
+      <div class="prow"><span class="prlbl">현재 잔고</span><span style="color:${canAfford?'var(--green)':'var(--red)'}">₩${p.cash.toLocaleString()}</span></div>
+      ${c.rent?`<div class="rent-table"><div style="font-size:.72rem;color:var(--text2);margin-bottom:5px;font-family:Rajdhani;letter-spacing:2px;">RENT TABLE</div>${rentRows}</div>`:''}
+      ${mono(pi,c.ctry)?'<div style="color:var(--gold);font-size:.78rem;text-align:center;padding:6px;background:rgba(255,215,0,.06);border-radius:8px;">⭐ 독점 시 임대료 2배!</div>':''}
+    `;
+    btnLabel='🏠 매입하기';
+    btnAction=()=>{
+      if(canAfford){buyProp(pi,p.pos);}else toast('💸 잔고 부족!','bad');
+      closeProp();drawBoard();renderPCards();endAct(pi,dbl);
+    };
+  } else if(type==='build'){
+    const bc=Math.floor(c.price*.5*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
+    canAfford=p.cash>=bc&&!c.ho;
+    const nextLevel=c.ho?'최고 단계':(c.hs||0)>=4?'호텔':('집 '+(c.hs+1)+'채');
+    info=`
+      <div class="prow"><span class="prlbl">현재 건물</span><span>${'🏠'.repeat(c.hs||0)}${c.ho?'🏨':''}</span></div>
+      <div class="prow"><span class="prlbl">다음 단계</span><span style="color:var(--cyan)">${nextLevel}</span></div>
+      <div class="prow"><span class="prlbl">건설 비용</span><span class="prval">₩${bc.toLocaleString()}</span></div>
+      <div class="prow"><span class="prlbl">현재 임대료</span><span style="color:var(--cyan)">₩${c.rent?c.rent[Math.min((c.hs||0)+(c.ho?5:0),5)]:0}</span></div>
+      <div class="prow"><span class="prlbl">다음 임대료</span><span style="color:var(--green)">₩${c.rent?c.rent[Math.min((c.hs||0)+1+(c.ho?4:0),5)]:0}</span></div>
+    `;
+    btnLabel=(c.hs||0)>=4&&!c.ho?'🏨 호텔 건설':'🏠 집 건설';
+    btnAction=()=>{
+      if(c.ho){toast('이미 호텔!','');closeProp();endAct(pi,dbl);return;}
+      const bc2=Math.floor(c.price*.5*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
+      if(p.cash<bc2){toast('💸 잔고 부족!','bad');closeProp();endAct(pi,dbl);return;}
+      p.cash-=bc2;
+      if((c.hs||0)>=4){c.hs=0;c.ho=1;addLog(p.em+' 🏨 호텔! '+c.name,'gold');showAchievement('hotel');}
+      else{c.hs=(c.hs||0)+1;addLog(p.em+' 🏠 집 '+c.hs+'채 at '+c.name,'good');}
+      closeProp();drawBoard();renderPCards();endAct(pi,dbl);
+    };
+  } else if(type==='airport'){
+    canAfford=p.cash>=1000;
+    info=`
+      <div class="prow"><span class="prlbl">매입가</span><span class="prval">₩1,000</span></div>
+      <div class="prow"><span class="prlbl">타인 이용료</span><span style="color:var(--cyan)">₩500/회</span></div>
+      <div class="prow"><span class="prlbl">현재 잔고</span><span style="color:${canAfford?'var(--green)':'var(--red)'}">₩${p.cash.toLocaleString()}</span></div>
+    `;
+    btnLabel='✈️ 공항 매입';
+    btnAction=()=>{
+      if(p.cash>=1000){p.cash-=1000;c.own=pi;addLog(p.em+' ✈️ 공항 매입!','good');}
+      else toast('💸 잔고 부족!','bad');
+      closeProp();drawBoard();renderPCards();endAct(pi,dbl);
+    };
+  }
+
+  document.getElementById('pinfo').innerHTML=info;
+  const btns=document.getElementById('pbtns');
+  btns.innerHTML=`
+    <button class="pbtn buy" ${!canAfford?'disabled':''} id="popBuyBtn">${btnLabel}</button>
+    <button class="pbtn pass">통과</button>
+  `;
+  if(btnAction)btns.querySelector('#popBuyBtn').onclick=btnAction;
+  btns.querySelector('.pass').onclick=()=>{closeProp();endAct(pi,dbl);};
+  document.getElementById('pp2').style.display='flex';
+}
+function closeProp(){document.getElementById('pp2').style.display='none';}
+
+// ── EVENT POPUP ──
+function showEventPop(icon,type,id,title,desc,effect,col,border,afterFx,pi,dbl){
+  const box=document.getElementById('evBox');
+  document.getElementById('evIcon').textContent=icon;
+  document.getElementById('evType').textContent=type.toUpperCase();
+  document.getElementById('evTitle').textContent=title;
+  document.getElementById('evDesc').textContent=desc;
+  const effEl=document.getElementById('evEffect');
+  effEl.textContent=effect;
+  effEl.style.color=col;effEl.style.background=border.replace('.4','.1').replace('.3','.08').replace('.25','.08');
+  box.style.borderColor=border;
+  box.style.boxShadow=`0 0 50px ${border.replace('.3','.12').replace('.4','.1')},0 20px 60px rgba(0,0,0,.7)`;
+  const okBtn=document.getElementById('evOk');
+  okBtn.style.background=col;okBtn.style.color='#000';
+  okBtn.onclick=()=>{
+    document.getElementById('evPop').style.display='none';
+    if(afterFx)afterFx();
+    drawBoard();renderPCards();renderLegend();endAct(pi,dbl);
+  };
+  document.getElementById('evPop').style.display='flex';
+}
+
+// ── MINIGAME ──
+function showMG(pi,dbl){
+  const mg=MG[Math.floor(Math.random()*MG.length)];
+  document.getElementById('mgo').style.display='flex';
+  document.getElementById('mgt').textContent='🎮 미니게임 찬스!';
+  document.getElementById('mgd').textContent=`정답 → +₩${mg.reward} | 오답 → -₩200`;
+  document.getElementById('mgq').textContent=mg.q;
+  document.getElementById('mgReward').textContent='';
+
+  let tl=12,answered=false;
+  const circ=document.getElementById('mgTimerCirc');
+  circ.style.stroke='var(--cyan)';
+  circ.style.strokeDashoffset='0';
+  document.getElementById('mgtime').textContent=tl;
+
+  const iv=setInterval(()=>{
+    tl--;
+    document.getElementById('mgtime').textContent=tl;
+    const pct=tl/12;
+    circ.style.strokeDashoffset=CIRCUMFERENCE*(1-pct);
+    if(tl<=3)circ.style.stroke='var(--red)';
+    else if(tl<=6)circ.style.stroke='var(--orange)';
+    if(tl<=0&&!answered){clearInterval(iv);answered=true;finMG(pi,dbl,false,mg.reward);}
+  },1000);
+
+  const opts=document.getElementById('mgopts');opts.innerHTML='';
+  mg.o.forEach((o,i)=>{
+    const b=document.createElement('button');b.className='mgopt';b.textContent=o;
+    b.onclick=()=>{
+      if(answered)return;answered=true;clearInterval(iv);
+      const ok=i===mg.a;
+      b.classList.add(ok?'ok':'no');
+      if(!ok)opts.children[mg.a].classList.add('ok');
+      const rewardEl=document.getElementById('mgReward');
+      rewardEl.textContent=ok?'🎉 정답! +₩'+mg.reward:'💸 오답... -₩200';
+      rewardEl.style.color=ok?'var(--green)':'var(--red)';
+      rewardEl.style.background=ok?'rgba(0,255,136,.1)':'rgba(255,51,85,.1)';
+      setTimeout(()=>finMG(pi,dbl,ok,mg.reward),1000);
+    };
+    opts.appendChild(b);
+  });
+}
+
+function finMG(pi,dbl,ok,reward){
+  const p=G.players[pi];
+  document.getElementById('mgo').style.display='none';
+  if(ok){
+    p.cash+=reward;p.totalEarned+=reward;p._mgWins++;
+    toast('🎉 정답! +₩'+reward,'good');addLog(p.em+' 미니게임 성공 +₩'+reward,'good');
+    showAchievement('mgWin');
+  } else {
+    p.cash-=200;p.totalLost+=200;
+    toast('💸 오답 -₩200','bad');addLog(p.em+' 미니게임 실패 -₩200','bad');
+  }
+  drawBoard();renderPCards();endAct(pi,dbl);
+}
+
+// ── MARKET / ASSET MANAGEMENT ──
+function openMarket(){
+  const p=G.players[0];
+  document.getElementById('marketSub').textContent=`잔고: ₩${p.cash.toLocaleString()} | 순자산: ₩${nw(p).toLocaleString()}`;
+  const list=document.getElementById('marketList');list.innerHTML='';
+  const myProps=G.cells.filter(c=>c.own===0&&c.t==='prop');
+  if(myProps.length===0){
+    list.innerHTML='<div style="color:var(--text2);text-align:center;padding:20px;">보유 부동산 없음</div>';
+  } else {
+    myProps.forEach(c=>{
+      const sv=Math.floor(c.price*(c.ho?0.7:c.hs>0?0.6:0.5));
+      const row=document.createElement('div');row.className='market-row';
+      row.innerHTML=`
+        <div class="market-col" style="background:${c.col}"></div>
+        <div>
+          <div class="market-name">${COUNTRIES[c.ctry]?.flag||''} ${c.name}</div>
+          <div class="market-info">${'🏠'.repeat(c.hs||0)}${c.ho?'🏨':''} 임대료 ₩${c.rent[Math.min((c.hs||0)+(c.ho?5:0),5)]}</div>
+        </div>
+        <div class="market-price">₩${c.price}</div>
+        <button class="market-sell" data-ci="${c.idx}">₩${sv} 매각</button>
+      `;
+      row.querySelector('.market-sell').onclick=()=>{
+        c.own=-1;p.cash+=sv;c.hs=0;c.ho=0;
+        addLog(p.em+' 매각 '+c.name+' +₩'+sv,'sys');
+        toast('💰 '+c.name+' 매각 +₩'+sv,'good');
+        openMarket();drawBoard();renderPCards();renderLegend();
+      };
+      list.appendChild(row);
+    });
+  }
+  document.getElementById('marketOv').style.display='flex';
+}
+function closeMarket(){document.getElementById('marketOv').style.display='none';}
+
+// ── ECONOMIC EVENTS ──
+function tryEcoEvent(){
+  if(!G.eventsEnabled)return;
+  if(G.ecoEvent){
+    G.ecoTurns--;
+    if(G.ecoTurns<=0){
+      addLog('📰 '+G.ecoEvent.title+' 종료','sys');
+      // Reset mods
+      if(G.ecoEvent.title==='글로벌 경제 호황'||G.ecoEvent.title==='글로벌 금융위기'){
+        G.cells.forEach(c=>{if(c.t==='prop')c._rentMod=1;});
+      }
+      if(G.ecoEvent.title==='자유무역 협정'){G.cells.forEach(c=>{if(c.t==='airport')c._airportMod=1;});}
+      if(G.ecoEvent.title==='외국인 직접투자 급증')G._islandFree=false;
+      if(G.ecoEvent.title==='중앙은행 금리 인상')G._buildCostMod=1;
+      G.ecoEvent=null;
+    }
+    return;
+  }
+
+  // 15% chance per round start
+  if(G.cur===0&&Math.random()<.15){
+    const ev=ECO_EVENTS[Math.floor(Math.random()*ECO_EVENTS.length)];
+    G.ecoEvent=ev;G.ecoTurns=ev.dur;
+    ev.fx(G.cells,G.players,G);
+    addLog('🌐 경제 이벤트: '+ev.title,'gold');
+    showEcoBar(ev);
+    drawBoard();renderPCards();renderLegend();
+  }
+}
+
+function showEcoBar(ev){
+  const existing=document.getElementById('mevBar');
+  if(existing)existing.remove();
+  const bar=document.createElement('div');bar.className='mev-bar';bar.id='mevBar';
+  bar.innerHTML=`
+    <div class="mev-icon">${ev.icon}</div>
+    <div class="mev-content">
+      <div class="mev-label">${ev.type.toUpperCase()} · ${ev.dur}턴 지속</div>
+      <div class="mev-title">${ev.title}</div>
+      <div class="mev-desc">${ev.desc}</div>
+    </div>
+    <button class="mev-close" onclick="document.getElementById('mevBar').remove()">확인</button>
+  `;
+  bar.style.borderTopColor=ev.border;
+  document.body.appendChild(bar);
+  setTimeout(()=>{if(bar.parentNode)bar.remove();},8000);
+}
+
+// ── ACHIEVEMENTS ──
+function checkAchievements(){
+  const p=G.players[0];
+  ACHIEVEMENTS.forEach(ach=>{
+    if(!unlockedAch.has(ach.id)&&ach.check(p,G)){
+      unlockedAch.add(ach.id);showAchievement(ach.id);
+    }
+  });
+}
+
+function showAchievement(id){
+  const ach=ACHIEVEMENTS.find(a=>a.id===id);
+  if(!ach||unlockedAch.has(id+'shown'))return;
+  unlockedAch.add(id+'shown');
+  const el=document.createElement('div');el.className='ach-toast';
+  el.style.borderColor='rgba(255,215,0,.4)';
+  el.innerHTML=`
+    <div class="ach-icon">${ach.icon}</div>
+    <div class="ach-content">
+      <div class="ach-label">🏆 업적 달성!</div>
+      <div class="ach-name">${ach.name}</div>
+      <div class="ach-desc">${ach.desc}</div>
+    </div>
+  `;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),4200);
+}
+
+// ── BANKRUPTCY ──
+function ckBk(pi){
+  const p=G.players[pi];
+  if(p.cash<0){
+    G.cells.forEach(c=>{
+      if(c.own===pi&&c.t==='prop'&&p.cash<0){
+        const sv=Math.floor(c.price*.5);p.cash+=sv;c.own=-1;c.hs=0;c.ho=0;
+        addLog(p.em+' 긴급매각 +₩'+sv,'sys');
+      }
+    });
+    if(p.cash<0){
+      if(pi===0)p._survived++;
+      p.bkrt=true;p.cash=0;
+      addLog(p.em+' 💀 파산!','bad');
+      toast('💀 '+p.name+' 파산!','bad');
+      drawBoard();renderPCards();renderLegend();
+      if(pi===0)showAchievement('survivor');
+    }
+  }
+  // Check rich achievements
+  if(pi===0){
+    if(nw(p)>=10000)showAchievement('rich10k');
+    if(nw(p)>=20000)showAchievement('rich20k');
+    if(G.cells.filter(c=>c.own===0&&c.t==='prop').length>=5)showAchievement('landlord');
+  }
+}
+
+function endAct(pi,dbl){
+  renderPCards();renderLegend();
+  const alive=G.players.filter(p=>!p.bkrt);
+  if(alive.length<=1){endGame('파산 종료');return;}
+  G.tot++;
+  if(G.tot>=G.maxT){endGame('턴 초과');return;}
+  tryEcoEvent();
+  setTimeout(nextTurn,250);
+}
+
+function nextTurn(){
+  G.cur=(G.cur+1)%G.players.length;
+  while(G.players[G.cur].bkrt)G.cur=(G.cur+1)%G.players.length;
+  if(G.cur===0)G.round++;
+  renderPCards();startTurn();
+}
+
+// ============================================================
+//  GAME END
+// ============================================================
+function endGame(reason){
+  const rs=document.getElementById('rs');
+  rs.style.display='flex';rs.style.flexDirection='column';
+  rs.style.alignItems='center';rs.style.justifyContent='center';
+
+  const sorted=[...G.players].sort((a,b)=>nw(b)-nw(a));
+  const winner=sorted[0];
+
+  document.getElementById('rtitle').textContent=winner.bkrt?'😱 전원 파산!':'🏆 게임 종료!';
+  document.getElementById('rsub').textContent=reason+' · '+G.tot+'턴 · '+G.round+'라운드';
+
+  const rc=document.getElementById('rcards');rc.innerHTML='';
+  ['🥇','🥈','🥉','4️⃣'].forEach((m,i)=>{
+    if(!sorted[i])return;
+    const p=sorted[i];
+    const change=nw(p)-p.initCash;
+    const d=document.createElement('div');
+    d.className='rcard'+(i===0?' win':'');
+    d.style.setProperty('--delay',(i*.12+.1)+'s');
+    d.innerHTML=`
+      <div class="rrk">${m}${p.em}</div>
+      <div class="rn">${p.name}${p.bkrt?' 💀':''}</div>
+      <div class="rv">₩${nw(p).toLocaleString()}</div>
+      <div class="rchange ${change>=0?'pos':'neg'}">${change>=0?'+':''}-₩${Math.abs(change).toLocaleString()}</div>
+    `;
+    rc.appendChild(d);
+  });
+
+  // Stats
+  const st=document.getElementById('rstats');
+  const youP=G.players[0];
+  st.innerHTML=`
+    <div class="rstat"><div class="rstat-v">${G.tot}</div><div class="rstat-l">총 턴</div></div>
+    <div class="rstat"><div class="rstat-v">₩${G.gameStats.totalRent.toLocaleString()}</div><div class="rstat-l">총 임대료</div></div>
+    <div class="rstat"><div class="rstat-v">${G.gameStats.doublesRolled}</div><div class="rstat-l">더블 횟수</div></div>
+    <div class="rstat"><div class="rstat-v">₩${G.gameStats.totalTax.toLocaleString()}</div><div class="rstat-l">총 세금</div></div>
+    <div class="rstat"><div class="rstat-v">${G.cells.filter(c=>c.own===0).length}</div><div class="rstat-l">보유 자산</div></div>
+    <div class="rstat"><div class="rstat-v">${youP._mgWins}</div><div class="rstat-l">퀴즈 승리</div></div>
+  `;
+
+  try{window.parent.postMessage({type:'marble_result',score:nw(winner),wins:winner.id===0?1:0},'*');}catch(e){}
+  if(!winner.bkrt)fireworks();
+}
+
+let _fwStats=false;
+function showFinalStats(){
+  if(_fwStats)return;_fwStats=true;
+  const p=G.players[0];
+  const earned=p.totalEarned,lost=p.totalLost;
+  toast('총 수입: ₩'+earned.toLocaleString(),'good');
+  setTimeout(()=>toast('총 지출: ₩'+lost.toLocaleString(),'bad'),400);
+}
+
+// ============================================================
+//  FIREWORKS
+// ============================================================
+function fireworks(){
+  const bg=document.getElementById('fw');
+  const cols=['#ffd700','#ff3355','#4dabf7','#00ff88','#c084fc','#fb923c'];
+  for(let f=0;f<12;f++){
+    setTimeout(()=>{
+      const x=5+Math.random()*90,y=3+Math.random()*65;
+      const col=cols[Math.floor(Math.random()*cols.length)];
+      for(let i=0;i<28;i++){
+        const p=document.createElement('div');
+        const ang=(i/28)*Math.PI*2;
+        const dist=60+Math.random()*100;
+        const dur=.5+Math.random()*.7;
+        p.style.cssText=`position:absolute;left:${x}%;top:${y}%;width:6px;height:6px;border-radius:50%;background:${col};box-shadow:0 0 4px ${col};animation:fwp ${dur}s ease-out forwards;--dx:${Math.cos(ang)*dist}px;--dy:${Math.sin(ang)*dist}px;`;
+        bg.appendChild(p);
+        setTimeout(()=>p.remove(),(dur+.15)*1000);
+      }
+      // Trail
+      const t=document.createElement('div');
+      t.style.cssText=`position:absolute;left:${x}%;top:${y+5}%;font-size:1.2rem;animation:fwt 2s ease-out forwards;`;
+      t.textContent=['🎊','✨','🌟','💫'][Math.floor(Math.random()*4)];
+      bg.appendChild(t);setTimeout(()=>t.remove(),2100);
+    },f*350);
+  }
+}
+
+// ============================================================
+//  UTILITIES
+// ============================================================
+function sl(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function addLog(txt,type){
+  const b=document.getElementById('lbox');
+  const d=document.createElement('div');d.className='le'+(type?' '+type:'');
+  d.innerHTML=`<span class="le-turn">T${G.tot}</span><span>${txt}</span>`;
+  b.insertBefore(d,b.firstChild);
+  while(b.children.length>60)b.removeChild(b.lastChild);
+}
+
+function toast(txt,type){
+  const w=document.getElementById('twrap');const d=document.createElement('div');
+  const colors={good:'rgba(0,255,136,.3)',bad:'rgba(255,51,85,.3)',gold:'rgba(255,215,0,.3)',sys:'rgba(34,211,238,.3)',purple:'rgba(192,132,252,.3)'};
+  d.className='toast';d.style.borderColor=colors[type]||'rgba(255,255,255,.08)';
+  d.style.color=type==='good'?'var(--green)':type==='bad'?'var(--red2)':type==='gold'?'var(--gold)':type==='sys'?'var(--cyan)':type==='purple'?'var(--purple)':'var(--text)';
+  d.textContent=txt;w.appendChild(d);setTimeout(()=>d.remove(),3200);
+}
+
+// ============================================================
+//  CHARACTER SELECT UI
+// ============================================================
+let selChar=0,selT=30,selDiff='normal',eventsOn=true;
+
+function renderChars(){
+  const g=document.getElementById('cgrid');g.innerHTML='';
+  CHARS.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.className='ccard'+(i===0?' sel':'');
+    const statLabels=['투자','분석','독점','운'];
+    const statBars=c.stats.map((v,si)=>{
+      const statCols=['#ffd700','#4dabf7','#c084fc','#00ff88'];
+      return`<div class="cstat-bar"><div class="fill" style="width:${v}%;background:${statCols[si]};"></div></div>`;
+    }).join('');
+    d.innerHTML=`
+      <span class="em">${c.em}</span>
+      <div class="cn" style="color:${c.col}">${c.name}</div>
+      <div class="ct">${c.trait}</div>
+      <div class="cstat">${statBars}</div>
+      <div class="cb">⭐ ${c.bonus}</div>
+    `;
+    d.title=c.desc;
+    d.onclick=()=>{
+      document.querySelectorAll('.ccard').forEach(el=>el.classList.remove('sel'));
+      d.classList.add('sel');selChar=i;
+    };
+    g.appendChild(d);
+  });
+}
+
+// Turn buttons
+document.querySelectorAll('[data-t]').forEach(b=>{
+  b.onclick=()=>{document.querySelectorAll('[data-t]').forEach(x=>x.classList.remove('a'));b.classList.add('a');selT=parseInt(b.dataset.t);};
+});
+
+// Diff buttons
+document.querySelectorAll('[data-d]').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('[data-d]').forEach(x=>{x.classList.remove('a-easy','a-normal','a-hard');});
+    b.classList.add('a-'+b.dataset.d);
+    selDiff=b.dataset.d;
+  };
+});
+
+// Event toggle
+document.getElementById('evtToggle').onclick=function(){
+  eventsOn=!eventsOn;
+  this.dataset.on=eventsOn?'1':'0';
+  this.textContent=eventsOn?'🌐 경제 이벤트 ON':'🌐 경제 이벤트 OFF';
+  this.classList.toggle('a',eventsOn);
+};
+
+// Start button
+document.getElementById('sbtn').onclick=()=>{
+  G.eventsEnabled=eventsOn;
+  startGame(selChar,selT,selDiff);
+};
+
+// Game buttons
+document.getElementById('rbtn').onclick=()=>{
+  const p=G.players[G.cur];if(p&&!p.isBot&&!p.bkrt)doRoll(false);
+};
+document.getElementById('marketBtn').onclick=openMarket;
+document.getElementById('moreBtn').onclick=()=>{
+  toast('현재 순자산: ₩'+nw(G.players[0]).toLocaleString(),'gold');
+};
+
+// Canvas hover for cell info
+cv.addEventListener('mousemove',e=>{
+  const rect=cv.getBoundingClientRect();
+  const scale=cv.width/rect.width;
+  const mx=(e.clientX-rect.left)*scale;
+  const my=(e.clientY-rect.top)*scale;
+  for(let i=0;i<40;i++){
+    const{x,y,w,h}=cellXY(i);
+    if(mx>=x&&mx<x+w&&my>=y&&my<y+h){
+      const c=G.cells[i];
+      if(c.t==='prop'&&c.own>=0){
+        cv.title=`${c.name} - ${G.players[c.own]?.name} 소유 | 임대료: ₩${c.rent[Math.min((c.hs||0)+(c.ho?5:0),5)]}`;
+      } else cv.title=c.name;
+      return;
+    }
+  }
+});
+
+// Init
+renderChars();
+initParticles();
 </script>
-"""
-
-
-# ══════════════════════════════════════════════════════════
-#  메인 렌더 함수
-# ══════════════════════════════════════════════════════════
+</body>
+</html>"""
 
 def render():
+    import streamlit.components.v1 as _cv1
+    from utils.core import sync_user_data
+    from utils.database import load_db, save_db, update_leaderboard
+    from utils.config import USERS_FILE
+
+    # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
+
     st.markdown("""
     <style>
-    .stApp { background-color: #010409 !important; }
-    section[data-testid="stSidebar"] { background: #010409 !important; }
-    .stMarkdown, .stMarkdown * { font-family: 'JetBrains Mono', monospace !important; }
+    #MainMenu{visibility:hidden;}footer{visibility:hidden;}header{visibility:hidden;}
+    .block-container{padding:0 !important;max-width:100% !important;}iframe{border:none;}
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(TERMINAL_CSS, unsafe_allow_html=True)
+    # uid를 JS 전역변수로 주입
+    _cur_uid = st.session_state.get('logged_in_user', '')
+    if _cur_uid:
+        _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
 
-    if 'terminal_cleared' not in st.session_state:
-        st.session_state.terminal_cleared = set()
-    # set 타입 보장 (DB에서 list로 불러온 경우 변환)
-    if not isinstance(st.session_state.terminal_cleared, set):
-        st.session_state.terminal_cleared = set(st.session_state.terminal_cleared)
+    listener_html = f"""
+    <script>
+    window.parent.addEventListener('message', function(e) {{
+      if (e.data && e.data.type === 'marble_result') {{
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set('marble_score', e.data.score);
+        url.searchParams.set('marble_wins',  e.data.wins ?? 0);
+        url.searchParams.set('_gr_uid', '{_cur_uid}');
+        window.parent.location.href = url.toString();
+      }}
+    }});
+    </script>
+    """
+    _cv1.html(listener_html, height=0)
+    components.html(GAME_HTML, height=960, scrolling=True)
 
-    # ── 스테이지 선택 화면 ───────────────────────────────
-    if 'terminal' not in st.session_state or \
-       st.session_state.terminal.get('at_select', False):
-
-        st.markdown(MATRIX_RAIN_HTML, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div style='font-family:"JetBrains Mono",monospace; padding: 28px 0 12px; text-align:center;'>
-          <div class='glitch-text' data-text='💻 THE TERMINAL 방탈출'
-               style='font-size:2rem; display:inline-block; margin-bottom:8px;'>
-            💻 THE TERMINAL 방탈출
-          </div>
-          <div style='color:#4ade80; font-size:0.88rem; margin-top:10px; letter-spacing:2px;'>
-            초고난이도 커맨드라인 해킹 시뮬레이터 — 20 STAGES
-          </div>
-          <div style='color:#86efac; font-size:0.75rem; margin-top:6px;'>
-            마우스는 잊어라 — 오직 커맨드라인으로 숨겨진 단서를 찾아 탈출하라
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # ── 전국 1위 & 내 기록 배너 ──
-        try:
-            from utils.database import load_leaderboard
-            _lb = load_leaderboard()
-            _trec = _lb.get('terminal', {})
-            if _trec and _trec.get('top_score', 0) > 0:
-                _top_user  = _trec.get('top_user', '?')
-                _top_score = _trec.get('top_score', 0)
-                _top_date  = _trec.get('date', '')
-                st.markdown(f"""                <div style='background:linear-gradient(90deg,rgba(57,255,20,.1),rgba(0,0,0,0));
-                  border:1px solid rgba(57,255,20,.35);border-radius:10px;
-                  padding:8px 18px;margin-bottom:8px;
-                  font-family:"Orbitron",sans-serif;font-size:.82rem;color:#a0ffa0;'>
-                  👑 전국 1위: <b style="color:#39ff14;">{_top_user}</b>
-                  &nbsp;|&nbsp; <span style="color:#22d3ee;">STAGE {_top_score}/20</span>
-                  &nbsp;|&nbsp; <span style="color:#4a6a4a;font-size:.72rem;">{_top_date}</span>
-                </div>""", unsafe_allow_html=True)
-        except Exception:
-            pass
-        _my_cleared = len(st.session_state.terminal_cleared)
-        if _my_cleared > 0:
-            st.markdown(f"""            <div style='background:rgba(57,255,20,.05);border:1px solid rgba(57,255,20,.2);
-              border-radius:10px;padding:6px 18px;margin-bottom:8px;
-              font-family:"JetBrains Mono",monospace;font-size:.8rem;color:#4ade80;'>
-              📡 내 기록: <b style="color:#39ff14;">STAGE {_my_cleared}/20</b> 클리어
-            </div>""", unsafe_allow_html=True)
-
-        cleared_count = len(st.session_state.terminal_cleared)
-        total_stages  = len(STAGES)
-        progress_pct  = int(cleared_count / total_stages * 100)
-
-        if cleared_count > 0:
-            bar_filled = int(progress_pct / 10)  # 10칸 기준
-            bar_empty  = 10 - bar_filled
-            bar_str    = "█" * bar_filled + "░" * bar_empty
-            st.markdown(f"""
-            <div style='background:#030f03; border:1px solid #86efac; border-radius:6px;
-                        padding:12px 18px; font-family:monospace; font-size:12px;
-                        color:#5a9a5a; margin-bottom:16px;'>
-              <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
-                <span>진행 현황</span>
-                <span style='color:#39ff14;font-weight:bold;'>{cleared_count} / {total_stages} CLEARED</span>
-              </div>
-              <div style='letter-spacing:2px;color:#39ff14;font-size:14px;'>
-                [{bar_str}] <span style='font-size:11px;color:#5a9a5a;'>{progress_pct}%</span>
-              </div>
-              <div style='margin-top:6px;color:#2a5c2a;font-size:11px;'>
-                {"🏆 전체 클리어! 당신은 진정한 해커입니다!" if cleared_count == total_stages else f"다음 목표: STAGE {cleared_count + 1} — {STAGES[cleared_count+1]['title'] if cleared_count+1 in STAGES else ''}"}
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        st.write("")
-
-        # 개인 기록 보기 (expander)
-        if "stage_records" in st.session_state and st.session_state.stage_records:
-            with st.expander("🏅 내 클리어 기록", expanded=False):
-                rec_rows = ""
-                for sn in sorted(STAGES.keys()):
-                    rec = st.session_state.stage_records.get(str(sn))
-                    if rec:
-                        bm, bs = divmod(rec["best_time"], 60)
-                        perfect = " 🌟" if rec["hints_used"] == 0 else ""
-                        rec_rows += (
-                            f"<div style='display:flex;justify-content:space-between;"
-                            f"font-family:monospace;font-size:0.8rem;color:#5a9a5a;"
-                            f"padding:4px 0;border-bottom:1px solid #0f2a0f;'>"
-                            f"<span style='color:#39ff14;'>STAGE {sn}</span>"
-                            f"<span>⏱ {bm:02d}:{bs:02d}{perfect}</span>"
-                            f"<span>힌트 {rec['hints_used']}개</span>"
-                            f"<span>CMD {rec['cmd_count']}</span>"
-                            f"</div>"
-                        )
-                st.markdown(
-                    f"<div style='background:#020c02;border:1px solid #86efac;border-radius:6px;"
-                    f"padding:12px 16px;font-family:monospace;'>{rec_rows}</div>",
-                    unsafe_allow_html=True
-                )
-
-
-        # ── 개인 클리어 기록 패널 ──
-        cleared_count = len(st.session_state.terminal_cleared)
-        total_stages = len(STAGES)
-        prog_pct = cleared_count / total_stages * 100
-
-        st.markdown(f"""
-        <div style='background:linear-gradient(135deg,#0c1020,#111828);border:1px solid rgba(0,255,136,0.2);
-          border-radius:16px;padding:20px 24px;margin-bottom:20px;'>
-          <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
-            <div style='font-family:"Orbitron",sans-serif;font-size:0.8rem;color:#00d4ff;letter-spacing:2px;'>MISSION PROGRESS</div>
-            <div style='font-family:"Orbitron",sans-serif;font-size:1.2rem;font-weight:900;color:#00ff88;'>{cleared_count}/{total_stages}</div>
-          </div>
-          <div style='height:8px;background:rgba(255,255,255,0.05);border-radius:999px;overflow:hidden;'>
-            <div style='height:100%;width:{prog_pct:.1f}%;background:linear-gradient(90deg,#6c63ff,#00ff88);border-radius:999px;transition:width 0.5s;'></div>
-          </div>
-          <div style='display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;'>
-            {"".join([
-              f"<div style='background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.4);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#00ff88;font-weight:700;'>✅ STAGE {n} CLEAR</div>"
-              if n in st.session_state.terminal_cleared else
-              f"<div style='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 12px;font-size:0.75rem;color:#94A3B8;'>🔒 STAGE {n}</div>"
-              for n in range(1, total_stages + 1)
-            ])}
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        if cleared_count == total_stages:
-            st.balloons()
-            st.markdown("""
-            <div style='text-align:center;padding:20px;background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(108,99,255,0.15));
-              border:2px solid rgba(255,215,0,0.5);border-radius:20px;margin-bottom:20px;'>
-              <div style='font-family:"Black Han Sans",sans-serif;font-size:2rem;color:#ffd700;'>🏆 ALL STAGES CLEARED!</div>
-              <div style='color:#8899bb;font-size:0.9rem;margin-top:8px;'>당신은 HYOMIN NETWORKS의 전설적인 해커입니다.</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # ── 타임어택 모드 ──────────────────────────────
-            st.markdown("""
-            <div style='background:linear-gradient(135deg,#0a0f0a,#0c1a10);border:2px solid rgba(57,255,20,0.5);
-              border-radius:16px;padding:20px 24px;margin-bottom:20px;'>
-              <div style='font-family:"Orbitron",sans-serif;font-size:1rem;color:#39ff14;letter-spacing:4px;margin-bottom:8px;'>⏱ TIME ATTACK MODE</div>
-              <div style='font-size:0.8rem;color:#4a9a4a;margin-bottom:12px;'>전체 20스테이지를 얼마나 빠르게 클리어할 수 있는가? 최속 기록에 도전하라!</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # 타임어택 기록 표시
-            ta_best = st.session_state.get('ta_best_time', 0)
-            if ta_best > 0:
-                bm, bs = divmod(int(ta_best), 60)
-                st.markdown(f"""
-                <div style='background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.3);border-radius:10px;
-                  padding:10px 18px;font-family:monospace;font-size:0.9rem;color:#39ff14;margin-bottom:10px;text-align:center;'>
-                  🏅 내 최속 기록: <b>{bm:02d}분 {bs:02d}초</b>
-                </div>
-                """, unsafe_allow_html=True)
-
-            col_ta1, col_ta2 = st.columns(2)
-            with col_ta1:
-                if st.button("⚡ 타임어택 시작!", key="ta_start", use_container_width=True):
-                    st.session_state['ta_mode'] = True
-                    st.session_state['ta_start_time'] = time.time()
-                    st.session_state['ta_stage'] = 1
-                    # 클리어 기록 초기화 (타임어택 전용)
-                    st.session_state['ta_cleared'] = set()
-                    init_terminal(1)
-                    st.session_state.terminal['at_select'] = False
-                    st.session_state.terminal['output'] = [
-                        "╔══════════════════════════════════════════╗",
-                        "║       ⏱  TIME ATTACK MODE START!        ║",
-                        "╚══════════════════════════════════════════╝",
-                        "",
-                        "  전체 20스테이지 최속 클리어에 도전!",
-                        "  STAGE 1 — 버려진 서버실",
-                        "─" * 44,
-                    ]
-                    st.rerun()
-            with col_ta2:
-                if ta_best > 0:
-                    st.caption(f"최속: {bm:02d}:{bs:02d}")
-                else:
-                    st.caption("기록 없음")
-
-        for snum, sdata in STAGES.items():
-            cleared = snum in st.session_state.terminal_cleared
-            locked  = snum > 1 and (snum - 1) not in st.session_state.terminal_cleared
-
-            badge     = "<span class='clear-badge'>✅ CLEARED</span>" if cleared else ""
-            lock_icon = "🔒 " if locked else ""
-            diff_color = DIFF_COLORS.get(snum, "#39ff14")
-
-            st.markdown(f"""
-            <div class='stage-card' style='{"opacity:0.4;" if locked else ""}'>
-              <div class='stage-title'>{badge}{lock_icon}{html.escape(sdata['title'])}</div>
-              <div class='stage-desc'>{html.escape(sdata['desc'])}</div>
-              <div class='stage-meta'>
-                <span style='color:{diff_color};'>{sdata['difficulty']}</span>
-              </div>
-              <div class='flavor-text'>{html.escape(sdata.get('flavor', ''))}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            btn_label = (
-                f"[REPLAY] STAGE {snum} 다시하기" if cleared else
-                f"[LOCKED] STAGE {snum - 1} 클리어 후 해금" if locked else
-                f"[ENTER]  STAGE {snum} 시작하기"
-            )
-            if st.button(btn_label, key=f"stage_btn_{snum}",
-                         use_container_width=True, disabled=locked):
-                init_terminal(snum)
-                boot_msg = [
-                    "HYOMIN NETWORKS — Secure Shell v2.26.0",
-                    f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
-                    "Connecting to hyomin-secure-node...",
-                    "Connection established. ✓",
-                    "",
-                    "╔══════════════════════════════════════════╗",
-                    f"║  {sdata['title']:<40}║",
-                    "╚══════════════════════════════════════════╝",
-                    "",
-                    f"  📋 목표: {sdata['goal']}",
-                    f"  ⚠️  {sdata.get('flavor', '')}",
-                    "",
-                    "  `help` — 명령어 목록   `hint` — 힌트 보기",
-                    "─" * 44,
-                ]
-                st.session_state.terminal["output"] = boot_msg
-                st.session_state.terminal["at_select"] = False
-                st.rerun()
-
-        st.markdown(TERMINAL_JS, unsafe_allow_html=True)
-        return
-
-
-    # ── 터미널 게임 화면 ─────────────────────────────────
-    # 안전장치: terminal 키 없거나 stage 키 없으면 선택화면으로 강제 복귀
-    if 'terminal' not in st.session_state or 'stage' not in st.session_state.terminal:
-        st.session_state.terminal = {"at_select": True}
-        st.rerun()
-        return
-
-    t          = st.session_state.terminal
-    stage_num  = t.get("stage", 1)
-    stage_data = STAGES[stage_num]
-
-    elapsed    = int(time.time() - t.get("start_time", time.time()))
-    mins, secs = divmod(elapsed, 60)
-    hint_warn  = t.get("hint_used", 0) >= 3
-
-    # 타임어택 모드 HUD
-    if st.session_state.get('ta_mode'):
-        ta_elapsed = int(time.time() - st.session_state.get('ta_start_time', time.time()))
-        ta_m, ta_s = divmod(ta_elapsed, 60)
-        st.markdown(f"""
-        <div style='background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.4);border-radius:8px;
-          padding:6px 16px;margin-bottom:8px;display:flex;justify-content:space-between;
-          font-family:monospace;font-size:0.82rem;'>
-          <span style='color:#39ff14;font-weight:700;'>⚡ TIME ATTACK</span>
-          <span style='color:#39ff14;'>총 경과: <b>{ta_m:02d}:{ta_s:02d}</b></span>
-          <span style='color:#4a9a4a;'>STAGE {stage_num}/{len(STAGES)}</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-    col_l, col_r = st.columns([4, 1])
-    with col_l:
-        st.markdown(
-            f"<div class='status-bar'>"
-            f"<span class='status-item'>⏱ <span class='status-val'>{mins:02d}:{secs:02d}</span></span>"
-            f"<span class='status-item'>CMD <span class='status-val'>{t.get('cmd_count', 0)}</span></span>"
-            f"<span class='status-item'>HINT "
-            f"<span class='{'status-warn' if hint_warn else 'status-val'}'>{t.get('hint_used', 0)}/3</span></span>"
-            f"<span class='status-item' style='color:#ffd700;'>{stage_data['title']}</span>"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-    with col_r:
-        if st.button("◀ 목록", use_container_width=True, key="back_btn"):
-            st.session_state.terminal["at_select"] = True
-            st.rerun()
-
-    # ── 터미널 출력 렌더링 ──────────────────────────────
-    output_html = ""
-    for line in t["output"]:
-        safe = html.escape(line)
-
-        if any(line.startswith(p) for p in [
-            "✅", "  ✅", "  클리어", "  명령어", "  힌트 사용", "  평가", "  다음"
-        ]):
-            cls = "green"
-        elif any(line.startswith(p) for p in [
-            "❌", "║   ACCESS DENIED", "║  ACCESS DENIED"
-        ]):
-            cls = "red"
-        elif line.startswith("[HINT]") or line.startswith("       "):
-            cls = "hint"
-        elif line.startswith("bash:"):
-            cls = "red"
-        elif any(line.startswith(p) for p in ["╔", "╚", "║", "═"]):
-            cls = "cyan" if ("GRANTED" in line or "ACCESS" in line) else "border"
-        elif line.startswith("─") or line.startswith("HYOMIN NETWORKS") \
-                or line.startswith("Last login") or line.startswith("Connecting"):
-            cls = "dim"
-        elif line.startswith("[DIR]"):
-            safe = f"📁 {html.escape(line[6:])}" if line.startswith("[DIR] ") else safe
-            cls  = "dir"
-        elif "Connection established" in line:
-            cls = "green"
-        elif line.startswith("  📋") or line.startswith("  ⚠️") or line.startswith("  `"):
-            cls = "blue"
-        elif line.startswith("find 결과") or line.startswith("검색 결과"):
-            cls = "cyan"
-        else:
-            cls = ""
-
-        output_html += f"<div class='term-line {cls}'>{safe}</div>"
-
-    cwd_disp = t["cwd"]
-    output_html += (
-        f"<div class='term-line prompt'>"
-        f"<span class='term-prompt-user'>ghost@hyomin</span>"
-        f"<span style='color:#b8ffb8;'>:</span>"
-        f"<span class='term-prompt-path'>{html.escape(cwd_disp)}</span>"
-        f"<span class='term-prompt-sym'># </span>"
-        f"<span class='blink-cursor'></span>"
-        f"</div>"
-    )
-
-    st.markdown(f"""
-    <div class='terminal-outer'>
-      <div class='term-titlebar'>
-        <div class='dot dot-r'></div>
-        <div class='dot dot-y'></div>
-        <div class='dot dot-g'></div>
-        <div class='term-title'>
-          ghost@hyomin-secure — {html.escape(cwd_disp)} — STAGE {stage_num}/{len(STAGES)}
-        </div>
-      </div>
-      <div class='term-body' id='term-scroll'>{output_html}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── 입력창 (클리어 전) ──────────────────────────────
-    if not t.get("solved", False):
-        # ✅ [UX 개선] chat_input으로 Enter 키 즉시 제출 (진짜 터미널처럼)
-        cmd_input = st.chat_input(
-            placeholder="명령어 입력... (help=도움말 | hint=힌트 | ls | cat | cd | decode | unlock)",
-            key=f"cmd_chat_{t.get('cmd_count', 0)}",
-        )
-
-        # 빠른 버튼 행
-        col_h, col_c, col_hist = st.columns([1, 1, 2])
-        with col_h:
-            hint_clicked = st.button("💡 HINT", use_container_width=True, key="hint_btn")
-        with col_c:
-            if st.button("🗑️ CLR", use_container_width=True, key="clear_btn"):
-                t["output"] = []
-                st.rerun()
-        with col_hist:
-            if t["history"]:
-                st.caption(f"↑ 최근: `{t['history'][-1]}`")
-
-        if cmd_input and cmd_input.strip():
-            add_output([f"ghost@hyomin:{t['cwd']}# {cmd_input}"])
-            add_output(process_command(cmd_input, stage_data))
-            t["history"].append(cmd_input)
-            st.rerun()
-
-        enter_clicked = False  # chat_input handles Enter natively
-
-        if hint_clicked:
-            add_output([f"ghost@hyomin:{t['cwd']}# hint"])
-            add_output(process_command("hint", stage_data))
-            st.rerun()
-
-    else:
-        # ── 클리어 화면 ─────────────────────────────────
-        st.session_state.terminal_cleared.add(stage_num)
-
-        # 스테이지 클리어 기록 저장
-        elapsed_now = int(time.time() - t["start_time"])
-        if "stage_records" not in st.session_state:
-            st.session_state.stage_records = {}
-        rec_key = str(stage_num)
-        prev_best = st.session_state.stage_records.get(rec_key, {}).get("best_time", 999999)
-        if elapsed_now < prev_best:
-            st.session_state.stage_records[rec_key] = {
-                "best_time": elapsed_now,
-                "hints_used": t["hint_used"],
-                "cmd_count": t["cmd_count"],
-            }
-
-        # DB에 클리어 진행상황 영구 저장 + 스테이지 클리어 보상 지급
-        from utils.core import sync_user_data
-        from utils.database import log_tx, atomic_add_cash
-
-        uid = st.session_state.logged_in_user
-
-        # 스테이지별 클리어 보상 (최초 클리어 시 1회만 지급)
-        stage_reward_key = f"stage_reward_paid_{stage_num}"
-        if stage_reward_key not in st.session_state:
-            st.session_state[stage_reward_key] = True
-            STAGE_REWARDS = {
-                1: 5_000_000,   2: 10_000_000,  3: 15_000_000,
-                4: 20_000_000,  5: 30_000_000,  6: 40_000_000,
-                7: 50_000_000,  8: 70_000_000,  9: 100_000_000,
-                10: 200_000_000, 11: 250_000_000, 12: 300_000_000,
-                13: 350_000_000, 14: 400_000_000, 15: 500_000_000,
-                16: 600_000_000, 17: 700_000_000, 18: 800_000_000,
-                19: 900_000_000, 20: 2_000_000_000,
-            }
-            # 힌트 미사용 보너스 (기본 보상의 50% 추가)
-            base_reward    = STAGE_REWARDS.get(stage_num, 10_000_000)
-            perfect_bonus  = base_reward // 2 if t["hint_used"] == 0 else 0
-            total_reward   = base_reward + perfect_bonus
-            atomic_add_cash(uid, total_reward)
-            st.session_state.global_cash += total_reward
-            bonus_str = f" (퍼펙트 보너스 +{perfect_bonus:,}원 포함!)" if perfect_bonus > 0 else ""
-            log_tx(uid, "터미널", f"STAGE {stage_num} 클리어 보상{bonus_str}", total_reward)
-            st.success(f"💰 STAGE {stage_num} 클리어 보상: +{total_reward:,}원{bonus_str}")
-
-        # ── 리더보드 업데이트 ──
-        from utils.database import load_db, save_db, update_leaderboard
-        from utils.config import USERS_FILE as _UF
-        _users_c = load_db(_UF, {})
-        _uname = _users_c.get(uid, {}).get('nickname', uid)
-        _cleared_cnt = len(st.session_state.terminal_cleared)
-        update_leaderboard('terminal', _uname, _cleared_cnt)
-        # game_records에도 저장
-        if uid in _users_c:
-            _gr = _users_c[uid].setdefault('game_records', {})
-            if _cleared_cnt > _gr.get('terminal', {}).get('score', 0):
-                _gr['terminal'] = {'score': _cleared_cnt, 'stage': stage_num}
-                _users_c[uid]['game_records'] = _gr
-                save_db(_UF, _users_c)
-
-        sync_user_data()
-
-        # 풍선은 한 번만
-        balloon_key = f"balloon_done_{stage_num}"
-        if balloon_key not in st.session_state:
-            st.session_state[balloon_key] = True
-            st.balloons()
-
-        st.markdown(f"""
-        <div style='
-          background: linear-gradient(135deg, #020c02, #041804);
-          border: 1px solid #39ff14;
-          border-radius: 8px;
-          padding: 20px 24px;
-          font-family: "JetBrains Mono", monospace;
-          text-align: center;
-          box-shadow: 0 0 30px rgba(57,255,20,0.2);
-          margin-bottom: 12px;
-        '>
-          <div style='color:#39ff14; font-size:1.5rem; font-weight:700; letter-spacing:3px;
-                      text-shadow: 0 0 20px rgba(57,255,20,0.6);'>
-            ✅ STAGE {stage_num} CLEAR
-          </div>
-          <div style='color:#5a9a5a; font-size:0.85rem; margin-top:10px;'>
-            클리어 시간: <span style='color:#39ff14;font-weight:700;'>{int((time.time() - t["start_time"])//60):02d}:{int((time.time() - t["start_time"])%60):02d}</span>
-            &nbsp;|&nbsp; 사용 힌트: {t['hint_used']}개
-            &nbsp;|&nbsp; 명령어: {t['cmd_count']}개
-          </div>
-          <div style='color:#2a5c2a; font-size:0.78rem; margin-top:8px;'>
-            진행: {len(st.session_state.terminal_cleared)}/{len(STAGES)} 스테이지 완료
-          </div>
-          {'<div style="color:#ffd700; font-size:1rem; margin-top:12px; letter-spacing:2px; text-shadow:0 0 15px rgba(255,215,0,0.6);">🏆 힌트 미사용 클리어! PERFECT HACK!</div>' if t["hint_used"] == 0 else ''}
-        </div>
-        """, unsafe_allow_html=True)
-
-        # 전체 클리어 체크
-        if len(st.session_state.terminal_cleared) == len(STAGES):
-            st.balloons()
-            # 전체 클리어 특별 보상 (최초 1회)
-            if "terminal_full_clear_rewarded" not in st.session_state:
-                st.session_state.terminal_full_clear_rewarded = True
-                from utils.core import sync_user_data, claim_hidden_title
-                from utils.database import log_tx, atomic_add_cash
-                uid = st.session_state.logged_in_user
-                full_clear_cash = 1_000_000_000  # 10억
-                atomic_add_cash(uid, full_clear_cash)
-                st.session_state.global_cash += full_clear_cash
-                log_tx(uid, "터미널", "THE TERMINAL 전체 클리어 보상", full_clear_cash)
-                claim_hidden_title("terminal_full_clear", "💻 [전설] 효민 네트웍스의 해커")
-                sync_user_data()
-                st.success("🏆 전체 클리어 보상: +1,000,000,000원 & 칭호 [효민 네트웍스의 해커] 획득!")
-            st.markdown("""
-            <div style='background:linear-gradient(135deg,#1a1000,#2a1800);border:2px solid #ffd700;
-                        border-radius:10px;padding:20px;text-align:center;margin-bottom:14px;
-                        box-shadow:0 0 40px rgba(255,215,0,0.3);font-family:monospace;'>
-              <div style='color:#ffd700;font-size:1.4rem;font-weight:900;letter-spacing:4px;
-                          text-shadow:0 0 20px rgba(255,215,0,0.8);'>
-                🏆 ALL STAGES CLEARED 🏆
-              </div>
-              <div style='color:#b8860b;font-size:0.85rem;margin-top:10px;'>
-                당신은 효민 네트웍스의 모든 비밀을 해독했습니다.<br>
-                진정한 해커 — 창조자에게 도달했습니다.
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        col_sel, col_next = st.columns(2)
-        with col_sel:
-            if st.button("◀ 스테이지 목록", use_container_width=True, key="to_list"):
-                st.session_state.pop('ta_mode', None)
-                st.session_state.terminal["at_select"] = True
-                st.rerun()
-        with col_next:
-            next_s = stage_num + 1
-            if next_s in STAGES:
-                # 타임어택 모드: 자동 다음 스테이지 진행 버튼
-                ta_label = f"⚡ [TA] STAGE {next_s} 즉시 돌입 →" if st.session_state.get('ta_mode') else f"▶ STAGE {next_s} 도전 →"
-                if st.button(ta_label, use_container_width=True, type="primary", key="next_stage"):
-                    if st.session_state.get('ta_mode'):
-                        st.session_state['ta_stage'] = next_s
-                    init_terminal(next_s)
-                    ns = STAGES[next_s]
-                    ta_hud = f"  ⏱ 타임어택 경과: {int((time.time()-st.session_state.get('ta_start_time',time.time()))//60):02d}:{int((time.time()-st.session_state.get('ta_start_time',time.time()))%60):02d}" if st.session_state.get('ta_mode') else ""
-                    st.session_state.terminal["output"] = [
-                        "HYOMIN NETWORKS — Secure Shell v2.26.0",
-                        f"Last login: {datetime.now(KST).strftime('%a %b %d %H:%M:%S KST %Y')}",
-                        "Connecting...",
-                        "",
-                        "╔══════════════════════════════════════════╗",
-                        f"║  {ns['title']:<40}║",
-                        "╚══════════════════════════════════════════╝",
-                        "",
-                        f"  📋 목표: {ns['goal']}",
-                        f"  ⚠️  {ns.get('flavor', '')}",
-                        ta_hud,
-                        "",
-                        "  `help` 명령어 목록   `hint` 힌트 보기",
-                        "─" * 44,
-                    ]
-                    st.session_state.terminal["at_select"] = False
-                    st.rerun()
-            else:
-                # 타임어택 최종 클리어 처리
-                if st.session_state.get('ta_mode'):
-                    ta_total = time.time() - st.session_state.get('ta_start_time', time.time())
-                    tm, ts = divmod(int(ta_total), 60)
-                    prev_best = st.session_state.get('ta_best_time', 0)
-                    is_new_record = (prev_best == 0 or ta_total < prev_best)
-                    if is_new_record:
-                        st.session_state['ta_best_time'] = ta_total
-                    st.markdown(f"""
-                    <div style='text-align:center;padding:16px;background:linear-gradient(135deg,rgba(57,255,20,0.15),rgba(0,212,255,0.1));
-                      border:2px solid #39ff14;border-radius:12px;margin-bottom:12px;font-family:monospace;'>
-                      <div style='color:#39ff14;font-size:1.2rem;font-weight:900;letter-spacing:3px;'>⏱ TIME ATTACK CLEAR!</div>
-                      <div style='color:#00ff88;font-size:2rem;font-weight:900;margin:8px 0;'>{tm:02d}:{ts:02d}</div>
-                      {'<div style="color:#ffd700;font-size:0.9rem;">🏅 NEW RECORD!</div>' if is_new_record else f'<div style="color:#4a9a4a;font-size:0.85rem;">이전 기록: {int(prev_best//60):02d}:{int(prev_best%60):02d}</div>'}
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.session_state.pop('ta_mode', None)
-                    if st.button("↩ 타이틀로", use_container_width=True, key="ta_done"):
-                        st.session_state.terminal["at_select"] = True
-                        st.rerun()
-                else:
-                    st.markdown("""
-                    <div style='
-                      color:#ffd700; font-family:monospace; text-align:center;
-                      padding:14px; border:1px solid #ffd700; border-radius:6px;
-                      font-size:1rem; letter-spacing:2px;
-                    '>
-                      🏆 20 STAGES COMPLETE<br>
-                      <span style='font-size:0.8rem; color:#a07000;'>
-                        당신은 진짜 해커다.
-                      </span>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-    st.markdown(TERMINAL_JS, unsafe_allow_html=True)
- 
+if __name__ == "__main__":
+    render()
