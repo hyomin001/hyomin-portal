@@ -1764,8 +1764,8 @@ def render():
     _cur_uid = st.session_state.get('logged_in_user', '')
     listener_html = f"""
     <script>
-    window.parent.addEventListener('message', function(e) {
-      if (e.data && e.data.type === 'sniper_result') {
+    window.parent.addEventListener('message', function(e) {{
+      if (e.data && e.data.type === 'sniper_result') {{
         const url = new URL(window.parent.location.href);
         url.searchParams.set('sniper_score',  e.data.score);
         url.searchParams.set('sniper_kills',  e.data.kills);
@@ -1774,8 +1774,8 @@ def render():
         url.searchParams.set('sniper_diff',   e.data.diff);
         url.searchParams.set('_gr_uid', '{_cur_uid}');
         window.parent.location.href = url.toString();
-      }
-    });
+      }}
+    }});
     </script>
     """
     _cv1.html(listener_html, height=0)
