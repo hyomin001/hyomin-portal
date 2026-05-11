@@ -2222,13 +2222,10 @@ def render():
 
     st.caption("🎮 WASD/방향키: 이동 | 자동 공격 | Q E R: 스킬 | 레벨업 시 무기 선택! | 🏆 클리어 보상 2억원!")
 
-    # postMessage 수신 리스너 (결과 → query param)
-    # ✅ [BUG FIX] 리스너를 게임 iframe보다 먼저 렌더링하면 별도 iframe이라 메시지를 못 받을 수 있음
-    # window.parent 기준으로 수신하므로 순서 상관없이 동작하지만,
-    # 안전하게 게임 결과 수신 시 dungeon_result_processed 플래그도 초기화
+    # postMessage 수신 리스너 (결과 → query param, replaceState + reload 방식)
     listener_html = f"""
     <script>
-    window.parent.addEventListener('message', function(e) {{
+    window.addEventListener('message', function(e) {{
       if (e.data && e.data.type === 'dungeon_result') {{
         const d = e.data;
         const url = new URL(window.parent.location.href);
@@ -2236,7 +2233,8 @@ def render():
         url.searchParams.set('dungeon_score', d.score);
         url.searchParams.set('dungeon_kills', d.kills);
         url.searchParams.set('_gr_uid', '{_cur_uid}');
-        window.parent.location.href = url.toString();
+        window.parent.history.replaceState(null, '', url.toString());
+        window.parent.location.reload();
       }}
     }});
     </script>
