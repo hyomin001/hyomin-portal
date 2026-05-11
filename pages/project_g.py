@@ -1224,7 +1224,7 @@ def render():
         url.searchParams.set('zombie_wave',  e.data.wave);
         url.searchParams.set('zombie_score', e.data.score);
         url.searchParams.set('zombie_kills', e.data.kills);
-        url.searchParams.set('_gr_uid', window._gr_uid||'');
+        url.searchParams.set('_gr_uid', window.parent._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
