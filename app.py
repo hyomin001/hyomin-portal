@@ -47,91 +47,176 @@ if "page_view" not in st.session_state:
 # page_view와 무관하게 앱 진입 시 최우선으로 처리
 # ══════════════════════════════════════════════════════════════
 def _save_game_result():
-    """게임 종료 후 URL query_params로 전달된 점수를 MongoDB에 직접 저장."""
+    """게임 종료 후 URL query_params로 전달된 점수를 MongoDB $set으로 원자적 저장.
+    기존 replace_one 방식 대신 $set을 사용해 Race Condition을 완전 차단.
+    """
     qp = st.query_params
-    # 처리할 게임 파라미터가 없으면 즉시 반환
-    _GAME_PARAMS = ['racing_score','zombie_wave','fighter_score','sniper_score','marble_score']
+    _GAME_PARAMS = ['racing_score','zombie_wave','fighter_score','sniper_score','marble_score','dungeon_score']
     if not any(qp.get(p) for p in _GAME_PARAMS):
         return False
 
     try:
-        from utils.database import load_db, save_db, update_leaderboard
-        _users = load_db(USERS_FILE, {})
+        from utils.database import (
+            get_mongo_client, _get_col, update_leaderboard, load_db
+        )
+        import logging
+
         # uid: session_state 우선, 없으면 URL 파라미터에서 복원
-        uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
-        if not uid or uid not in _users:
+        uid = st.session_state.get('logged_in_user', '') or qp.get('_gr_uid', '')
+        if not uid:
             st.query_params.clear()
             return False
 
-        udata = _users[uid]
-        gr = udata.setdefault('game_records', {})
-        user_name = udata.get('nickname', uid)
-        changed = False
+        # uid 존재 확인 (projection으로 빠르게)
+        client = get_mongo_client()
+        col = _get_col(USERS_FILE)
+        doc = col.find_one({"_id": "main"}, {uid: 1})
+        if not doc or uid not in doc:
+            st.query_params.clear()
+            return False
 
-        # ── 레이싱 ──
+        udata = doc[uid]
+        user_name = udata.get('nickname', uid)
+
+        # ── 레이싱: 현재 기록보다 높을 때만 $set ──
         if qp.get('racing_score'):
             r_score = int(qp.get('racing_score', 0))
             r_dist  = float(qp.get('racing_dist', 0.0))
-            if r_score > 0 and r_score > gr.get('racing', {}).get('score', 0):
-                gr.setdefault('racing', {}).update({'score': r_score, 'dist': r_dist})
-                changed = True
-                update_leaderboard('racing', user_name, r_score)
-                st.toast(f"🏎️ 레이싱 최고기록 {r_score:,}점 저장!", icon="🏆")
+            if r_score > 0:
+                cur = udata.get('game_records', {}).get('racing', {}).get('score', 0)
+                if r_score > cur:
+                    col.update_one(
+                        {"_id": "main"},
+                        {"$set": {
+                            f"{uid}.game_records.racing.score": r_score,
+                            f"{uid}.game_records.racing.dist":  r_dist,
+                        }}
+                    )
+                    update_leaderboard('racing', user_name, r_score)
+                    st.toast(f"🏎️ 레이싱 최고기록 {r_score:,}점 저장!", icon="🏆")
+                    if st.session_state.get('logged_in_user') == uid:
+                        st.session_state.setdefault('game_records', {}).setdefault('racing', {}).update({'score': r_score, 'dist': r_dist})
 
         # ── 좀비 ──
         if qp.get('zombie_wave'):
             z_wave  = int(qp.get('zombie_wave', 0))
             z_score = int(qp.get('zombie_score', 0))
             z_kills = int(qp.get('zombie_kills', 0))
-            if z_wave > 0 and z_wave > gr.get('zombie', {}).get('wave', 0):
-                gr.setdefault('zombie', {}).update({'wave': z_wave, 'score': z_score, 'kills': z_kills})
-                changed = True
-                update_leaderboard('zombie', user_name, z_wave)
-                st.toast(f"🧟 좀비 최고기록 Wave {z_wave} 저장!", icon="🏆")
+            if z_wave > 0:
+                cur = udata.get('game_records', {}).get('zombie', {}).get('wave', 0)
+                if z_wave > cur:
+                    col.update_one(
+                        {"_id": "main"},
+                        {"$set": {
+                            f"{uid}.game_records.zombie.wave":  z_wave,
+                            f"{uid}.game_records.zombie.score": z_score,
+                            f"{uid}.game_records.zombie.kills": z_kills,
+                        }}
+                    )
+                    update_leaderboard('zombie', user_name, z_wave)
+                    st.toast(f"🧟 좀비 최고기록 Wave {z_wave} 저장!", icon="🏆")
+                    if st.session_state.get('logged_in_user') == uid:
+                        st.session_state.setdefault('game_records', {}).setdefault('zombie', {}).update({'wave': z_wave, 'score': z_score, 'kills': z_kills})
 
         # ── 격투 ──
         if qp.get('fighter_score'):
             f_score    = int(qp.get('fighter_score', 0))
             f_perfects = int(qp.get('fighter_perfects', 0))
-            if f_score > 0 and f_score > gr.get('fighter', {}).get('score', 0):
-                gr.setdefault('fighter', {}).update({'score': f_score, 'perfects': f_perfects})
-                changed = True
-                update_leaderboard('fighter', user_name, f_score)
-                st.toast(f"🥊 격투 최고기록 {f_score:,}점 저장!", icon="🏆")
+            if f_score > 0:
+                cur = udata.get('game_records', {}).get('fighter', {}).get('score', 0)
+                if f_score > cur:
+                    col.update_one(
+                        {"_id": "main"},
+                        {"$set": {
+                            f"{uid}.game_records.fighter.score":    f_score,
+                            f"{uid}.game_records.fighter.perfects": f_perfects,
+                        }}
+                    )
+                    update_leaderboard('fighter', user_name, f_score)
+                    st.toast(f"🥊 격투 최고기록 {f_score:,}점 저장!", icon="🏆")
+                    if st.session_state.get('logged_in_user') == uid:
+                        st.session_state.setdefault('game_records', {}).setdefault('fighter', {}).update({'score': f_score, 'perfects': f_perfects})
 
         # ── 저격전 ──
         if qp.get('sniper_score'):
             s_score = int(qp.get('sniper_score', 0))
             s_kills = int(qp.get('sniper_kills', 0))
             s_wave  = int(qp.get('sniper_wave', 1))
-            if s_score > 0 and s_score > gr.get('sniper', {}).get('score', 0):
-                gr.setdefault('sniper', {}).update({'score': s_score, 'kills': s_kills, 'wave': s_wave})
-                changed = True
-                update_leaderboard('sniper', user_name, s_score)
-                st.toast(f"🎯 저격전 최고기록 {s_score:,}점 저장!", icon="🏆")
+            if s_score > 0:
+                cur = udata.get('game_records', {}).get('sniper', {}).get('score', 0)
+                if s_score > cur:
+                    col.update_one(
+                        {"_id": "main"},
+                        {"$set": {
+                            f"{uid}.game_records.sniper.score": s_score,
+                            f"{uid}.game_records.sniper.kills": s_kills,
+                            f"{uid}.game_records.sniper.wave":  s_wave,
+                        }}
+                    )
+                    update_leaderboard('sniper', user_name, s_score)
+                    st.toast(f"🎯 저격전 최고기록 {s_score:,}점 저장!", icon="🏆")
+                    if st.session_state.get('logged_in_user') == uid:
+                        st.session_state.setdefault('game_records', {}).setdefault('sniper', {}).update({'score': s_score, 'kills': s_kills, 'wave': s_wave})
 
         # ── 인베스트 마블 ──
         if qp.get('marble_score'):
             m_score = int(qp.get('marble_score', 0))
             m_wins  = int(qp.get('marble_wins', 0))
-            ms = udata.setdefault('marble_stats', {'wins':0,'losses':0,'games_played':0,'best_net_worth':0})
-            ms['games_played'] = ms.get('games_played', 0) + 1
-            ms['wins'] = ms.get('wins', 0) + m_wins
+            ms = udata.get('marble_stats', {'wins': 0, 'losses': 0, 'games_played': 0, 'best_net_worth': 0})
+            new_played = ms.get('games_played', 0) + 1
+            new_wins   = ms.get('wins', 0) + m_wins
+            set_fields = {
+                f"{uid}.marble_stats.games_played": new_played,
+                f"{uid}.marble_stats.wins":         new_wins,
+            }
             if m_score > ms.get('best_net_worth', 0):
-                ms['best_net_worth'] = m_score
-                gr.setdefault('invest_marble', {}).update({'score': m_score, 'wins': ms['wins']})
-                changed = True
+                set_fields[f"{uid}.marble_stats.best_net_worth"]           = m_score
+                set_fields[f"{uid}.game_records.invest_marble.score"]      = m_score
+                set_fields[f"{uid}.game_records.invest_marble.wins"]       = new_wins
                 update_leaderboard('invest_marble', user_name, m_score)
                 st.toast(f"🌍 마블 최고 순자산 ₩{m_score:,} 저장!", icon="🏆")
-            udata['marble_stats'] = ms
+            col.update_one({"_id": "main"}, {"$set": set_fields})
 
-        if changed:
-            udata['game_records'] = gr
-            _users[uid] = udata
-            save_db(USERS_FILE, _users)
-            # session_state도 갱신 (로그인 상태면)
-            if st.session_state.get('logged_in_user') == uid:
-                st.session_state.game_records = gr
+        # ── 던전 ──
+        if qp.get('dungeon_score'):
+            from utils.database import atomic_add_cash, log_tx
+            from utils.config import KST
+            from datetime import datetime, timedelta
+            d_score = int(qp.get('dungeon_score', 0))
+            d_kills = int(qp.get('dungeon_kills', 0))
+            d_win   = qp.get('dungeon_win', 'false') == 'true'
+            ds = udata.get('dungeon_stats', {'best_score': 0, 'best_kills': 0, 'clears': 0, 'games_played': 0})
+            new_ds = {
+                'games_played': ds.get('games_played', 0) + 1,
+                'best_score':   max(ds.get('best_score', 0), d_score),
+                'best_kills':   max(ds.get('best_kills', 0), d_kills),
+                'clears':       ds.get('clears', 0) + (1 if d_win else 0),
+            }
+            # 주간 랭킹
+            now_kst = datetime.now(KST)
+            week_start = (now_kst - timedelta(days=now_kst.weekday())).replace(
+                hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d')
+            dw = udata.get('dungeon_weekly', {})
+            if dw.get('week_start') != week_start:
+                dw = {'week_start': week_start, 'score': 0, 'kills': 0}
+            if d_score > dw.get('score', 0):
+                dw['score'] = d_score
+                dw['kills'] = d_kills
+            set_fields = {
+                f"{uid}.dungeon_stats":  new_ds,
+                f"{uid}.dungeon_weekly": dw,
+            }
+            col.update_one({"_id": "main"}, {"$set": set_fields})
+            # 보상 지급
+            if d_win:
+                atomic_add_cash(uid, 200_000_000)
+                log_tx(uid, "던전", f"던전런 클리어 (점수:{d_score}, 킬:{d_kills})", 200_000_000)
+                st.toast("🏆 던전 클리어! +2억원 보상!", icon="⚔️")
+            elif d_score > 0:
+                reward = d_score * 1000
+                atomic_add_cash(uid, reward)
+                log_tx(uid, "던전", f"던전런 점수 보상 (점수:{d_score}, 킬:{d_kills})", reward)
+            update_leaderboard('dungeon', user_name, d_score)
 
     except Exception as _ge:
         import logging
