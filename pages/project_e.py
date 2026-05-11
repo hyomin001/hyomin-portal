@@ -2226,8 +2226,8 @@ def render():
     # 안전하게 게임 결과 수신 시 dungeon_result_processed 플래그도 초기화
     listener_html = f"""
     <script>
-    window.parent.addEventListener('message', function(e) {
-      if (e.data && e.data.type === 'dungeon_result') {
+    window.parent.addEventListener('message', function(e) {{
+      if (e.data && e.data.type === 'dungeon_result') {{
         const d = e.data;
         const url = new URL(window.parent.location.href);
         url.searchParams.set('dungeon_win',   d.win ? 'true' : 'false');
@@ -2235,8 +2235,8 @@ def render():
         url.searchParams.set('dungeon_kills', d.kills);
         url.searchParams.set('_gr_uid', '{_cur_uid}');
         window.parent.location.href = url.toString();
-      }
-    });
+      }}
+    }});
     </script>
     """
     st.components.v1.html(listener_html, height=0)
