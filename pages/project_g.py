@@ -1218,16 +1218,16 @@ def render():
 
     listener_html = f"""
     <script>
-    window.parent.addEventListener('message', function(e) {
-      if (e.data && e.data.type === 'zombie_result') {
+    window.parent.addEventListener('message', function(e) {{
+      if (e.data && e.data.type === 'zombie_result') {{
         const url = new URL(window.parent.location.href);
         url.searchParams.set('zombie_wave',  e.data.wave);
         url.searchParams.set('zombie_score', e.data.score);
         url.searchParams.set('zombie_kills', e.data.kills);
         url.searchParams.set('_gr_uid', '{_cur_uid}');
         window.parent.location.href = url.toString();
-      }
-    });
+      }}
+    }});
     </script>
     """
     _cv1.html(listener_html, height=0)
