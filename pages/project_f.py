@@ -1229,7 +1229,7 @@ def render():
         const url = new URL(window.parent.location.href);
         url.searchParams.set('racing_score', e.data.score);
         url.searchParams.set('racing_dist',  e.data.dist);
-        url.searchParams.set('_gr_uid', window._gr_uid||'');
+        url.searchParams.set('_gr_uid', window.parent._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
