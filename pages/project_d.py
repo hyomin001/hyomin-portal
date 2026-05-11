@@ -2340,40 +2340,7 @@ def render():
     from utils.database import load_db, save_db, update_leaderboard
     from utils.config import USERS_FILE
 
-    qp = st.query_params
-    if qp.get('marble_score'):
-        try:
-            uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
-            m_score = int(qp.get('marble_score', 0))
-            m_wins  = int(qp.get('marble_wins', 0))
-            if uid and m_score > 0:
-                _users = load_db(USERS_FILE, {})
-                if uid in _users:
-                    ms = _users[uid].setdefault('marble_stats', {
-                        'wins': 0, 'losses': 0, 'games_played': 0, 'best_net_worth': 0
-                    })
-                    ms['games_played'] = ms.get('games_played', 0) + 1
-                    ms['wins']         = ms.get('wins', 0) + m_wins
-                    if m_score > ms.get('best_net_worth', 0):
-                        ms['best_net_worth'] = m_score
-                        st.toast(f"🏆 인베스트마블 최고 순자산 갱신! ₩{m_score:,}", icon="🌍")
-                    _users[uid]['marble_stats'] = ms
-                    # game_records에도 저장 (ranking.py 호환)
-                    gr = _users[uid].setdefault('game_records', {})
-                    if m_score > gr.get('invest_marble', {}).get('score', 0):
-                        gr['invest_marble'] = {'score': m_score, 'wins': ms.get('wins', 0)}
-                        _users[uid]['game_records'] = gr
-                    save_db(USERS_FILE, _users)
-                    st.session_state.marble_stats = ms
-                    sync_user_data()
-                    # 전역 리더보드에도 저장
-                    user_name = _users.get(uid, {}).get('nickname', uid)
-                    if update_leaderboard('invest_marble', user_name, m_score):
-                        st.toast(f"👑 인베스트마블 전국 1위! ₩{m_score:,}", icon="🏆")
-        except Exception:
-            pass
-        st.query_params.clear()
-        st.rerun()
+    # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
 
     st.markdown("""
     <style>
