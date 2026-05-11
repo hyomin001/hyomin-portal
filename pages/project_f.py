@@ -1184,35 +1184,8 @@ def render():
     from utils.core import sync_user_data
     from utils.config import USERS_FILE
 
-    # ── 결과 처리 (query_params) ──
-    qp = st.query_params
-    if qp.get('racing_score'):
-        try:
-            uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
-            r_score = int(qp.get('racing_score', 0))
-            r_dist  = float(qp.get('racing_dist', 0.0))
-            if uid and r_score > 0:
-                # [BUG FIX] DB에서 최신 game_records 로드 후 비교
-                _users = load_db(USERS_FILE, {})
-                cur_rec = _users.get(uid, {}).get('game_records', st.session_state.get('game_records', {}))
-                if r_score > cur_rec.get('racing', {}).get('score', 0):
-                    cur_rec.setdefault('racing', {})['score'] = r_score
-                    cur_rec.setdefault('racing', {})['dist']  = r_dist
-                    st.session_state.game_records = cur_rec
-                    # [BUG FIX] DB에 직접 저장
-                    if uid in _users:
-                        _users[uid]['game_records'] = cur_rec
-                        save_db(USERS_FILE, _users)
-                    sync_user_data()
-                    st.toast(f"🏆 레이싱 최고기록 갱신! {r_score:,}점", icon="🏎️")
-                # 리더보드 업데이트
-                user_name = _users.get(uid, {}).get('nickname', uid)
-                if update_leaderboard('racing', user_name, r_score):
-                    st.toast(f"👑 레이싱 전국 1위! {r_score:,}점", icon="🏆")
-        except Exception:
-            pass
-        st.query_params.clear()
-        st.rerun()
+    # 결과 처리는 app.py _save_game_result()에서 $set으로 원자적 처리됨
+    # (location.href 리로드 후 새 세션에서 app.py가 먼저 실행되므로 여기서 중복 처리 불필요)
 
     st.markdown("<style>iframe{border:none!important;}</style>", unsafe_allow_html=True)
     st.caption("🏎️ ← → / A D: 레인전환 | SPACE/⚡: 니트로 | 🏆 최고기록은 자동 저장됩니다")
