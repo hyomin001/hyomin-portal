@@ -1123,7 +1123,7 @@ def render():
     qp = st.query_params
     if qp.get('fighter_score'):
         try:
-            uid = st.session_state.get('logged_in_user', '')
+            uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
             f_score    = int(qp.get('fighter_score', 0))
             f_perfects = int(qp.get('fighter_perfects', 0))
             if uid and f_score > 0:
@@ -1151,6 +1151,11 @@ def render():
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🥊 P1: A/D이동 W점프 Z펀치 X발차기 C필살 V슈퍼 | P2: ←→이동 ↑점프 1펀치 2발차기 3필살 4슈퍼")
 
+    # uid를 JS 전역변수로 주입 (location.href 리로드 후 uid 복원용)
+    _cur_uid = st.session_state.get('logged_in_user', '')
+    if _cur_uid:
+        _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
+
     listener_html = """
     <script>
     window.parent.addEventListener('message', function(e) {
@@ -1158,6 +1163,7 @@ def render():
         const url = new URL(window.parent.location.href);
         url.searchParams.set('fighter_score',    e.data.score);
         url.searchParams.set('fighter_perfects',  e.data.perfects);
+        url.searchParams.set('_gr_uid', window._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
