@@ -1182,7 +1182,7 @@ def render():
     qp = st.query_params
     if qp.get('zombie_wave'):
         try:
-            uid = st.session_state.get('logged_in_user', '')
+            uid = st.session_state.get('logged_in_user','') or qp.get('_gr_uid','')
             z_wave  = int(qp.get('zombie_wave', 0))
             z_score = int(qp.get('zombie_score', 0))
             z_kills = int(qp.get('zombie_kills', 0))
@@ -1211,6 +1211,11 @@ def render():
     st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
     st.caption("🧟 WASD/조이스틱: 이동 | 마우스/터치: 조준·사격 | 1~5: 무기 전환 | Q: 화염탄 E: 섬광 T: 공습")
 
+    # uid를 JS 전역변수로 주입 (location.href 리로드 후 uid 복원용)
+    _cur_uid = st.session_state.get('logged_in_user', '')
+    if _cur_uid:
+        _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
+
     listener_html = """
     <script>
     window.parent.addEventListener('message', function(e) {
@@ -1219,6 +1224,7 @@ def render():
         url.searchParams.set('zombie_wave',  e.data.wave);
         url.searchParams.set('zombie_score', e.data.score);
         url.searchParams.set('zombie_kills', e.data.kills);
+        url.searchParams.set('_gr_uid', window._gr_uid||'');
         window.parent.location.href = url.toString();
       }
     });
