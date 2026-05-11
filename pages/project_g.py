@@ -1216,7 +1216,7 @@ def render():
     if _cur_uid:
         _cv1.html('<script>window.parent._gr_uid="' + _cur_uid + '";</script>', height=0)
 
-    listener_html = """
+    listener_html = f"""
     <script>
     window.parent.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'zombie_result') {
@@ -1224,7 +1224,7 @@ def render():
         url.searchParams.set('zombie_wave',  e.data.wave);
         url.searchParams.set('zombie_score', e.data.score);
         url.searchParams.set('zombie_kills', e.data.kills);
-        url.searchParams.set('_gr_uid', window.parent._gr_uid||'');
+        url.searchParams.set('_gr_uid', '{_cur_uid}');
         window.parent.location.href = url.toString();
       }
     });
