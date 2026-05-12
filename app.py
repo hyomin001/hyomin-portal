@@ -1587,7 +1587,7 @@ if st.session_state.page_view == "portal":
         <b>클리어 기록은 MongoDB에 영구 저장</b>되어 로그아웃 후에도 진행상황이 유지됩니다.
     </p>
     <div style="margin-top:12px;">
-        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🎮 10라운드 미션</span>
+        <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🎮 난이도 모드</span>
         <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🪖 아군 소환 시스템</span>
         <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">💎 자원 관리</span>
         <span class="arch-badge" style="color:#00ff88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🔭 스코프 저격</span>
