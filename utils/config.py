@@ -1,10 +1,38 @@
 # utils/config.py
 import os
-from datetime import timedelta, timezone
+from datetime import timedelta, timezone, datetime
 
 # 🕒 서버 시간 강제 세팅 (KST)
 os.environ['TZ'] = 'Asia/Seoul'
 KST = timezone(timedelta(hours=9))
+
+# ══════════════════════════════════════════════════════════════
+# 🏆 시즌 설정 — 시즌 번호·기간을 여기서만 관리 (하드코딩 금지)
+# ══════════════════════════════════════════════════════════════
+CURRENT_SEASON     = 1
+SEASON_END_STR     = "2026-05-15 15:35"                  # 표시용
+SEASON_END_DT      = datetime(2026, 5, 15, 15, 35, tzinfo=KST)
+NEXT_SEASON_DELAY  = 3600   # 시즌 종료 후 다음 시즌 시작까지 대기 시간 (초, 1시간)
+
+
+def get_active_season() -> int:
+    """
+    현재 KST 시각 기준으로 활성 시즌 번호를 반환.
+    SEASON_END_DT + NEXT_SEASON_DELAY 이후면 시즌 번호가 1 증가한다.
+    """
+    now = datetime.now(KST)
+    elapsed = (now - SEASON_END_DT).total_seconds()
+    if elapsed < 0:
+        return CURRENT_SEASON                   # 시즌 진행 중
+    # 정수 division으로 완료된 시즌 수 계산
+    # (단순 구조: 매 시즌이 동일 기간이라고 가정하지 않으므로
+    #  일단 시즌 종료 후 NEXT_SEASON_DELAY 경과하면 +1)
+    return CURRENT_SEASON + int(elapsed // NEXT_SEASON_DELAY)
+
+
+def is_season_over() -> bool:
+    """시즌 종료 여부 확인"""
+    return datetime.now(KST) >= SEASON_END_DT
 
 # 🌌 데이터베이스 파일명
 USERS_FILE    = "users_db.json"
