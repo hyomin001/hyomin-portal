@@ -2,7 +2,7 @@
 import streamlit as st
 import random
 from utils.core import format_korean_money, sync_user_data, claim_hidden_title
-from utils.database import log_tx, atomic_deduct_cash
+from utils.database import log_tx, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
     st.title("⚽ 조기축구 승부차기")
@@ -131,6 +131,8 @@ def render(market, nw):
             if 'ps_paid' not in st.session_state:
                 st.session_state.ps_paid = True
                 if prize > 0:
+                    # ✅ [BUG FIX] atomic_add_cash로 지급 (기존: 세션만 수정 → sync 실패시 미지급)
+                    atomic_add_cash(st.session_state.logged_in_user, prize)
                     st.session_state.global_cash += prize
                     if bet >= 10_000_000_000: claim_hidden_title("penalty_master", "👑 [유일무이] 거미손")
                 if net > 0: log_tx(st.session_state.logged_in_user, "승부차기", "승부차기 승리", net)
