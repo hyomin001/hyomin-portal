@@ -81,3 +81,27 @@ FORGE_DATA = {
     14: {"cost": 10_000_000_000_000,"success": 2,  "destroy": 45, "sell": 40_000_000_000_000,"name": "+14 신도 두려워하는 검"},
     15: {"cost": 30_000_000_000_000,"success": 1,  "destroy": 50, "sell": 100_000_000_000_000,"name": "+15 엑스칼리버 진"},
 }
+
+# ⛏️ 광산 아이템 설정
+MINE_ITEMS = [
+    {"name": "돌멩이",      "icon": "🪨", "value": 50_000,        "prob": 0.35},
+    {"name": "석탄",        "icon": "🖤", "value": 200_000,       "prob": 0.25},
+    {"name": "철광석",      "icon": "🔩", "value": 500_000,       "prob": 0.18},
+    {"name": "금",          "icon": "🟡", "value": 2_000_000,     "prob": 0.10},
+    {"name": "에메랄드",    "icon": "💚", "value": 8_000_000,     "prob": 0.05},
+    {"name": "루비",        "icon": "❤️", "value": 25_000_000,    "prob": 0.04},
+    {"name": "사파이어",    "icon": "💙", "value": 50_000_000,    "prob": 0.02},
+    {"name": "다이아몬드",  "icon": "💎", "value": 200_000_000,   "prob": 0.009},
+    {"name": "전설의 원석", "icon": "🌌", "value": 1_000_000_000, "prob": 0.001},
+]
+
+# 📅 일일 퀘스트 설정
+DAILY_QUESTS_CONFIG = [
+    {"id": "attendance",  "name": "출석 체크",        "icon": "📅", "desc": "오늘 사이트에 접속하세요",              "reward": 500_000},
+    {"id": "rich5",       "name": "부자 되기",         "icon": "💰", "desc": "순자산 5억 원 이상 달성",              "reward": 2_000_000},
+    {"id": "landlord",    "name": "부동산 투자자",     "icon": "🏠", "desc": "부동산 1채 이상 보유",                 "reward": 3_000_000},
+    {"id": "debtfree",    "name": "무대출 달성",       "icon": "🏦", "desc": "대출 잔액 0원 달성",                   "reward": 1_000_000},
+    {"id": "investor",    "name": "주식 투자자",       "icon": "📈", "desc": "주식 평가액 1억 원 이상",              "reward": 5_000_000},
+    {"id": "coin100m",    "name": "코인 고수",         "icon": "🪙", "desc": "보유 코인 평가액 1억 원 이상",         "reward": 5_000_000},
+    {"id": "billionaire", "name": "억만장자",          "icon": "🤑", "desc": "순자산 1000억 원 이상 달성",           "reward": 50_000_000},
+]
