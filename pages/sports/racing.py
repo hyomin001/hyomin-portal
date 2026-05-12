@@ -4,7 +4,7 @@ import random
 import time
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
 from utils.config import USERS_FILE
-from utils.database import load_db, save_db, log_tx, atomic_deduct_cash
+from utils.database import load_db, save_db, log_tx, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
     st.title("🏎️ 하이퍼카 레이싱")
@@ -96,6 +96,8 @@ def render(market, nw):
 
             if winner == selected_car['name']:
                 prize = int(bet_amt * selected_car['odds'])
+                # ✅ [BUG FIX] atomic_add_cash로 지급 (기존: 세션만 수정 → sync 실패시 미지급)
+                atomic_add_cash(uid, prize)
                 st.session_state.global_cash += prize
                 log_tx(st.session_state.logged_in_user, "레이싱", f"{selected_car['name']} 승리", prize - bet_amt)
                 st.success(f"🎉 베팅 성공! +{format_korean_money(prize)}"); st.balloons()
