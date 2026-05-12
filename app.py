@@ -8,10 +8,9 @@ from datetime import datetime
 # ==============================
 # 1. 코어 모듈 임포트
 # ==============================
-from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA, CURRENT_SEASON, SEASON_END_STR, get_active_season, is_season_over
-from utils.database import load_db, save_db, load_stats, save_stats
+from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA, SEASON_DURATION_DAYS, NEXT_SEASON_DELAY
+from utils.database import load_db, save_db, load_stats, save_stats, get_login_lock, set_login_lock, clear_login_lock, check_and_run_season_reset
 from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
-from utils.database import get_login_lock, set_login_lock, clear_login_lock, save_db, check_and_run_season_reset
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
 
@@ -727,28 +726,30 @@ if st.session_state.page_view == "portal":
     st.markdown(PORTAL_CSS, unsafe_allow_html=True)
     market = load_db(MARKET_FILE, {})
 
-    # 시즌 종료 후 1시간 경과 시 자동으로 기록 초기화 (중복 방지 내장)
+    # ── 시즌 자동 전환 체크 (market DB 기반, 중복 실행 방지 내장) ──
     try:
-        check_and_run_season_reset()
+        _season_just_reset = check_and_run_season_reset(market)
+        if _season_just_reset:
+            market = load_db(MARKET_FILE, {})  # 초기화 후 최신 market 재로드
     except Exception:
-        pass
+        _season_just_reset = False
 
     # ── 최상단 HUD ──
-    _users_db_for_stats = {}  # 기본값 선언 — 아래 try 블록 실패 시 NameError 방지
+    _users_db = {}  # 기본값 — 아래 try 블록 실패 시 NameError 방지
     try:
         _stats   = load_stats()
         _today   = datetime.now(KST).strftime("%Y-%m-%d")
         _online  = get_online_users()
         _today_v = len(_stats.get("daily_visitors", {}).get(_today, []))
-        _users_db_for_stats = load_db(USERS_FILE, {})
-        _total_s = len([u for u in _users_db_for_stats if u != "admin"])
+        _users_db = load_db(USERS_FILE, {})   # ← 단 1회 로드, 아래 랭킹 계산에도 재사용
+        _total_s = len([u for u in _users_db if u != "admin"])
     except:
         _online, _today_v, _total_s = 0, 0, 0
 
     # ── 게임별 1위 랭킹 수집 ──────────────────────────────────
     try:
-        # 유저 DB를 여기서 직접 로드 (위 try 실패해도 독립적으로 동작)
-        _users_db_for_rank = load_db(USERS_FILE, {})
+        # 위에서 로드한 _users_db 재사용 (DB 이중 로드 없음)
+        _users_db_for_rank = _users_db
 
         def _get_game_top(stat_key, val_key, val_fmt='score'):
             best_uid, best_val = '—', 0
@@ -818,8 +819,21 @@ if st.session_state.page_view == "portal":
 
 
     hud_user_txt = f"👤 {st.session_state.logged_in_user}님 접속 중" if st.session_state.get('logged_in_user') else "🔒 비로그인"
-    _active_season = get_active_season()
-    _season_label = f"시즌 {_active_season} 진행 중" if not is_season_over() else f"시즌 {CURRENT_SEASON} 종료"
+
+    # ── 시즌 정보 (market DB 기반) ──
+    _cur_sn       = market.get("season_num", 1)
+    _season_end_ts= market.get("season_end", 0)
+    _now_ts       = time.time()
+    _remain_sec   = max(0, int(_season_end_ts - _now_ts))
+    if _remain_sec > 0:
+        _dd  = _remain_sec // 86400
+        _hh  = (_remain_sec % 86400) // 3600
+        _season_label = f"시즌 {_cur_sn} · 종료까지 {_dd}일 {_hh}시간"
+    elif _season_end_ts > 0:
+        _season_label = f"시즌 {_cur_sn} 종료 · 새 시즌 준비 중"
+    else:
+        _season_label = f"시즌 {_cur_sn} 진행 중"
+
     st.markdown(f"""
     <div class='portal-bg'></div>
     <div class='top-hud'>
@@ -829,6 +843,19 @@ if st.session_state.page_view == "portal":
       <div style='color:var(--text2);font-size:0.78rem;'>{hud_user_txt}</div>
     </div>
     """, unsafe_allow_html=True)
+
+    # ── 새 시즌 시작 축하 배너 (방금 초기화된 경우) ──
+    if _season_just_reset:
+        st.markdown(f"""
+<div style='background:linear-gradient(135deg,rgba(108,99,255,0.25),rgba(255,215,0,0.15));
+     border:2px solid rgba(255,215,0,0.6);border-radius:16px;padding:20px 24px;margin:12px 0;text-align:center;'>
+  <div style='font-size:1.6rem;font-weight:900;color:#ffd700;'>🎉 시즌 {_cur_sn} 시작!</div>
+  <div style='color:#e8f0ff;margin-top:8px;font-size:0.95rem;'>
+    시즌 {_cur_sn - 1}이 종료되었습니다. 모든 게임 기록이 초기화되었으며 새로운 경쟁이 시작됩니다!<br>
+    이번 시즌도 최고 자리를 향해 달려보세요! 🚀
+  </div>
+</div>
+        """, unsafe_allow_html=True)
 
     # ── 로그인/로그아웃 버튼 ──
     col_empty, col_btn = st.columns([8, 2])
@@ -870,7 +897,7 @@ if st.session_state.page_view == "portal":
         _prices = {k: v['price'] for k, v in market.get('stock_data', {}).items()}
         _top_nw = 0
         _top_uid = "—"
-        for _u, _udata in _users_db_for_stats.items():
+        for _u, _udata in _users_db.items():
             if _u == "admin": continue
             _w = _udata.get('cash', 0) - _udata.get('loan', 0)
             for _sid, _pd in _udata.get('portfolio', {}).items():
@@ -1109,7 +1136,7 @@ if st.session_state.page_view == "portal":
     </p>
 </div>
 <div class="arch-highlight" style="border-left-color:#00ff88; background: linear-gradient(90deg, rgba(0,255,136,0.08), rgba(0,212,255,0.06));">
-    <p style="color:#00ff88 !important;">🌟 정규 시즌 1 공식 개막 및 시즌 종료 종료 예정: 2026-05-15 15:35</p>
+    <p style="color:#00ff88 !important;">🌟 정규 시즌 1 공식 개막 및 시즌 종료 예정: 2026-05-15 15:35</p>
     <p class="sub">
         <b>[시즌 기간]</b> 2026년 4월 15일 ~ 5월 15일<br>
         새로운 시즌의 시작을 기념하여 모든 시민께 <b>초기 정착금 5억 원</b>을 즉시 지급합니다!
