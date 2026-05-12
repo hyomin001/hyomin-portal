@@ -1,7 +1,7 @@
 # utils/database.py
 import streamlit as st
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import time as _time
 from utils.config import (
@@ -346,3 +346,92 @@ def get_user_field(uid: str, field: str):
     except Exception as e:
         logging.error(f"[get_user_field] {uid}/{field} 실패: {e}")
         return None
+
+
+# ══════════════════════════════════════════════════════════════
+# 🏆 시즌 종료 처리 — 게임 기록 초기화 & 새 시즌 준비
+# ══════════════════════════════════════════════════════════════
+
+def reset_season_records() -> bool:
+    """
+    시즌 종료 시 호출.
+    - 전역 리더보드(leaderboard_db) 초기화
+    - 모든 유저의 game_records, dungeon_stats, marble_stats, dungeon_weekly 초기화
+    - stats_db의 시즌 기록 초기화
+    반환값: True = 성공, False = 실패
+    """
+    try:
+        # 1) 리더보드 초기화
+        save_leaderboard({})
+        logging.info("[reset_season_records] 리더보드 초기화 완료")
+
+        # 2) 유저 게임 기록 초기화
+        col = _get_col(USERS_FILE)
+        doc = col.find_one({"_id": "main"})
+        if not doc:
+            return False
+
+        empty_game_records = {
+            "racing":       {"score": 0, "dist": 0.0},
+            "zombie":       {"wave": 0, "score": 0, "kills": 0},
+            "fighter":      {"score": 0, "perfects": 0},
+            "sniper":       {"score": 0, "grade": "", "clears": []},
+            "invest_marble":{"score": 0, "wins": 0},
+            "dungeon":      {"score": 0},
+            "terminal":     {"score": 0},
+        }
+        empty_dungeon_stats = {"best_score": 0, "best_kills": 0, "clears": 0, "games_played": 0}
+        empty_marble_stats  = {"wins": 0, "losses": 0, "games_played": 0, "best_net_worth": 0}
+
+        set_fields = {}
+        for uid, udata in doc.items():
+            if uid == "_id" or uid == "admin":
+                continue
+            set_fields[f"{uid}.game_records"]   = empty_game_records
+            set_fields[f"{uid}.dungeon_stats"]  = empty_dungeon_stats
+            set_fields[f"{uid}.marble_stats"]   = empty_marble_stats
+            set_fields[f"{uid}.dungeon_weekly"] = {}
+            set_fields[f"{uid}.terminal_cleared"] = []
+
+        if set_fields:
+            col.update_one({"_id": "main"}, {"$set": set_fields})
+        logging.info(f"[reset_season_records] {len(set_fields)//5}명 유저 기록 초기화 완료")
+
+        # 3) stats 시즌 기록 초기화
+        stats = load_stats()
+        stats["season_reset_at"] = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
+        save_stats(stats)
+
+        return True
+    except Exception as e:
+        logging.error(f"[reset_season_records] 실패: {e}")
+        return False
+
+
+def check_and_run_season_reset() -> bool:
+    """
+    시즌 종료 조건을 확인하고, 아직 초기화되지 않았으면 reset_season_records()를 실행.
+    app.py 포털 메인 로드 시 1회 호출하면 됨.
+    반환값: True = 이번 호출에서 초기화 실행됨
+    """
+    from utils.config import SEASON_END_DT, NEXT_SEASON_DELAY
+    now = datetime.now(KST)
+    # 시즌 종료 시각 + NEXT_SEASON_DELAY(1시간) 이후여야 실행
+    trigger_dt = SEASON_END_DT + timedelta(seconds=NEXT_SEASON_DELAY)
+    if now < trigger_dt:
+        return False  # 아직 종료 전이거나 유예기간
+
+    stats = load_stats()
+    last_reset = stats.get("season_reset_at", "")
+    if last_reset:
+        # 이미 현재 시즌 종료 이후에 초기화된 기록이 있으면 중복 실행 방지
+        try:
+            from datetime import datetime as _dt
+            last_dt = _dt.strptime(last_reset, "%Y-%m-%d %H:%M:%S").replace(tzinfo=KST)
+            if last_dt >= trigger_dt:
+                return False
+        except Exception:
+            pass
+
+    logging.info("[check_and_run_season_reset] 시즌 초기화 실행!")
+    return reset_season_records()
