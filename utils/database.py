@@ -149,13 +149,14 @@ def save_stats(data):
     save_db(STATS_FILE, data)
 
 def _update_daily_volume(amount: int):
-    """거래량 통계만 별도로 빠르게 갱신"""
+    """거래량 통계만 별도로 빠르게 갱신 — 오늘 이전 날짜 데이터 자동 정리"""
     try:
         stats = load_stats()
         today = datetime.now(KST).strftime("%Y-%m-%d")
         vol   = stats.get("daily_volume", {})
         vol[today] = vol.get(today, 0) + abs(amount)
-        stats["daily_volume"] = vol
+        # 오늘 이전 날짜 데이터 자동 삭제 (무한 누적 방지)
+        stats["daily_volume"] = {k: v for k, v in vol.items() if k >= today}
         save_stats(stats)
     except Exception as e:
         logging.error(f"[_update_daily_volume] 통계 갱신 실패: {e}")
@@ -348,90 +349,177 @@ def get_user_field(uid: str, field: str):
         return None
 
 
+
 # ══════════════════════════════════════════════════════════════
-# 🏆 시즌 종료 처리 — 게임 기록 초기화 & 새 시즌 준비
+# 🏆 시즌 종료 처리 — market DB 기반 완전 자동화
 # ══════════════════════════════════════════════════════════════
 
-def reset_season_records() -> bool:
+def _save_season_snapshot(market: dict) -> None:
     """
-    시즌 종료 시 호출.
-    - 전역 리더보드(leaderboard_db) 초기화
-    - 모든 유저의 game_records, dungeon_stats, marble_stats, dungeon_weekly 초기화
-    - stats_db의 시즌 기록 초기화
-    반환값: True = 성공, False = 실패
+    시즌 초기화 직전 1~10위 순자산 스냅샷을 market['season_records']에 영구 저장.
+    관리자 패널 '역대 시즌 기록'에서 확인 가능.
     """
     try:
-        # 1) 리더보드 초기화
-        save_leaderboard({})
-        logging.info("[reset_season_records] 리더보드 초기화 완료")
+        from utils.config import estate_config, FORGE_DATA
+        col      = _get_col(USERS_FILE)
+        doc      = col.find_one({"_id": "main"}) or {}
+        prices   = {k: v.get("price", 0) for k, v in market.get("stock_data", {}).items()}
+        crypto   = market.get("crypto_data", {})
+        rankings = []
 
-        # 2) 유저 게임 기록 초기화
+        for uid, ud in doc.items():
+            if uid in ("_id", "admin"):
+                continue
+            w = ud.get("cash", 0) - ud.get("loan", 0)
+            for sid, pd in ud.get("portfolio", {}).items():
+                w += pd.get("qty", 0) * prices.get(sid, 0)
+            for cid, ci in ud.get("crypto_portfolio", {}).items():
+                w += ci.get("qty", 0) * crypto.get(cid, {}).get("price", 0)
+            for eid, cnt in ud.get("real_estate", {}).items():
+                if eid in estate_config:
+                    w += estate_config[eid]["base_price"] * cnt * 0.8
+            wlv = ud.get("weapon_level", 0)
+            if wlv > 0 and wlv in FORGE_DATA:
+                w += FORGE_DATA[wlv]["sell"]
+            rankings.append((uid, int(w)))
+
+        rankings.sort(key=lambda x: x[1], reverse=True)
+        sn = market.get("season_num", 1)
+        record = {}
+        for i, (uid, w) in enumerate(rankings[:10]):
+            record[f"rank{i+1}"] = {"uid": uid, "net_worth": w}
+        market.setdefault("season_records", {})[str(sn)] = record
+        logging.info(f"[_save_season_snapshot] 시즌 {sn} 스냅샷 저장 완료 ({len(rankings)}명)")
+    except Exception as e:
+        logging.error(f"[_save_season_snapshot] 실패: {e}")
+
+
+def reset_season_records(market: dict) -> bool:
+    """
+    시즌 종료 시 호출.
+    1) 현재 순위 스냅샷 저장 (명예의 전당)
+    2) 상위 3인에게 시즌 우승 칭호 지급
+    3) 전역 리더보드 초기화
+    4) 모든 유저 게임 기록 초기화
+    5) market DB에 새 시즌 번호·종료일 기록
+    반환값: True = 성공, False = 실패
+    """
+    import time as _t
+    from utils.config import SEASON_DURATION_DAYS, NEXT_SEASON_DELAY, estate_config
+    try:
+        sn = market.get("season_num", 1)
+
+        # 1) 순위 스냅샷 + 우승 칭호
+        _save_season_snapshot(market)
+        records = market.get("season_records", {}).get(str(sn), {})
+        season_titles = [
+            f"🥇 [시즌{sn}] 전설의 우승자",
+            f"🥈 [시즌{sn}] 준우승의 영광",
+            f"🥉 [시즌{sn}] 시즌 3위",
+        ]
         col = _get_col(USERS_FILE)
-        doc = col.find_one({"_id": "main"})
-        if not doc:
-            return False
+        doc = col.find_one({"_id": "main"}) or {}
+        title_set = {}
+        for i, key in enumerate([f"rank{j+1}" for j in range(3)]):
+            entry = records.get(key, {})
+            uid   = entry.get("uid") if isinstance(entry, dict) else entry
+            if uid and uid in doc:
+                title = season_titles[i]
+                ud    = doc[uid]
+                inv   = ud.get("inventory", [])
+                if title not in inv:
+                    inv.append(title)
+                title_set[f"{uid}.inventory"]      = inv
+                title_set[f"{uid}.equipped_title"] = title
+        if title_set:
+            col.update_one({"_id": "main"}, {"$set": title_set})
 
+        # 2) 리더보드 초기화
+        save_leaderboard({})
+
+        # 3) 유저 게임 기록 초기화
         empty_game_records = {
-            "racing":       {"score": 0, "dist": 0.0},
-            "zombie":       {"wave": 0, "score": 0, "kills": 0},
-            "fighter":      {"score": 0, "perfects": 0},
-            "sniper":       {"score": 0, "grade": "", "clears": []},
-            "invest_marble":{"score": 0, "wins": 0},
-            "dungeon":      {"score": 0},
-            "terminal":     {"score": 0},
+            "racing":        {"score": 0, "dist": 0.0},
+            "zombie":        {"wave": 0, "score": 0, "kills": 0},
+            "fighter":       {"score": 0, "perfects": 0},
+            "sniper":        {"score": 0, "grade": "", "clears": []},
+            "invest_marble": {"score": 0, "wins": 0},
+            "dungeon":       {"score": 0},
+            "terminal":      {"score": 0},
         }
-        empty_dungeon_stats = {"best_score": 0, "best_kills": 0, "clears": 0, "games_played": 0}
-        empty_marble_stats  = {"wins": 0, "losses": 0, "games_played": 0, "best_net_worth": 0}
-
+        empty_dungeon = {"best_score": 0, "best_kills": 0, "clears": 0, "games_played": 0}
+        empty_marble  = {"wins": 0, "losses": 0, "games_played": 0, "best_net_worth": 0}
         set_fields = {}
         for uid, udata in doc.items():
-            if uid == "_id" or uid == "admin":
+            if uid in ("_id", "admin"):
                 continue
-            set_fields[f"{uid}.game_records"]   = empty_game_records
-            set_fields[f"{uid}.dungeon_stats"]  = empty_dungeon_stats
-            set_fields[f"{uid}.marble_stats"]   = empty_marble_stats
-            set_fields[f"{uid}.dungeon_weekly"] = {}
-            set_fields[f"{uid}.terminal_cleared"] = []
-
+            set_fields[f"{uid}.game_records"]    = empty_game_records
+            set_fields[f"{uid}.dungeon_stats"]   = empty_dungeon
+            set_fields[f"{uid}.marble_stats"]    = empty_marble
+            set_fields[f"{uid}.dungeon_weekly"]  = {}
+            set_fields[f"{uid}.terminal_cleared"]= []
         if set_fields:
             col.update_one({"_id": "main"}, {"$set": set_fields})
-        logging.info(f"[reset_season_records] {len(set_fields)//5}명 유저 기록 초기화 완료")
 
-        # 3) stats 시즌 기록 초기화
+        # 4) market DB — 새 시즌 번호·기간 기록
+        new_sn    = sn + 1
+        now_ts    = _t.time()
+        market["season_num"]      = new_sn
+        market["season_start"]    = now_ts
+        market["season_end"]      = now_ts + SEASON_DURATION_DAYS * 86400
+        market["season_ending"]   = False
+        market["news"] = (
+            f"🏆 [시즌{sn} 종료] "
+            + (f"{records.get('rank1', {}).get('uid','?')}님 우승! " if isinstance(records.get('rank1'), dict) else "")
+            + f"🌌 시즌 {new_sn} 시작!"
+        )
+        save_market(market)
+
+        # 5) stats 기록
         stats = load_stats()
         stats["season_reset_at"] = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
+        stats["last_season_num"] = sn
         save_stats(stats)
 
+        logging.info(f"[reset_season_records] 시즌 {sn}→{new_sn} 초기화 완료")
         return True
     except Exception as e:
         logging.error(f"[reset_season_records] 실패: {e}")
         return False
 
 
-def check_and_run_season_reset() -> bool:
+def check_and_run_season_reset(market: dict) -> bool:
     """
-    시즌 종료 조건을 확인하고, 아직 초기화되지 않았으면 reset_season_records()를 실행.
-    app.py 포털 메인 로드 시 1회 호출하면 됨.
+    포털 메인 로드 시마다 호출.
+    market['season_end'] 기준으로 시즌 종료 여부를 판단하고,
+    NEXT_SEASON_DELAY(1시간) 경과 후 아직 초기화 안 됐으면 자동 실행.
+
+    중복 실행 방지: stats['season_reset_at'] 타임스탬프로 이미 처리된 시즌은 건너뜀.
     반환값: True = 이번 호출에서 초기화 실행됨
     """
-    from utils.config import SEASON_END_DT, NEXT_SEASON_DELAY
-    now = datetime.now(KST)
-    # 시즌 종료 시각 + NEXT_SEASON_DELAY(1시간) 이후여야 실행
-    trigger_dt = SEASON_END_DT + timedelta(seconds=NEXT_SEASON_DELAY)
-    if now < trigger_dt:
-        return False  # 아직 종료 전이거나 유예기간
+    import time as _t
+    from utils.config import NEXT_SEASON_DELAY
+    try:
+        season_end_ts = market.get("season_end", 0)
+        if season_end_ts <= 0:
+            return False  # 시즌 종료일이 DB에 없음 — 관리자가 아직 설정 전
 
-    stats = load_stats()
-    last_reset = stats.get("season_reset_at", "")
-    if last_reset:
-        # 이미 현재 시즌 종료 이후에 초기화된 기록이 있으면 중복 실행 방지
-        try:
-            from datetime import datetime as _dt
-            last_dt = _dt.strptime(last_reset, "%Y-%m-%d %H:%M:%S").replace(tzinfo=KST)
-            if last_dt >= trigger_dt:
-                return False
-        except Exception:
-            pass
+        now = _t.time()
+        trigger_ts = season_end_ts + NEXT_SEASON_DELAY
+        if now < trigger_ts:
+            return False  # 아직 시즌 진행 중 또는 유예 기간
 
-    logging.info("[check_and_run_season_reset] 시즌 초기화 실행!")
-    return reset_season_records()
+        # 중복 방지: 이미 이 시즌 종료 이후에 초기화한 기록이 있으면 스킵
+        stats      = load_stats()
+        reset_at   = stats.get("season_reset_at", "")
+        last_sn    = stats.get("last_season_num", -1)
+        cur_sn     = market.get("season_num", 1)
+        if last_sn >= cur_sn and reset_at:
+            # 이미 처리된 시즌
+            return False
+
+        logging.info("[check_and_run_season_reset] 시즌 자동 초기화 실행!")
+        return reset_season_records(market)
+    except Exception as e:
+        logging.error(f"[check_and_run_season_reset] {e}")
+        return False
