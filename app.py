@@ -1099,7 +1099,7 @@ if st.session_state.page_view == "portal":
     </p>
 </div>
 <div class="arch-highlight" style="border-left-color:#00ff88; background: linear-gradient(90deg, rgba(0,255,136,0.08), rgba(0,212,255,0.06));">
-    <p style="color:#00ff88 !important;">🌟 정규 시즌 1 공식 개막</p>
+    <p style="color:#00ff88 !important;">🌟 정규 시즌 1 공식 개막 및 시즌 종료 종료 예정: 2026-05-15 15:35</p>
     <p class="sub">
         <b>[시즌 기간]</b> 2026년 4월 15일 ~ 5월 15일<br>
         새로운 시즌의 시작을 기념하여 모든 시민께 <b>초기 정착금 5억 원</b>을 즉시 지급합니다!
