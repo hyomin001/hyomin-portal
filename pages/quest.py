@@ -3,7 +3,7 @@ import streamlit as st
 from datetime import datetime
 from utils.config import DAILY_QUESTS_CONFIG, KST, stock_config
 from utils.core import format_korean_money, sync_user_data
-from utils.database import log_tx
+from utils.database import log_tx, atomic_add_cash
 
 def check_quest(qid, nw, st_session, market):
     if qid == "attendance": return True
@@ -67,9 +67,12 @@ def render(market, nw):
         
         if is_achievable and not is_claimed:
             if st.button(f"[{q['name']}] 보상 수령", key=f"q_btn_{q['id']}"):
+                # ✅ [BUG FIX] 퀘스트 완료 플래그를 먼저 세션에 기록한 후 atomic_add_cash 지급
+                # 기존: 세션 cash만 올리고 sync_user_data() → 리로드 전 버튼 중복 클릭 시 이중 지급
                 today_dq[q['id']] = True
                 dq[today_str] = today_dq
                 st.session_state.daily_quests = dq
+                atomic_add_cash(st.session_state.logged_in_user, q['reward'])
                 st.session_state.global_cash += q['reward']
                 log_tx(st.session_state.logged_in_user, "퀘스트", f"{q['name']} 완료", q['reward'])
                 sync_user_data()
