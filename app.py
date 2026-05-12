@@ -594,6 +594,41 @@ PORTAL_CSS = """
   border-radius: 8px; padding: 10px 12px; margin-top: 10px;
 }
 
+/* ── 유저 소통 창구 ── */
+.feedback-section-title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.3rem; color: var(--text);
+  letter-spacing: 2px; margin: 36px 0 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.feedback-section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(0,212,255,0.3), transparent);
+}
+.feedback-item {
+  border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;
+  transition: transform 0.2s;
+}
+.feedback-item:hover { transform: translateX(4px); }
+.feedback-checked-badge {
+  font-size: 0.72rem; font-weight: 800;
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(0,255,136,0.15); color: #00ff88;
+  border: 1px solid rgba(0,255,136,0.35);
+}
+.feedback-unchecked-badge {
+  font-size: 0.72rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(136,153,187,0.1); color: var(--text2);
+  border: 1px solid rgba(136,153,187,0.2);
+}
+.feedback-form-wrap {
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 20px 22px;
+}
+.feedback-form-wrap h4 { color: var(--cyan) !important; margin: 0 0 14px; font-size: 1rem; }
+
 /* ── 푸터 ── */
 .portal-footer {
   text-align: center; padding: 40px 0;
@@ -1059,7 +1094,7 @@ if st.session_state.page_view == "portal":
     <p>🔧 시스템 대공사 및 재시작 안내</p>
     <p class="sub">
         데이터베이스를 외부 클라우드(MongoDB Atlas)로 완벽 분리하고,
-        <b>38개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다.
+        <b>39개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다.
         유저 자산은 이제 영구히 안전합니다.
     </p>
 </div>
@@ -1118,7 +1153,7 @@ if st.session_state.page_view == "portal":
 <div class="arch-card">
     <h4>🧩 38개 독립 모듈 구조</h4>
     <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>38개의 독립 모듈</b>로 구성됩니다.
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>39개의 독립 모듈</b>로 구성됩니다.
         각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
         한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
         유지보수 및 신규 기능 추가가 용이한 구조입니다.
@@ -1237,6 +1272,7 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/admin/panel.py</strong>창조주 통제소 (관리자 전용)</div>
     <div class="module-item"><strong>pages/project_a.py</strong>AI 무한 모의고사</div>
     <div class="module-item"><strong>pages/project_b.py</strong>월드 배틀</div>
+    <div class="module-item"><strong>pages/project_c.py</strong>💻 THE TERMINAL 방탈출</div>
     <div class="module-item"><strong>pages/project_d.py</strong>🎲 인베스트 마블 보드게임</div>
     <div class="module-item"><strong>pages/project_e.py</strong>⚔️ 뱀서라이크 던전 게임</div>
     <div class="module-item"><strong>pages/project_f.py</strong>🏎️ 네온 도주 레이싱</div>
@@ -1573,6 +1609,136 @@ if st.session_state.page_view == "portal":
 </div>
             """, unsafe_allow_html=True)
 
+    # ── 유저 소통 창구 ──────────────────────────────────────────
+    _FEEDBACK_FILE = "portal_feedback"
+    _TYPE_META = {
+        "🐛 에러 신고":  ("#ff3366", "rgba(255,51,102,0.12)", "rgba(255,51,102,0.35)"),
+        "💡 기능 요청":  ("#00d4ff", "rgba(0,212,255,0.10)",  "rgba(0,212,255,0.30)"),
+        "📣 응원":       ("#ffd700", "rgba(255,215,0,0.10)",  "rgba(255,215,0,0.30)"),
+        "⭐ 포털 리뷰":  ("#c04fff", "rgba(192,79,255,0.10)", "rgba(192,79,255,0.30)"),
+    }
+    _is_admin_portal = st.session_state.get('logged_in_user') == 'admin'
+
+    st.markdown("<div class='feedback-section-title'>💬 유저 소통 창구</div>", unsafe_allow_html=True)
+    _fb_col1, _fb_col2 = st.columns([1, 1], gap="large")
+
+    # ── 왼쪽: 글 쓰기 폼 ──
+    with _fb_col1:
+        st.markdown("""
+<div class='feedback-form-wrap'>
+  <h4>📝 의견·에러·응원 남기기</h4>
+</div>
+""", unsafe_allow_html=True)
+        _fb_type = st.selectbox(
+            "유형",
+            list(_TYPE_META.keys()),
+            key="fb_type_sel",
+            label_visibility="collapsed",
+        )
+        _fb_text = st.text_area(
+            "내용",
+            placeholder="버그, 건의사항, 응원 메시지를 자유롭게 남겨주세요 (최대 200자)",
+            max_chars=200,
+            height=110,
+            key="fb_text_input",
+            label_visibility="collapsed",
+        )
+        if st.button("📨 제출하기", use_container_width=True, key="fb_submit_btn"):
+            _cur_uid = st.session_state.get('logged_in_user', '')
+            if not _cur_uid:
+                st.warning("⚠️ 로그인 후 이용 가능합니다.")
+            elif not _fb_text.strip():
+                st.error("내용을 입력해주세요.")
+            else:
+                import html as _html_fb
+                _fb_list = load_db(_FEEDBACK_FILE, [])
+                if not isinstance(_fb_list, list): _fb_list = []
+                _today_str = datetime.now(KST).strftime("%Y-%m-%d")
+                _today_cnt = sum(1 for _f in _fb_list
+                                 if _f.get('uid') == _cur_uid
+                                 and _f.get('date', '').startswith(_today_str))
+                if _today_cnt >= 3:
+                    st.error("하루 최대 3건까지 제출 가능합니다.")
+                else:
+                    _new_fb = {
+                        "id":            f"{datetime.now(KST).strftime('%Y%m%d%H%M%S')}_{_cur_uid}",
+                        "uid":           _cur_uid,
+                        "type":          _fb_type,
+                        "text":          _html_fb.escape(_fb_text.strip()),
+                        "date":          datetime.now(KST).strftime("%Y-%m-%d %H:%M"),
+                        "admin_checked": False,
+                    }
+                    _fb_list.insert(0, _new_fb)
+                    _fb_list = _fb_list[:300]
+                    save_db(_FEEDBACK_FILE, _fb_list)
+                    st.success("✅ 의견이 등록되었습니다! 감사합니다 😊")
+                    st.rerun()
+        st.markdown("""
+<div style='color:var(--text2);font-size:0.75rem;margin-top:10px;line-height:1.6;'>
+  · 하루 최대 3건 제출 가능<br>
+  · 관리자가 읽으면 <b style="color:#00ff88;">✅ 확인됨</b> 표시가 붙습니다<br>
+  · 에러 신고 시 어떤 화면에서 발생했는지 함께 적어주시면 빠른 수정에 도움됩니다
+</div>
+""", unsafe_allow_html=True)
+
+    # ── 오른쪽: 의견 목록 ──
+    with _fb_col2:
+        _fb_list_view = load_db(_FEEDBACK_FILE, [])
+        if not isinstance(_fb_list_view, list): _fb_list_view = []
+        _uncheck_cnt = sum(1 for _f in _fb_list_view if not _f.get('admin_checked', False))
+
+        _header_extra = ""
+        if _is_admin_portal and _uncheck_cnt > 0:
+            _header_extra = f" <span style='background:rgba(255,51,102,0.2);color:#ff3366;border:1px solid rgba(255,51,102,0.4);border-radius:999px;font-size:0.7rem;padding:2px 8px;font-weight:800;'>{_uncheck_cnt} 미확인</span>"
+        st.markdown(f"<div style='color:var(--cyan);font-weight:700;font-size:0.95rem;margin-bottom:12px;'>📋 최근 의견{_header_extra}</div>", unsafe_allow_html=True)
+
+        if not _fb_list_view:
+            st.markdown("<div style='color:var(--text2);font-size:0.85rem;text-align:center;padding:30px 0;'>아직 등록된 의견이 없습니다.<br>첫 번째 의견을 남겨보세요! 🙌</div>", unsafe_allow_html=True)
+        else:
+            import html as _html_fb2
+            _display_limit = 15 if _is_admin_portal else 10
+            for _fi, _fb in enumerate(_fb_list_view[:_display_limit]):
+                _tc, _bc, _bdr = _TYPE_META.get(_fb.get('type', ''), ("#8899bb", "rgba(136,153,187,0.08)", "rgba(136,153,187,0.2)"))
+                _checked = _fb.get('admin_checked', False)
+                _badge_html = (
+                    "<span class='feedback-checked-badge'>✅ 확인됨</span>"
+                    if _checked else
+                    "<span class='feedback-unchecked-badge'>⬜ 미확인</span>"
+                )
+                _safe_uid  = _html_fb2.escape(str(_fb.get('uid', '')))
+                _safe_text = _html_fb2.escape(str(_fb.get('text', '')))
+                _safe_type = _html_fb2.escape(str(_fb.get('type', '')))
+                _safe_date = _html_fb2.escape(str(_fb.get('date', '')))
+
+                st.markdown(f"""
+<div class='feedback-item' style='background:{_bc};border:1px solid {_bdr};'>
+  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;'>
+    <span style='color:{_tc};font-size:0.74rem;font-weight:800;'>{_safe_type}</span>
+    {_badge_html}
+  </div>
+  <div style='color:var(--text);font-size:0.86rem;line-height:1.5;margin-bottom:6px;word-break:break-all;'>{_safe_text}</div>
+  <div style='color:var(--text2);font-size:0.71rem;'>👤 {_safe_uid} · 🕐 {_safe_date}</div>
+</div>
+""", unsafe_allow_html=True)
+
+                # 관리자 전용 확인 처리 버튼
+                if _is_admin_portal:
+                    _btn_lbl = "☑️ 확인 취소" if _checked else "✅ 확인 처리"
+                    _btn_style = "color:#8899bb;" if _checked else "color:#00ff88;"
+                    if st.button(_btn_lbl, key=f"fb_ck_{_fb.get('id', _fi)}", use_container_width=True):
+                        _fb_edit = load_db(_FEEDBACK_FILE, [])
+                        if not isinstance(_fb_edit, list): _fb_edit = []
+                        for _item in _fb_edit:
+                            if _item.get('id') == _fb.get('id'):
+                                _item['admin_checked'] = not _item.get('admin_checked', False)
+                                break
+                        save_db(_FEEDBACK_FILE, _fb_edit)
+                        st.rerun()
+
+            if len(_fb_list_view) > _display_limit:
+                st.markdown(f"<div style='color:var(--text2);font-size:0.75rem;text-align:center;margin-top:4px;'>+ {len(_fb_list_view)-_display_limit}건 더 있음 (관리자 패널에서 전체 조회 가능)</div>", unsafe_allow_html=True)
+
+    # ── 푸터 ──
     st.markdown("""
     <div class='portal-footer'>
       <p>ⓒ 2026 HYOMIN PORTAL INC. · Powered by AI & Vibe Coding</p>
