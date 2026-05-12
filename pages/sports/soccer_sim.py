@@ -3,7 +3,7 @@ import streamlit as st
 import random
 import time
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data
-from utils.database import log_tx, atomic_deduct_cash
+from utils.database import log_tx, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
     st.title("🏆 구단주 시뮬레이터")
@@ -120,6 +120,9 @@ def render(market, nw):
                 prize = 500_000 if betting == 0 else 0
 
             net_profit = prize - betting  # 표시용 순손익 계산 (betting=0이면 prize=net_profit)
+            # ✅ [BUG FIX] atomic_add_cash로 지급 (기존: 세션만 수정 → sync 실패시 미지급)
+            if prize > 0:
+                atomic_add_cash(st.session_state.logged_in_user, prize)
             st.session_state.global_cash += prize
             
             if net_profit > 0:
