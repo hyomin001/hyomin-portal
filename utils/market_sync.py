@@ -3,7 +3,7 @@ import time
 import random
 import streamlit as st
 from utils.config import stock_config, CRYPTO_CONFIG, USERS_FILE, MARKET_FILE
-from utils.database import load_db, save_db, log_tx, save_market
+from utils.database import load_db, save_db, log_tx, save_market, atomic_add_cash
 from utils.core import get_net_worth, sync_user_data, get_market, format_korean_money
 
 def run_market_sync():
@@ -81,10 +81,11 @@ def run_market_sync():
             weights_list = list(market['lotto_tickets'].values())
             win = random.choices(users_list, weights=weights_list, k=1)[0]
             prize = market['lotto_pool']
-            us = load_db(USERS_FILE, {})
-            if win in us:
-                us[win]['cash'] += prize
-                save_db(USERS_FILE, us)
+            # ✅ [BUG FIX] 기존: load_db → cash += prize → save_db (비원자적, Race Condition 취약)
+            # 수정: atomic_add_cash로 DB 직접 원자 증가
+            us_check = load_db(USERS_FILE, {})
+            if win in us_check:
+                atomic_add_cash(win, prize)
                 log_tx(win, "로또당첨", f"글로벌 로또 1등 잭팟!!", prize)
                 if 'logged_in_user' in st.session_state and st.session_state.logged_in_user == win:
                     st.session_state.global_cash += prize
