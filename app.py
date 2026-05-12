@@ -1108,8 +1108,8 @@ if st.session_state.page_view == "portal":
 <div class="arch-highlight" style="border-left-color:#c04fff; background: linear-gradient(90deg, rgba(192,79,255,0.08), rgba(108,99,255,0.06));">
     <p style="color:#c04fff !important;">🎮 게임 패치노트 (2026.05.08)</p>
     <p class="sub">
-        <b>🎯 스나이퍼 엘리트 v5 대업그레이드</b><br>
-        · <b>10라운드 미션 체제</b> — 초급~신화까지 10단계 순차 해금<br>
+        <b>🎯 라인 배틀 저격전</b><br>
+        · <b>10라운드 미션 체제</b> - -> 난이도별 모드로 변경 <br>
         · <b>아군 소환 시스템</b> — 자원(💎)으로 보병/돌격대/중화기/의무병/아군저격수 소환 (1~5 단축키)<br>
         · <b>자원 재생 시스템</b> — 시간 경과 및 적 처치 시 자원 획득<br>
         · <b>화면 전체 채우기</b> — 브라우저 전체 크기에 맞춰 동적 렌더링<br>
@@ -1278,7 +1278,7 @@ if st.session_state.page_view == "portal":
     <div class="module-item"><strong>pages/project_f.py</strong>🏎️ 네온 도주 레이싱</div>
     <div class="module-item"><strong>pages/project_g.py</strong>🧟 좀비 아포칼립스 슈터</div>
     <div class="module-item"><strong>pages/project_h.py</strong>🥊 스트리트 파이터 EX</div>
-    <div class="module-item"><strong>pages/project_i.py</strong>🎯 스나이퍼 엘리트 v5 (10라운드+소환)</div>
+    <div class="module-item"><strong>pages/project_i.py</strong>🎯 라인 배틀 저격전</div>
 </div>
         """, unsafe_allow_html=True)
 
@@ -1578,7 +1578,7 @@ if st.session_state.page_view == "portal":
 
             st.markdown("""
 <div class="arch-card" style="border-left-color:#00ff88;">
-    <h4 style="color:#00ff88 !important;">🎯 스나이퍼 엘리트 v5 &#8212; FRONTLINE BREACH</h4>
+    <h4 style="color:#00ff88 !important;">🎯 라인 배틀 저격전 &#8212; FRONTLINE BREACH</h4>
     <p>
         전장의 저격수가 되어 <b>10개의 미션</b>을 완수하는 본격 전선 돌파 시뮬레이션입니다.
         적을 처치하거나 시간이 지나면 <b>자원(💎)</b>이 쌓이고,
@@ -2098,7 +2098,7 @@ elif st.session_state.page_view == "project_h":
 
 
 # ==============================
-# 14. [View 12] 🎯 스나이퍼 엘리트
+# 14. [View 12] 🎯 라인 배틀 저격전
 # ==============================
 elif st.session_state.page_view == "project_i":
     if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
