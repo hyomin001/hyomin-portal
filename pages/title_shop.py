@@ -2,7 +2,7 @@
 import streamlit as st
 from utils.core import format_korean_money, sync_user_data
 from utils.config import USERS_FILE
-from utils.database import load_db, log_tx
+from utils.database import load_db, log_tx, atomic_deduct_cash
 
 def render(market, nw):
     st.title("👑 VIP 칭호 상점")
@@ -89,8 +89,8 @@ def render(market, nw):
             else:
                 if st.button(f"구매하기", key=f"buy_{i}"):
                     if st.session_state.global_cash >= price:
-                        u_db_check = load_db(USERS_FILE, {})
-                        if u_db_check.get(st.session_state.logged_in_user, {}).get('cash', 0) < price:
+                        # ✅ [BUG FIX] atomic_deduct_cash로 DB 원자적 차감 (기존: DB 확인 후 세션만 차감 → Race Condition)
+                        if not atomic_deduct_cash(st.session_state.logged_in_user, price):
                             st.error("잔액 부족! (DB 검증 실패)")
                         else:
                             st.session_state.global_cash -= price
