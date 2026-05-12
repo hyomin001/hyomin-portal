@@ -886,16 +886,16 @@ if st.session_state.page_view == "portal":
         하나의 계정으로 효민 유니버스의 모든 경제, 엔터테인먼트,<br>
         AI 학습, 커뮤니티 서비스를 통합 이용하세요.
       </p>
-      <div class='hero-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM · 시즌 1 신규 가입 시 5억 지급</div>
+      <div class='hero-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM · 가입 시 5억 지급 · 시즌 2 개막 예고</div>
     </div>
     """, unsafe_allow_html=True)
 
     # ── 실시간 스크롤 태그 배너 ──
     tags_html = ""
     tags = [
-        ("🔥 HOT", "hot"),  ("🌌 유니버스 시즌1 개막", "live"), ("🤖 AI 모의고사", "new"),
+        ("🔥 HOT", "hot"),  ("🏁 시즌1 종료 임박", "live"), ("🤖 AI 모의고사", "new"),
         ("🏆 랭킹 1위 쟁탈전", "gold"), ("⚔️ 던전 런 REBORN", "hot"), ("🎲 인베스트 마블", "gold"),
-        ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"), ("💰 초기 정착금 5억", "gold"),
+        ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"), ("🚀 시즌2 개막 예고", "gold"),
         ("📈 주식·코인·부동산", "live"), ("🎰 카지노 & 게임", "hot"), ("🏎️ 하이퍼카 레이싱", "new"),
     ]
     for label, cls in tags * 2:
@@ -961,7 +961,7 @@ if st.session_state.page_view == "portal":
           <div class='card-badge badge-live'>🔴 LIVE</div>
           <div class='card-icon'>🌌</div>
           <div class='card-title'>HYOMIN UNIVERSE</div>
-          <div class='card-desc'>자본주의 생존 시뮬레이션 시즌 1<br>주식·코인·부동산·게임 통합 경제</div>
+          <div class='card-desc'>자본주의 생존 시뮬레이션 · 시즌 2 예고<br>주식·코인·부동산·게임 통합 경제</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("유니버스 입장 🚀", use_container_width=True, key="btn_uni"):
@@ -1146,14 +1146,16 @@ if st.session_state.page_view == "portal":
     </p>
 </div>
 <div class="arch-highlight" style="border-left-color:#00ff88; background: linear-gradient(90deg, rgba(0,255,136,0.08), rgba(0,212,255,0.06));">
-    <p style="color:#00ff88 !important;">🌟 정규 시즌 1 공식 개막 및 시즌 종료 예정: 2026-05-15 15:35</p>
+    <p style="color:#00ff88 !important;">🏁 정규 시즌 1 종료 임박 · 시즌 2 개막 예고</p>
     <p class="sub">
-        <b>[시즌 기간]</b> 2026년 4월 15일 ~ 5월 15일<br>
-        새로운 시즌의 시작을 기념하여 모든 시민께 <b>초기 정착금 5억 원</b>을 즉시 지급합니다!
+        <b>[시즌 1 기간]</b> 2026년 4월 15일 ~ 5월 15일 15:35 (종료)<br>
+        시즌 1 종료 후 몇 시간 뒤 <b>시즌 2</b>가 자동 개막됩니다. 시즌 2 기간·혜택은 추후 공지 예정입니다.<br>
+        시즌 2 오픈 이후에도 <b>신규 가입 시 초기 정착금 5억 원</b>이 즉시 지급됩니다!<br>
+        궁금한 점이나 응원은 아래 <b>유저 소통 창구</b>를 통해 남겨주세요 — 모든 의견을 적극 반영합니다! 💬
     </p>
 </div>
 <div class="arch-highlight" style="border-left-color:#c04fff; background: linear-gradient(90deg, rgba(192,79,255,0.08), rgba(108,99,255,0.06));">
-    <p style="color:#c04fff !important;">🎮 게임 패치노트 (2026.05.08)</p>
+    <p style="color:#c04fff !important;">🎮 게임 패치노트 (2026.05.13)</p>
     <p class="sub">
         <b>🎯 라인 배틀 저격전</b><br>
         · <b>10라운드 미션 체제</b> - -> 난이도별 모드로 변경 <br>
@@ -1267,6 +1269,25 @@ if st.session_state.page_view == "portal":
             """, unsafe_allow_html=True)
 
             st.markdown("""
+<div class="arch-card" style="border-left-color:#ffd700;">
+    <h4 style="color:#ffd700 !important;">⏰ 서버 상시 가동 — cron-job.org Keepalive</h4>
+    <p>
+        Streamlit Cloud는 일정 시간 접속이 없으면 서버가 슬립 상태로 전환됩니다.
+        이를 방지하기 위해 <b>cron-job.org</b>를 이용해 주기적으로 서버에 핑을 보내
+        24시간 상시 깨어 있는 상태를 유지합니다.
+        <code style="background:rgba(255,215,0,0.15);padding:1px 5px;border-radius:3px;">?ping=1</code> 쿼리로
+        접속 시 시즌 자동 전환 체크도 함께 수행합니다.
+    </p>
+    <div style="margin-top:10px;">
+        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">cron-job.org</span>
+        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">?ping=1 엔드포인트</span>
+        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">슬립 방지 24/7</span>
+        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">시즌 자동 전환 트리거</span>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
 <div class="arch-card">
     <h4>📊 실시간 통계 & 온라인 감지</h4>
     <p>
@@ -1355,7 +1376,7 @@ if st.session_state.page_view == "portal":
         <span class="arch-badge">🏆 시즌 랭킹</span>
         <span class="arch-badge">⚔️ 클랜 시스템</span>
         <span class="arch-badge">🎰 미니게임 8종</span>
-        <span class="arch-badge">🚀 시즌 1 진행 중</span>
+        <span class="arch-badge">🚀 시즌 2 개막 예고</span>
     </div>
     <div style="margin-top:10px;background:rgba(0,212,255,0.08);border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:var(--cyan) !important;font-weight:700;">💡 입문 가이드</p>
@@ -1627,7 +1648,7 @@ if st.session_state.page_view == "portal":
 <div class="arch-card" style="border-left-color:#00ff88;">
     <h4 style="color:#00ff88 !important;">🎯 라인 배틀 저격전 &#8212; FRONTLINE BREACH</h4>
     <p>
-        전장의 저격수가 되어 <b>10개의 미션</b>을 완수하는 본격 전선 돌파 시뮬레이션입니다.
+        전장의 저격수가 되어 <b>다양한 난이도 모드</b>를 돌파하는 본격 전선 돌파 시뮬레이션입니다.
         적을 처치하거나 시간이 지나면 <b>자원(💎)</b>이 쌓이고,
         이를 사용해 <b>보병·돌격대·중화기·의무병·아군저격수</b>를 소환해 전선을 밀어붙이세요.
         기관총병·장교·총사령관 같은 핵심 목표를 먼저 제거하면 전선이 크게 전진합니다.
@@ -1822,10 +1843,11 @@ elif st.session_state.page_view == "login":
         with tabs[0]:
             st.markdown("""
 <div style='background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.5);border-radius:10px;padding:14px;margin-bottom:16px;'>
-  <div style='color:#6c63ff;font-weight:900;font-size:1rem;'>🏆 시즌 종료 예정: 2026-05-15 15:35</div>
+  <div style='color:#6c63ff;font-weight:900;font-size:1rem;'>🏁 시즌 1 종료 임박 · 시즌 2 개막 예고</div>
   <div style='color:#E2E8F0;font-size:0.9rem;margin-top:6px;'>
     시즌 1이 <b>2026년 5월 15일 15:35</b>에 종료됩니다.<br>
-    종료 전까지 최대한 자산을 불려 상위 랭킹에 도전하세요!
+    종료 후 몇 시간 뒤 <b>시즌 2</b>가 자동 시작됩니다! 시즌 2에서도 계속 도전하세요 🚀<br>
+    의견·응원은 포털 메인의 <b>유저 소통 창구</b>에 남겨주세요 💬
   </div>
 </div>
 """, unsafe_allow_html=True)
