@@ -357,11 +357,13 @@ def render(market, nw):
         st.caption("모든 유저(관리자 제외)의 현재 '현금'에서 설정한 퍼센트(%)만큼을 강제로 징수합니다.")
         tax_rate = st.slider("징수율 (%)", min_value=1, max_value=99, value=10)
         if st.button("🌪️ 전 우주 부유세 징수 실행", use_container_width=True):
-            for u in u_db:
+            # ✅ [BUG FIX] 항상 최신 DB 로드 후 징수 (기존: t4 상단에서 로드한 stale u_db 사용)
+            fresh_tax_db = load_db(USERS_FILE, {})
+            for u in fresh_tax_db:
                 if u != "admin":
-                    tax_amount = int(u_db[u]['cash'] * (tax_rate / 100.0))
-                    u_db[u]['cash'] -= tax_amount
-            save_db(USERS_FILE, u_db)
+                    tax_amount = int(fresh_tax_db[u]['cash'] * (tax_rate / 100.0))
+                    fresh_tax_db[u]['cash'] -= tax_amount
+            save_db(USERS_FILE, fresh_tax_db)
             market['news'] = f"🌪️ [창조주의 분노] 전 우주를 대상으로 {tax_rate}%의 부유세가 강제 징수되었습니다!"
             save_market(market); st.toast("세금 징수 완료!", icon="🌪️"); st.rerun()
 
