@@ -3,7 +3,7 @@ import streamlit as st
 import random
 from utils.core import format_korean_money, sync_user_data, claim_hidden_title
 from utils.config import USERS_FILE
-from utils.database import load_db, save_db, log_tx, save_market
+from utils.database import load_db, save_db, log_tx, save_market, atomic_deduct_cash
 
 def render(market, nw):
     st.title("🛠️ 커스텀 튜닝 차고지")
@@ -74,11 +74,15 @@ def render(market, nw):
                 repair_cost = 8_700_000_000 * (10 ** int(active_t)) 
                 if st.button(f"🛠️ 눈물을 머금고 수리하기 ({format_korean_money(repair_cost)})", use_container_width=True):
                     if st.session_state.global_cash >= repair_cost:
-                        st.session_state.global_cash -= repair_cost
-                        garage['cars'][active_t]['needs_repair'] = False
-                        my_data['garage'] = garage; us[uid] = my_data; save_db(USERS_FILE, us)
-                        sync_user_data(); log_tx(uid, "차량수리", f"{cur_tier_info['name']} 파손 수리", -repair_cost)
-                        st.toast("✨ 수리가 완료되었습니다!", icon="✅"); st.rerun()
+                        # ✅ [BUG FIX] 세션만 차감하던 것을 atomic_deduct_cash로 교체 (Race Condition 방어)
+                        if not atomic_deduct_cash(uid, repair_cost):
+                            st.error("잔액 부족! (DB 검증 실패)")
+                        else:
+                            st.session_state.global_cash -= repair_cost
+                            garage['cars'][active_t]['needs_repair'] = False
+                            my_data['garage'] = garage; us[uid] = my_data; save_db(USERS_FILE, us)
+                            sync_user_data(); log_tx(uid, "차량수리", f"{cur_tier_info['name']} 파손 수리", -repair_cost)
+                            st.toast("✨ 수리가 완료되었습니다!", icon="✅"); st.rerun()
                     else: st.error("수리비가 부족합니다!")
             else:
                 st.markdown("### 🔧 파츠 튜닝샵")
@@ -101,6 +105,10 @@ def render(market, nw):
                         if st.button("🔨 강화", key=f"tune_{active_t}_{part_key}", use_container_width=True):
                             if st.session_state.global_cash < cost: st.error("잔액 부족!")
                             else:
+                                # ✅ [BUG FIX] atomic_deduct_cash로 DB 원자적 차감 (기존: 세션만 차감)
+                                if not atomic_deduct_cash(uid, cost):
+                                    st.error("잔액 부족! (DB 검증 실패)")
+                                    return
                                 st.session_state.global_cash -= cost
                                 if random.random() < prob:
                                     garage['cars'][active_t][part_key] += 1
@@ -159,12 +167,16 @@ def render(market, nw):
                 else:
                     if st.button("🛒 구매하기", key=f"shop_buy_{t_str}", use_container_width=True):
                         if st.session_state.global_cash >= c_info['price']:
-                            st.session_state.global_cash -= c_info['price']
-                            garage['cars'][t_str] = {"engine_lv": 0, "suspension_lv": 0, "bumper_lv": 0, "needs_repair": False}
-                            garage['active_tier'] = t_str
-                            my_data['garage'] = garage; us[uid] = my_data; save_db(USERS_FILE, us)
-                            sync_user_data()
-                            log_tx(uid, "차량구매", f"{c_info['name']} 즉시 구매", -c_info['price'])
-                            st.toast(f"🎉 {c_info['name']} 출고 완료!", icon="🚗"); st.rerun()
+                            # ✅ [BUG FIX] atomic_deduct_cash로 DB 원자적 차감
+                            if not atomic_deduct_cash(uid, c_info['price']):
+                                st.error("잔액 부족! (DB 검증 실패)")
+                            else:
+                                st.session_state.global_cash -= c_info['price']
+                                garage['cars'][t_str] = {"engine_lv": 0, "suspension_lv": 0, "bumper_lv": 0, "needs_repair": False}
+                                garage['active_tier'] = t_str
+                                my_data['garage'] = garage; us[uid] = my_data; save_db(USERS_FILE, us)
+                                sync_user_data()
+                                log_tx(uid, "차량구매", f"{c_info['name']} 즉시 구매", -c_info['price'])
+                                st.toast(f"🎉 {c_info['name']} 출고 완료!", icon="🚗"); st.rerun()
                         else: st.error("잔액이 부족합니다.")
             st.write("---")
