@@ -8,10 +8,10 @@ from datetime import datetime
 # ==============================
 # 1. 코어 모듈 임포트
 # ==============================
-from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA
+from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA, CURRENT_SEASON, SEASON_END_STR, get_active_season, is_season_over
 from utils.database import load_db, save_db, load_stats, save_stats
 from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
-from utils.database import get_login_lock, set_login_lock, clear_login_lock, save_db
+from utils.database import get_login_lock, set_login_lock, clear_login_lock, save_db, check_and_run_season_reset
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
 
@@ -290,6 +290,8 @@ def _do_login(uid: str, users: dict, device_mode: str):
     visitors = stats.get("daily_visitors", {})
     if today not in visitors:      visitors[today] = []
     if uid not in visitors[today]: visitors[today].append(uid)
+    # 24시간 경과한 날짜 데이터 자동 정리 (오늘 제외 모두 삭제)
+    visitors = {k: v for k, v in visitors.items() if k >= today}
     stats["daily_visitors"] = visitors
     save_stats(stats)
     st.success("로그인 성공!")
@@ -725,6 +727,12 @@ if st.session_state.page_view == "portal":
     st.markdown(PORTAL_CSS, unsafe_allow_html=True)
     market = load_db(MARKET_FILE, {})
 
+    # 시즌 종료 후 1시간 경과 시 자동으로 기록 초기화 (중복 방지 내장)
+    try:
+        check_and_run_season_reset()
+    except Exception:
+        pass
+
     # ── 최상단 HUD ──
     _users_db_for_stats = {}  # 기본값 선언 — 아래 try 블록 실패 시 NameError 방지
     try:
@@ -810,12 +818,14 @@ if st.session_state.page_view == "portal":
 
 
     hud_user_txt = f"👤 {st.session_state.logged_in_user}님 접속 중" if st.session_state.get('logged_in_user') else "🔒 비로그인"
+    _active_season = get_active_season()
+    _season_label = f"시즌 {_active_season} 진행 중" if not is_season_over() else f"시즌 {CURRENT_SEASON} 종료"
     st.markdown(f"""
     <div class='portal-bg'></div>
     <div class='top-hud'>
       <div class='hud-brand'>HYOMIN PORTAL</div>
       <div class='hud-live'><div class='hud-dot'></div> LIVE · 접속자 {_online}명</div>
-      <div class='hud-season'>🏆 시즌 1 진행 중</div>
+      <div class='hud-season'>🏆 {_season_label}</div>
       <div style='color:var(--text2);font-size:0.78rem;'>{hud_user_txt}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -1094,7 +1104,7 @@ if st.session_state.page_view == "portal":
     <p>🔧 시스템 대공사 및 재시작 안내</p>
     <p class="sub">
         데이터베이스를 외부 클라우드(MongoDB Atlas)로 완벽 분리하고,
-        <b>39개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다.
+        <b>40개 모듈화 설계</b>를 적용하여 서버 안정성을 극대화했습니다.
         유저 자산은 이제 영구히 안전합니다.
     </p>
 </div>
@@ -1151,9 +1161,9 @@ if st.session_state.page_view == "portal":
 
             st.markdown("""
 <div class="arch-card">
-    <h4>🧩 38개 독립 모듈 구조</h4>
+    <h4>🧩 40개 독립 모듈 구조</h4>
     <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>39개의 독립 모듈</b>로 구성됩니다.
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>40개의 독립 모듈</b>로 구성됩니다.
         각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
         한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
         유지보수 및 신규 기능 추가가 용이한 구조입니다.
@@ -1774,11 +1784,11 @@ elif st.session_state.page_view == "login":
 
         with tabs[0]:
             st.markdown("""
-<div style='background:rgba(255,200,0,0.1);border:1px solid #FFD600;border-radius:10px;padding:14px;margin-bottom:16px;'>
-  <div style='color:#FFD600;font-weight:900;font-size:1rem;'>📢 공지사항</div>
+<div style='background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.5);border-radius:10px;padding:14px;margin-bottom:16px;'>
+  <div style='color:#6c63ff;font-weight:900;font-size:1rem;'>🏆 시즌 종료 예정: 2026-05-15 15:35</div>
   <div style='color:#E2E8F0;font-size:0.9rem;margin-top:6px;'>
-    서버 점검으로 인해 <b>모든 계정의 비밀번호가 1234로 초기화</b>되었습니다.<br>
-    로그인 후 <b>🏠 홈 광장</b>에서 비밀번호를 변경해주세요.
+    시즌 1이 <b>2026년 5월 15일 15:35</b>에 종료됩니다.<br>
+    종료 전까지 최대한 자산을 불려 상위 랭킹에 도전하세요!
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -1833,6 +1843,7 @@ elif st.session_state.page_view == "login":
                         st.error("🔒 로그인 5회 실패. 30초 후 다시 시도하세요.")
                     else:
                         st.error(f"❌ 아이디 또는 비밀번호가 올바르지 않습니다. (남은 시도: {5 - _fails}회)")
+                        st.info("💡 혹시 비밀번호가 기억나지 않으시나요? 5월 1일 이후 서버 점검으로 비밀번호가 **1234**로 초기화된 적이 있습니다. 비밀번호가 1234인지 확인해보세요.")
 
         with tabs[1]:
             n_id = st.text_input("새 아이디", placeholder="사용할 아이디")
