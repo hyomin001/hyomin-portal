@@ -27,6 +27,16 @@ st.markdown("""
 
 pull_user_data()
 
+# ── 크론잡 핑 처리 (/health 역할) ──
+if st.query_params.get("ping") == "1":
+    try:
+        check_and_run_season_reset(load_db(MARKET_FILE, {}))
+    except Exception:
+        pass
+    st.write("ok")
+    st.stop()
+
+
 # last_seen — 60초에 한 번만 DB 쓰기
 _now = time.time()
 if 'logged_in_user' in st.session_state and st.session_state.logged_in_user:
