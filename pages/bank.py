@@ -2,7 +2,7 @@
 import streamlit as st
 import time
 from utils.config import USERS_FILE
-from utils.database import load_db, save_db, log_tx
+from utils.database import load_db, save_db, log_tx, atomic_deduct_cash, atomic_add_cash
 
 from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sync_user_data, claim_hidden_title
 
@@ -75,6 +75,8 @@ def render(market, nw):
                     set_cooldown("loan_action")
                     fee = int(l_amt * 0.01)
                     actual_receive = l_amt - fee
+                    # ✅ [BUG FIX] atomic_add_cash로 지급 (기존: 세션만 수정 후 sync → 연결 끊기면 미지급)
+                    atomic_add_cash(st.session_state.logged_in_user, actual_receive)
                     st.session_state.global_cash += actual_receive
                     st.session_state.loan += l_amt
                     st.session_state.loan_time = time.time()
