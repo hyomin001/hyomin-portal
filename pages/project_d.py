@@ -634,6 +634,220 @@ html,body{
 .market-sell:hover{background:rgba(255,69,96,.15);border-color:var(--red2);}
 
 /* ========================================
+   STOCK INVEST PANEL
+   ======================================== */
+.stock-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.82);
+  z-index:330;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(10px);
+}
+.stock-box{
+  background:linear-gradient(160deg,#060e28,#0d1a3a);
+  border:1.5px solid rgba(34,211,238,.35);
+  border-radius:18px;padding:22px;
+  max-width:520px;width:94%;
+  box-shadow:0 0 60px rgba(34,211,238,.12),0 20px 60px rgba(0,0,0,.7);
+  animation:popIn .3s cubic-bezier(.3,.7,.4,1.5);
+  max-height:88vh;overflow-y:auto;
+}
+.stock-title{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;color:var(--cyan);margin-bottom:3px;}
+.stock-sub{font-size:.7rem;color:var(--text2);margin-bottom:14px;letter-spacing:2px;}
+.stock-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.stock-item{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;padding:10px;cursor:pointer;transition:var(--transition);
+  position:relative;overflow:hidden;
+}
+.stock-item:hover{border-color:var(--cyan);background:rgba(34,211,238,.05);}
+.stock-item.owned{border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.04);}
+.stock-name{font-weight:700;font-size:.82rem;margin-bottom:2px;}
+.stock-price{font-family:'Orbitron',sans-serif;font-size:.95rem;color:var(--gold);}
+.stock-change{font-size:.72rem;font-weight:700;margin-top:2px;}
+.stock-chg-up{color:var(--green);}
+.stock-chg-dn{color:var(--red2);}
+.stock-owned{font-size:.68rem;color:var(--cyan);margin-top:3px;}
+.stock-chart{height:28px;margin-top:4px;}
+.sact-row{display:flex;gap:7px;margin-top:6px;}
+.sact-btn{
+  flex:1;padding:5px;border-radius:7px;border:none;
+  font-size:.72rem;font-weight:700;cursor:pointer;transition:var(--transition);
+}
+.sact-buy{background:rgba(0,255,136,.12);color:var(--green);border:1px solid rgba(0,255,136,.25);}
+.sact-buy:hover{background:rgba(0,255,136,.22);}
+.sact-sell{background:rgba(255,51,85,.1);color:var(--red2);border:1px solid rgba(255,51,85,.2);}
+.sact-sell:hover{background:rgba(255,51,85,.2);}
+.portfolio-row{
+  background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.15);
+  border-radius:8px;padding:8px 12px;margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.8rem;
+}
+
+/* ========================================
+   SKILL CARD SYSTEM
+   ======================================== */
+.skill-btn{
+  position:fixed;bottom:16px;right:16px;z-index:200;
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,#7c3aed,#a855f7);
+  border:2px solid rgba(192,132,252,.5);
+  color:#fff;font-size:1.4rem;cursor:pointer;
+  box-shadow:0 0 24px rgba(168,85,247,.4),0 4px 16px rgba(0,0,0,.4);
+  transition:var(--transition);display:flex;align-items:center;justify-content:center;
+}
+.skill-btn:hover{transform:scale(1.1);box-shadow:0 0 40px rgba(168,85,247,.6);}
+.skill-btn.cooldown{
+  background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);
+  cursor:not-allowed;
+}
+.skill-cd-wrap{
+  position:absolute;inset:0;border-radius:50%;
+  border:3px solid transparent;
+}
+.skill-cd-text{
+  position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);
+  font-size:.6rem;color:var(--purple);font-weight:700;white-space:nowrap;
+  font-family:'Rajdhani',sans-serif;
+}
+
+.skill-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.8);
+  z-index:410;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(12px);
+}
+.skill-box{
+  background:linear-gradient(160deg,#0c0820,#181030);
+  border:2px solid rgba(168,85,247,.5);
+  border-radius:20px;padding:26px;max-width:380px;width:92%;
+  box-shadow:0 0 80px rgba(168,85,247,.2),0 20px 60px rgba(0,0,0,.7);
+  animation:popIn .35s cubic-bezier(.3,.7,.4,1.5);
+  text-align:center;
+}
+.skill-box .sk-icon{font-size:3.5rem;margin-bottom:10px;display:block;animation:iconBounce .4s ease-out;}
+.skill-box .sk-name{font-family:'Black Han Sans',sans-serif;font-size:1.4rem;color:var(--purple);margin-bottom:4px;}
+.skill-box .sk-desc{color:var(--text2);font-size:.85rem;margin-bottom:16px;line-height:1.6;}
+.skill-box .sk-effect{
+  font-family:'Orbitron',sans-serif;font-size:1.1rem;color:var(--cyan);
+  padding:10px;border-radius:10px;background:rgba(34,211,238,.06);
+  border:1px solid rgba(34,211,238,.15);margin-bottom:16px;
+}
+.sk-activate{
+  padding:12px 32px;border-radius:28px;border:none;
+  background:linear-gradient(135deg,#7c3aed,#a855f7);
+  color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;
+  transition:var(--transition);margin-right:8px;
+}
+.sk-activate:hover{transform:scale(1.04);box-shadow:0 0 24px rgba(168,85,247,.4);}
+.sk-cancel{
+  padding:12px 24px;border-radius:28px;
+  border:1px solid rgba(255,255,255,.1);
+  background:transparent;color:var(--text2);cursor:pointer;font-size:.85rem;
+}
+
+/* ========================================
+   AUCTION SYSTEM
+   ======================================== */
+.auction-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  z-index:340;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(12px);
+}
+.auction-box{
+  background:linear-gradient(160deg,#100808,#251010);
+  border:2px solid rgba(255,107,53,.4);
+  border-radius:18px;padding:26px;max-width:400px;width:92%;
+  box-shadow:0 0 60px rgba(255,107,53,.15),0 20px 60px rgba(0,0,0,.7);
+  animation:popIn .35s cubic-bezier(.3,.7,.4,1.5);text-align:center;
+}
+.auction-title{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;color:var(--orange);margin-bottom:6px;}
+.auction-prop{font-size:1.5rem;font-weight:900;margin:8px 0;color:var(--text);}
+.auction-timer{
+  font-family:'Orbitron',sans-serif;font-size:2.5rem;font-weight:900;
+  color:var(--red);margin:10px 0;
+  animation:urgPulse 1s ease-in-out infinite;
+}
+.auction-bid{
+  font-family:'Orbitron',sans-serif;font-size:1.4rem;color:var(--gold);
+  margin:8px 0;padding:8px;background:rgba(255,215,0,.06);
+  border-radius:8px;border:1px solid rgba(255,215,0,.15);
+}
+.bid-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;}
+.bid-btn{
+  padding:8px 16px;border-radius:10px;
+  background:rgba(255,107,53,.1);color:var(--orange);
+  border:1px solid rgba(255,107,53,.3);cursor:pointer;
+  font-weight:700;font-size:.82rem;transition:var(--transition);
+}
+.bid-btn:hover{background:rgba(255,107,53,.2);}
+.bid-pass{
+  padding:8px 16px;border-radius:10px;
+  background:rgba(255,255,255,.04);color:var(--text2);
+  border:1px solid rgba(255,255,255,.08);cursor:pointer;font-size:.82rem;
+}
+
+/* ========================================
+   BONUS MINI GAMES
+   ======================================== */
+.mg2-timing{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.timing-bar-wrap{
+  width:100%;height:30px;background:rgba(255,255,255,.06);
+  border-radius:15px;overflow:hidden;position:relative;cursor:pointer;
+  border:1px solid rgba(255,255,255,.1);
+}
+.timing-bar-zone{
+  position:absolute;top:0;height:100%;width:20%;
+  background:rgba(0,255,136,.3);border:1px solid rgba(0,255,136,.5);
+  border-radius:4px;transition:none;
+}
+.timing-bar-cursor{
+  position:absolute;top:0;height:100%;width:4px;
+  background:var(--gold);border-radius:2px;
+  box-shadow:0 0 8px var(--gold);
+}
+.timing-tap-btn{
+  padding:12px 36px;border-radius:28px;
+  background:linear-gradient(135deg,var(--gold),var(--orange));
+  color:#100800;border:none;font-weight:900;font-size:.95rem;cursor:pointer;
+  transition:var(--transition);letter-spacing:1px;
+}
+.timing-tap-btn:hover{transform:scale(1.05);}
+.timing-tap-btn:active{transform:scale(.97);}
+
+/* ========================================
+   TRADE / NEGOTIATE SYSTEM
+   ======================================== */
+.trade-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.82);
+  z-index:320;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(10px);
+}
+.trade-box{
+  background:linear-gradient(160deg,#060e20,#0d1a30);
+  border:1.5px solid rgba(0,255,136,.3);
+  border-radius:18px;padding:22px;max-width:480px;width:94%;
+  box-shadow:0 0 50px rgba(0,255,136,.1),0 20px 60px rgba(0,0,0,.7);
+  animation:popIn .3s cubic-bezier(.3,.7,.4,1.5);max-height:88vh;overflow-y:auto;
+}
+.trade-title{font-family:'Black Han Sans',sans-serif;font-size:1.1rem;color:var(--green);margin-bottom:12px;}
+.trade-section{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;margin-bottom:10px;}
+.trade-section-title{font-size:.68rem;letter-spacing:3px;color:var(--text3);font-family:'Rajdhani',sans-serif;margin-bottom:8px;}
+.trade-prop-list{display:flex;flex-wrap:wrap;gap:6px;}
+.trade-prop-tag{
+  padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:700;
+  cursor:pointer;transition:var(--transition);border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.04);
+}
+.trade-prop-tag.sel{border-color:var(--green);background:rgba(0,255,136,.1);color:var(--green);}
+.trade-cash-input{
+  width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;padding:8px 12px;color:var(--text);font-size:.9rem;
+  font-family:'Orbitron',sans-serif;text-align:center;outline:none;
+}
+.trade-cash-input:focus{border-color:var(--green);}
+
+/* ========================================
    ACHIEVEMENT TOAST
    ======================================== */
 .ach-toast{
@@ -840,6 +1054,7 @@ html,body{
       <div id="cdsp" class="cur-badge">대기 중</div>
     </div>
     <div style="display:flex;gap:7px;">
+      <button id="stockNavBtn" style="display:none;padding:5px 12px;border-radius:8px;border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.07);color:var(--green);cursor:pointer;font-size:.75rem;font-weight:700;" onclick="openStock()">📈 주식</button>
       <button id="marketBtn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(192,132,252,.3);background:rgba(192,132,252,.07);color:var(--purple);cursor:pointer;font-size:.75rem;font-weight:700;">📊 자산관리</button>
       <button id="moreBtn" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--text2);cursor:pointer;font-size:.75rem;font-weight:700;">⚙️</button>
     </div>
@@ -926,6 +1141,67 @@ html,body{
   </div>
 </div>
 
+<!-- ===== SKILL BUTTON (fixed bottom right) ===== -->
+<div id="skillBtnWrap" style="position:fixed;bottom:16px;right:16px;z-index:200;display:none;">
+  <button class="skill-btn" id="skillBtn" title="스킬 사용">⚡</button>
+  <div class="skill-cd-text" id="skillCdText"></div>
+</div>
+
+<!-- ===== SKILL POPUP ===== -->
+<div class="skill-ov" id="skillOv" style="display:none;">
+  <div class="skill-box">
+    <span class="sk-icon" id="skIcon">⚡</span>
+    <div class="sk-name" id="skName">스킬 이름</div>
+    <div class="sk-desc" id="skDesc">설명</div>
+    <div class="sk-effect" id="skEffect">효과</div>
+    <div>
+      <button class="sk-activate" id="skActivate">⚡ 발동!</button>
+      <button class="sk-cancel" onclick="closeSkill()">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STOCK INVEST PANEL ===== -->
+<div class="stock-ov" id="stockOv" style="display:none;">
+  <div class="stock-box">
+    <div class="stock-title">📈 주식 투자소</div>
+    <div class="stock-sub" id="stockSub">LIVE STOCK MARKET</div>
+    <div class="portfolio-row" id="portfolioRow"></div>
+    <div class="stock-grid" id="stockGrid"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="pbtn pass" style="flex:1;padding:10px;" onclick="closeStock()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AUCTION ===== -->
+<div class="auction-ov" id="auctionOv" style="display:none;">
+  <div class="auction-box">
+    <div class="auction-title">🔨 긴급 경매!</div>
+    <div class="auction-prop" id="auctionPropName">—</div>
+    <div style="font-size:.72rem;color:var(--text2);margin-bottom:6px;" id="auctionPropInfo"></div>
+    <div class="auction-timer" id="auctionTimer">10</div>
+    <div style="font-size:.72rem;color:var(--text2);">현재 최고 입찰가</div>
+    <div class="auction-bid" id="auctionBid">₩0</div>
+    <div style="font-size:.7rem;color:var(--text2);margin-bottom:8px;" id="auctionBidder">-</div>
+    <div class="bid-btns">
+      <button class="bid-btn" id="bidBtn1">+₩500</button>
+      <button class="bid-btn" id="bidBtn2">+₩1,000</button>
+      <button class="bid-btn" id="bidBtn3">+₩2,000</button>
+      <button class="bid-pass" id="bidPassBtn">포기</button>
+    </div>
+    <div style="margin-top:10px;font-size:.72rem;color:var(--text2);">잔고: <span id="auctionMycash" style="color:var(--green)">-</span></div>
+  </div>
+</div>
+
+<!-- ===== TRADE PANEL ===== -->
+<div class="trade-ov" id="tradeOv" style="display:none;">
+  <div class="trade-box">
+    <div class="trade-title">🤝 부동산 거래 제안</div>
+    <div id="tradeContent"></div>
+  </div>
+</div>
+
 <!-- ===== MARKET PANEL ===== -->
 <div class="market-ov" id="marketOv" style="display:none;">
   <div class="market-box">
@@ -933,6 +1209,7 @@ html,body{
     <div class="market-sub" id="marketSub"></div>
     <div class="market-list" id="marketList"></div>
     <div style="display:flex;gap:9px;">
+      <button class="pbtn buy" style="flex:1;padding:11px;" onclick="closeMarket();openTrade()">🤝 거래 협상</button>
       <button class="pbtn pass" style="flex:1;padding:11px;" onclick="closeMarket()">닫기</button>
     </div>
   </div>
@@ -967,21 +1244,45 @@ const DIFF_CASH={easy:20000,normal:15000,hard:10000};
 
 const CHARS=[
   {name:'이효민',em:'👑',col:'#ffd700',trait:'경제학과 수재',bonus:'건물 할인 15%',bk:'build',
-   stats:[90,60,70,80],desc:'건물 투자 특화 마스터'},
+   stats:[90,60,70,80],desc:'건물 투자 특화 마스터',
+   skill:{name:'황금손',icon:'✨',desc:'보유 모든 건물 1개씩 무료 업그레이드',cd:6,
+     fx:(G)=>{let cnt=0;G.cells.forEach(c=>{if(c.own===0&&c.t==='prop'&&!c.ho){if((c.hs||0)<4){c.hs=(c.hs||0)+1;cnt++;}else{c.hs=0;c.ho=1;cnt++;}}});return cnt+'채 무료 업그레이드!';}
+   }},
   {name:'봇 알파',em:'🤖',col:'#4dabf7',trait:'AI 투자 봇',bonus:'임대료 +12%',bk:'rent',
-   stats:[75,85,80,65],desc:'데이터 기반 수익 최적화'},
+   stats:[75,85,80,65],desc:'데이터 기반 수익 최적화',
+   skill:{name:'데이터 분석',icon:'🔍',desc:'다음 3턴간 임대료 25% 추가 수익',cd:5,
+     fx:(G)=>{G._rentBoostTurns=3;G._rentBoostAmt=1.25;return '3턴 임대료 +25%!';}
+   }},
   {name:'미스터 K',em:'🎩',col:'#c084fc',trait:'연쇄 투자자',bonus:'독점 보너스 2배',bk:'mono',
-   stats:[80,70,95,75],desc:'국가 독점 전략 전문가'},
+   stats:[80,70,95,75],desc:'국가 독점 전략 전문가',
+   skill:{name:'독점 폭탄',icon:'💣',desc:'보유 독점 국가 임대료 10초간 3배',cd:7,
+     fx:(G)=>{G._monoBlast=true;G._monoBlastTurns=3;return '독점 임대료 3배 발동!';}
+   }},
   {name:'탐정 J',em:'🕵️',col:'#22d3ee',trait:'정보 수집가',bonus:'다시 굴리기 +기회',bk:'reroll',
-   stats:[70,80,75,90],desc:'찬스 카드 확률 극대화'},
+   stats:[70,80,75,90],desc:'찬스 카드 확률 극대화',
+   skill:{name:'첩보망',icon:'🕸️',desc:'즉시 찬스 카드 2장 연속 획득',cd:5,
+     fx:(G,p)=>{let res='';for(let i=0;i<2;i++){const cd=CHANCE[Math.floor(Math.random()*CHANCE.length)];const r=cd.fx(p,G.players,G.cells,G);res+=cd.txt+' ('+r+') ';}return res;}
+   }},
   {name:'재벌 손자',em:'💎',col:'#f472b6',trait:'3세 재벌',bonus:'시작 자금 +₩3000',bk:'rich',
-   stats:[85,65,70,85],desc:'초기 자본 우위 전략'},
+   stats:[85,65,70,85],desc:'초기 자본 우위 전략',
+   skill:{name:'재벌 배당',icon:'💸',desc:'모든 봇에게서 ₩500씩 강제 징수',cd:6,
+     fx:(G,p)=>{let tot=0;G.players.forEach(o=>{if(o!==p&&!o.bkrt){const a=Math.min(500,o.cash);o.cash-=a;p.cash+=a;tot+=a;}});return '₩'+tot+' 강제 징수!';}
+   }},
   {name:'스타트업 K',em:'🚀',col:'#00ff88',trait:'유니콘 CEO',bonus:'출발 통과 +₩100',bk:'pass',
-   stats:[65,90,80,70],desc:'패시브 수입 누적 전략'},
+   stats:[65,90,80,70],desc:'패시브 수입 누적 전략',
+   skill:{name:'IPO 특수',icon:'📊',desc:'주식 포트폴리오 가치 즉시 2배 실현',cd:6,
+     fx:(G,p)=>{let gain=0;if(G.stocks&&G.playerStocks){Object.entries(G.playerStocks).forEach(([k,shares])=>{if(shares>0){const s=G.stocks.find(x=>x.key===k);if(s){gain+=shares*s.price;G.playerStocks[k]=0;}}});}p.cash+=gain;return '주식 청산 +₩'+gain;}
+   }},
   {name:'헤지펀드',em:'📈',col:'#fb923c',trait:'펀드 매니저',bonus:'세금 30% 감면',bk:'tax',
-   stats:[75,75,65,95],desc:'세금 최적화 전문가'},
+   stats:[75,75,65,95],desc:'세금 최적화 전문가',
+   skill:{name:'숏 셀링',icon:'📉',desc:'랜덤 봇 자산 25% 강제 손실',cd:7,
+     fx:(G)=>{const bots=G.players.filter(p=>p.isBot&&!p.bkrt);if(bots.length>0){const t=bots[Math.floor(Math.random()*bots.length)];const loss=Math.floor(t.cash*0.25);t.cash-=loss;return t.name+' -₩'+loss+' 손실!';}return '대상 없음';}
+   }},
   {name:'소매치기',em:'🦊',col:'#ff3355',trait:'???',bonus:'임대료 통과 10%',bk:'dodge',
-   stats:[60,70,85,80],desc:'위기 회피 능력'},
+   stats:[60,70,85,80],desc:'위기 회피 능력',
+   skill:{name:'신출귀몰',icon:'🌀',desc:'원하는 칸으로 순간이동 (2~10칸)',cd:5,
+     fx:(G,p)=>{const mv=2+Math.floor(Math.random()*9);p.pos=(p.pos+mv)%40;return mv+'칸 순간이동!';}
+   }},
 ];
 
 const COUNTRIES=[
@@ -1058,6 +1359,8 @@ const CHANCE=[
   {txt:'🏗️ 재개발 보상',desc:'도시 재개발 구역 보상금',fx:p=>{p.cash+=700;return'+₩700';},col:'#ffd700'},
   {txt:'🎪 이벤트 수익',desc:'지역 축제 스폰서십',fx:p=>{p.cash+=450;return'+₩450';},col:'#c084fc'},
   {txt:'⚡ 전략적 이동',desc:'5칸 앞으로 전진!',fx:p=>{p.pos=(p.pos+5)%40;return'5칸 ↗';},col:'#22d3ee'},
+  {txt:'⏱️ 타이밍 게임!',desc:'반응속도 테스트! 정확히 맞추면 대박!',fx:p=>{p._timing=true;return'도전!';},col:'#f472b6'},
+  {txt:'💱 환율 폭등',desc:'해외 자산 수익 20% 즉시 획득',fx:(p,_,cells)=>{let b=0;cells.forEach(c=>{if(c.own===p.id&&c.t==='prop'&&c.ctry>=2){b+=Math.floor(c.rent[Math.min((c.hs||0)+(c.ho?5:0),5)]*.2);}});p.cash+=b;return'+₩'+b;},col:'#22d3ee'},
 ];
 
 // ── COMMUNITY CARDS ──
@@ -1097,7 +1400,17 @@ const MG=[
   {q:'FED(연준)의 역할은?',o:['재정정책','통화정책','무역정책','환경정책'],a:1,reward:1000},
 ];
 
-// ── GLOBAL ECONOMIC EVENTS ──
+// ── STOCKS ──
+const STOCK_LIST=[
+  {key:'SAMSNG',name:'삼성전자',em:'📱',base:1200,col:'#4dabf7'},
+  {key:'KAKAO',name:'카카오',em:'💬',base:800,col:'#ffd700'},
+  {key:'NAVER',name:'네이버',em:'🔍',base:950,col:'#00ff88'},
+  {key:'HYUNDAI',name:'현대차',em:'🚗',base:700,col:'#fb923c'},
+  {key:'BITCOIN',name:'비트코인',em:'₿',base:2500,col:'#f7931a'},
+  {key:'TESLA',name:'테슬라',em:'⚡',base:1500,col:'#e31937'},
+];
+
+
 const ECO_EVENTS=[
   {icon:'📉',type:'위기',title:'글로벌 금융위기',desc:'전 세계 부동산 임대료 20% 감소',fx:(cells,players)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*.8;});},dur:3,col:'#ff3355',border:'rgba(255,51,85,.4)'},
   {icon:'📈',type:'호황',title:'글로벌 경제 대호황',desc:'모든 임대료 25% 상승!',fx:(cells)=>{cells.forEach(c=>{if(c.t==='prop')c._rentMod=(c._rentMod||1)*1.25;});},dur:4,col:'#00ff88',border:'rgba(0,255,136,.4)'},
@@ -1125,6 +1438,8 @@ const ACHIEVEMENTS=[
   {id:'mgWin',icon:'🎓',name:'퀴즈왕',desc:'미니게임에서 승리했습니다',check:(p)=>p._mgWins>0},
   {id:'survivor',icon:'🛡️',name:'생존왕',desc:'파산 위기에서 살아남았습니다',check:(p)=>p._survived>0},
   {id:'landlord',icon:'🏙️',name:'건물주',desc:'5개 이상 부동산 보유',check:(_,G)=>G.cells.filter(c=>c.own===0&&c.t==='prop').length>=5},
+  {id:'stockTrader',icon:'📈',name:'주식왕',desc:'주식으로 ₩3,000 이상 보유',check:(_,G)=>{if(!G.stocks||!G.playerStocks)return false;const v=Object.entries(G.playerStocks).reduce((s,[k,sh])=>{const stk=G.stocks.find(x=>x.key===k);return s+(stk?sh*stk.price:0);},0);return v>=3000;}},
+  {id:'tripleMono',icon:'🌆',name:'삼중 독점',desc:'3개 국가 동시 독점',check:(_,G)=>COUNTRIES.filter((_,ci)=>mono(0,ci,G)).length>=3},
 ];
 
 // ============================================================
@@ -1139,6 +1454,11 @@ let G={
   diff:'normal',
   charIdx:0,
   gameStats:{totalRent:0,totalTax:0,totalChance:0,doublesRolled:0},
+  stocks:[],playerStocks:{},
+  skillCooldown:0,
+  _rentBoostTurns:0,_rentBoostAmt:1,
+  _monoBlast:false,_monoBlastTurns:0,
+  consecutiveDoubles:0,
 };
 
 let unlockedAch=new Set();
@@ -1185,7 +1505,7 @@ function updateTicker(){
 function startGame(ci,mt,diff){
   initCells();
   G.maxT=mt;G.tot=0;G.round=1;G.cur=0;
-  G.diff=diff;G.charIdx=ci;
+  G.diff=diff;G.charIdx=ci;G.phase='g';
   G._buildCostMod=1;G._islandFree=false;
   G.ecoEvent=null;G.ecoTurns=0;
   G.gameStats={totalRent:0,totalTax:0,totalChance:0,doublesRolled:0};
@@ -1203,12 +1523,12 @@ function startGame(ci,mt,diff){
   G.players=[
     {id:0,name:pc.name,em:pc.em,col:pc.col,bk:pc.bk,isBot:false,
      cash:pCash,pos:0,bkrt:false,jl:false,jt:0,
-     _ex:false,_mg:false,_mgWins:0,_survived:0,
+     _ex:false,_mg:false,_timing:false,_mgWins:0,_survived:0,
      initCash:pCash,totalEarned:0,totalLost:0},
     ...bots.map((c,i)=>({
       id:i+1,name:c.name,em:c.em,col:c.col,bk:c.bk,isBot:true,
       cash:startCash,pos:0,bkrt:false,jl:false,jt:0,
-      _ex:false,_mg:false,_mgWins:0,_survived:0,
+      _ex:false,_mg:false,_timing:false,_mgWins:0,_survived:0,
       initCash:startCash,totalEarned:0,totalLost:0,
     }))
   ];
@@ -1217,6 +1537,24 @@ function startGame(ci,mt,diff){
   document.getElementById('gm').style.display='flex';
   document.getElementById('rs').style.display='none';
   document.getElementById('mgo').style.display='none';
+
+  // Init stocks
+  G.stocks=STOCK_LIST.map(s=>({...s,price:s.base,history:[s.base]}));
+  G.playerStocks={};
+  STOCK_LIST.forEach(s=>{G.playerStocks[s.key]=0;});
+  G.skillCooldown=0;
+  G._rentBoostTurns=0;G._rentBoostAmt=1;
+  G._monoBlast=false;G._monoBlastTurns=0;
+  G.consecutiveDoubles=0;
+
+  // Show skill button for player
+  const skillWrap=document.getElementById('skillBtnWrap');
+  skillWrap.style.display='block';
+  updateSkillBtn();
+
+  // Add stock button to top bar
+  const stockBtnEl=document.getElementById('stockNavBtn');
+  if(stockBtnEl)stockBtnEl.style.display='';
 
   updateTicker();
   setInterval(updateTicker,15000);
@@ -1501,6 +1839,12 @@ function mono(pid,ctry,Gs=G){
 function nw(p){
   let v=p.cash;
   G.cells.forEach(c=>{if(c.own===p.id&&c.t==='prop')v+=Math.floor(c.price*(0.6+(c.hs||0)*.4+(c.ho?.5:0)));});
+  // Add stock value for player
+  if(p.id===0&&G.stocks&&G.playerStocks){
+    Object.entries(G.playerStocks).forEach(([k,shares])=>{
+      if(shares>0){const s=G.stocks.find(x=>x.key===k);if(s)v+=shares*s.price;}
+    });
+  }
   return Math.max(0,v);
 }
 
@@ -1629,7 +1973,21 @@ function doRoll(isBot){
       d1El.classList.add('landed');d2El.classList.add('landed');
 
       const tot=v1+v2,dbl=v1===v2;
-      if(dbl){G.gameStats.doublesRolled++;}
+      if(dbl){
+        G.gameStats.doublesRolled++;
+        if(!G.players[G.cur].isBot){
+          // Handle triple doubles
+          if(handleDoubles(G.cur)){
+            dsumEl.innerHTML=tot+`<span class="double-badge">TRIPLE!</span>`;
+            dsumEl.classList.add('show');
+            drawBoard();renderPCards();
+            setTimeout(()=>{endAct(G.cur,false);},800);
+            return;
+          }
+        }
+      } else {
+        G.consecutiveDoubles=0;
+      }
 
       dsumEl.innerHTML=tot+(dbl?`<span class="double-badge">DOUBLE!</span>`:'');
       dsumEl.classList.add('show');
@@ -1700,13 +2058,15 @@ async function land(pi,dbl){
     G.gameStats.totalChance++;
     const cd=CHANCE[Math.floor(Math.random()*CHANCE.length)];
     const result=cd.fx(p,G.players,G.cells,G);
-    if(!p._ex&&!p._mg){
+    if(!p._ex&&!p._mg&&!p._timing){
       showEventPop('🎲','찬스!','chance',cd.txt,cd.desc||'',result,cd.col,'rgba(255,215,0,.25)',()=>ckBk(pi),pi,dbl);
     } else if(p._ex){
       p._ex=false;addLog('🎲 '+cd.txt+' → 추가 굴리기!','gold');
       drawBoard();renderPCards();
       toast('🎲 한 번 더!','gold');
       setTimeout(()=>doRoll(p.isBot),700);
+    } else if(p._timing){
+      p._timing=false;showTimingGame(pi,dbl,1200);
     } else if(p._mg){
       p._mg=false;showMG(pi,dbl);
     }
@@ -1751,6 +2111,9 @@ async function land(pi,dbl){
       if(G.ecoEvent&&G.ecoEvent.title==='글로벌 금융위기')rent=Math.floor(rent*.8);
       if(mono(c.own,c.ctry))rent=Math.floor(rent*(ow.bk==='mono'?2.8:2));
       if(ow.bk==='rent')rent=Math.floor(rent*1.12);
+      // Skill boosts
+      if(c.own===0&&G._rentBoostTurns>0)rent=Math.floor(rent*G._rentBoostAmt);
+      if(c.own===0&&G._monoBlast&&mono(0,c.ctry))rent=Math.floor(rent*3);
 
       // Dodge bonus
       if(p.bk==='dodge'&&Math.random()<.1){
@@ -1893,9 +2256,14 @@ function showProp(pi,dbl,type,c){
 
   document.getElementById('pinfo').innerHTML=info;
   const btns=document.getElementById('pbtns');
+
+  // Add trade button if in game
+  const tradeBtn = (type==='buy'||type==='build') ? `<button class="pbtn pass" style="border-color:rgba(0,255,136,.2);color:var(--green);margin-top:6px;" onclick="closeProp();openTrade()">🤝 거래 협상</button>` : '';
+
   btns.innerHTML=`
     <button class="pbtn buy" ${!canAfford?'disabled':''} id="popBuyBtn">${btnLabel}</button>
     <button class="pbtn pass">통과</button>
+    ${type==='buy'?`<button class="pbtn pass" style="border-color:rgba(255,107,53,.2);color:var(--orange);margin-top:6px;" onclick="closeProp();startAuction(${p.pos})">🔨 경매 시작</button>`:''}
   `;
   if(btnAction)btns.querySelector('#popBuyBtn').onclick=btnAction;
   btns.querySelector('.pass').onclick=()=>{closeProp();endAct(pi,dbl);};
@@ -2125,6 +2493,24 @@ function endAct(pi,dbl){
   if(alive.length<=1){endGame('파산 종료');return;}
   G.tot++;
   if(G.tot>=G.maxT){endGame('턴 초과');return;}
+
+  // Skill cooldown tick
+  if(pi===0&&G.skillCooldown>0){
+    G.skillCooldown--;
+    updateSkillBtn();
+  }
+
+  // Rent boost tick
+  if(G._rentBoostTurns>0)G._rentBoostTurns--;
+  if(G._rentBoostTurns===0)G._rentBoostAmt=1;
+
+  // Mono blast tick
+  if(G._monoBlastTurns>0)G._monoBlastTurns--;
+  if(G._monoBlastTurns===0)G._monoBlast=false;
+
+  // Stock fluctuation every 4 turns
+  if(G.tot%4===0&&G.stocks){updateStocks();}
+
   tryEcoEvent();
   setTimeout(nextTurn,250);
 }
@@ -2170,13 +2556,16 @@ function endGame(reason){
   // Stats
   const st=document.getElementById('rstats');
   const youP=G.players[0];
+  const stockVal=G.stocks?Object.entries(G.playerStocks).reduce((s,[k,sh])=>{const stk=G.stocks.find(x=>x.key===k);return s+(stk?sh*stk.price:0);},0):0;
   st.innerHTML=`
     <div class="rstat"><div class="rstat-v">${G.tot}</div><div class="rstat-l">총 턴</div></div>
     <div class="rstat"><div class="rstat-v">₩${G.gameStats.totalRent.toLocaleString()}</div><div class="rstat-l">총 임대료</div></div>
     <div class="rstat"><div class="rstat-v">${G.gameStats.doublesRolled}</div><div class="rstat-l">더블 횟수</div></div>
     <div class="rstat"><div class="rstat-v">₩${G.gameStats.totalTax.toLocaleString()}</div><div class="rstat-l">총 세금</div></div>
+    <div class="rstat"><div class="rstat-v">₩${stockVal.toLocaleString()}</div><div class="rstat-l">주식 가치</div></div>
     <div class="rstat"><div class="rstat-v">${G.cells.filter(c=>c.own===0).length}</div><div class="rstat-l">보유 자산</div></div>
-    <div class="rstat"><div class="rstat-v">${youP._mgWins}</div><div class="rstat-l">퀴즈 승리</div></div>
+    <div class="rstat"><div class="rstat-v">${youP._mgWins}</div><div class="rstat-l">미니게임 승</div></div>
+    <div class="rstat"><div class="rstat-v">${unlockedAch.size}</div><div class="rstat-l">업적 달성</div></div>
   `;
 
   try{window.parent.postMessage({type:'marble_result',score:nw(G.players[0]),wins:winner.id===0?1:0},'*');}catch(e){}
@@ -2239,6 +2628,406 @@ function toast(txt,type){
   d.className='toast';d.style.borderColor=colors[type]||'rgba(255,255,255,.08)';
   d.style.color=type==='good'?'var(--green)':type==='bad'?'var(--red2)':type==='gold'?'var(--gold)':type==='sys'?'var(--cyan)':type==='purple'?'var(--purple)':'var(--text)';
   d.textContent=txt;w.appendChild(d);setTimeout(()=>d.remove(),3200);
+}
+
+// ============================================================
+//  SKILL SYSTEM
+// ============================================================
+function updateSkillBtn(){
+  const pc=CHARS[G.charIdx];
+  const btn=document.getElementById('skillBtn');
+  const cdText=document.getElementById('skillCdText');
+  if(!pc||!pc.skill)return;
+  btn.textContent=pc.skill.icon;
+  if(G.skillCooldown>0){
+    btn.classList.add('cooldown');
+    cdText.textContent=G.skillCooldown+'턴 후';
+  } else {
+    btn.classList.remove('cooldown');
+    cdText.textContent=pc.skill.name;
+  }
+}
+
+function openSkill(){
+  if(G.phase!=='g')return;
+  const pc=CHARS[G.charIdx];
+  if(!pc||!pc.skill)return;
+  if(G.skillCooldown>0){toast('⏳ 쿨타임 '+G.skillCooldown+'턴 남음','bad');return;}
+  const sk=pc.skill;
+  document.getElementById('skIcon').textContent=sk.icon;
+  document.getElementById('skName').textContent=sk.name;
+  document.getElementById('skDesc').textContent=sk.desc;
+  document.getElementById('skEffect').textContent='효과 확인 후 발동 클릭!';
+  document.getElementById('skActivate').onclick=()=>{
+    const p=G.players[0];
+    const result=sk.fx(G,p);
+    G.skillCooldown=sk.cd;
+    addLog('⚡ '+p.em+' 스킬 발동: '+sk.name+' → '+result,'purple');
+    toast('⚡ '+sk.name+' 발동!','purple');
+    document.getElementById('skillOv').style.display='none';
+    drawBoard();renderPCards();renderLegend();updateSkillBtn();
+  };
+  document.getElementById('skillOv').style.display='flex';
+}
+
+function closeSkill(){document.getElementById('skillOv').style.display='none';}
+
+document.getElementById('skillBtn').onclick=()=>{
+  // Only during player's turn or anytime
+  openSkill();
+};
+
+// ============================================================
+//  STOCK SYSTEM
+// ============================================================
+function updateStocks(){
+  G.stocks.forEach(s=>{
+    const chg=(Math.random()-.45)*0.12; // slightly positive bias
+    s.price=Math.max(100,Math.round(s.price*(1+chg)));
+    s.history.push(s.price);
+    if(s.history.length>20)s.history.shift();
+  });
+}
+
+function openStock(){
+  if(!G.stocks||G.stocks.length===0)return;
+  const p=G.players[0];
+  updateStocks();
+  const totalStockVal=Object.entries(G.playerStocks).reduce((sum,[k,shares])=>{
+    const s=G.stocks.find(x=>x.key===k);
+    return sum+(s?shares*s.price:0);
+  },0);
+  document.getElementById('stockSub').textContent=`잔고: ₩${p.cash.toLocaleString()} | 주식가치: ₩${totalStockVal.toLocaleString()}`;
+  document.getElementById('portfolioRow').innerHTML=
+    `💼 포트폴리오 총 가치: <span style="color:var(--gold);font-family:'Orbitron',sans-serif;">₩${(p.cash+totalStockVal).toLocaleString()}</span>`;
+
+  const grid=document.getElementById('stockGrid');grid.innerHTML='';
+  G.stocks.forEach(s=>{
+    const owned=G.playerStocks[s.key]||0;
+    const h=s.history;
+    const chg=h.length>=2?Math.round((h[h.length-1]-h[h.length-2])/h[h.length-2]*100):0;
+    const up=chg>=0;
+
+    // Mini SVG chart
+    const max=Math.max(...h),min=Math.min(...h),range=max-min||1;
+    const pts=h.map((v,i)=>`${(i/(h.length-1))*100},${100-((v-min)/range)*80}`).join(' ');
+    const sparkline=`<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:28px;display:block;"><polyline points="${pts}" fill="none" stroke="${up?'#00ff88':'#ff3355'}" stroke-width="3"/></svg>`;
+
+    const card=document.createElement('div');
+    card.className='stock-item'+(owned>0?' owned':'');
+    card.innerHTML=`
+      <div class="stock-name">${s.em} ${s.name}</div>
+      <div class="stock-price">₩${s.price.toLocaleString()}</div>
+      <div class="stock-change ${up?'stock-chg-up':'stock-chg-dn'}">${up?'▲':'▼'}${Math.abs(chg)}%</div>
+      ${owned>0?`<div class="stock-owned">보유: ${owned}주 = ₩${(owned*s.price).toLocaleString()}</div>`:''}
+      <div class="stock-chart">${sparkline}</div>
+      <div class="sact-row">
+        <button class="sact-btn sact-buy" onclick="buyStock('${s.key}')">매수 ₩${s.price}</button>
+        ${owned>0?`<button class="sact-btn sact-sell" onclick="sellStock('${s.key}')">매도 +₩${s.price}</button>`:''}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+  document.getElementById('stockOv').style.display='flex';
+}
+
+function buyStock(key){
+  const p=G.players[0];
+  const s=G.stocks.find(x=>x.key===key);
+  if(!s)return;
+  if(p.cash<s.price){toast('💸 잔고 부족!','bad');return;}
+  p.cash-=s.price;
+  G.playerStocks[key]=(G.playerStocks[key]||0)+1;
+  addLog('📈 주식 매수: '+s.name+' ₩'+s.price,'good');
+  toast('📈 '+s.name+' 1주 매수!','good');
+  openStock(); // refresh
+}
+
+function sellStock(key){
+  const p=G.players[0];
+  const s=G.stocks.find(x=>x.key===key);
+  if(!s||!G.playerStocks[key])return;
+  G.playerStocks[key]--;
+  p.cash+=s.price;
+  addLog('📉 주식 매도: '+s.name+' +₩'+s.price,'good');
+  toast('💰 '+s.name+' 매도 +₩'+s.price,'good');
+  openStock();
+}
+
+function closeStock(){document.getElementById('stockOv').style.display='none';}
+
+// ============================================================
+//  AUCTION SYSTEM
+// ============================================================
+let _auctionData=null;
+
+function startAuction(propIdx){
+  const c=G.cells[propIdx];
+  if(!c||c.own>=0)return;
+  _auctionData={
+    propIdx,
+    currentBid:Math.floor(c.price*.4),
+    currentBidder:-1, // -1 = no one
+    timeLeft:12,
+    passed:[],
+    timer:null,
+  };
+  document.getElementById('auctionPropName').textContent=(COUNTRIES[c.ctry]?.flag||'')+' '+c.name;
+  document.getElementById('auctionPropInfo').textContent='기본가: ₩'+c.price+' | 임대료 최대: ₩'+c.rent[5];
+  document.getElementById('auctionBid').textContent='₩'+_auctionData.currentBid.toLocaleString();
+  document.getElementById('auctionBidder').textContent='시작가';
+  document.getElementById('auctionMycash').textContent='₩'+G.players[0].cash.toLocaleString();
+  document.getElementById('auctionOv').style.display='flex';
+
+  // Bot bidding logic (random interval)
+  const botBidder=()=>{
+    if(!_auctionData||_auctionData.timeLeft<=0)return;
+    const bots=G.players.filter(p=>p.isBot&&!p.bkrt&&!_auctionData.passed.includes(p.id));
+    if(bots.length>0&&Math.random()<0.35){
+      const bot=bots[Math.floor(Math.random()*bots.length)];
+      const inc=Math.random()<.5?500:1000;
+      const newBid=_auctionData.currentBid+inc;
+      if(bot.cash>=newBid&&newBid<=c.price*1.3){
+        _auctionData.currentBid=newBid;
+        _auctionData.currentBidder=bot.id;
+        document.getElementById('auctionBid').textContent='₩'+newBid.toLocaleString();
+        document.getElementById('auctionBidder').textContent=bot.em+' '+bot.name+' 입찰!';
+        addLog(bot.em+' 경매 입찰 ₩'+newBid,'sys');
+      }
+    }
+  };
+  _auctionData.botInterval=setInterval(botBidder,2000);
+
+  _auctionData.timer=setInterval(()=>{
+    _auctionData.timeLeft--;
+    document.getElementById('auctionTimer').textContent=_auctionData.timeLeft;
+    if(_auctionData.timeLeft<=0){
+      clearInterval(_auctionData.timer);
+      clearInterval(_auctionData.botInterval);
+      endAuction(propIdx);
+    }
+  },1000);
+}
+
+function placeBid(inc){
+  if(!_auctionData)return;
+  const p=G.players[0];
+  const newBid=_auctionData.currentBid+inc;
+  if(p.cash<newBid){toast('💸 잔고 부족!','bad');return;}
+  _auctionData.currentBid=newBid;
+  _auctionData.currentBidder=0;
+  document.getElementById('auctionBid').textContent='₩'+newBid.toLocaleString();
+  document.getElementById('auctionBidder').textContent='👑 내가 최고 입찰!';
+  addLog('💰 경매 입찰 ₩'+newBid,'gold');
+  _auctionData.timeLeft=Math.min(_auctionData.timeLeft+3,12); // bonus time
+}
+
+function auctionPass(){
+  if(!_auctionData)return;
+  _auctionData.passed.push(0);
+  clearInterval(_auctionData.timer);
+  clearInterval(_auctionData.botInterval);
+  endAuction(_auctionData.propIdx);
+}
+
+function endAuction(propIdx){
+  document.getElementById('auctionOv').style.display='none';
+  if(!_auctionData)return;
+  const c=G.cells[propIdx];
+  const bidder=_auctionData.currentBidder;
+  const bid=_auctionData.currentBid;
+  if(bidder>=0&&bid>0){
+    const winner=G.players[bidder];
+    if(winner.cash>=bid){
+      winner.cash-=bid;
+      c.own=bidder;
+      addLog(winner.em+' 경매 낙찰! '+c.name+' ₩'+bid,'gold');
+      toast('🔨 '+winner.name+' 낙찰! ₩'+bid,'gold');
+      if(bidder===0){showAchievement('firstBuy');}
+    }
+  } else {
+    addLog('경매 유찰: '+c.name,'sys');
+    toast('경매 유찰!','sys');
+  }
+  drawBoard();renderPCards();renderLegend();
+  _auctionData=null;
+}
+
+document.getElementById('bidBtn1').onclick=()=>placeBid(500);
+document.getElementById('bidBtn2').onclick=()=>placeBid(1000);
+document.getElementById('bidBtn3').onclick=()=>placeBid(2000);
+document.getElementById('bidPassBtn').onclick=auctionPass;
+
+// ============================================================
+//  TIMING MINIGAME
+// ============================================================
+function showTimingGame(pi,dbl,reward){
+  const p=G.players[pi];
+  const mg=document.getElementById('mgo');
+  mg.style.display='flex';
+  document.getElementById('mgt').textContent='⏱️ 타이밍 미니게임!';
+  document.getElementById('mgd').textContent='초록 구간에서 탭하면 +₩'+reward+'!';
+  document.getElementById('mgq').innerHTML=`
+    <div class="mg2-timing">
+      <div style="font-size:.8rem;color:var(--text2);margin-bottom:6px;">초록 구간에서 정확히 클릭!</div>
+      <div class="timing-bar-wrap" id="timingBar">
+        <div class="timing-bar-zone" id="timingZone"></div>
+        <div class="timing-bar-cursor" id="timingCursor" style="left:0%"></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('mgopts').innerHTML=`
+    <button class="timing-tap-btn" id="timingTap" style="grid-column:span 2;">🎯 지금 클릭!</button>
+  `;
+  document.getElementById('mgReward').textContent='';
+
+  // Zone position (random)
+  const zonePos=20+Math.random()*60; // 20~80%
+  const zoneEl=document.getElementById('timingZone');
+  zoneEl.style.left=zonePos+'%';
+
+  let curPos=0,dir=1,answered=false;
+  const iv=setInterval(()=>{
+    curPos+=dir*2.5;
+    if(curPos>=100||curPos<=0)dir*=-1;
+    document.getElementById('timingCursor').style.left=curPos+'%';
+  },20);
+
+  // Auto fail after 8 seconds
+  const failTimer=setTimeout(()=>{
+    if(!answered){answered=true;clearInterval(iv);finTimingMG(pi,dbl,false,reward);}
+  },8000);
+
+  document.getElementById('timingTap').onclick=()=>{
+    if(answered)return;
+    answered=true;clearInterval(iv);clearTimeout(failTimer);
+    const ok=curPos>=zonePos&&curPos<=zonePos+20;
+    const rewardEl=document.getElementById('mgReward');
+    rewardEl.textContent=ok?'🎯 퍼펙트! +₩'+reward:'💨 빗나감! -₩'+Math.floor(reward*.2);
+    rewardEl.style.color=ok?'var(--green)':'var(--red)';
+    rewardEl.style.background=ok?'rgba(0,255,136,.1)':'rgba(255,51,85,.1)';
+    setTimeout(()=>finTimingMG(pi,dbl,ok,reward),900);
+  };
+}
+
+function finTimingMG(pi,dbl,ok,reward){
+  const p=G.players[pi];
+  document.getElementById('mgo').style.display='none';
+  if(ok){
+    p.cash+=reward;p._mgWins++;
+    toast('🎯 타이밍 성공! +₩'+reward,'good');
+    addLog(p.em+' 타이밍 게임 성공 +₩'+reward,'good');
+    showAchievement('mgWin');
+  } else {
+    const pen=Math.floor(reward*.2);
+    p.cash=Math.max(0,p.cash-pen);
+    toast('💨 타이밍 실패 -₩'+pen,'bad');
+    addLog(p.em+' 타이밍 게임 실패 -₩'+pen,'bad');
+  }
+  drawBoard();renderPCards();endAct(pi,dbl);
+}
+
+// ============================================================
+//  TRADE SYSTEM (player can offer trade during their turn)
+// ============================================================
+function openTrade(){
+  if(G.phase!=='g')return;
+  const p=G.players[0];
+  const myProps=G.cells.filter(c=>c.own===0&&c.t==='prop');
+  const botProps=G.cells.filter(c=>c.own>0&&c.t==='prop');
+  if(botProps.length===0){toast('거래 가능한 부동산 없음','bad');return;}
+
+  let offerProps=[],wantProps=[],cashOffer=0;
+
+  const render=()=>{
+    document.getElementById('tradeContent').innerHTML=`
+      <div class="trade-section">
+        <div class="trade-section-title">내가 제공할 부동산</div>
+        <div class="trade-prop-list">${myProps.map(c=>`
+          <div class="trade-prop-tag ${offerProps.includes(c.idx)?'sel':''}"
+            onclick="toggleTrade('offer',${c.idx})"
+            style="color:${c.col}">${COUNTRIES[c.ctry]?.flag||''} ${c.name}</div>
+        `).join('')}</div>
+      </div>
+      <div class="trade-section">
+        <div class="trade-section-title">원하는 부동산 (봇 소유)</div>
+        <div class="trade-prop-list">${botProps.map(c=>`
+          <div class="trade-prop-tag ${wantProps.includes(c.idx)?'sel':''}"
+            onclick="toggleTrade('want',${c.idx})"
+            style="color:${c.col}">${G.players[c.own]?.em||''} ${COUNTRIES[c.ctry]?.flag||''} ${c.name}</div>
+        `).join('')}</div>
+      </div>
+      <div class="trade-section">
+        <div class="trade-section-title">추가 현금 제공 (선택)</div>
+        <input class="trade-cash-input" id="tradeCashInput" type="number" min="0" max="${p.cash}" value="0" placeholder="₩ 추가 현금">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="pbtn buy" style="flex:1;" onclick="proposeTrade()">🤝 제안하기</button>
+        <button class="pbtn pass" onclick="closeTrade()">취소</button>
+      </div>
+      <div style="font-size:.7rem;color:var(--text2);margin-top:8px;text-align:center;">봇이 제안을 검토합니다</div>
+    `;
+  };
+
+  window.toggleTrade=(type,idx)=>{
+    if(type==='offer'){
+      const i=offerProps.indexOf(idx);
+      if(i>=0)offerProps.splice(i,1);else offerProps.push(idx);
+    } else {
+      const i=wantProps.indexOf(idx);
+      if(i>=0)wantProps.splice(i,1);else wantProps.push(idx);
+    }
+    render();
+  };
+
+  window.proposeTrade=()=>{
+    const cashIn=parseInt(document.getElementById('tradeCashInput')?.value||'0')||0;
+    if(wantProps.length===0){toast('원하는 부동산을 선택하세요','bad');return;}
+    const offerVal=offerProps.reduce((s,i)=>{const c=G.cells[i];return s+c.price*(c.ho?1.5:1+(c.hs||0)*.4);},0)+cashIn;
+    const wantVal=wantProps.reduce((s,i)=>{const c=G.cells[i];return s+c.price*(c.ho?1.5:1+(c.hs||0)*.4);},0);
+    const ratio=offerVal/wantVal;
+
+    // Bot acceptance logic
+    const accept=ratio>=0.85&&(Math.random()<(ratio>1.1?.9:ratio>0.95?.6:.3));
+    closeTrade();
+
+    if(accept){
+      if(p.cash<cashIn){toast('잔고 부족!','bad');return;}
+      p.cash-=cashIn;
+      // Transfer properties
+      offerProps.forEach(i=>{G.cells[i].own=G.cells[wantProps[0]].own;}); // transfer to first bot owner
+      wantProps.forEach(i=>{G.cells[i].own=0;});
+      addLog('🤝 거래 성사! +'+wantProps.length+'개 -'+offerProps.length+'개','gold');
+      toast('🤝 거래 성사!','gold');
+      drawBoard();renderPCards();renderLegend();
+    } else {
+      toast('😤 봇이 거부했습니다','bad');
+      addLog('거래 제안 거절','sys');
+    }
+  };
+
+  render();
+  document.getElementById('tradeOv').style.display='flex';
+}
+
+function closeTrade(){document.getElementById('tradeOv').style.display='none';}
+
+// ============================================================
+//  CONSECUTIVE DOUBLES EFFECT
+// ============================================================
+function handleDoubles(pi){
+  G.consecutiveDoubles++;
+  if(G.consecutiveDoubles>=3){
+    // 3 consecutive doubles: go to island
+    const p=G.players[pi];
+    p.pos=10;// island pos
+    p.jl=true;p.jt=0;
+    G.consecutiveDoubles=0;
+    toast('🎲🎲🎲 트리플 더블! 무인도 이송!','bad');
+    addLog(p.em+' 3연속 더블로 무인도!','bad');
+    return true; // sent to island
+  }
+  return false;
 }
 
 // ============================================================
