@@ -723,7 +723,7 @@ input[type="text"]::placeholder, input[type="password"]::placeholder {
 
 /* ── 알림창(Warning, Info 등) 텍스트 가독성 보호 ── */
 div[data-testid="stAlert"] p, div[data-testid="stAlert"] span {
-  color: #111111 !important;
+  color: #ffffff !important;
 }
 </style>
 """
