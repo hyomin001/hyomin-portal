@@ -1763,12 +1763,16 @@ function drawBoard(trail=[],tcol='rgba(255,215,0,0.4)'){
       ctx.fillStyle=c.own>=0?'rgba(255,255,255,.95)':'rgba(255,255,255,.7)';
       wrapText(c.name,mx,my-5,w-6,CELL*.16);
 
-      // Buildings
+      // Buildings (집 1-3채, 3채→랜드마크)
       if(c.ho>0){
-        ctx.font=`${CELL*.22}px sans-serif`;ctx.fillText('🏨',mx,my+CELL*.18);
+        // 랜드마크
+        ctx.font=`${CELL*.26}px sans-serif`;
+        ctx.save();ctx.shadowBlur=10;ctx.shadowColor=c.col||'#ffd700';
+        ctx.fillText('🏟️',mx,my+CELL*.18);
+        ctx.restore();
       } else if((c.hs||0)>0){
-        const icons='🏠'.repeat(Math.min(c.hs,4));
-        ctx.font=`${CELL*.15}px sans-serif`;ctx.fillText(icons,mx,my+CELL*.22);
+        const icons='🏠'.repeat(Math.min(c.hs,3));
+        ctx.font=`${CELL*.14}px sans-serif`;ctx.fillText(icons,mx,my+CELL*.22);
       }
 
       // Price
@@ -1975,15 +1979,13 @@ function doRoll(isBot){
       const tot=v1+v2,dbl=v1===v2;
       if(dbl){
         G.gameStats.doublesRolled++;
-        if(!G.players[G.cur].isBot){
-          // Handle triple doubles
-          if(handleDoubles(G.cur)){
-            dsumEl.innerHTML=tot+`<span class="double-badge">TRIPLE!</span>`;
-            dsumEl.classList.add('show');
-            drawBoard();renderPCards();
-            setTimeout(()=>{endAct(G.cur,false);},800);
-            return;
-          }
+        // 트리플 더블 처리 (플레이어/봇 모두)
+        if(handleDoubles(G.cur)){
+          dsumEl.innerHTML=tot+`<span class="double-badge">TRIPLE!</span>`;
+          dsumEl.classList.add('show');
+          drawBoard();renderPCards();
+          setTimeout(()=>{endAct(G.cur,false);},800);
+          return;
         }
       } else {
         G.consecutiveDoubles=0;
@@ -1993,7 +1995,7 @@ function doRoll(isBot){
       dsumEl.classList.add('show');
 
       const p=G.players[G.cur];
-      if(dbl)toast('🎉 더블! '+v1+'+'+v2,'gold');
+      if(dbl)toast('🎉 더블! '+v1+'+'+v2+' — 한번 더!','gold');
       else addLog(p.em+' '+v1+'+'+v2+'='+tot+'칸','');
 
       moveP(G.cur,tot,dbl);
@@ -2121,6 +2123,14 @@ async function land(pi,dbl){
         toast('🦊 임대료 회피!','purple');endAct(pi,dbl);return;
       }
 
+      // ★ 플레이어가 봇 땅에 걸렸을 때 인수 옵션 제공 ★
+      // 집이 2개 이하면 인수 가능 (랜드마크/3채는 인수 불가)
+      if(!p.isBot&&c.own>0&&!c.ho&&(c.hs||0)<=2){
+        const takeover=Math.floor(c.price*(1.3+(c.hs||0)*0.3)); // 인수 비용
+        showTakeoverPop(pi,dbl,c,ow,rent,takeover);
+        return;
+      }
+
       addLog(p.em+' → '+ow.em+' 임대료 ₩'+rent,'bad');
       toast('💸 임대료 -₩'+rent,'bad');
       G.gameStats.totalRent+=rent;
@@ -2175,13 +2185,15 @@ function botBuild(pi,dbl){
   const p=G.players[pi];
   G.cells.forEach(c=>{
     if(c.own!==pi||c.t!=='prop')return;
+    if(c.ho>=1)return; // 이미 랜드마크
     const bc=Math.floor(c.price*.5*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
-    if(c.ho>=1)return;
-    if((c.hs||0)>=4&&p.cash>=bc*2){
-      c.hs=0;c.ho=1;p.cash-=bc*2;
-      addLog(p.em+' 🏨 호텔 at '+c.name,'good');
+    const lmCost=Math.floor(c.price*1.2*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
+    if((c.hs||0)>=3&&p.cash>=lmCost){
+      // 3채 → 랜드마크
+      c.hs=0;c.ho=1;p.cash-=lmCost;
+      addLog(p.em+' 🏨 랜드마크! '+c.name,'gold');
       showAchievement('hotel');
-    } else if((c.hs||0)<4&&p.cash>=bc&&p.cash>c.price*2){
+    } else if((c.hs||0)<3&&p.cash>=bc&&p.cash>c.price*1.5){
       c.hs=(c.hs||0)+1;p.cash-=bc;
       addLog(p.em+' 🏠 집 '+c.hs+'채 at '+c.name,'good');
     }
@@ -2220,22 +2232,29 @@ function showProp(pi,dbl,type,c){
     };
   } else if(type==='build'){
     const bc=Math.floor(c.price*.5*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
-    canAfford=p.cash>=bc&&!c.ho;
-    const nextLevel=c.ho?'최고 단계':(c.hs||0)>=4?'호텔':('집 '+(c.hs+1)+'채');
+    const landmarkCost=Math.floor(c.price*1.2*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
+    // 3채까지 집, 3채 있으면 랜드마크(호텔)로 변환
+    const isLandmarkReady=(c.hs||0)>=3&&!c.ho;
+    const thisCost=isLandmarkReady?landmarkCost:bc;
+    canAfford=p.cash>=thisCost&&!c.ho;
+    const nextLevel=c.ho?'랜드마크 완성!':isLandmarkReady?'🏨 랜드마크':'🏠 집 '+(( c.hs||0)+1)+'채';
+    const bldIcons='🏠'.repeat(c.hs||0)+(c.ho?'🏨':isLandmarkReady?'→🏨':'→🏠');
     info=`
       <div class="prow"><span class="prlbl">현재 건물</span><span>${'🏠'.repeat(c.hs||0)}${c.ho?'🏨':''}</span></div>
-      <div class="prow"><span class="prlbl">다음 단계</span><span style="color:var(--cyan)">${nextLevel}</span></div>
-      <div class="prow"><span class="prlbl">건설 비용</span><span class="prval">₩${bc.toLocaleString()}</span></div>
+      <div class="prow"><span class="prlbl">다음 단계</span><span style="color:${isLandmarkReady?'var(--gold)':'var(--cyan)'}">${nextLevel}</span></div>
+      <div class="prow"><span class="prlbl">건설 비용</span><span class="prval">₩${thisCost.toLocaleString()}</span></div>
       <div class="prow"><span class="prlbl">현재 임대료</span><span style="color:var(--cyan)">₩${c.rent?c.rent[Math.min((c.hs||0)+(c.ho?5:0),5)]:0}</span></div>
-      <div class="prow"><span class="prlbl">다음 임대료</span><span style="color:var(--green)">₩${c.rent?c.rent[Math.min((c.hs||0)+1+(c.ho?4:0),5)]:0}</span></div>
+      <div class="prow"><span class="prlbl">다음 임대료</span><span style="color:var(--green)">₩${c.rent?c.rent[Math.min((c.hs||0)+(isLandmarkReady?5:1)+(c.ho?4:0),5)]:0}</span></div>
+      ${isLandmarkReady?'<div style="color:var(--gold);font-size:.78rem;text-align:center;padding:6px;background:rgba(255,215,0,.06);border-radius:8px;">🏨 랜드마크로 업그레이드 가능! 임대료 최대!</div>':''}
     `;
-    btnLabel=(c.hs||0)>=4&&!c.ho?'🏨 호텔 건설':'🏠 집 건설';
+    btnLabel=c.ho?'🏨 최고 단계':isLandmarkReady?'🏨 랜드마크 건설!':'🏠 집 건설';
     btnAction=()=>{
-      if(c.ho){toast('이미 호텔!','');closeProp();endAct(pi,dbl);return;}
-      const bc2=Math.floor(c.price*.5*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
-      if(p.cash<bc2){toast('💸 잔고 부족!','bad');closeProp();endAct(pi,dbl);return;}
-      p.cash-=bc2;
-      if((c.hs||0)>=4){c.hs=0;c.ho=1;addLog(p.em+' 🏨 호텔! '+c.name,'gold');showAchievement('hotel');}
+      if(c.ho){toast('이미 랜드마크!','');closeProp();endAct(pi,dbl);return;}
+      const isLM=(c.hs||0)>=3;
+      const buildCost=isLM?Math.floor(c.price*1.2*(p.bk==='build'?.85:1)*(G._buildCostMod||1)):Math.floor(c.price*.5*(p.bk==='build'?.85:1)*(G._buildCostMod||1));
+      if(p.cash<buildCost){toast('💸 잔고 부족!','bad');closeProp();endAct(pi,dbl);return;}
+      p.cash-=buildCost;
+      if(isLM){c.hs=0;c.ho=1;addLog(p.em+' 🏨 랜드마크! '+c.name,'gold');showAchievement('hotel');toast('🏨 랜드마크 건설!','gold');}
       else{c.hs=(c.hs||0)+1;addLog(p.em+' 🏠 집 '+c.hs+'채 at '+c.name,'good');}
       closeProp();drawBoard();renderPCards();endAct(pi,dbl);
     };
@@ -2270,6 +2289,63 @@ function showProp(pi,dbl,type,c){
   document.getElementById('pp2').style.display='flex';
 }
 function closeProp(){document.getElementById('pp2').style.display='none';}
+
+
+// ── TAKEOVER POPUP (인수합병) ──
+function showTakeoverPop(pi,dbl,c,ow,rent,takeoverCost){
+  const p=G.players[pi];
+  const canTakeover=p.cash>=takeoverCost;
+  const bldLabel=c.hs===0?'빈 땅':'🏠'.repeat(c.hs)+' ('+c.hs+'채)';
+  document.getElementById('pctry').textContent=(COUNTRIES[c.ctry]?.flag||'')+' '+COUNTRIES[c.ctry]?.name+' · 인수 기회!';
+  document.getElementById('ptitle').textContent=c.name;
+  document.getElementById('ptitle').style.color=c.col||'var(--text)';
+  document.getElementById('pinfo').innerHTML=`
+    <div class="prow"><span class="prlbl">소유주</span><span style="color:${ow.col}">${ow.em} ${ow.name}</span></div>
+    <div class="prow"><span class="prlbl">현재 건물</span><span>${bldLabel}</span></div>
+    <div class="prow" style="color:var(--red2)"><span class="prlbl">임대료</span><span class="prval">-₩${rent.toLocaleString()}</span></div>
+    <div class="prow" style="color:var(--gold)"><span class="prlbl">인수 비용</span><span class="prval">₩${takeoverCost.toLocaleString()}</span></div>
+    <div style="font-size:.72rem;color:var(--text2);text-align:center;padding:6px;background:rgba(255,215,0,.04);border-radius:8px;margin-top:8px;">
+      🏢 인수 시 건물 유지, 다음 방문자에 임대료 수령!<br>
+      집 3채 이하일 때만 인수 가능
+    </div>
+  `;
+  const btns=document.getElementById('pbtns');
+  btns.innerHTML=`
+    <button class="pbtn buy" ${!canTakeover?'disabled':''} id="takeoverBtn">🏢 인수 (₩${takeoverCost.toLocaleString()})</button>
+    <button class="pbtn pass" id="payRentBtn">💸 임대료 납부</button>
+  `;
+  document.getElementById('takeoverBtn').onclick=()=>{
+    if(p.cash<takeoverCost){toast('💸 잔고 부족!','bad');return;}
+    p.cash-=takeoverCost;
+    ow.cash+=Math.floor(takeoverCost*0.7); // 이전 소유주에게 70% 지급
+    c.own=pi;
+    addLog(p.em+' 🏢 '+c.name+' 인수! -₩'+takeoverCost,'gold');
+    toast('🏢 '+c.name+' 인수 성공!','gold');
+    if(mono(pi,c.ctry)){toast('🌟 '+COUNTRIES[c.ctry].flag+' 독점!','gold');}
+    closeProp();drawBoard();renderPCards();renderLegend();endAct(pi,dbl);
+  };
+  document.getElementById('payRentBtn').onclick=()=>{
+    closeProp();
+    // 임대료 납부 처리
+    const rr=rent;
+    if(p.cash<rr){
+      let canPay=p.cash;
+      G.cells.forEach(cell=>{
+        if(cell.own===pi&&cell.t==='prop'&&canPay<rr){
+          const sv=Math.floor(cell.price*(cell.ho?0.7:cell.hs>0?0.6:0.5));
+          canPay+=sv;p.cash+=sv;cell.own=-1;cell.hs=0;cell.ho=0;
+          addLog(p.em+' 긴급매각 '+cell.name+' +₩'+sv,'sys');
+        }
+      });
+    }
+    if(p.cash<rr){ow.cash+=p.cash;p.totalLost+=p.cash;p.cash=0;p.bkrt=true;G.cells.forEach(cell=>{if(cell.own===pi){cell.own=ow.id;}});addLog(p.em+' 💀 파산!','bad');toast('💀 파산!','bad');drawBoard();renderPCards();renderLegend();endAct(pi,dbl);return;}
+    p.cash-=rr;ow.cash+=rr;p.totalLost+=rr;ow.totalEarned+=rr;
+    addLog(p.em+' → '+ow.em+' 임대료 ₩'+rr,'bad');
+    G.gameStats.totalRent+=rr;
+    ckBk(pi);drawBoard();renderPCards();renderLegend();endAct(pi,dbl);
+  };
+  document.getElementById('pp2').style.display='flex';
+}
 
 // ── EVENT POPUP ──
 function showEventPop(icon,type,id,title,desc,effect,col,border,afterFx,pi,dbl){
@@ -2491,6 +2567,16 @@ function endAct(pi,dbl){
   renderPCards();renderLegend();
   const alive=G.players.filter(p=>!p.bkrt);
   if(alive.length<=1){endGame('파산 종료');return;}
+
+  // ★ 더블이면 턴 소모 없이 한 번 더 굴리기 ★
+  if(dbl&&!G.players[pi].bkrt){
+    addLog(G.players[pi].em+' 🎲 더블 추가 굴리기!','gold');
+    toast('🎲 더블! 한 번 더!','gold');
+    drawBoard();renderPCards();
+    setTimeout(()=>doRoll(G.players[pi].isBot),700);
+    return;
+  }
+
   G.tot++;
   if(G.tot>=G.maxT){endGame('턴 초과');return;}
 
@@ -2768,9 +2854,10 @@ function startAuction(propIdx){
     propIdx,
     currentBid:Math.floor(c.price*.4),
     currentBidder:-1, // -1 = no one
-    timeLeft:12,
+    timeLeft:15,  // 15초로 늘려서 봇도 입찰 기회 충분히
     passed:[],
     timer:null,
+    playerPassed:false, // 플레이어가 포기했는지
   };
   document.getElementById('auctionPropName').textContent=(COUNTRIES[c.ctry]?.flag||'')+' '+c.name;
   document.getElementById('auctionPropInfo').textContent='기본가: ₩'+c.price+' | 임대료 최대: ₩'+c.rent[5];
@@ -2779,24 +2866,41 @@ function startAuction(propIdx){
   document.getElementById('auctionMycash').textContent='₩'+G.players[0].cash.toLocaleString();
   document.getElementById('auctionOv').style.display='flex';
 
-  // Bot bidding logic (random interval)
+  // Bot bidding logic - 봇들이 서로 경쟁 + 플레이어와 경쟁
   const botBidder=()=>{
     if(!_auctionData||_auctionData.timeLeft<=0)return;
+    // 활성 봇 (포기하지 않은 봇) 가져오기
     const bots=G.players.filter(p=>p.isBot&&!p.bkrt&&!_auctionData.passed.includes(p.id));
-    if(bots.length>0&&Math.random()<0.35){
-      const bot=bots[Math.floor(Math.random()*bots.length)];
-      const inc=Math.random()<.5?500:1000;
+    // 플레이어가 포기했어도 봇들끼리 계속 경쟁!
+    if(bots.length===0) return;
+    // 봇 입찰 확률: 집중 라인이면 더 적극적
+    const bidProb=_auctionData.playerPassed?0.55:0.4;
+    if(Math.random()<bidProb){
+      // 가장 적극적인 봇 선택 (잔고 많은 봇 우선)
+      const richBots=bots.sort((a,b)=>b.cash-a.cash);
+      const bot=richBots[Math.floor(Math.random()*Math.min(2,richBots.length))];
+      const maxLimit=c.price*(1.4+Math.random()*0.3); // 봇 최대 입찰가 다양화
+      const inc=[300,500,1000,1500][Math.floor(Math.random()*4)];
       const newBid=_auctionData.currentBid+inc;
-      if(bot.cash>=newBid&&newBid<=c.price*1.3){
+      if(bot.cash>=newBid&&newBid<=maxLimit){
         _auctionData.currentBid=newBid;
         _auctionData.currentBidder=bot.id;
         document.getElementById('auctionBid').textContent='₩'+newBid.toLocaleString();
         document.getElementById('auctionBidder').textContent=bot.em+' '+bot.name+' 입찰!';
+        document.getElementById('auctionBidder').style.color=bot.col||'var(--text)';
         addLog(bot.em+' 경매 입찰 ₩'+newBid,'sys');
+        // 봇이 입찰하면 타이머 3초 연장
+        _auctionData.timeLeft=Math.min(_auctionData.timeLeft+3,15);
+      } else {
+        // 한도 초과 → 봇 포기
+        if(!_auctionData.passed.includes(bot.id)) {
+          _auctionData.passed.push(bot.id);
+          addLog(bot.em+' 경매 포기','sys');
+        }
       }
     }
   };
-  _auctionData.botInterval=setInterval(botBidder,2000);
+  _auctionData.botInterval=setInterval(botBidder,1800);
 
   _auctionData.timer=setInterval(()=>{
     _auctionData.timeLeft--;
@@ -2825,9 +2929,17 @@ function placeBid(inc){
 function auctionPass(){
   if(!_auctionData)return;
   _auctionData.passed.push(0);
-  clearInterval(_auctionData.timer);
-  clearInterval(_auctionData.botInterval);
-  endAuction(_auctionData.propIdx);
+  _auctionData.playerPassed=true;
+  // 플레이어 포기 후 UI 변경 (봇들은 계속 경매)
+  document.getElementById('bidPassBtn').textContent='포기 완료';
+  document.getElementById('bidPassBtn').disabled=true;
+  document.getElementById('bidBtn1').disabled=true;
+  document.getElementById('bidBtn2').disabled=true;
+  document.getElementById('bidBtn3').disabled=true;
+  const auctionBidder=document.getElementById('auctionBidder');
+  if(auctionBidder) auctionBidder.textContent='🤖 봇들이 경쟁 중...';
+  addLog('플레이어 경매 포기 - 봇 경쟁 계속','sys');
+  toast('포기! 봇들이 계속 경쟁합니다','sys');
 }
 
 function endAuction(propIdx){
@@ -3018,7 +3130,7 @@ function closeTrade(){document.getElementById('tradeOv').style.display='none';}
 function handleDoubles(pi){
   G.consecutiveDoubles++;
   if(G.consecutiveDoubles>=3){
-    // 3 consecutive doubles: go to island
+    // 3연속 더블 → 무인도 이송
     const p=G.players[pi];
     p.pos=10;// island pos
     p.jl=true;p.jt=0;
@@ -3026,6 +3138,14 @@ function handleDoubles(pi){
     toast('🎲🎲🎲 트리플 더블! 무인도 이송!','bad');
     addLog(p.em+' 3연속 더블로 무인도!','bad');
     return true; // sent to island
+  }
+  if(G.consecutiveDoubles===2){
+    // 2연속 더블 → 럭키 보너스
+    const p=G.players[pi];
+    const bonus=300+Math.floor(Math.random()*400);
+    p.cash+=bonus;
+    toast('🎲🎲 연속 더블 보너스! +₩'+bonus,'gold');
+    addLog(p.em+' 연속 더블 보너스 +₩'+bonus,'gold');
   }
   return false;
 }
