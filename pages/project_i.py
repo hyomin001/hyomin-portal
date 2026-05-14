@@ -15,15 +15,15 @@ GAME_HTML = r"""<!DOCTYPE html>
   --text:#e8f0ff;--text2:#7a8fb5;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;width:100%;height:100%;user-select:none;pointer-events:auto;}
+html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;width:100%;height:100%;user-select:none;}
 
-#diff-select{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,8,15,.98);background-image:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(255,69,96,.07) 0%,transparent 70%);overflow-y:auto;pointer-events:auto;}
-.ds-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,5vw,3rem);background:linear-gradient(135deg,#ff4560,#ff8c42,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;margin-bottom:4px;text-align:center;}
+#diff-select{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,8,15,.98);background-image:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(255,69,96,.07) 0%,transparent 70%);overflow-y:auto;pointer-events:all;cursor:default;}
+.ds-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,5vw,3rem);background:linear-gradient(135deg,#ff4560,#ff8c42,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;margin-bottom:4px;text-align:center;animation:titlePulse 2s ease-in-out infinite;}@keyframes titlePulse{0%,100%{filter:drop-shadow(0 0 8px rgba(255,69,96,0.6));}50%{filter:drop-shadow(0 0 20px rgba(255,140,66,0.9));}}
 .ds-sub{color:var(--text2);font-size:.76rem;letter-spacing:5px;margin-bottom:6px;text-align:center;}
 .ds-version{display:inline-block;background:rgba(255,140,66,.15);border:1px solid rgba(255,140,66,.4);color:var(--orange);border-radius:20px;padding:2px 12px;font-size:.72rem;font-weight:700;margin-bottom:20px;letter-spacing:2px;}
 .diff-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:600px;width:92%;margin-bottom:16px;}
 @media(min-width:600px){.diff-grid{grid-template-columns:repeat(4,1fr);max-width:800px;}}
-.diff-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 12px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;pointer-events:auto;}
+.diff-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 12px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;pointer-events:all;z-index:10000;}
 .diff-card:hover,.diff-card.sel{transform:translateY(-5px);}
 .diff-card[data-d="0"]:hover,.diff-card[data-d="0"].sel{border-color:#10d96e;box-shadow:0 0 28px rgba(16,217,110,.25);}
 .diff-card[data-d="1"]:hover,.diff-card[data-d="1"].sel{border-color:#4dabf7;box-shadow:0 0 28px rgba(77,171,247,.25);}
@@ -36,10 +36,33 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .feature-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;max-width:800px;}
 .feat-pill{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 12px;font-size:.7rem;color:var(--text2);}
 .feat-pill span{color:var(--cyan);}
-.start-btn{padding:13px 52px;font-size:1.05rem;font-weight:900;font-family:'Black Han Sans',sans-serif;background:linear-gradient(135deg,#ff4560,#ff8c42);color:#fff;border:none;border-radius:40px;cursor:pointer;letter-spacing:2px;transition:all .2s;box-shadow:0 0 32px rgba(255,69,96,.4);pointer-events:auto;}
+.start-btn{padding:13px 52px;font-size:1.05rem;font-weight:900;font-family:'Black Han Sans',sans-serif;background:linear-gradient(135deg,#ff4560,#ff8c42);color:#fff;border:none;border-radius:40px;cursor:pointer;letter-spacing:2px;transition:all .2s;box-shadow:0 0 32px rgba(255,69,96,.4);pointer-events:all;position:relative;z-index:10000;}
 .start-btn:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(255,69,96,.6);}
 
 #game{display:none;width:100%;height:100vh;flex-direction:column;overflow:hidden;position:fixed;inset:0;}
+
+/* MINIMAP */
+#minimap{position:fixed;bottom:88px;right:10px;z-index:200;background:rgba(5,8,15,.92);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:4px;width:120px;height:70px;}
+#minimap canvas{display:block;border-radius:7px;}
+.minimap-label{font-size:.48rem;color:rgba(255,255,255,.4);text-align:center;margin-top:2px;letter-spacing:2px;}
+
+/* RESOURCE BAR FILL ANIMATION */
+@keyframes resGlow{0%,100%{box-shadow:0 0 4px rgba(255,215,0,.3);}50%{box-shadow:0 0 12px rgba(255,215,0,.7);}}
+.res-badge{animation:resGlow 2s ease-in-out infinite;}
+
+/* UNIT BTN HOVER GLOW */
+.unit-btn:hover:not(:disabled){box-shadow:0 0 14px rgba(34,211,238,.35);}
+
+/* LANE FALLEN OVERLAY */
+.lane-fallen-overlay{position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,69,96,.05) 0px,rgba(255,69,96,.05) 4px,transparent 4px,transparent 12px);pointer-events:none;z-index:1;}
+
+/* WAVE PROGRESS */
+#wave-progress{height:2px;background:rgba(178,108,247,.2);position:relative;overflow:hidden;}
+#wave-fill{height:100%;background:linear-gradient(90deg,#b26cf7,#22d3ee);transition:width .5s;position:absolute;left:0;top:0;}
+
+/* SCORE COMBO FLASH */
+@keyframes comboFlash{0%{transform:scale(1.4);}100%{transform:scale(1);}}
+.combo-flash{animation:comboFlash .15s ease-out;}
 
 .hud{background:rgba(5,8,15,.96);border-bottom:1px solid rgba(255,255,255,.07);padding:5px 12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:3px;position:relative;z-index:50;height:48px;min-height:48px;max-height:48px;flex-shrink:0;}
 .hud-left,.hud-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
@@ -175,7 +198,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 <div id="diff-select">
   <div class="ds-title">⚔️ 전장 저격전</div>
   <div class="ds-sub">3-LANE BATTLEFIELD · SNIPER EDITION</div>
-  <div class="ds-version">VERSION 4.0</div>
+  <div class="ds-version">VERSION 4.1 · ENHANCED</div>
   <div class="feature-row">
     <div class="feat-pill">🗺️ <span>탑·미드·바텀 3라인</span></div>
     <div class="feat-pill">🎯 <span>헤드샷 시스템</span></div>
@@ -240,6 +263,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       <span class="hud-badge diff-hud-badge" id="diff-badge"></span>
     </div>
   </div>
+  <div id="wave-progress"><div id="wave-fill" style="width:0%"></div></div>
 
   <!-- 라인별 상태바 (HUD 바로 아래) -->
   <div id="lane-status">
@@ -271,6 +295,10 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   </div>
 
   <canvas id="battlefield"></canvas>
+  <div id="minimap">
+    <canvas id="minimap-canvas" width="112" height="58"></canvas>
+    <div class="minimap-label">MINIMAP</div>
+  </div>
 
   <div class="bot-panel">
     <!-- 라인 선택 -->
@@ -328,7 +356,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
         <span class="uem">🛒</span><span class="uname" style="color:var(--gold)">상점</span><span class="ucost">S키</span>
       </button>
       <div class="snipe-hint">
-        🔭 <b>클릭 저격</b><br>
+        🔭 <b>클릭 저격</b> &nbsp;|&nbsp; F/G/H 라인<br>
         장전: <span id="reload-status" style="color:var(--green)">준비</span><br>
         콤보:<span id="combo-val" style="color:var(--gold)">×1</span> 관통:<span id="pierce-val" style="color:var(--purple)">×1</span>
       </div>
@@ -658,6 +686,7 @@ function startGame(diff){
     canvas.style.cursor='crosshair';
     document.getElementById('pierce-val').textContent='×'+G.pierceCount;
     G.lastTime=performance.now();
+    initMinimap();
     animFrameId=requestAnimationFrame(loop);
 
     // 난이도별 시작 안내
@@ -870,7 +899,7 @@ function update(dt){
           u.reachedLane=false;
           u.atBaseGate=false;
         });
-        toast('↩️ ['+LANE_NAMES[li]'→'+LANE_NAMES[nextLane]+'] 자동 지원 이동!','good');
+        toast('↩️ ['+LANE_NAMES[li]+'→'+LANE_NAMES[nextLane]+'] 자동 지원 이동!','good');
       }
     }
     if(!nowFallen&&G._laneWasFallen[li]) G._laneWasFallen[li]=false;
@@ -1346,7 +1375,8 @@ function tryShoot(mx,my){
     G.snipes++;
     G.score+=Math.round(95*G.wave*G.combo*(isHeadshot?2:1));
     G.combo=Math.min(G.combo+1,12);G.comboTimer=190;
-    document.getElementById('combo-val').textContent='×'+G.combo;
+    const cv=document.getElementById('combo-val');
+    if(cv){cv.textContent='×'+G.combo;cv.classList.remove('combo-flash');void cv.offsetWidth;cv.classList.add('combo-flash');}
 
     if(isHeadshot){
       G.headshots++;
@@ -1405,6 +1435,64 @@ function buyShopItem(item){
   G.resources-=item.cost;item.fx();
   if(!item.repeatable)shopBoughtItems.add(item.id);
   openShop();updateHUD();
+}
+
+// ═══════════════════════════════════
+//  MINIMAP
+// ═══════════════════════════════════
+function initMinimap(){
+  // nothing needed, auto-draws in render
+}
+
+function drawMinimap(){
+  const mc=document.getElementById('minimap-canvas');
+  if(!mc) return;
+  const mw=mc.width,mh=mc.height;
+  const mctx=mc.getContext('2d');
+  mctx.clearRect(0,0,mw,mh);
+  
+  // Background
+  mctx.fillStyle='#040810';
+  mctx.fillRect(0,0,mw,mh);
+  
+  // Lane lines
+  LANE_Y_FRACS.forEach((frac,li)=>{
+    const my=frac*mh;
+    mctx.strokeStyle=LANE_COLS[li]+'55';
+    mctx.lineWidth=1;
+    mctx.setLineDash([3,3]);
+    mctx.beginPath();mctx.moveTo(0,my);mctx.lineTo(mw,my);mctx.stroke();
+    mctx.setLineDash([]);
+  });
+  
+  // Bases
+  mctx.fillStyle='#10d96e';
+  mctx.fillRect(0,mh*.5-10,4,20);
+  mctx.fillStyle='#ff4560';
+  mctx.fillRect(mw-4,mh*.5-10,4,20);
+  
+  // Units
+  G.units.filter(u=>u.hp>0&&u.reachedLane).forEach(u=>{
+    const mx_=(u.x/W)*mw;
+    const my_=laneY(u.laneIdx)/H*mh;
+    const col=u.side===0?'#22d3ee':'#ff4560';
+    const r=u.isBoss?3:u.isMiniBoss?2.5:1.5;
+    mctx.fillStyle=u.isBoss?'#ffd700':col;
+    mctx.beginPath();mctx.arc(mx_,my_,r,0,Math.PI*2);mctx.fill();
+  });
+  
+  // Tower HP indicators
+  for(let li=0;li<3;li++){
+    const my_=laneY(li)/H*mh;
+    // Ally tower
+    const aPct=Math.max(0,G.allyTowerHp[li]/G.maxTowerHp);
+    mctx.fillStyle=aPct>0.5?'#10d96e':aPct>0.25?'#ffd700':'#ff4560';
+    mctx.fillRect(4,my_-2,8*aPct,4);
+    // Enemy tower
+    const ePct=Math.max(0,G.enemyTowerHp[li]/G.maxTowerHp);
+    mctx.fillStyle=ePct>0.5?'#ff4560':ePct>0.25?'#ffd700':'#10d96e';
+    mctx.fillRect(mw-12,my_-2,8*ePct,4);
+  }
 }
 
 // ═══════════════════════════════════
@@ -1497,6 +1585,9 @@ function render(){
     vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.4)');
     ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
   }
+
+  // Minimap
+  drawMinimap();
 
   // Headshot hint
   if(!G.reloading&&G.running){
@@ -1702,6 +1793,10 @@ function updateHUD(){
   document.getElementById('res-val').textContent=Math.floor(G.resources);
   document.getElementById('score-val').textContent=G.score.toLocaleString();
   document.getElementById('kills-val').textContent=G.kills;
+  // Wave progress
+  const wavePct=((G.waveTimer/1800)*100).toFixed(1);
+  const wf=document.getElementById('wave-fill');
+  if(wf) wf.style.width=wavePct+'%';
 }
 
 function updateLaneStatus(){
@@ -1879,8 +1974,15 @@ def render():
     from utils.database import update_leaderboard, _get_col
     from utils.config import USERS_FILE
 
-    st.markdown("<style>iframe{border:none!important;border-radius:14px;}</style>", unsafe_allow_html=True)
-    st.caption("🎯 마우스: 조준 | 클릭: 발사 | R: 재장전 | 스테이지 클리어로 진행")
+    st.markdown("""<style>
+iframe[title="components.html"] {
+  border: none !important;
+  border-radius: 14px !important;
+  display: block !important;
+  pointer-events: auto !important;
+}
+</style>""", unsafe_allow_html=True)
+    st.caption("🎯 마우스 클릭: 저격 | 1~9: 유닛 소환 | Q/E/R/W/T: 스킬 | S: 상점 | F/G/H: 라인전환")
 
     _cur_uid = st.session_state.get('logged_in_user', '')
 
@@ -1914,4 +2016,5 @@ def render():
     if not _result:
         st.session_state.pop('_sniper_saved', None)
 
-    components.html(GAME_HTML, height=920, scrolling=False)
+    # 게임 높이를 충분히 확보
+    components.html(GAME_HTML, height=940, scrolling=False)
