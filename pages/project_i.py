@@ -466,16 +466,22 @@ const ABILITY_DEFS = [
 const DIFF_CONFIG = [
   {name:'초보',  col:'#10d96e',bgCol:'rgba(16,217,110,.15)',bdCol:'rgba(16,217,110,.35)',
    resRate:2.8,botResRate:0.38,botPool:[9,9,9],           botDelay:5500,startRes:250,laneHp:1800,bossWave:13,miniBossWave:7,
-   botStrategyInterval:3500,rushProb:0.08,maxTowerHp:1800},
+   botStrategyInterval:3500,rushProb:0.08,maxTowerHp:1800,
+   botStartDelay:180, // 초보: 봇이 3분 후부터 소환 시작 (프레임)
+   botActionless:true}, // 초보: 봇이 처음엔 아무것도 안 함
   {name:'중급',  col:'#4dabf7',bgCol:'rgba(77,171,247,.15)',bdCol:'rgba(77,171,247,.35)',
    resRate:1.8,botResRate:0.85,botPool:[9,10,10,11],      botDelay:3400,startRes:180,laneHp:1600,bossWave:10,miniBossWave:5,
-   botStrategyInterval:2200,rushProb:0.22,maxTowerHp:1600},
+   botStrategyInterval:2200,rushProb:0.22,maxTowerHp:1600,
+   botStartDelay:60, // 중급: 봇이 1분 후부터
+   botActionless:false},
   {name:'어려움',col:'#ff8c42',bgCol:'rgba(255,140,66,.15)',bdCol:'rgba(255,140,66,.35)',
    resRate:1.25,botResRate:1.35,botPool:[10,11,11,12,13], botDelay:2100,startRes:145,laneHp:1400,bossWave:8, miniBossWave:4,
-   botStrategyInterval:1300,rushProb:0.42,maxTowerHp:1400},
+   botStrategyInterval:1300,rushProb:0.42,maxTowerHp:1400,
+   botStartDelay:0,botActionless:false},
   {name:'극악',  col:'#ff4560',bgCol:'rgba(255,69,96,.15)', bdCol:'rgba(255,69,96,.35)',
    resRate:0.98,botResRate:1.9,botPool:[11,12,13,16,17,18],botDelay:1200,startRes:120,laneHp:1200,bossWave:6,miniBossWave:3,
-   botStrategyInterval:750,rushProb:0.62,maxTowerHp:1200},
+   botStrategyInterval:750,rushProb:0.62,maxTowerHp:1200,
+   botStartDelay:0,botActionless:false},
 ];
 
 // ═══════════════════════════════════
@@ -563,9 +569,14 @@ function resize(){
 //  LANE SELECT
 // ═══════════════════════════════════
 function selectLane(li){
-  // 함락된 라인 선택 시 경고
+  // 함락된 라인 선택 시 경고 + 자동 스킵
   if(G.running&&G.allyTowerHp&&G.allyTowerHp[li]<=0){
-    toast('🚫 ['+LANE_NAMES[li]+'] 함락됨! 다른 라인 선택!','bad');
+    toast('🚫 ['+LANE_NAMES[li]+'] 함락! 양쪽 소환 불가!','bad');
+    // 살아있는 라인 자동 선택
+    const alive=[0,1,2].find(x=>x!==li&&G.allyTowerHp[x]>0);
+    if(alive!==undefined){
+      selectLane(alive);
+    }
     return;
   }
   selectedLane=li;
@@ -648,6 +659,13 @@ function startGame(diff){
     document.getElementById('pierce-val').textContent='×'+G.pierceCount;
     G.lastTime=performance.now();
     animFrameId=requestAnimationFrame(loop);
+
+    // 난이도별 시작 안내
+    if(diff===0){
+      setTimeout(()=>toast('🟢 초보 모드: 적이 3분 뒤부터 공격합니다! 방어를 준비하세요!','good'),500);
+    } else if(diff===3){
+      setTimeout(()=>toast('🔴 극악 모드: 전 라인 즉시 공격! 방심 금지!','bad'),500);
+    }
   }
   setTimeout(tryStart,60);
 }
@@ -746,8 +764,11 @@ function update(dt){
 
   // Bot AI: 라인별 독립 타이머
   const botDelayFrames=dc.botDelay/16.667;
+  const botStartFrames=(dc.botStartDelay||0)*60; // 초 → 프레임
   for(let li=0;li<3;li++){
     G.botTimers[li]+=dt;
+    // 초보 모드: 일정 시간 지나야 봇 소환 시작
+    if(dc.botActionless && G.frame < botStartFrames) continue;
     // 집중 라인은 2배 빠르게 스폰
     const mult=(li===G.botFocusLane)?0.5:1.0;
     if(G.botTimers[li]>=botDelayFrames*mult){
@@ -828,23 +849,37 @@ function update(dt){
 
   // ★ 라인 함락 경고 시스템 ★
   for(let li=0;li<3;li++){
-    const wasAlive=!G._laneWasFallen||!G._laneWasFallen[li];
-    const nowFallen=G.allyTowerHp[li]<=0;
     if(!G._laneWasFallen) G._laneWasFallen=[false,false,false];
+    const nowFallen=G.allyTowerHp[li]<=0;
+
     if(nowFallen&&!G._laneWasFallen[li]){
       G._laneWasFallen[li]=true;
-      toast('💥 ['+LANE_NAMES[li]+'] 라인 함락! 다른 라인 집중!','bad');
+      toast('💥 ['+LANE_NAMES[li]+'] 라인 함락! 양쪽 소환 불가!','bad');
       const ba=document.getElementById('boss-alert');
       ba.style.display='flex';
-      ba.innerHTML='<div class="boss-alert-box" style="color:#ff4560;font-size:2.2rem;">⚠️ ['+LANE_NAMES[li]+'] 라인 함락!</div>';
-      setTimeout(()=>{ba.style.display='none';},2000);
+      ba.innerHTML='<div class="boss-alert-box" style="color:#ff4560;font-size:2rem;">⚠️ ['+LANE_NAMES[li]+'] 함락!<br><span style="font-size:1.2rem;">봇들이 왔던 길로 복귀합니다</span></div>';
+      setTimeout(()=>{ba.style.display='none';},2500);
+
+      // 함락 시 해당 라인의 아군 유닛들을 다른 라인으로 이동 명령
+      const aliveUnits=G.units.filter(u=>u.side===0&&u.hp>0&&u.laneIdx===li);
+      const nextLane=[0,1,2].find(x=>x!==li&&G.allyTowerHp[x]>0&&G.enemyTowerHp[x]>0);
+      if(nextLane!==undefined&&aliveUnits.length>0){
+        aliveUnits.forEach(u=>{
+          u._roaming=true;
+          u.laneIdx=nextLane;
+          u.reachedLane=false;
+          u.atBaseGate=false;
+        });
+        toast('↩️ ['+LANE_NAMES[li]'→'+LANE_NAMES[nextLane]+'] 자동 지원 이동!','good');
+      }
     }
     if(!nowFallen&&G._laneWasFallen[li]) G._laneWasFallen[li]=false;
+
     // 적 타워 클리어 축하
     if(!G._enemyFallen) G._enemyFallen=[false,false,false];
     if(G.enemyTowerHp[li]<=0&&!G._enemyFallen[li]){
       G._enemyFallen[li]=true;
-      toast('🎉 ['+LANE_NAMES[li]+'] 라인 돌파! 지원군 투입 가능!','good');
+      toast('🎉 ['+LANE_NAMES[li]+'] 라인 돌파! 지원군이 다른 라인으로!','good');
     }
   }
 
@@ -915,9 +950,17 @@ function spawnAlly(defId){
   const def=UNIT_DEFS[defId];
   if(G.resources<def.cost){toast('💎 자원 부족!','bad');return;}
   if(G.trainCooldowns[defId]>0){toast('⏳ 훈련 중!','bad');return;}
-  // ★ 부서진 라인 소환 금지 ★
+  // ★ 부서진 라인 소환 금지 (양쪽 컨트롤 불가) ★
   if(G.allyTowerHp[G.selectedLane]<=0){
-    toast('🚫 ['+LANE_NAMES[G.selectedLane]+'] 라인 함락! 다른 라인에 배치하세요!','bad');
+    toast('🚫 ['+LANE_NAMES[G.selectedLane]+'] 함락된 라인 - 양쪽 소환 불가!','bad');
+    // 살아있는 다른 라인 자동 선택
+    const alive=[0,1,2].find(x=>G.allyTowerHp[x]>0);
+    if(alive!==undefined) selectLane(alive);
+    return;
+  }
+  // 추가: 아군 타워가 없어도 적 타워도 없으면 (양쪽 다 부서짐) 소환 불가
+  if(G.enemyTowerHp[G.selectedLane]<=0&&G.allyTowerHp[G.selectedLane]<=0){
+    toast('🚫 ['+LANE_NAMES[G.selectedLane]+'] 완전히 교전 불가!','bad');
     return;
   }
   G.resources-=def.cost;
@@ -936,13 +979,20 @@ function botSpawn(laneIdx){
   if(G.diff>=2){affor.sort((a,b)=>b.cost-a.cost);chosen=affor[Math.floor(Math.random()*Math.min(2,affor.length))];}
   else{chosen=affor[Math.floor(Math.random()*affor.length)];}
 
-  // ★ 아군 타워가 이미 파괴된 라인에는 적 봇 추가 소환 줄임 ★
-  // 대신 살아있는 아군 타워가 있는 다른 라인에 집중
+  // ★ 라인 완전 함락 처리 ★
+  // 아군 타워가 파괴된 라인 = 양쪽 모두 해당 라인에서 소환 불가
+  // 적 봇은 살아있는 다른 라인으로 자동 전환
   const allyHp=G.allyTowerHp[laneIdx];
+  const enemyHp=G.enemyTowerHp[laneIdx];
+
   if(allyHp<=0){
-    // 이 라인은 이미 점령됨 → 살아있는 라인으로 전환
-    const activeLanes=[0,1,2].filter(li=>G.allyTowerHp[li]>0);
-    if(activeLanes.length>0){
+    // 아군 라인 함락됨 → 적 봇은 다른 살아있는 아군 라인으로 공격
+    const activeLanes=[0,1,2].filter(li=>G.allyTowerHp[li]>0&&G.enemyTowerHp[li]>0);
+    if(activeLanes.length===0){
+      // 모든 라인 함락 → 아무거나 살아있는 라인
+      const anyAlive=[0,1,2].filter(li=>G.allyTowerHp[li]>0);
+      if(anyAlive.length>0) laneIdx=anyAlive[Math.floor(Math.random()*anyAlive.length)];
+    } else {
       laneIdx=activeLanes[Math.floor(Math.random()*activeLanes.length)];
     }
   }
@@ -1051,12 +1101,13 @@ function updateUnits(dt,frozen){
     const distToGate=u.side===0?gateX-u.x:u.x-gateX;
 
     // ★ 적이 지나쳐서 내 뒤에 있는 경우 → 돌아서 교전 ★
-    // 내 뒤에 있는 적이 범위 안에 들어오면 교전 (지나침 방지)
-    const behindEnemy=G.units.find(o=>
-      o.side!==u.side&&o.hp>0&&o.laneIdx===u.laneIdx&&o.reachedLane&&
-      Math.abs(u.x-o.x)<u.range*0.8&&
-      (u.side===0 ? o.x < u.x - 5 : o.x > u.x + 5)
-    );
+    // 뒤에 있는 적이 범위 안에 들어오면 교전 (지나침 방지)
+    const behindEnemy=G.units.find(o=>{
+      if(o.side===u.side||o.hp<=0||o.laneIdx!==u.laneIdx||!o.reachedLane) return false;
+      const dist=Math.abs(u.x-o.x);
+      const isBehind=u.side===0 ? o.x < u.x - 8 : o.x > u.x + 8;
+      return isBehind && dist < u.range * 1.0; // 뒤에 있어도 범위 넓게
+    });
     const effectiveTarget = target || behindEnemy;
     const effectiveDist = effectiveTarget ? Math.abs(u.x-effectiveTarget.x) : Infinity;
 
@@ -1169,14 +1220,21 @@ function updateUnits(dt,frozen){
       }
 
       const dir=u.side===0?1:-1;
-      // ★ 막힘 감지 개선: 내 앞에 있는 적만 막힘으로 처리 ★
+      // ★ 막힘 감지: 앞에 있는 적 OR 아군에게 막힘 ★
+      // 앞에 아군이 있으면 그 뒤에서 대기 (스택 방지)
+      const allyInFront=G.units.some(o=>{
+        if(o.uid===u.uid||o.side!==u.side||o.hp<=0||o.laneIdx!==u.laneIdx||!o.reachedLane) return false;
+        const gap=u.side===0?(o.x-u.x):(u.x-o.x);
+        return gap>0&&gap<22;
+      });
       const blocked=G.units.some(o=>{
         if(o.side===u.side||o.hp<=0||o.laneIdx!==u.laneIdx||!o.reachedLane) return false;
-        const inFront=u.side===0?(o.x>u.x-5&&o.x<u.x+50):(o.x<u.x+5&&o.x>u.x-50);
-        return inFront&&Math.abs(u.x-o.x)<(u.ninja?22:30);
+        const inFront=u.side===0?(o.x>u.x-5&&o.x<u.x+55):(o.x<u.x+5&&o.x>u.x-55);
+        return inFront&&Math.abs(u.x-o.x)<(u.ninja?22:32);
       });
-      if(!blocked) u.x+=dir*u.spd*dt;
-      else if(u.ninja) u.x+=dir*u.spd*dt*2.2;
+      const finalBlocked=blocked||allyInFront;
+      if(!finalBlocked) u.x+=dir*u.spd*dt;
+      else if(u.ninja) u.x+=dir*u.spd*dt*2.2; // 닌자는 아군 관통
     }
     // Y 스냅 (라인 유지)
     u.y=laneY(u.laneIdx);
@@ -1679,10 +1737,13 @@ function updateLaneStatus(){
       }
       // 적 타워 클리어 표시
       const lnameArr=['⬆️ 탑','➡️ 미드','⬇️ 봇'];
-      if(enemyFallen){
-        lbtn.textContent=lnameArr[li]+' ✅';
+      if(allyFallen&&enemyFallen){
+        lbtn.textContent=lnameArr[li]+' 🚫'; // 완전 폐쇄
+        lbtn.title='완전 함락 - 양쪽 소환 불가';
+      } else if(enemyFallen&&!allyFallen){
+        lbtn.textContent=lnameArr[li]+' ✅'; // 적 라인 클리어
       } else if(allyFallen){
-        lbtn.textContent=lnameArr[li]+' 💀';
+        lbtn.textContent=lnameArr[li]+' 💀'; // 아군 함락
       } else {
         lbtn.textContent=lnameArr[li];
       }
