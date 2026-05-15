@@ -9,7 +9,7 @@ from datetime import datetime
 # 1. 코어 모듈 임포트
 # ==============================
 from utils.config import MARKET_FILE, USERS_FILE, KST, MESSAGES_FILE, STATS_FILE, estate_config, FORGE_DATA, SEASON_DURATION_DAYS, NEXT_SEASON_DELAY
-from utils.database import load_db, save_db, load_stats, save_stats, get_login_lock, set_login_lock, clear_login_lock, check_and_run_season_reset
+from utils.database import load_db, save_db, load_stats, save_stats, get_login_lock, set_login_lock, clear_login_lock, check_and_run_season_reset, get_game_meta
 from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
@@ -1158,7 +1158,7 @@ if st.session_state.page_view == "portal":
                     st.markdown(f"**🏆 시즌 {_sn_num} 순자산 순위**")
                     _nw_medals = ["🥇","🥈","🥉"]
                     _nw_colors = ["#FFD700","#C0C0C0","#CD7F32"]
-                    for _ri in range(1, 11):
+                    for _ri in range(1, 4):
                         _entry = _rec.get(f"rank{_ri}")
                         if not _entry: break
                         _euid = _html.escape(str(_entry.get("uid","?") if isinstance(_entry,dict) else _entry))
