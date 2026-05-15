@@ -388,6 +388,22 @@ def _save_season_snapshot(market: dict) -> None:
         record = {}
         for i, (uid, w) in enumerate(rankings[:10]):
             record[f"rank{i+1}"] = {"uid": uid, "net_worth": w}
+
+        # ── 게임별 1위 기록도 함께 스냅샷 ──
+        try:
+            lb = load_leaderboard()
+            record["game_champions"] = {
+                game_id: {
+                    "top_user":  entry.get("top_user", "?"),
+                    "top_score": entry.get("top_score", 0),
+                    "date":      entry.get("date", ""),
+                }
+                for game_id, entry in lb.items()
+            }
+        except Exception as _ge:
+            logging.warning(f"[_save_season_snapshot] 게임 챔피언 스냅샷 실패: {_ge}")
+            record["game_champions"] = {}
+
         market.setdefault("season_records", {})[str(sn)] = record
         logging.info(f"[_save_season_snapshot] 시즌 {sn} 스냅샷 저장 완료 ({len(rankings)}명)")
     except Exception as e:
