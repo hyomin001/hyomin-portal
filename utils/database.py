@@ -453,7 +453,7 @@ def reset_season_records(market: dict) -> bool:
         # 2) 리더보드 초기화
         save_leaderboard({})
 
-        # 3) 유저 게임 기록 초기화
+        # 3) 유저 게임 기록 + 경제 전체 초기화
         empty_game_records = {
             "racing":        {"score": 0, "dist": 0.0},
             "zombie":        {"wave": 0, "score": 0, "kills": 0},
@@ -465,17 +465,51 @@ def reset_season_records(market: dict) -> bool:
         }
         empty_dungeon = {"best_score": 0, "best_kills": 0, "clears": 0, "games_played": 0}
         empty_marble  = {"wins": 0, "losses": 0, "games_played": 0, "best_net_worth": 0}
+        reset_ts = _t.time()
         set_fields = {}
         for uid, udata in doc.items():
             if uid in ("_id", "admin"):
                 continue
-            set_fields[f"{uid}.game_records"]    = empty_game_records
-            set_fields[f"{uid}.dungeon_stats"]   = empty_dungeon
-            set_fields[f"{uid}.marble_stats"]    = empty_marble
-            set_fields[f"{uid}.dungeon_weekly"]  = {}
-            set_fields[f"{uid}.terminal_cleared"]= []
+            # 게임 기록 초기화
+            set_fields[f"{uid}.game_records"]     = empty_game_records
+            set_fields[f"{uid}.dungeon_stats"]    = empty_dungeon
+            set_fields[f"{uid}.marble_stats"]     = empty_marble
+            set_fields[f"{uid}.dungeon_weekly"]   = {}
+            set_fields[f"{uid}.terminal_cleared"] = []
+            # 경제 초기화
+            set_fields[f"{uid}.cash"]             = 500_000_000
+            set_fields[f"{uid}.portfolio"]        = {}
+            set_fields[f"{uid}.crypto_portfolio"] = {}
+            set_fields[f"{uid}.real_estate"]      = {}
+            set_fields[f"{uid}.loan"]             = 0
+            set_fields[f"{uid}.loan_time"]        = reset_ts
+            set_fields[f"{uid}.rent_time"]        = reset_ts
+            set_fields[f"{uid}.weapon_level"]     = 0
+            set_fields[f"{uid}.daily_quests"]     = {}
+            set_fields[f"{uid}.bulk_trade_count"] = 0
+            set_fields[f"{uid}.garage"]           = {"cars": {}, "active_tier": None}
         if set_fields:
             col.update_one({"_id": "main"}, {"$set": set_fields})
+
+        # 부동산 마켓 초기화
+        try:
+            from utils.config import estate_config as _ec
+            _re_col = _get_col(REALESTATE_MARKET_FILE)
+            _re_col.update_one(
+                {"_id": "main"},
+                {"$set": {
+                    "listings":      [],
+                    "owner_counts":  {},
+                    "initial_stock": {eid: info["total_supply"] for eid, info in _ec.items()},
+                }},
+                upsert=True,
+            )
+        except Exception as _re_e:
+            logging.warning(f"[reset_season_records] 부동산 초기화 실패: {_re_e}")
+
+        # 로또 풀 초기화
+        market["lotto_pool"]    = 5_000_000_000
+        market["lotto_tickets"] = {}
 
         # 4) market DB — 새 시즌 번호·기간 기록
         new_sn    = sn + 1
