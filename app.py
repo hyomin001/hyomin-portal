@@ -886,16 +886,16 @@ if st.session_state.page_view == "portal":
         하나의 계정으로 효민 유니버스의 모든 경제, 엔터테인먼트,<br>
         AI 학습, 커뮤니티 서비스를 통합 이용하세요.
       </p>
-      <div class='hero-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM · 가입 시 5억 지급 · 시즌 2 개막 예고</div>
+      <div class='hero-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM · 가입 시 5억 지급 · 시즌 2 진행 중</div>
     </div>
     """, unsafe_allow_html=True)
 
     # ── 실시간 스크롤 태그 배너 ──
     tags_html = ""
     tags = [
-        ("🔥 HOT", "hot"),  ("🏁 시즌1 종료 임박", "live"), ("🤖 AI 모의고사", "new"),
+        ("🔥 HOT", "hot"),  ("🚀 시즌 2 진행 중", "live"), ("🤖 AI 모의고사", "new"),
         ("🏆 랭킹 1위 쟁탈전", "gold"), ("⚔️ 던전 런 REBORN", "hot"), ("🎲 인베스트 마블", "gold"),
-        ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"), ("🚀 시즌2 개막 예고", "gold"),
+        ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"), ("🏅 시즌 1 명예의 전당", "gold"),
         ("📈 주식·코인·부동산", "live"), ("🎰 카지노 & 게임", "hot"), ("🏎️ 하이퍼카 레이싱", "new"),
     ]
     for label, cls in tags * 2:
@@ -1211,11 +1211,11 @@ padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;al
     </p>
 </div>
 <div class="arch-highlight" style="border-left-color:#00ff88; background: linear-gradient(90deg, rgba(0,255,136,0.08), rgba(0,212,255,0.06));">
-    <p style="color:#00ff88 !important;">🏁 정규 시즌 1 종료 임박 · 시즌 2 개막 예고</p>
+    <p style="color:#00ff88 !important;">🚀 시즌 2 진행 중</p>
     <p class="sub">
         <b>[시즌 1 기간]</b> 2026년 4월 15일 ~ 5월 15일 15:35 (종료)<br>
-        시즌 1 종료 후 몇 시간 뒤 <b>시즌 2</b>가 자동 개막됩니다. 시즌 2 기간·혜택은 추후 공지 예정입니다.<br>
-        시즌 2 오픈 이후에도 <b>신규 가입 시 초기 정착금 5억 원</b>이 즉시 지급됩니다!<br>
+        <b>[시즌 2]</b> 2026년 5월 15일 이후 진행 중 — 기간·혜택은 추후 공지 예정입니다.<br>
+        <b>신규 가입 시 초기 정착금 5억 원</b>이 즉시 지급됩니다!<br>
         궁금한 점이나 응원은 아래 <b>유저 소통 창구</b>를 통해 남겨주세요 — 모든 의견을 적극 반영합니다! 💬
     </p>
 </div>
@@ -1907,11 +1907,11 @@ elif st.session_state.page_view == "login":
 
         with tabs[0]:
             st.markdown("""
-<div style='background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.5);border-radius:10px;padding:14px;margin-bottom:16px;'>
-  <div style='color:#6c63ff;font-weight:900;font-size:1rem;'>🏁 시즌 1 종료 임박 · 시즌 2 개막 예고</div>
+<div style='background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.45);border-radius:10px;padding:14px;margin-bottom:16px;'>
+  <div style='color:#00ff88;font-weight:900;font-size:1rem;'>🚀 시즌 2 진행 중!</div>
   <div style='color:#E2E8F0;font-size:0.9rem;margin-top:6px;'>
-    시즌 1이 <b>2026년 5월 15일 15:35</b>에 종료됩니다.<br>
-    종료 후 몇 시간 뒤 <b>시즌 2</b>가 자동 시작됩니다! 시즌 2에서도 계속 도전하세요 🚀<br>
+    시즌 2가 시작되었습니다! 새로운 경쟁에서 최고 자리를 차지하세요 🏆<br>
+    <b>신규 가입 시 초기 정착금 5억 원</b>이 즉시 지급됩니다!<br>
     의견·응원은 포털 메인의 <b>유저 소통 창구</b>에 남겨주세요 💬
   </div>
 </div>
@@ -2048,7 +2048,7 @@ elif st.session_state.page_view == "universe":
         "🎮 미니게임":    ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "🃏 텍사스 홀덤", "💻 사주팔자", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
         "🌟 성장 & 혜택": ["📅 일일 퀘스트", "👑 칭호 상점"],
         "⚽ 스포츠":      ["⚽ 구단주 시뮬레이터", "⚽ 조기축구 승부차기", "🏎️ 하이퍼카 레이싱", "🛠️ 커스텀 튜닝 차고지"],
-        "👥 커뮤니티":    ["🏰 길드/클랜", "🏅 [시즌1]랭킹 & 게시판", "🏛️ 명예의 전당", "✉️ 개인 쪽지함"],
+        "👥 커뮤니티":    ["🏰 길드/클랜", "🏅 랭킹 & 게시판", "🏛️ 명예의 전당", "✉️ 개인 쪽지함"],
     }
     if is_vip:   CATEGORY_MENUS["📈 경제"].insert(1, "💎 VIP 라운지")
     if is_admin: CATEGORY_MENUS["⚙️ 관리"] = ["🛠️ 창조주 통제소"]
@@ -2116,7 +2116,7 @@ elif st.session_state.page_view == "universe":
     elif menu == "📜 내 거래 기록":          from pages import txlog;             txlog.render(market, nw)
     elif menu == "📅 일일 퀘스트":           from pages import quest;             quest.render(market, nw)
     elif menu == "👑 칭호 상점":             from pages import title_shop;        title_shop.render(market, nw)
-    elif menu == "🏅 [시즌1]랭킹 & 게시판": from pages import ranking;           ranking.render(market, nw)
+    elif menu == "🏅 랭킹 & 게시판": from pages import ranking;           ranking.render(market, nw)
     elif menu == "🏛️ 명예의 전당":      from pages import hall_of_fame;     hall_of_fame.render(market, nw)
     elif menu == "✉️ 개인 쪽지함":           from pages import dm;                dm.render(market, nw)
     elif menu == "🏰 길드/클랜":             from pages import clan;              clan.render(market, nw)
