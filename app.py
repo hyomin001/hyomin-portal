@@ -1133,6 +1133,71 @@ if st.session_state.page_view == "portal":
                 time.sleep(0.8); st.session_state.page_view = "login"
             st.rerun()
 
+
+    # ── 명예의 전당 ───────────────────────────────────────────
+    st.markdown("<div class='game-section-title'>🏛️ 명예의 전당</div>", unsafe_allow_html=True)
+
+    _season_records = market.get("season_records", {})
+    if not _season_records:
+        st.markdown("""
+<div style='background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:28px;text-align:center;color:#64748B;'>
+  🏛️ 아직 종료된 시즌이 없습니다. 첫 시즌이 끝나면 이곳에 기록이 새겨집니다.
+</div>""", unsafe_allow_html=True)
+    else:
+        import html as _html
+        _sorted_sns = sorted(_season_records.keys(), key=lambda x: int(x), reverse=True)
+        _hof_tabs = st.tabs([f"시즌 {sn}" for sn in _sorted_sns[:8]])
+        for _hof_tab, _sn_str in zip(_hof_tabs, _sorted_sns[:8]):
+            _rec = _season_records[_sn_str]
+            _sn_num = int(_sn_str)
+            with _hof_tab:
+                _hc1, _hc2 = st.columns(2)
+
+                # 순자산 TOP 3
+                with _hc1:
+                    st.markdown(f"**🏆 시즌 {_sn_num} 순자산 순위**")
+                    _nw_medals = ["🥇","🥈","🥉"]
+                    _nw_colors = ["#FFD700","#C0C0C0","#CD7F32"]
+                    for _ri in range(1, 11):
+                        _entry = _rec.get(f"rank{_ri}")
+                        if not _entry: break
+                        _euid = _html.escape(str(_entry.get("uid","?") if isinstance(_entry,dict) else _entry))
+                        _enw  = _entry.get("net_worth", 0) if isinstance(_entry, dict) else 0
+                        _medal = _nw_medals[_ri-1] if _ri <= 3 else f"{_ri}위"
+                        _col   = _nw_colors[_ri-1] if _ri <= 3 else "#00E5FF"
+                        st.markdown(f"""
+<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;
+padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;'>
+  <span style='font-weight:700;'><span style='font-size:1rem;'>{_medal}</span>
+  <span style='color:#CBD5E1;margin-left:8px;'>{_euid}</span></span>
+  <span style='font-weight:900;color:{_col};'>{format_korean_money(_enw)}</span>
+</div>""", unsafe_allow_html=True)
+
+                # 게임 챔피언
+                with _hc2:
+                    st.markdown(f"**🎮 시즌 {_sn_num} 게임 챔피언**")
+                    _gchamps = _rec.get("game_champions", {})
+                    if not _gchamps:
+                        st.caption("다음 시즌부터 자동 기록됩니다.")
+                    else:
+                        _game_order = ["racing","zombie","fighter","sniper","invest_marble","terminal","dungeon","academy","zombie_war"]
+                        _ordered_g  = [g for g in _game_order if g in _gchamps] + [g for g in _gchamps if g not in _game_order]
+                        for _gid in _ordered_g:
+                            _champ = _gchamps[_gid]
+                            _gmeta = get_game_meta(_gid)
+                            _gname = _gmeta.get("name", _gid)
+                            _guser = _html.escape(str(_champ.get("top_user","?")))
+                            try: _gdisp = _gmeta["fmt"](int(_champ.get("top_score",0)))
+                            except: _gdisp = str(_champ.get("top_score","?"))
+                            st.markdown(f"""
+<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:10px;
+padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;'>
+  <div><div style='font-size:0.75rem;color:#64748B;'>{_gname}</div>
+  <div style='font-weight:700;color:#CBD5E1;'>🥇 {_guser}</div></div>
+  <div style='font-weight:900;color:#00E5FF;font-size:0.9rem;'>{_gdisp}</div>
+</div>""", unsafe_allow_html=True)
+
+
     # ── 시스템 공지 & 아키텍처 섹션 ───────────────────────
     with st.expander("📋 시스템 공지 & 전체 아키텍처 구조 보기", expanded=False):
 
@@ -1983,7 +2048,7 @@ elif st.session_state.page_view == "universe":
         "🎮 미니게임":    ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "🃏 텍사스 홀덤", "💻 사주팔자", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
         "🌟 성장 & 혜택": ["📅 일일 퀘스트", "👑 칭호 상점"],
         "⚽ 스포츠":      ["⚽ 구단주 시뮬레이터", "⚽ 조기축구 승부차기", "🏎️ 하이퍼카 레이싱", "🛠️ 커스텀 튜닝 차고지"],
-        "👥 커뮤니티":    ["🏰 길드/클랜", "🏅 [시즌1]랭킹 & 게시판", "✉️ 개인 쪽지함"],
+        "👥 커뮤니티":    ["🏰 길드/클랜", "🏅 [시즌1]랭킹 & 게시판", "🏛️ 명예의 전당", "✉️ 개인 쪽지함"],
     }
     if is_vip:   CATEGORY_MENUS["📈 경제"].insert(1, "💎 VIP 라운지")
     if is_admin: CATEGORY_MENUS["⚙️ 관리"] = ["🛠️ 창조주 통제소"]
@@ -2052,6 +2117,7 @@ elif st.session_state.page_view == "universe":
     elif menu == "📅 일일 퀘스트":           from pages import quest;             quest.render(market, nw)
     elif menu == "👑 칭호 상점":             from pages import title_shop;        title_shop.render(market, nw)
     elif menu == "🏅 [시즌1]랭킹 & 게시판": from pages import ranking;           ranking.render(market, nw)
+    elif menu == "🏛️ 명예의 전당":      from pages import hall_of_fame;     hall_of_fame.render(market, nw)
     elif menu == "✉️ 개인 쪽지함":           from pages import dm;                dm.render(market, nw)
     elif menu == "🏰 길드/클랜":             from pages import clan;              clan.render(market, nw)
     elif menu == "🎰 럭키 슬롯":             from pages.games import slot;        slot.render(market, nw)
