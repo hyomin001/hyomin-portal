@@ -646,49 +646,21 @@ def render(market, nw):
 
         st.write("---")
         st.markdown("### ⚡ 시즌 즉시 강제 종료")
-        st.caption("게임 기록만 초기화하고 새 시즌을 시작합니다. 경제(현금·주식 등)는 유지됩니다.")
+        st.caption("현재 시즌을 즉시 종료하고 새 시즌을 시작합니다. 게임 기록 + 경제(현금·주식·코인·부동산·대출 등) 전체 초기화됩니다.")
 
-        c_reset1, c_reset2 = st.columns(2)
-        with c_reset1:
-            if st.button("🔄 게임 기록만 즉시 초기화 (경제 유지)", use_container_width=True):
-                from utils.database import reset_season_records
-                result = reset_season_records(market)
-                if result:
-                    st.success(f"✅ 시즌 {cur_season} 게임 기록 초기화 완료! 시즌 {cur_season+1} 시작!")
-                    st.rerun()
-                else:
-                    st.error("❌ 초기화 실패. 로그를 확인하세요.")
-
-        with c_reset2:
-            if st.button("💣 시즌 즉시 종료 & 경제 리셋 실행", use_container_width=True, type="secondary"):
-                from utils.database import reset_season_records
-                # 경제 리셋: 모든 유저 현금/자산 초기화
-                us_instant = load_db(USERS_FILE, {})
-                for uid_i in us_instant:
-                    if uid_i == 'admin': continue
-                    us_instant[uid_i]['cash']             = 500_000_000
-                    us_instant[uid_i]['portfolio']        = {}
-                    us_instant[uid_i]['crypto_portfolio'] = {}
-                    us_instant[uid_i]['real_estate']      = {}
-                    us_instant[uid_i]['loan']             = 0
-                    us_instant[uid_i]['daily_quests']     = {}
-                    us_instant[uid_i]['bulk_trade_count'] = 0
-                    us_instant[uid_i]['loan_time']        = time.time()
-                    us_instant[uid_i]['rent_time']        = time.time()
-                    us_instant[uid_i]['weapon_level']     = 0
-                save_db(USERS_FILE, us_instant)
-                save_estate_market({"listings": [], "owner_counts": {}, "initial_stock": {eid: info["total_supply"] for eid, info in estate_config.items()}})
-                market['lotto_pool']         = 5_000_000_000
-                market['lotto_tickets']      = {}
-                market['force_estate_reset'] = time.time()
-                save_market(market)
-                # 게임 기록 초기화 + 시즌 번호 올리기 (reset_season_records 내부에서 처리)
-                reset_season_records(market)
-                st.session_state.real_estate = {}
-                st.session_state.portfolio = {}
-                if hasattr(st.session_state, 'crypto_portfolio'): st.session_state.crypto_portfolio = {}
-                st.session_state.loan = 0
+        if st.button("💣 시즌 즉시 종료 & 전체 리셋 실행", use_container_width=True, type="primary"):
+            from utils.database import reset_season_records, save_stats, load_stats
+            # 중복 방지 잠금 해제 후 강제 실행
+            _s = load_stats()
+            _s["season_reset_at"] = ""
+            _s["last_season_num"] = -1
+            save_stats(_s)
+            result = reset_season_records(market)
+            if result:
+                st.success(f"✅ 시즌 {cur_season} 종료 & 전체 초기화 완료! 시즌 {cur_season+1} 시작!")
                 st.rerun()
+            else:
+                st.error("❌ 초기화 실패. 로그를 확인하세요.")
 
         st.write("---")
         st.markdown("### 📜 역대 시즌 기록")
