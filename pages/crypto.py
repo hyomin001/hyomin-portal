@@ -6,7 +6,7 @@ from streamlit_autorefresh import st_autorefresh  # 🚀 자동 새로고침 부
 from utils.config import CRYPTO_CONFIG
 from utils.core import format_korean_money, sync_user_data, claim_hidden_title
 from utils.config import USERS_FILE
-from utils.database import load_db, save_db, log_tx  # 👈 save_db 임포트 추가!
+from utils.database import load_db, save_db, log_tx, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
     st.title("🪙 가상화폐 거래소")
@@ -133,29 +133,24 @@ def render(market, nw):
                 else:
                     qty_to_buy = buy_won / cur_p
                     
-                    # 🛡️ [보안] DB 기준 잔액 재확인 (다중 탭 이중 매입 방지)
-                    u_fresh = load_db(USERS_FILE, {})
                     uid = st.session_state.logged_in_user
-                    db_cash = u_fresh.get(uid, {}).get('cash', 0)
-                    
-                    if db_cash < buy_won:
-                        st.error("❌ 잔액 부족! (DB 재검증 실패)")
+                    # ✅ atomic 차감 — Race Condition 완전 방어
+                    if not atomic_deduct_cash(uid, buy_won):
+                        st.error("❌ 잔액 부족! (DB 원자적 차감 실패)")
                     else:
-                        # ✅ [BUG FIX] DB 포트폴리오를 기준으로 업데이트 (세션 상태 불일치 방지)
-                        # DB에서 최신 포트폴리오 가져오기 (u_fresh는 방금 로드됨)
-                        cp_port = u_fresh[uid].get('crypto_portfolio', {})
-                        old = cp_port.get(sel_c, {'qty': 0, 'avg_price': 0})
-                        new_q = old['qty'] + qty_to_buy
-                        new_a = ((old['qty'] * old['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
+                        # 포트폴리오는 차감 성공 후 으로 업데이트
+                        from utils.database import _get_col
+                        col = _get_col(USERS_FILE)
+                        doc = col.find_one({"_id": "main"}, {uid: 1}) or {}
+                        cp_port = doc.get(uid, {}).get('crypto_portfolio', {})
+                        old_info = cp_port.get(sel_c, {'qty': 0, 'avg_price': 0})
+                        new_q = old_info['qty'] + qty_to_buy
+                        new_a = ((old_info['qty'] * old_info['avg_price']) + buy_won) / new_q if new_q > 0 else cur_p
                         cp_port[sel_c] = {'qty': new_q, 'avg_price': new_a}
+                        col.update_one({"_id": "main"}, {"": {f"{uid}.crypto_portfolio": cp_port}})
                         
-                        # ✅ [BUG FIX] 현금 차감 + 포트폴리오 업데이트를 단일 저장으로 처리 (원자적)
-                        u_fresh[uid]['cash'] = db_cash - buy_won
-                        u_fresh[uid]['crypto_portfolio'] = cp_port
-                        save_db(USERS_FILE, u_fresh)
-                        
-                        # 세션 동기화 (DB 기준으로 덮어씀)
-                        st.session_state.global_cash = db_cash - buy_won
+                        # 세션 동기화
+                        st.session_state.global_cash -= buy_won
                         st.session_state.crypto_portfolio = cp_port
                         
                         log_tx(uid, "코인매수", f"{cd['name']} 매수", -int(buy_won))
@@ -175,25 +170,24 @@ def render(market, nw):
                 sell_won = sell_qty * cur_p
                 st.caption(f"예상 수령액: {format_korean_money(int(sell_won))}")
                 if st.button(f"🔴 매도하기", use_container_width=True):
-                    # ✅ [BUG FIX] 매도도 DB 재검증 후 원자적 저장
-                    u_sell = load_db(USERS_FILE, {})
                     uid_sell = st.session_state.logged_in_user
-                    db_port = u_sell.get(uid_sell, {}).get('crypto_portfolio', {})
+                    from utils.database import _get_col
+                    col = _get_col(USERS_FILE)
+                    doc = col.find_one({"_id": "main"}, {uid_sell: 1}) or {}
+                    db_port = doc.get(uid_sell, {}).get('crypto_portfolio', {})
                     actual_qty = db_port.get(sel_c, {}).get('qty', 0)
                     if actual_qty <= 1e-10:
                         st.error(f"⚠️ 보유량이 없습니다! (DB 재검증 실패)")
                     else:
                         real_sell_qty = min(sell_qty, actual_qty)
-                        real_sell_won = real_sell_qty * cur_p
+                        real_sell_won = int(real_sell_qty * cur_p)
                         db_port[sel_c]['qty'] -= real_sell_qty
                         if db_port[sel_c]['qty'] < 1e-10: del db_port[sel_c]
-                        db_cash_sell = u_sell[uid_sell].get('cash', 0)
-                        # ✅ 현금 추가 + 포트폴리오 차감을 단일 저장으로 처리 (원자적)
-                        u_sell[uid_sell]['cash'] = db_cash_sell + int(real_sell_won)
-                        u_sell[uid_sell]['crypto_portfolio'] = db_port
-                        save_db(USERS_FILE, u_sell)
-                        # 세션 동기화 (DB 기준)
+                        # ✅ 포트폴리오  + 현금 atomic 지급
+                        col.update_one({"_id": "main"}, {"": {f"{uid_sell}.crypto_portfolio": db_port}})
+                        atomic_add_cash(uid_sell, real_sell_won)
+                        # 세션 동기화
                         st.session_state.crypto_portfolio = db_port
-                        st.session_state.global_cash = db_cash_sell + int(real_sell_won)
-                        log_tx(uid_sell, "코인매도", f"{cd['name']} 매도", int(real_sell_won))
+                        st.session_state.global_cash += real_sell_won
+                        log_tx(uid_sell, "코인매도", f"{cd['name']} 매도", real_sell_won)
                         sync_user_data(); st.success("✅ 매도 완료!"); st.rerun()
