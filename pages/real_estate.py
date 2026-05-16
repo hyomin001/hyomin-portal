@@ -4,7 +4,7 @@ import time
 import uuid
 from datetime import datetime
 from utils.config import estate_config, KST, USERS_FILE
-from utils.database import load_db, save_db, log_tx, load_estate_market, save_estate_market, get_estate_initial_listings, save_market
+from utils.database import load_db, save_db, log_tx, load_estate_market, save_estate_market, get_estate_initial_listings, save_market, atomic_deduct_cash, atomic_add_cash, _get_col
 from utils.core import format_korean_money, sync_user_data, cooldown_remaining, set_cooldown, claim_hidden_title
 
 def render(market, nw):
@@ -97,19 +97,15 @@ def render(market, nw):
                         elif st.session_state.global_cash >= info['base_price']:
                             set_cooldown(cd_key)
                             
-                            # 🛡️ [보안] DB 기준 잔액 재확인 (다중 탭 이중 매입 방지)
-                            u_fresh = load_db(USERS_FILE, {})
-                            db_cash = u_fresh.get(uid, {}).get('cash', 0)
-                            
-                            if db_cash < info['base_price']:
-                                st.error("❌ 잔액 부족! (DB 재검증 실패)")
+                            # ✅ atomic 차감 — Race Condition 완전 방어
+                            if not atomic_deduct_cash(uid, info['base_price']):
+                                st.error("❌ 잔액 부족! (DB 원자적 차감 실패)")
                             else:
-                                # DB 잔액 원자적 차감
-                                u_fresh[uid]['cash'] = db_cash - info['base_price']
-                                save_db(USERS_FILE, u_fresh)
-                                
+                                # 부동산 보유 
+                                col = _get_col(USERS_FILE)
+                                col.update_one({"_id": "main"}, {"": {f"{uid}.real_estate.{eid}": 1}})
                                 # 세션 동기화
-                                st.session_state.global_cash = u_fresh[uid]['cash']
+                                st.session_state.global_cash -= info['base_price']
                                 if 'real_estate' not in st.session_state:
                                     st.session_state.real_estate = {}
                                 st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
@@ -176,19 +172,15 @@ def render(market, nw):
                             elif st.session_state.global_cash >= target["price"]:
                                 set_cooldown(cd_key)
                                 
-                                # 🛡️ [보안] DB 기준 잔액 재확인 (유저 매물 구매 시 다중 탭 방지)
-                                u_fresh = load_db(USERS_FILE, {})
-                                db_cash = u_fresh.get(uid, {}).get('cash', 0)
-                                
-                                if db_cash < target["price"]:
-                                    st.error("❌ 잔액 부족! (DB 재검증 실패)")
+                                # ✅ 구매자 atomic 차감 — Race Condition 완전 방어
+                                if not atomic_deduct_cash(uid, target["price"]):
+                                    st.error("❌ 잔액 부족! (DB 원자적 차감 실패)")
                                 else:
-                                    # 구매자의 DB 잔액 원자적 차감
-                                    u_fresh[uid]['cash'] = db_cash - target["price"]
-                                    save_db(USERS_FILE, u_fresh)
-                                    
-                                    # 구매자의 세션 동기화
-                                    st.session_state.global_cash = u_fresh[uid]['cash']
+                                    col = _get_col(USERS_FILE)
+                                    # 구매자 부동산 
+                                    col.update_one({"_id": "main"}, {"": {f"{uid}.real_estate.{eid}": 1}})
+                                    # 세션 동기화
+                                    st.session_state.global_cash -= target["price"]
                                     if 'real_estate' not in st.session_state:
                                         st.session_state.real_estate = {}
                                     st.session_state.real_estate[eid] = st.session_state.real_estate.get(eid, 0) + 1
@@ -196,18 +188,15 @@ def render(market, nw):
 
                                     if uid not in em3["owner_counts"]: em3["owner_counts"][uid] = {}
                                     em3["owner_counts"][uid][eid] = em3["owner_counts"][uid].get(eid, 0) + 1
-                                    
-                                    # 판매자에게 대금 지급 (이미 위에서 load_db 했으므로 u_fresh 재사용)
+
+                                    # ✅ 판매자에게 atomic 지급
                                     seller = target["seller"]
-                                    if seller in u_fresh:
-                                        u_fresh[seller]['cash'] += target["price"]
-                                        if seller not in em3["owner_counts"]: em3["owner_counts"][seller] = {}
-                                        em3["owner_counts"][seller][eid] = max(0, em3["owner_counts"][seller].get(eid, 0) - 1)
-                                        if 'real_estate' in u_fresh[seller] and eid in u_fresh[seller]['real_estate']:
-                                            u_fresh[seller]['real_estate'][eid] = max(0, u_fresh[seller]['real_estate'][eid] - 1)
-                                            if u_fresh[seller]['real_estate'][eid] <= 0: del u_fresh[seller]['real_estate'][eid]
-                                        save_db(USERS_FILE, u_fresh) # 판매자 잔액 업데이트 저장
-                                        log_tx(seller, "부동산판매", f"{info['name']} 판매 완료", target["price"])
+                                    atomic_add_cash(seller, target["price"])
+                                    # 판매자 부동산 
+                                    col.update_one({"_id": "main"}, {"": {f"{seller}.real_estate.{eid}": -1}})
+                                    if seller not in em3["owner_counts"]: em3["owner_counts"][seller] = {}
+                                    em3["owner_counts"][seller][eid] = max(0, em3["owner_counts"][seller].get(eid, 0) - 1)
+                                    log_tx(seller, "부동산판매", f"{info['name']} 판매 완료", target["price"])
                                     
                                     em3["listings"] = [x for x in em3["listings"] if x["id"] != li["id"]]
                                     save_estate_market(em3)
