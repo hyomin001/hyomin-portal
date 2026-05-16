@@ -5,7 +5,7 @@ import html
 import re
 from utils.config import USERS_FILE
 from utils.core import format_korean_money, sync_user_data, get_clan_total_nw
-from utils.database import load_clan_db, save_clan_db, get_user_clan, load_db, save_db, log_tx, save_market
+from utils.database import load_clan_db, save_clan_db, get_user_clan, load_db, save_db, log_tx, save_market, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
     st.title("🏰 클랜 관리 사무소")
@@ -48,15 +48,11 @@ def render(market, nw):
                 elif st.session_state.global_cash < 1_000_000_000:
                     st.error("돈이 부족합니다.")
                 else:
-                    # 🛡️ 버그 #1: DB 잔액 재검증 후 차감
-                    us_fresh = load_db(USERS_FILE, {})
-                    db_cash = us_fresh.get(uid, {}).get('cash', 0)
-                    if db_cash < 1_000_000_000:
-                        st.error("잔액이 부족합니다. (DB 재검증 실패)")
+                    # ✅ atomic 차감 — Race Condition 완전 방어
+                    if not atomic_deduct_cash(uid, 1_000_000_000):
+                        st.error("잔액이 부족합니다. (DB 원자적 차감 실패)")
                     else:
-                        us_fresh[uid]['cash'] = db_cash - 1_000_000_000
-                        save_db(USERS_FILE, us_fresh)
-                        st.session_state.global_cash = us_fresh[uid]['cash']
+                        st.session_state.global_cash -= 1_000_000_000
                         clans[clean_clan_name] = {
                             "leader": uid, "members": [uid], "member_ranks": {uid: "클랜장"},
                             "bank": 0, "desc": new_clan_desc, "icon": new_clan_icon,
@@ -116,16 +112,11 @@ def render(market, nw):
                         if d_amt <= 0:
                             st.error("금액을 입력하세요.")
                         else:
-                            # 🛡️ 버그 #1 수정: DB 잔액 재검증 후 차감 (다중탭 이중입금 방지)
-                            us_fresh = load_db(USERS_FILE, {})
-                            db_cash = us_fresh.get(uid, {}).get('cash', 0)
-                            if db_cash < d_amt:
-                                st.error("잔액이 부족합니다. (DB 재검증 실패)")
+                            # ✅ atomic 차감 — Race Condition 완전 방어
+                            if not atomic_deduct_cash(uid, d_amt):
+                                st.error("잔액이 부족합니다. (DB 원자적 차감 실패)")
                             else:
-                                us_fresh[uid]['cash'] = db_cash - d_amt
-                                save_db(USERS_FILE, us_fresh)
-                                st.session_state.global_cash = us_fresh[uid]['cash']
-                                # clan DB는 users DB 저장 완료 후 반영
+                                st.session_state.global_cash -= d_amt
                                 clans_fresh = load_clan_db()
                                 if my_clan in clans_fresh:
                                     clans_fresh[my_clan]['bank'] = clans_fresh[my_clan].get('bank', 0) + d_amt
@@ -148,6 +139,7 @@ def render(market, nw):
                             else:
                                 clans_fresh[my_clan]['bank'] = bank_now - w_amt
                                 save_clan_db(clans_fresh)
+                                atomic_add_cash(uid, w_amt)
                                 st.session_state.global_cash += w_amt
                                 sync_user_data()
                                 log_tx(uid, "클랜", f"[{my_clan}] 금고 출금", w_amt)
