@@ -241,27 +241,27 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   <div class="hud">
     <div class="hud-left">
       <span class="hud-title">⚔️ BATTLEFIELD v4</span>
-      <div class="base-hp-wrap">
-        <span class="base-label">🏰 아군</span>
-        <div class="hp-bar-outer"><div class="hp-fill ally" id="ally-hp-bar" style="width:100%"></div></div>
-        <span class="hp-val" id="ally-hp-val" style="color:var(--green)">4500</span>
+      <div class="base-grp">
+        <span class="base-lbl">🏰 아군</span>
+        <div class="hp-bar-wrap"><div class="hp-fill ally" id="ally-hp-bar" style="width:100%"></div></div>
+        <span class="hp-num" id="ally-hp-val" style="color:var(--green)">4500</span>
       </div>
-      <div class="base-hp-wrap">
-        <span class="base-label">🏯 적군</span>
-        <div class="hp-bar-outer"><div class="hp-fill enemy" id="enemy-hp-bar" style="width:100%"></div></div>
-        <span class="hp-val" id="enemy-hp-val" style="color:var(--red)">4500</span>
+      <div class="base-grp">
+        <span class="base-lbl">🏯 적군</span>
+        <div class="hp-bar-wrap"><div class="hp-fill enemy" id="enemy-hp-bar" style="width:100%"></div></div>
+        <span class="hp-num" id="enemy-hp-val" style="color:var(--red)">4500</span>
       </div>
     </div>
     <div class="hud-right">
-      <span class="hud-badge wave-badge" id="wave-badge">웨이브 1</span>
-      <span class="hud-badge res-badge">💎 <span id="res-val">150</span></span>
-      <span class="hud-badge score-badge">🏆 <span id="score-val">0</span></span>
-      <span class="hud-badge kills-badge">💀 <span id="kills-val">0</span></span>
-      <span class="weather-badge" id="weather-badge">☀️ 맑음</span>
-      <span class="hud-badge diff-hud-badge" id="diff-badge"></span>
+      <span class="badge badge-wave" id="wave-badge">웨이브 1</span>
+      <span class="badge badge-res">💎 <span id="res-val">150</span></span>
+      <span class="badge badge-score">🏆 <span id="score-val">0</span></span>
+      <span class="badge badge-kills">💀 <span id="kills-val">0</span></span>
+      <span class="badge badge-weather" id="weather-badge">☀️ 맑음</span>
+      <span class="badge badge-diff" id="diff-badge"></span>
     </div>
   </div>
-  <div id="wave-progress"><div id="wave-fill" style="width:0%"></div></div>
+  <div id="wave-bar"><div id="wave-fill" style="width:0%"></div></div>
 
   <!-- 라인별 상태바 (HUD 바로 아래) -->
   <div id="lane-status">
@@ -298,10 +298,6 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     <div class="up-title">🔧 유닛 업그레이드</div>
     <div id="up-list"></div>
     <div style="font-size:.52rem;color:var(--text3);margin-top:6px;">Z키로 닫기</div>
-  </div>
-  <div id="minimap">
-    <canvas id="minimap-canvas" width="112" height="58"></canvas>
-    <div class="minimap-label">MINIMAP</div>
   </div>
 
   <div class="bot-panel">
@@ -387,7 +383,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 <div id="boss-alert" style="display:none;"></div>
 <div id="shop-modal">
   <div class="shop-box">
-    <div class="shop-title">🛒 전술 상점</div>
+    <div class="shop-ttl">🛒 전술 상점</div>
     <div class="shop-sub">💎 <span id="shop-res">0</span>
       <div class="shop-tabs">
         <div class="shop-tab active" onclick="shopTab(0)">⚔️ 전투</div>
@@ -627,8 +623,13 @@ function enemyGateY(li){ return H*0.5 - BASE_H/2 + BASE_H*(li+0.5)/3; }
 // ═══════════════════════════════════
 function resize(){
   const rect=canvas.getBoundingClientRect();
-  W=Math.max(rect.width,300);
-  H=Math.max(rect.height,200);
+  // getBoundingClientRect()는 iframe 내 레이아웃이 확정되기 전에 0을 반환할 수 있음
+  // → window.innerWidth/innerHeight를 폴백으로 사용
+  const rw=rect.width>100?rect.width:(canvas.offsetWidth||window.innerWidth);
+  // HUD 46px + wave-bar 3px + bot-panel 86px = 135px 제외
+  const rh=rect.height>200?rect.height:(canvas.offsetHeight||(window.innerHeight-135));
+  W=Math.max(rw,400);
+  H=Math.max(rh,300);
   canvas.width=W;
   canvas.height=H;
   ALLY_BASE_X=80;
@@ -721,7 +722,8 @@ function startGame(diff){
   let attempts=0;
   function tryStart(){
     resize();
-    if(W<100&&attempts<10){attempts++;setTimeout(tryStart,50);return;}
+    // W<400 또는 H<300이면 레이아웃이 아직 안 잡힌 것 → 최대 25회 재시도
+    if((W<400||H<300)&&attempts<25){attempts++;setTimeout(tryStart,80);return;}
     for(let i=0;i<6;i++) G.craters.push({x:150+Math.random()*(W-300),y:laneY(Math.floor(i/2)),r:14+Math.random()*18});
     updateHUD(); updateButtons();
     document.getElementById('scope').style.display='block';
@@ -1503,7 +1505,7 @@ function initMinimap(){
 }
 
 function drawMinimap(){
-  const mc=document.getElementById('minimap-canvas');
+  const mc=document.getElementById('mm-canvas');
   if(!mc) return;
   const mw=mc.width,mh=mc.height;
   const mctx=mc.getContext('2d');
@@ -1693,7 +1695,6 @@ function render(){
   });
 
   // Particles
-  drawMinimap_();
   G.particles.forEach(p=>{ctx.globalAlpha=Math.min(1,p.life/10);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
 
   // Vignette
@@ -2094,6 +2095,26 @@ document.querySelectorAll('.diff-card').forEach(card=>{
 document.getElementById('start-btn').addEventListener('click',()=>startGame(selDiff));
 
 window.addEventListener('resize',()=>{if(G.running)resize();});
+
+// ResizeObserver: iframe 내 캔버스 크기가 뒤늦게 확정될 때도 대응
+if(window.ResizeObserver){
+  const _ro=new ResizeObserver(()=>{
+    if(G.running){
+      const prev_W=W,prev_H=H;
+      resize();
+      // 크기가 의미있게 변했을 때만 재초기화
+      if(Math.abs(W-prev_W)>20||Math.abs(H-prev_H)>20){
+        // 크레이터 재배치
+        G.craters=[];
+        for(let i=0;i<6;i++) G.craters.push({x:150+Math.random()*(W-300),y:laneY(Math.floor(i/2)),r:14+Math.random()*18});
+      }
+    }
+  });
+  _ro.observe(canvas);
+  // game div도 감시 (flex 레이아웃)
+  const gameDiv=document.getElementById('game');
+  if(gameDiv) _ro.observe(gameDiv);
+}
 </script>
 </body>
 </html>"""
