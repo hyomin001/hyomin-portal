@@ -10,183 +10,156 @@ GAME_HTML = r"""<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Black+Han+Sans&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#05080f;--gold:#ffd700;--green:#10d96e;--red:#ff4560;
+  --bg:#03060e;--gold:#ffd700;--green:#10d96e;--red:#ff3355;
   --blue:#4dabf7;--cyan:#22d3ee;--orange:#ff8c42;--purple:#b26cf7;
-  --text:#e8f0ff;--text2:#7a8fb5;
+  --text:#e8f0ff;--text2:#7a8fb5;--text3:#4a5f85;
+  --panel:rgba(5,10,22,0.97);--border:rgba(255,255,255,0.07);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;width:100%;height:100%;user-select:none;}
-
-#diff-select{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,8,15,.98);background-image:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(255,69,96,.07) 0%,transparent 70%);overflow-y:auto;pointer-events:all;cursor:default;}
-.ds-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,5vw,3rem);background:linear-gradient(135deg,#ff4560,#ff8c42,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;margin-bottom:4px;text-align:center;animation:titlePulse 2s ease-in-out infinite;}@keyframes titlePulse{0%,100%{filter:drop-shadow(0 0 8px rgba(255,69,96,0.6));}50%{filter:drop-shadow(0 0 20px rgba(255,140,66,0.9));}}
-.ds-sub{color:var(--text2);font-size:.76rem;letter-spacing:5px;margin-bottom:6px;text-align:center;}
-.ds-version{display:inline-block;background:rgba(255,140,66,.15);border:1px solid rgba(255,140,66,.4);color:var(--orange);border-radius:20px;padding:2px 12px;font-size:.72rem;font-weight:700;margin-bottom:20px;letter-spacing:2px;}
-.diff-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:600px;width:92%;margin-bottom:16px;}
-@media(min-width:600px){.diff-grid{grid-template-columns:repeat(4,1fr);max-width:800px;}}
-.diff-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 12px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;pointer-events:all;z-index:10000;}
+#diff-select{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#03060e;background-image:radial-gradient(ellipse 80% 60% at 50% 25%,rgba(255,51,85,.08) 0%,transparent 65%);overflow-y:auto;padding:20px 16px;}
+.ds-logo{font-size:3.2rem;margin-bottom:6px;animation:logoPulse 2.5s ease-in-out infinite;}
+@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 18px rgba(255,69,96,.6));}50%{filter:drop-shadow(0 0 36px rgba(255,140,66,1));}}
+.ds-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,5vw,3rem);background:linear-gradient(135deg,#ff3355,#ff8c42,#ffd700,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;margin-bottom:4px;text-align:center;}
+.ds-sub{color:var(--text2);font-size:.72rem;letter-spacing:6px;margin-bottom:5px;text-align:center;}
+.ds-ver{display:inline-block;background:rgba(255,140,66,.12);border:1px solid rgba(255,140,66,.4);color:var(--orange);border-radius:20px;padding:2px 14px;font-size:.68rem;font-weight:700;margin-bottom:20px;letter-spacing:2px;}
+.diff-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:680px;width:95%;margin-bottom:16px;}
+@media(min-width:600px){.diff-grid{grid-template-columns:repeat(4,1fr);max-width:860px;}}
+.diff-card{background:rgba(255,255,255,.025);border:2px solid rgba(255,255,255,.07);border-radius:18px;padding:16px 10px;cursor:pointer;transition:all .25s;text-align:center;position:relative;overflow:hidden;}
+.diff-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .25s;border-radius:16px;}
+.diff-card[data-d="0"]::before{background:radial-gradient(ellipse at 50% -10%,rgba(16,217,110,.18),transparent 65%);}
+.diff-card[data-d="1"]::before{background:radial-gradient(ellipse at 50% -10%,rgba(77,171,247,.18),transparent 65%);}
+.diff-card[data-d="2"]::before{background:radial-gradient(ellipse at 50% -10%,rgba(255,140,66,.18),transparent 65%);}
+.diff-card[data-d="3"]::before{background:radial-gradient(ellipse at 50% -10%,rgba(255,51,85,.2),transparent 65%);}
+.diff-card:hover::before,.diff-card.sel::before{opacity:1;}
 .diff-card:hover,.diff-card.sel{transform:translateY(-5px);}
-.diff-card[data-d="0"]:hover,.diff-card[data-d="0"].sel{border-color:#10d96e;box-shadow:0 0 28px rgba(16,217,110,.25);}
-.diff-card[data-d="1"]:hover,.diff-card[data-d="1"].sel{border-color:#4dabf7;box-shadow:0 0 28px rgba(77,171,247,.25);}
-.diff-card[data-d="2"]:hover,.diff-card[data-d="2"].sel{border-color:#ff8c42;box-shadow:0 0 28px rgba(255,140,66,.25);}
-.diff-card[data-d="3"]:hover,.diff-card[data-d="3"].sel{border-color:#ff4560;box-shadow:0 0 28px rgba(255,69,96,.25);}
-.diff-em{font-size:2rem;margin-bottom:6px;}
-.diff-name{font-family:'Black Han Sans',sans-serif;font-size:1.05rem;margin-bottom:5px;}
-.diff-desc{font-size:.7rem;color:var(--text2);line-height:1.65;}
-.diff-tag{display:inline-block;font-size:.6rem;font-weight:700;border-radius:20px;padding:2px 8px;margin-top:6px;}
-.feature-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;max-width:800px;}
-.feat-pill{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 12px;font-size:.7rem;color:var(--text2);}
-.feat-pill span{color:var(--cyan);}
-.start-btn{padding:13px 52px;font-size:1.05rem;font-weight:900;font-family:'Black Han Sans',sans-serif;background:linear-gradient(135deg,#ff4560,#ff8c42);color:#fff;border:none;border-radius:40px;cursor:pointer;letter-spacing:2px;transition:all .2s;box-shadow:0 0 32px rgba(255,69,96,.4);pointer-events:all;position:relative;z-index:10000;}
-.start-btn:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(255,69,96,.6);}
-
+.diff-card[data-d="0"]:hover,.diff-card[data-d="0"].sel{border-color:#10d96e;box-shadow:0 8px 32px rgba(16,217,110,.22);}
+.diff-card[data-d="1"]:hover,.diff-card[data-d="1"].sel{border-color:#4dabf7;box-shadow:0 8px 32px rgba(77,171,247,.22);}
+.diff-card[data-d="2"]:hover,.diff-card[data-d="2"].sel{border-color:#ff8c42;box-shadow:0 8px 32px rgba(255,140,66,.22);}
+.diff-card[data-d="3"]:hover,.diff-card[data-d="3"].sel{border-color:#ff3355;box-shadow:0 8px 40px rgba(255,51,85,.3);}
+.diff-em{font-size:2rem;margin-bottom:5px;}.diff-name{font-family:'Black Han Sans',sans-serif;font-size:1.1rem;margin-bottom:4px;}
+.diff-desc{font-size:.66rem;color:var(--text2);line-height:1.75;margin-bottom:8px;}
+.diff-tag{display:inline-block;font-size:.57rem;font-weight:700;border-radius:20px;padding:2px 9px;margin-bottom:6px;}
+.diff-meters{display:flex;flex-direction:column;gap:3px;margin-top:4px;}
+.diff-meter-row{display:flex;align-items:center;gap:5px;font-size:.55rem;color:var(--text3);}
+.diff-meter-bar{flex:1;height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
+.diff-meter-fill{height:100%;border-radius:2px;}
+.feat-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:860px;margin-bottom:16px;}
+.feat-pill{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:3px 10px;font-size:.65rem;color:var(--text2);}
+.feat-pill b{color:var(--cyan);}
+.start-btn{padding:14px 60px;font-size:1.1rem;font-weight:900;font-family:'Black Han Sans',sans-serif;background:linear-gradient(135deg,#ff3355,#ff8c42);color:#fff;border:none;border-radius:50px;cursor:pointer;letter-spacing:3px;transition:all .22s;box-shadow:0 0 40px rgba(255,51,85,.4);}
+.start-btn:hover{transform:scale(1.06) translateY(-2px);box-shadow:0 0 60px rgba(255,51,85,.65);}
+.keyhint{margin-top:10px;font-size:.6rem;color:var(--text3);text-align:center;letter-spacing:1px;line-height:1.8;}
 #game{display:none;width:100%;height:100vh;flex-direction:column;overflow:hidden;position:fixed;inset:0;}
-
-/* MINIMAP */
-#minimap{position:fixed;bottom:88px;right:10px;z-index:200;background:rgba(5,8,15,.92);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:4px;width:120px;height:70px;}
-#minimap canvas{display:block;border-radius:7px;}
-.minimap-label{font-size:.48rem;color:rgba(255,255,255,.4);text-align:center;margin-top:2px;letter-spacing:2px;}
-
-/* RESOURCE BAR FILL ANIMATION */
-@keyframes resGlow{0%,100%{box-shadow:0 0 4px rgba(255,215,0,.3);}50%{box-shadow:0 0 12px rgba(255,215,0,.7);}}
-.res-badge{animation:resGlow 2s ease-in-out infinite;}
-
-/* UNIT BTN HOVER GLOW */
-.unit-btn:hover:not(:disabled){box-shadow:0 0 14px rgba(34,211,238,.35);}
-
-/* LANE FALLEN OVERLAY */
-.lane-fallen-overlay{position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,69,96,.05) 0px,rgba(255,69,96,.05) 4px,transparent 4px,transparent 12px);pointer-events:none;z-index:1;}
-
-/* WAVE PROGRESS */
-#wave-progress{height:2px;background:rgba(178,108,247,.2);position:relative;overflow:hidden;}
-#wave-fill{height:100%;background:linear-gradient(90deg,#b26cf7,#22d3ee);transition:width .5s;position:absolute;left:0;top:0;}
-
-/* SCORE COMBO FLASH */
-@keyframes comboFlash{0%{transform:scale(1.4);}100%{transform:scale(1);}}
-.combo-flash{animation:comboFlash .15s ease-out;}
-
-.hud{background:rgba(5,8,15,.96);border-bottom:1px solid rgba(255,255,255,.07);padding:5px 12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:3px;position:relative;z-index:50;height:48px;min-height:48px;max-height:48px;flex-shrink:0;}
-.hud-left,.hud-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-.hud-title{font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;color:var(--orange);}
-.base-hp-wrap{display:flex;align-items:center;gap:5px;}
-.base-label{font-size:.65rem;color:var(--text2);font-weight:700;min-width:32px;}
-.hp-bar-outer{width:90px;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden;border:1px solid rgba(255,255,255,.08);}
-.hp-fill{height:100%;border-radius:5px;transition:width .3s;}
-.hp-fill.ally{background:linear-gradient(90deg,#10d96e,#22d3ee);}
-.hp-fill.enemy{background:linear-gradient(90deg,#ff4560,#ff8c42);}
-.hp-val{font-size:.68rem;font-weight:700;min-width:28px;}
-.hud-badge{border-radius:8px;padding:2px 8px;font-size:.7rem;font-weight:700;}
-.res-badge{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:var(--gold);}
-.wave-badge{background:rgba(178,108,247,.12);border:1px solid rgba(178,108,247,.3);color:var(--purple);}
-.score-badge{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:var(--cyan);}
-.kills-badge{background:rgba(255,69,96,.1);border:1px solid rgba(255,69,96,.3);color:var(--red);}
-.diff-hud-badge{font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;}
-.weather-badge{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--text2);font-size:.65rem;padding:2px 7px;border-radius:8px;}
-
+.hud{background:var(--panel);border-bottom:1px solid var(--border);padding:4px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:3px;z-index:50;height:46px;min-height:46px;flex-shrink:0;}
+.hud-left,.hud-right{display:flex;align-items:center;gap:6px;}
+.hud-title{font-family:'Orbitron',sans-serif;font-size:.68rem;font-weight:900;color:var(--orange);letter-spacing:2px;}
+.base-grp{display:flex;align-items:center;gap:4px;}.base-lbl{font-size:.6rem;color:var(--text2);font-weight:700;}
+.hp-bar-wrap{width:80px;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,.07);}
+.hp-fill{height:100%;border-radius:4px;transition:width .35s;}
+.hp-fill.ally{background:linear-gradient(90deg,var(--green),var(--cyan));}
+.hp-fill.enemy{background:linear-gradient(90deg,var(--red),var(--orange));}
+.hp-num{font-size:.62rem;font-weight:700;min-width:24px;}
+.badge{border-radius:7px;padding:2px 7px;font-size:.66rem;font-weight:700;display:flex;align-items:center;gap:3px;}
+.badge-res{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);color:var(--gold);animation:resGlow 2.5s ease-in-out infinite;}
+.badge-wave{background:rgba(178,108,247,.1);border:1px solid rgba(178,108,247,.25);color:var(--purple);}
+.badge-score{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);color:var(--cyan);}
+.badge-kills{background:rgba(255,51,85,.1);border:1px solid rgba(255,51,85,.25);color:var(--red);}
+.badge-diff{font-size:.6rem;padding:2px 8px;border-radius:16px;font-weight:700;}
+.badge-weather{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--text2);font-size:.6rem;padding:2px 7px;border-radius:7px;}
+#wave-bar{height:3px;background:rgba(178,108,247,.12);flex-shrink:0;position:relative;overflow:hidden;}
+#wave-fill{height:100%;position:absolute;left:0;top:0;background:linear-gradient(90deg,var(--purple),var(--cyan),var(--green));transition:width .5s;}
+#lane-status{position:fixed;top:49px;left:0;right:0;z-index:48;background:rgba(5,8,15,.93);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:2px 10px;gap:8px;height:24px;}
+.ls-lane{display:flex;align-items:center;gap:4px;flex:1;}
+.ls-name{font-size:.56rem;font-weight:900;min-width:20px;}
+.ls-bar-wrap{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;position:relative;}
+.ls-ally-fill{position:absolute;left:0;top:0;height:100%;border-radius:3px 0 0 3px;transition:width .4s;}
+.ls-enemy-fill{position:absolute;right:0;top:0;height:100%;border-radius:0 3px 3px 0;transition:width .4s;}
+.ls-units{font-size:.5rem;color:var(--text2);min-width:24px;text-align:center;}
+#deploy-indicator{font-size:.58rem;font-weight:900;margin-left:4px;white-space:nowrap;}
 #battlefield{display:block;width:100%;flex:1;min-height:0;cursor:crosshair;}
-
-/* BOTTOM PANEL */
-.bot-panel{background:rgba(5,8,15,.96);border-top:1px solid rgba(255,255,255,.07);padding:4px 8px;display:flex;align-items:center;gap:4px;flex-wrap:nowrap;position:relative;z-index:50;height:80px;min-height:80px;max-height:80px;flex-shrink:0;overflow:hidden;}
-
-/* LANE SELECTOR */
+#minimap{position:fixed;bottom:92px;right:8px;z-index:200;background:rgba(3,6,14,.95);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:4px;width:122px;height:70px;}
+#minimap canvas{display:block;border-radius:7px;}
+.minimap-label{font-size:.44rem;color:rgba(255,255,255,.3);text-align:center;margin-top:2px;letter-spacing:2px;}
+#upgrade-panel{position:fixed;bottom:92px;left:8px;z-index:200;background:rgba(3,6,14,.97);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;width:200px;display:none;}
+.up-title{font-size:.68rem;font-weight:900;color:var(--gold);margin-bottom:8px;}
+.up-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:6px;}
+.up-name{font-size:.58rem;color:var(--text2);flex:1;}
+.up-bars{display:flex;gap:2px;}
+.up-pip{width:10px;height:6px;border-radius:2px;background:rgba(255,255,255,.1);}
+.up-pip.on{background:var(--cyan);}
+.up-btn{font-size:.52rem;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.3);color:var(--cyan);border-radius:6px;padding:2px 6px;cursor:pointer;white-space:nowrap;}
+.up-btn:hover{background:rgba(34,211,238,.25);}.up-btn:disabled{opacity:.35;cursor:not-allowed;}
+.bot-panel{background:var(--panel);border-top:1px solid var(--border);padding:4px 7px;display:flex;align-items:center;gap:3px;z-index:50;height:86px;min-height:86px;flex-shrink:0;overflow:hidden;}
 .lane-sel{display:flex;flex-direction:column;gap:3px;flex-shrink:0;margin-right:4px;}
-.lane-sel-title{font-size:.52rem;color:var(--text2);text-align:center;font-weight:700;}
-.lane-btn{padding:3px 10px;border-radius:7px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:var(--text2);font-size:.65rem;font-weight:900;cursor:pointer;transition:all .18s;text-align:center;pointer-events:auto;white-space:nowrap;}
+.lane-sel-title{font-size:.48rem;color:var(--text3);text-align:center;letter-spacing:1px;}
+.lane-btn{padding:3px 9px;border-radius:7px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--text2);font-size:.6rem;font-weight:900;cursor:pointer;transition:all .18s;white-space:nowrap;}
 .lane-btn:hover{border-color:var(--cyan);color:var(--cyan);}
-.lane-btn.top-active{border-color:#b26cf7;background:rgba(178,108,247,.18);color:#b26cf7;}
-.lane-btn.mid-active{border-color:#22d3ee;background:rgba(34,211,238,.18);color:#22d3ee;}
-.lane-btn.bot-active{border-color:#10d96e;background:rgba(16,217,110,.18);color:#10d96e;}
-.lane-btn.fallen{border-color:rgba(255,69,96,.5)!important;background:rgba(255,69,96,.08)!important;color:rgba(255,69,96,.6)!important;cursor:not-allowed;}
-
-.unit-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:3px 5px;cursor:pointer;transition:all .18s;text-align:center;min-width:52px;max-width:58px;position:relative;pointer-events:auto;flex-shrink:0;}
-.unit-btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--cyan);background:rgba(34,211,238,.07);}
-.unit-btn:disabled{opacity:.35;cursor:not-allowed;}
-.unit-btn .key-badge{position:absolute;top:2px;left:3px;font-size:.5rem;color:var(--text2);font-weight:900;}
-.unit-btn .uem{font-size:1rem;display:block;margin-bottom:1px;}
-.unit-btn .uname{font-size:.55rem;font-weight:700;display:block;}
-.unit-btn .ucost{font-size:.52rem;color:var(--gold);display:block;}
+.top-active{border-color:var(--purple)!important;background:rgba(178,108,247,.14)!important;color:var(--purple)!important;}
+.mid-active{border-color:var(--cyan)!important;background:rgba(34,211,238,.14)!important;color:var(--cyan)!important;}
+.bot-active{border-color:var(--green)!important;background:rgba(16,217,110,.14)!important;color:var(--green)!important;}
+.fallen{border-color:rgba(255,51,85,.35)!important;background:rgba(255,51,85,.07)!important;color:rgba(255,51,85,.5)!important;cursor:not-allowed!important;}
+.unit-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:3px 4px;cursor:pointer;transition:all .18s;text-align:center;min-width:52px;max-width:58px;position:relative;flex-shrink:0;pointer-events:auto;}
+.unit-btn:hover:not(:disabled){transform:translateY(-3px);border-color:var(--cyan);background:rgba(34,211,238,.07);box-shadow:0 0 14px rgba(34,211,238,.2);}
+.unit-btn:disabled{opacity:.3;cursor:not-allowed;}
+.unit-btn .key-badge{position:absolute;top:2px;left:3px;font-size:.46rem;color:var(--text3);font-weight:900;}
+.unit-btn .uem{font-size:.95rem;display:block;margin-bottom:1px;}.unit-btn .uname{font-size:.5rem;font-weight:700;display:block;}
+.unit-btn .ucost{font-size:.48rem;color:var(--gold);display:block;}.unit-btn .ulv{font-size:.44rem;color:var(--purple);display:block;}
 .unit-btn .ucool{height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:2px;overflow:hidden;}
 .unit-btn .ucool-fill{height:100%;background:var(--cyan);border-radius:2px;transition:width .1s linear;}
-
-.ability-row{display:flex;gap:4px;margin-left:auto;align-items:center;flex-shrink:0;}
-.abil-btn{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:3px 5px;cursor:pointer;text-align:center;min-width:48px;transition:all .2s;position:relative;pointer-events:auto;}
-.abil-btn:hover:not(.cooldown){border-color:var(--gold);background:rgba(255,215,0,.08);}
-.abil-btn.cooldown{opacity:.45;cursor:not-allowed;}
-.abil-btn .aem{font-size:.9rem;display:block;}
-.abil-btn .aname{font-size:.5rem;font-weight:700;color:var(--gold);}
-.abil-btn .acool{font-size:.5rem;color:var(--text2);}
+.ability-row{display:flex;gap:3px;margin-left:auto;align-items:center;flex-shrink:0;}
+.abil-btn{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:3px 4px;cursor:pointer;text-align:center;min-width:44px;transition:all .2s;position:relative;pointer-events:auto;}
+.abil-btn:hover:not(.cooldown){border-color:var(--gold);background:rgba(255,215,0,.07);}
+.abil-btn.cooldown{opacity:.35;cursor:not-allowed;}
+.abil-btn .aem{font-size:.85rem;display:block;}.abil-btn .aname{font-size:.46rem;font-weight:700;color:var(--gold);}
+.abil-btn .acool{font-size:.44rem;color:var(--text2);}
 .abil-cd-bar{position:absolute;bottom:0;left:0;height:3px;background:var(--gold);border-radius:0 0 8px 8px;transition:width .1s linear;}
-.snipe-hint{font-size:.58rem;color:var(--text2);line-height:1.45;padding-left:8px;border-left:2px solid rgba(255,255,255,.08);flex-shrink:0;}
-
-/* SCOPE */
-#scope{position:fixed;pointer-events:none;z-index:1000;display:none;filter:drop-shadow(0 0 6px rgba(255,69,96,0.5));transform:translate(-50%,-50%);left:-999px;top:-999px;}
-
-/* FLASH / OVERLAY */
-#hs-flash{position:fixed;inset:0;pointer-events:none;z-index:900;background:rgba(255,215,0,0);transition:background .05s;}
+.snipe-hint{font-size:.54rem;color:var(--text2);line-height:1.6;padding-left:7px;border-left:2px solid rgba(255,255,255,.07);flex-shrink:0;}
+#scope{position:fixed;pointer-events:none;z-index:1000;display:none;transform:translate(-50%,-50%);left:-999px;top:-999px;}
+#hs-flash{position:fixed;inset:0;pointer-events:none;z-index:900;background:rgba(255,215,0,0);transition:background .06s;}
 #night-overlay{position:fixed;inset:0;pointer-events:none;z-index:45;background:rgba(0,0,30,0);transition:background 3s;}
+#freeze-overlay{position:fixed;inset:0;pointer-events:none;z-index:44;background:rgba(80,160,255,0);transition:background .3s;}
 #fw{position:fixed;inset:0;pointer-events:none;z-index:490;overflow:hidden;}
 @keyframes fwp{to{transform:translate(var(--dx),var(--dy));opacity:0;}}
-
-/* KILL FEED */
-#killfeed{position:fixed;top:55px;right:14px;z-index:200;display:flex;flex-direction:column;gap:3px;pointer-events:none;}
-.kf-item{background:rgba(5,8,15,.9);border:1px solid rgba(255,69,96,.3);border-radius:7px;padding:3px 10px;font-size:.67rem;font-weight:700;animation:kfIn .2s,kfOut .3s 2.5s forwards;white-space:nowrap;}
-@keyframes kfIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
-@keyframes kfOut{to{opacity:0;transform:translateX(20px);}}
-
-/* TOAST */
-.twrap{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:600;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none;}
-.toast{padding:5px 13px;border-radius:9px;font-size:.75rem;font-weight:700;background:rgba(8,13,26,.96);border:1px solid rgba(255,255,255,.1);animation:ti .22s,to2 .22s 2.3s forwards;white-space:nowrap;}
-@keyframes ti{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
-@keyframes to2{to{opacity:0;transform:translateY(-8px);}}
-.hs-toast{padding:8px 20px;border-radius:12px;font-size:.88rem;font-weight:900;background:rgba(255,215,0,.15);border:2px solid rgba(255,215,0,.6);color:#ffd700;text-shadow:0 0 10px #ffd700;animation:ti .15s,to2 .15s 1.8s forwards;white-space:nowrap;font-family:'Black Han Sans',sans-serif;}
-
-/* BOSS ALERT */
-#boss-alert{position:fixed;inset:0;z-index:400;pointer-events:none;display:flex;align-items:center;justify-content:center;}
-.boss-alert-box{font-family:'Black Han Sans',sans-serif;font-size:clamp(2rem,6vw,4rem);color:#ff4560;text-shadow:0 0 40px #ff4560,0 0 80px #ff4560;animation:bossAlert 2.2s ease-out forwards;}
-.event-alert-box{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.5rem,4vw,3rem);color:#10d96e;text-shadow:0 0 30px #10d96e;animation:bossAlert 2.2s ease-out forwards;}
-.miniboss-alert-box{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.5rem,4vw,2.8rem);color:#ff8c42;text-shadow:0 0 30px #ff8c42;animation:bossAlert 2.2s ease-out forwards;}
-@keyframes bossAlert{0%{opacity:0;transform:scale(.5);}30%{opacity:1;transform:scale(1.1);}70%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.2);}}
-
-/* RESULT */
-#result{display:none;position:fixed;inset:0;z-index:500;background:rgba(5,8,15,.97);flex-direction:column;align-items:center;justify-content:center;background-image:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(255,215,0,.06) 0%,transparent 70%);pointer-events:auto;}
-.res-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(2.5rem,7vw,4rem);margin-bottom:6px;text-align:center;}
-.res-subtitle{font-size:.85rem;color:var(--text2);margin-bottom:22px;text-align:center;letter-spacing:2px;}
-.res-stats{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 24px;margin-bottom:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;min-width:360px;}
-.stat-item{text-align:center;}
-.stat-v{font-size:1.3rem;font-weight:900;color:var(--gold);}
-.stat-l{font-size:.68rem;color:var(--text2);margin-top:2px;}
-.grade-box{font-family:'Black Han Sans',sans-serif;font-size:3.5rem;margin-bottom:14px;text-shadow:0 0 30px currentColor;}
-.res-btn-row{display:flex;gap:10px;}
-.res-btn{padding:11px 32px;font-size:.88rem;font-weight:900;border:none;border-radius:36px;cursor:pointer;letter-spacing:2px;transition:all .2s;pointer-events:auto;}
-.res-btn.main{background:linear-gradient(135deg,var(--gold),#ff8c00);color:#1a0500;}
-.res-btn.main:hover{transform:scale(1.05);}
-.res-btn.menu{background:rgba(255,255,255,.06);color:var(--text2);border:1px solid rgba(255,255,255,.12);}
-.res-btn.menu:hover{border-color:var(--cyan);color:var(--cyan);}
-
-/* SHOP */
-#shop-modal{display:none;position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.75);align-items:center;justify-content:center;backdrop-filter:blur(6px);pointer-events:auto;}
-.shop-box{background:linear-gradient(160deg,#0d1830,#1a2545);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:20px;max-width:540px;width:94%;box-shadow:0 30px 80px rgba(0,0,0,.7);max-height:85vh;overflow-y:auto;pointer-events:auto;}
-.shop-title{font-family:'Black Han Sans',sans-serif;font-size:1.3rem;color:var(--gold);margin-bottom:4px;}
-.shop-sub{color:var(--text2);font-size:.74rem;margin-bottom:12px;}
-.shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
-.shop-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 6px;text-align:center;cursor:pointer;transition:all .2s;pointer-events:auto;}
-.shop-item:hover:not(.bought){border-color:var(--gold);background:rgba(255,215,0,.07);}
-.shop-item.bought{opacity:.5;cursor:not-allowed;}
-.shop-item .sem{font-size:1.4rem;display:block;margin-bottom:2px;}
-.shop-item .sname{font-size:.7rem;font-weight:700;display:block;margin-bottom:2px;}
-.shop-item .sdesc{font-size:.6rem;color:var(--text2);display:block;margin-bottom:3px;}
-.shop-item .scost{font-size:.68rem;color:var(--gold);font-weight:700;}
-.shop-close{padding:8px 24px;border-radius:30px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--text2);cursor:pointer;font-size:.85rem;font-weight:700;transition:all .2s;pointer-events:auto;}
+#killfeed{position:fixed;top:56px;right:10px;z-index:200;display:flex;flex-direction:column;gap:3px;pointer-events:none;}
+.kfi{background:rgba(3,6,14,.93);border:1px solid rgba(255,51,85,.28);border-radius:7px;padding:3px 9px;font-size:.62rem;font-weight:700;animation:kfIn .2s,kfOut .3s 2.5s forwards;white-space:nowrap;}
+@keyframes kfIn{from{opacity:0;transform:translateX(18px);}to{opacity:1;transform:none;}}
+@keyframes kfOut{to{opacity:0;transform:translateX(18px);}}
+#twrap{position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:600;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;}
+.toast{padding:5px 12px;border-radius:8px;font-size:.7rem;font-weight:700;background:rgba(5,10,22,.97);border:1px solid rgba(255,255,255,.1);animation:ti .22s,to2 .22s 2.4s forwards;white-space:nowrap;}
+@keyframes ti{from{opacity:0;transform:translateY(-7px);}to{opacity:1;transform:none;}}
+@keyframes to2{to{opacity:0;transform:translateY(-7px);}}
+.hs-toast{padding:9px 22px;border-radius:12px;font-size:.88rem;font-weight:900;background:rgba(255,215,0,.14);border:2px solid rgba(255,215,0,.55);color:var(--gold);text-shadow:0 0 12px var(--gold);animation:ti .15s,to2 .15s 1.9s forwards;font-family:'Black Han Sans',sans-serif;}
+#boss-alert{position:fixed;inset:0;z-index:400;pointer-events:none;display:none;align-items:center;justify-content:center;}
+.ba-box{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,5.5vw,3.6rem);text-align:center;animation:baAnim 2.4s ease-out forwards;}
+@keyframes baAnim{0%{opacity:0;transform:scale(.4);}28%{opacity:1;transform:scale(1.08);}65%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.15);}}
+#shop-modal{display:none;position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.82);align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+.shop-box{background:linear-gradient(160deg,#0a1530,#172045);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:22px;max-width:600px;width:95%;box-shadow:0 40px 100px rgba(0,0,0,.7);max-height:84vh;overflow-y:auto;}
+.shop-ttl{font-family:'Black Han Sans',sans-serif;font-size:1.3rem;color:var(--gold);margin-bottom:3px;}
+.shop-sub{color:var(--text2);font-size:.7rem;margin-bottom:8px;}
+.shop-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.shop-tab{padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--text2);font-size:.65rem;cursor:pointer;transition:all .18s;}
+.shop-tab.active{border-color:var(--gold);background:rgba(255,215,0,.1);color:var(--gold);}
+.shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;}
+.si{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:9px 7px;text-align:center;cursor:pointer;transition:all .2s;}
+.si:hover:not(.bought){border-color:var(--gold);background:rgba(255,215,0,.07);}.si.bought{opacity:.42;cursor:not-allowed;}
+.si .se{font-size:1.35rem;display:block;margin-bottom:2px;}.si .sn{font-size:.66rem;font-weight:700;display:block;margin-bottom:2px;}
+.si .sd{font-size:.56rem;color:var(--text2);display:block;margin-bottom:3px;}.si .sc{font-size:.62rem;color:var(--gold);font-weight:700;}
+.shop-close{padding:8px 24px;border-radius:30px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--text2);cursor:pointer;font-size:.82rem;font-weight:700;transition:all .2s;}
 .shop-close:hover{border-color:var(--red);color:var(--red);}
-
-/* LANE STATUS BAR (위에 표시) */
-#lane-status{position:fixed;top:48px;left:0;right:0;z-index:48;background:rgba(5,8,15,.92);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:2px 12px;gap:10px;height:26px;}
-.ls-lane{display:flex;align-items:center;gap:5px;flex:1;}
-.ls-name{font-size:.6rem;font-weight:900;min-width:22px;}
-.ls-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;position:relative;}
-.ls-ally-fill{position:absolute;left:0;top:0;height:100%;border-radius:3px 0 0 3px;transition:width .3s;}
-.ls-enemy-fill{position:absolute;right:0;top:0;height:100%;border-radius:0 3px 3px 0;transition:width .3s;}
-.ls-units{font-size:.55rem;color:var(--text2);min-width:28px;text-align:center;}
-.ls-sel{font-size:.6rem;font-weight:900;margin-left:3px;}
+#result{display:none;position:fixed;inset:0;z-index:500;background:rgba(3,6,14,.98);flex-direction:column;align-items:center;justify-content:center;}
+.res-grade{font-family:'Black Han Sans',sans-serif;font-size:4rem;margin-bottom:10px;text-shadow:0 0 30px currentColor;animation:gradePop .4s cubic-bezier(.2,.8,.3,1);}
+@keyframes gradePop{from{transform:scale(0) rotate(-15deg);}to{transform:scale(1) rotate(0);}}
+.res-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(2rem,5vw,3.2rem);margin-bottom:6px;}
+.res-sub{font-size:.8rem;color:var(--text2);margin-bottom:22px;letter-spacing:2px;}
+.res-grid{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px 22px;margin-bottom:20px;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;min-width:380px;}
+.ri{text-align:center;}.ri-v{font-size:1.2rem;font-weight:900;color:var(--gold);}.ri-l{font-size:.62rem;color:var(--text2);margin-top:2px;}
+.res-btns{display:flex;gap:10px;}
+.rbtn{padding:11px 32px;font-size:.85rem;font-weight:900;border:none;border-radius:36px;cursor:pointer;letter-spacing:2px;transition:all .2s;font-family:'Black Han Sans',sans-serif;}
+.rbtn.main{background:linear-gradient(135deg,var(--gold),#ff8c00);color:#1a0500;}.rbtn.main:hover{transform:scale(1.05);}
+.rbtn.menu{background:rgba(255,255,255,.06);color:var(--text2);border:1px solid rgba(255,255,255,.12);}.rbtn.menu:hover{border-color:var(--cyan);color:var(--cyan);}
+@keyframes comboFlash{0%{transform:scale(1.6);}100%{transform:scale(1);}}.combo-flash{animation:comboFlash .18s ease-out;}
+@keyframes resGlow{0%,100%{box-shadow:0 0 4px rgba(255,215,0,.25);}50%{box-shadow:0 0 14px rgba(255,215,0,.6);}}
 </style>
 </head>
 <body>
@@ -196,9 +169,77 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 
 <!-- DIFF SELECT -->
 <div id="diff-select">
+  <div class="ds-logo">⚔️</div>
+  <div class="ds-title">전장 저격전</div>
+  <div class="ds-sub">3-LANE BATTLEFIELD · SNIPER REMASTERED</div>
+  <div class="ds-ver">VERSION 6.0 · FULL REMASTER</div>
+  <div class="feat-row">
+    <div class="feat-pill">🗺️ <b>탑·미드·봇</b> 3라인</div>
+    <div class="feat-pill">🎯 <b>헤드샷+크리티컬</b></div>
+    <div class="feat-pill">💎 <b>유닛 업그레이드</b></div>
+    <div class="feat-pill">🛒 <b>탭별 상점</b> 24종</div>
+    <div class="feat-pill">💥 <b>스킬 6종</b></div>
+    <div class="feat-pill">👹 <b>보스 4패턴</b></div>
+    <div class="feat-pill">🌦️ <b>날씨 6종</b></div>
+    <div class="feat-pill">🔥 <b>극악: 즉시 러시</b></div>
+    <div class="feat-pill">⚡ <b>콤보 x15</b></div>
+    <div class="feat-pill">🛸 <b>드론폭격 Y키</b></div>
+    <div class="feat-pill">🔧 <b>X=긴급수리</b></div>
+    <div class="feat-pill">★ <b>별 3단계 강화</b></div>
+  </div>
+  <div style="font-size:.65rem;color:var(--text2);letter-spacing:4px;margin-bottom:12px;text-align:center;">— 난이도 선택 —</div>
+  <div class="diff-grid">
+    <div class="diff-card sel" data-d="0">
+      <div class="diff-em">🟢</div>
+      <div class="diff-name" style="color:#10d96e">초 보</div>
+      <div class="diff-desc">천천히 학습<br>3분 후 적 등장<br>풍부한 자원</div>
+      <div class="diff-tag" style="background:rgba(16,217,110,.12);color:#10d96e;border:1px solid rgba(16,217,110,.3);">추천 입문</div>
+      <div class="diff-meters">
+        <div class="diff-meter-row"><span>적 강도</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:18%;background:#10d96e"></div></div></div>
+        <div class="diff-meter-row"><span>자원량</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:90%;background:#10d96e"></div></div></div>
+        <div class="diff-meter-row"><span>AI 공격성</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:10%;background:#10d96e"></div></div></div>
+      </div>
+    </div>
+    <div class="diff-card" data-d="1">
+      <div class="diff-em">🔵</div>
+      <div class="diff-name" style="color:#4dabf7">중 급</div>
+      <div class="diff-desc">균형 잡힌 전투<br>라인 분산 침투<br>전략이 필요</div>
+      <div class="diff-tag" style="background:rgba(77,171,247,.12);color:#4dabf7;border:1px solid rgba(77,171,247,.3);">밸런스</div>
+      <div class="diff-meters">
+        <div class="diff-meter-row"><span>적 강도</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:48%;background:#4dabf7"></div></div></div>
+        <div class="diff-meter-row"><span>자원량</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:62%;background:#4dabf7"></div></div></div>
+        <div class="diff-meter-row"><span>AI 공격성</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:44%;background:#4dabf7"></div></div></div>
+      </div>
+    </div>
+    <div class="diff-card" data-d="2">
+      <div class="diff-em">🟠</div>
+      <div class="diff-name" style="color:#ff8c42">어 려 움</div>
+      <div class="diff-desc">약한 라인 집중<br>고급 유닛 편대<br>저격 필수</div>
+      <div class="diff-tag" style="background:rgba(255,140,66,.12);color:#ff8c42;border:1px solid rgba(255,140,66,.3);">고수용</div>
+      <div class="diff-meters">
+        <div class="diff-meter-row"><span>적 강도</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:74%;background:#ff8c42"></div></div></div>
+        <div class="diff-meter-row"><span>자원량</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:38%;background:#ff8c42"></div></div></div>
+        <div class="diff-meter-row"><span>AI 공격성</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:76%;background:#ff8c42"></div></div></div>
+      </div>
+    </div>
+    <div class="diff-card" data-d="3">
+      <div class="diff-em">🔴</div>
+      <div class="diff-name" style="color:#ff3355">극 악</div>
+      <div class="diff-desc">즉시 전 라인 러시<br>끊임없는 물량<br>1초도 방심 금지</div>
+      <div class="diff-tag" style="background:rgba(255,51,85,.12);color:#ff3355;border:1px solid rgba(255,51,85,.3);">🔥 지옥</div>
+      <div class="diff-meters">
+        <div class="diff-meter-row"><span>적 강도</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:100%;background:#ff3355"></div></div></div>
+        <div class="diff-meter-row"><span>자원량</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:20%;background:#ff3355"></div></div></div>
+        <div class="diff-meter-row"><span>AI 공격성</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:100%;background:#ff3355"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <button class="start-btn" id="start-btn">⚔️ 전투 시작</button>
+  <div class="keyhint">🎯 클릭=저격 | 1~9=유닛 | Q/E/R/W/T/Y=스킬 | F/G/H=라인<br>S=상점 | Z=업그레이드창 | X=긴급수리(💎80)</div>
+</div><div id="diff-select">
   <div class="ds-title">⚔️ 전장 저격전</div>
   <div class="ds-sub">3-LANE BATTLEFIELD · SNIPER EDITION</div>
-  <div class="ds-version">VERSION 5.0 · FIXED</div>
+  <div class="ds-version">VERSION 4.1 · ENHANCED</div>
   <div class="feature-row">
     <div class="feat-pill">🗺️ <span>탑·미드·바텀 3라인</span></div>
     <div class="feat-pill">🎯 <span>헤드샷 시스템</span></div>
@@ -231,7 +272,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     <div class="diff-card" data-d="3">
       <div class="diff-em">🔴</div>
       <div class="diff-name" style="color:#ff4560">극 악</div>
-      <div class="diff-desc">즉시 전 라인 러시<br>저렴한 유닛 폭격<br>웨이브1부터 지옥</div>
+      <div class="diff-desc">전 라인 동시 러시<br>최강 유닛 폭격<br>1초도 방심 금지</div>
       <div class="diff-tag" style="background:rgba(255,69,96,.15);color:#ff4560;border:1px solid rgba(255,69,96,.3);">🔥 지옥</div>
     </div>
   </div>
@@ -242,7 +283,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 <div id="game">
   <div class="hud">
     <div class="hud-left">
-      <span class="hud-title">⚔️ BATTLEFIELD v5</span>
+      <span class="hud-title">⚔️ BATTLEFIELD v4</span>
       <div class="base-hp-wrap">
         <span class="base-label">🏰 아군</span>
         <div class="hp-bar-outer"><div class="hp-fill ally" id="ally-hp-bar" style="width:100%"></div></div>
@@ -295,6 +336,12 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   </div>
 
   <canvas id="battlefield"></canvas>
+  <div id="minimap"><canvas id="mm-canvas" width="114" height="60"></canvas><div class="minimap-label">MINIMAP</div></div>
+  <div id="upgrade-panel">
+    <div class="up-title">🔧 유닛 업그레이드</div>
+    <div id="up-list"></div>
+    <div style="font-size:.52rem;color:var(--text3);margin-top:6px;">Z키로 닫기</div>
+  </div>
   <div id="minimap">
     <canvas id="minimap-canvas" width="112" height="58"></canvas>
     <div class="minimap-label">MINIMAP</div>
@@ -352,6 +399,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       <div class="abil-btn" id="abil2" onclick="useAbility(2)"><span class="aem">🛡️</span><span class="aname">방어막</span><span class="acool" id="acool2">R</span><div class="abil-cd-bar" id="abar2" style="width:100%"></div></div>
       <div class="abil-btn" id="abil3" onclick="useAbility(3)" style="border-color:rgba(255,50,50,.3);"><span class="aem">☢️</span><span class="aname">핵폭탄W</span><span class="acool" id="acool3">W</span><div class="abil-cd-bar" id="abar3" style="width:100%"></div></div>
       <div class="abil-btn" id="abil4" onclick="useAbility(4)" style="border-color:rgba(100,200,255,.3);"><span class="aem">⏸️</span><span class="aname">시간정지</span><span class="acool" id="acool4">T</span><div class="abil-cd-bar" id="abar4" style="width:100%"></div></div>
+      <div class="abil-btn" id="abil5" onclick="useAbility(5)" style="border-color:rgba(178,108,247,.3);pointer-events:auto;"><span class="aem">🛸</span><span class="aname">드론폭격</span><span class="acool" id="acool5">Y</span><div class="abil-cd-bar" id="abar5" style="width:100%"></div></div>
       <button class="unit-btn" onclick="openShop()" style="border-color:rgba(255,215,0,.3);min-width:44px;max-width:50px;">
         <span class="uem">🛒</span><span class="uname" style="color:var(--gold)">상점</span><span class="ucost">S키</span>
       </button>
@@ -383,7 +431,13 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 <div id="shop-modal">
   <div class="shop-box">
     <div class="shop-title">🛒 전술 상점</div>
-    <div class="shop-sub">💎 <span id="shop-res">0</span> — 전술 업그레이드</div>
+    <div class="shop-sub">💎 <span id="shop-res">0</span>
+      <div class="shop-tabs">
+        <div class="shop-tab active" onclick="shopTab(0)">⚔️ 전투</div>
+        <div class="shop-tab" onclick="shopTab(1)">🛡️ 방어</div>
+        <div class="shop-tab" onclick="shopTab(2)">🎯 저격</div>
+        <div class="shop-tab" onclick="shopTab(3)">💡 특수</div>
+      </div> — 전술 업그레이드</div>
     <div class="shop-grid" id="shop-grid"></div>
     <button class="shop-close" onclick="closeShop()">✕ 닫기</button>
   </div>
@@ -393,9 +447,13 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   <div class="grade-box" id="res-grade">S</div>
   <div class="res-title" id="res-title">🏆 승리!</div>
   <div class="res-subtitle" id="res-subtitle"></div>
-  <div class="res-stats">
-    <div class="stat-item"><div class="stat-v" id="st-score">0</div><div class="stat-l">최종 점수</div></div>
-    <div class="stat-item"><div class="stat-v" id="st-kills">0</div><div class="stat-l">처치 수</div></div>
+  <div class="res-grid">
+    <div class="ri"><div class="ri-v" id="st-score">0</div><div class="ri-l">최종점수</div></div>
+    <div class="ri"><div class="ri-v" id="st-kills">0</div><div class="ri-l">처치수</div></div>
+    <div class="ri"><div class="ri-v" id="st-wave">0</div><div class="ri-l">웨이브</div></div>
+    <div class="ri"><div class="ri-v" id="st-snipes">0</div><div class="ri-l">저격성공</div></div>
+    <div class="ri"><div class="ri-v" id="st-hs">0</div><div class="ri-l">헤드샷</div></div>
+  </div><div class="stat-l">처치 수</div></div>
     <div class="stat-item"><div class="stat-v" id="st-wave">0</div><div class="stat-l">최고 웨이브</div></div>
     <div class="stat-item"><div class="stat-v" id="st-snipes">0</div><div class="stat-l">저격 성공</div></div>
   </div>
@@ -423,15 +481,15 @@ const UNIT_DEFS = [
   {id:8,name:'닌자',    em:'🥷',cost:75, hp:110, atk:58, spd:2.6, range:46, ranged:false,pri:3,reward:28,trainTime:48,ninja:true},
   // ENEMY (9~18)
   {id:9, name:'적보병', em:'👹',cost:30, hp:110, atk:11, spd:0.9, range:44, ranged:false,pri:1,reward:11},
-  {id:10,name:'장교',   em:'🎖️',cost:80, hp:280, atk:34, spd:0.88,range:62, ranged:false,pri:3,reward:42},
-  {id:11,name:'로켓병', em:'🚀',cost:120,hp:175, atk:85, spd:0.55,range:210,ranged:true, pri:4,reward:58},
-  {id:12,name:'적탱크', em:'🛡️',cost:190,hp:900, atk:70, spd:0.42,range:92, ranged:false,pri:5,reward:105},
-  {id:13,name:'드론',   em:'🛸',cost:80, hp:85,  atk:32, spd:1.7, range:85, ranged:true, pri:3,reward:36},
+  {id:10,name:'장교',   em:'🎖️',cost:150,hp:320, atk:40, spd:0.85,range:62, ranged:false,pri:3,reward:60},
+  {id:11,name:'로켓병', em:'🚀',cost:180,hp:175, atk:85, spd:0.55,range:210,ranged:true, pri:4,reward:70},
+  {id:12,name:'적탱크', em:'🛡️',cost:280,hp:900, atk:70, spd:0.42,range:92, ranged:false,pri:5,reward:120},
+  {id:13,name:'드론',   em:'🛸',cost:120,hp:85,  atk:32, spd:1.7, range:85, ranged:true, pri:3,reward:42},
   {id:14,name:'보스',   em:'💀',cost:999,hp:4000,atk:100,spd:0.5, range:110,ranged:false,pri:5,reward:350,isBoss:true},
   {id:15,name:'미니보스',em:'😈',cost:600,hp:1600,atk:68, spd:0.72,range:92, ranged:false,pri:5,reward:180,isMiniBoss:true},
-  {id:16,name:'특공대', em:'💣',cost:75, hp:190, atk:75, spd:1.5, range:46, ranged:false,pri:4,reward:62,kamikaze:true},
-  {id:17,name:'포격수', em:'🎖️',cost:145,hp:210, atk:100,spd:0.5, range:230,ranged:true, pri:5,reward:76},
-  {id:18,name:'사이보그',em:'🦾',cost:165,hp:480, atk:80, spd:0.95,range:72, ranged:false,pri:5,reward:92},
+  {id:16,name:'특공대', em:'💣',cost:200,hp:190, atk:75, spd:1.5, range:46, ranged:false,pri:4,reward:78,kamikaze:true},
+  {id:17,name:'포격수', em:'🎖️',cost:220,hp:210, atk:100,spd:0.5, range:230,ranged:true, pri:5,reward:88},
+  {id:18,name:'사이보그',em:'🦾',cost:240,hp:480, atk:80, spd:0.95,range:72, ranged:false,pri:5,reward:105},
 ];
 
 // ═══════════════════════════════════
@@ -507,7 +565,7 @@ const DIFF_CONFIG = [
    botStrategyInterval:1300,rushProb:0.42,maxTowerHp:1400,
    botStartDelay:0,botActionless:false},
   {name:'극악',  col:'#ff4560',bgCol:'rgba(255,69,96,.15)', bdCol:'rgba(255,69,96,.35)',
-   resRate:0.98,botResRate:1.9,botPool:[9,9,10,13,16,11,12,17,18],botDelay:1100,startRes:125,laneHp:1200,bossWave:6,miniBossWave:3,
+   resRate:0.98,botResRate:1.9,botPool:[9,9,10,13,14,16,11,12,15,17,18],botDelay:1050,startRes:125,laneHp:1250,bossWave:6,miniBossWave:3,
    botStrategyInterval:750,rushProb:0.62,maxTowerHp:1200,
    botStartDelay:0,botActionless:false},
 ];
@@ -515,26 +573,38 @@ const DIFF_CONFIG = [
 // ═══════════════════════════════════
 //  SHOP
 // ═══════════════════════════════════
-const SHOP_ITEMS = [
-  {id:'u_hp',    em:'❤️',name:'기지 수리',   desc:'아군 기지 HP +400',        cost:120,fx:()=>{G.allyBase=Math.min(G.allyBase+400,G.maxBase);toast('❤️ 기지 수리 +400!','good');}},
-  {id:'u_thp',   em:'🏛️',name:'타워 수리',   desc:'전 라인 타워 HP +300',     cost:150,fx:()=>{for(let i=0;i<3;i++)G.allyTowerHp[i]=Math.min(G.allyTowerHp[i]+300,G.maxTowerHp);toast('🏛️ 전 라인 타워 수리!','good');}},
-  {id:'u_res',   em:'💎',name:'자원 증폭',   desc:'자원 수급 +30%',            cost:140,repeatable:true,fx:()=>{G.resBonus=(G.resBonus||1)*1.3;toast('💎 자원 증폭!','good');}},
-  {id:'u_atk',   em:'⚔️',name:'무기 강화',   desc:'아군 공격력 +30%',          cost:190,fx:()=>{G.dmgBonus=(G.dmgBonus||1)*1.3;G.units.filter(u=>u.side===0).forEach(u=>u.atk=Math.round(u.atk*1.3));toast('⚔️ 무기 강화!','gold');}},
-  {id:'u_snipe', em:'🎯',name:'저격 강화',   desc:'저격 피해 +60%',            cost:160,fx:()=>{G.snipeDmgBonus=(G.snipeDmgBonus||1)*1.6;toast('🎯 저격 강화!','gold');}},
-  {id:'u_shield',em:'🛡️',name:'장갑 강화',   desc:'아군 HP +30%',              cost:200,fx:()=>{G.units.filter(u=>u.side===0).forEach(u=>{u.maxHp=Math.round(u.maxHp*1.3);u.hp=Math.round(u.hp*1.3);});toast('🛡️ 장갑 강화!','good');}},
-  {id:'u_cd',    em:'⚡',name:'스킬 가속',   desc:'스킬 쿨다운 -30%',         cost:140,fx:()=>{G.cdBonus=(G.cdBonus||1)*0.7;toast('⚡ 스킬 가속!','gold');}},
-  {id:'u_pierce',em:'🔫',name:'관통탄',       desc:'저격 관통 +1 (최대4)',      cost:220,repeatable:true,fx:()=>{G.pierceCount=Math.min((G.pierceCount||1)+1,4);document.getElementById('pierce-val').textContent='×'+G.pierceCount;toast('🔫 관통 +1!','gold');}},
-  {id:'u_turret',em:'🔰',name:'기지 터렛',   desc:'아군 기지 자동 터렛 강화', cost:280,repeatable:true,fx:()=>{G.turretLevel=(G.turretLevel||0)+1;toast('🔰 터렛 Lv'+G.turretLevel+'!','good');}},
-  {id:'u_speed', em:'💨',name:'기동력',       desc:'아군 이동속도 +25%',        cost:170,fx:()=>{G.units.filter(u=>u.side===0).forEach(u=>u.spd*=1.25);G.spdBonus=(G.spdBonus||1)*1.25;toast('💨 기동력 강화!','good');}},
-  {id:'u_multi', em:'🌀',name:'산탄 저격',   desc:'저격 시 근처 3명 추가 피해',cost:250,fx:()=>{G.multiSnipe=true;toast('🌀 산탄 저격!','gold');}},
-  {id:'u_regen', em:'💚',name:'기지 재생',   desc:'기지 HP 초당 3씩 회복',    cost:180,fx:()=>{G.baseRegen=(G.baseRegen||0)+3;toast('💚 기지 재생!','good');}},
-  {id:'u_crit',  em:'💥',name:'크리티컬',    desc:'저격 치명타율 +25%',       cost:190,repeatable:true,fx:()=>{G.critBonus=(G.critBonus||0)+0.25;toast('💥 크리티컬 강화!','gold');}},
-  {id:'u_aoe',   em:'💫',name:'범위 저격',   desc:'저격 반경 30 범위 피해',   cost:260,fx:()=>{G.aoeSnipe=true;toast('💫 범위 저격!','gold');}},
-  {id:'u_tower_atk',em:'🏰',name:'타워 반격',   desc:'아군 타워 자동 공격 활성화', cost:300,fx:()=>{G.towerAttack=true;toast('🏰 타워 반격 활성화!','good');}},
-  {id:'u_spawn_boost',em:'⚡',name:'연속 생산',  desc:'유닛 생산 속도 +40%',       cost:220,fx:()=>{G.spawnBoost=(G.spawnBoost||1)*0.72;toast('⚡ 유닛 생산 가속!','good');}},
-  {id:'u_double_res',em:'💠',name:'자원 2배',    desc:'다음 15초 자원 2배',        cost:160,repeatable:true,fx:()=>{G.doubleResEnd=G.frame+900;toast('💠 자원 2배 발동!','gold');}},
-  {id:'u_massacre',em:'🔱',name:'학살 모드',    desc:'아군 공격력 일시 +100%',    cost:350,fx:()=>{G.massacreEnd=G.frame+480;toast('🔱 학살 모드 15초!','bad');}},
+let shopTabIdx_=0;
+const SHOP_TABS_=[
+  [{id:'atk',em:'⚔️',name:'무기 강화', desc:'아군 공격력 +35%',cost:190,fx(){G.dmgBonus=(G.dmgBonus||1)*1.35;G.units.filter(u=>u.side===0).forEach(u=>u.atk=Math.round(u.atk*1.35));toast('무기 강화!','gold');}},
+   {id:'spd',em:'💨',name:'기동력',    desc:'이동속도 +25%',   cost:165,fx(){G.spdBonus=(G.spdBonus||1)*1.25;G.units.filter(u=>u.side===0).forEach(u=>{u.spd*=1.25;u.baseSpd=(u.baseSpd||u.spd)*1.25;});toast('기동력!','good');}},
+   {id:'spwn',em:'⚡',name:'연속생산', desc:'생산속도 +40%',   cost:215,fx(){G.spawnBoost=(G.spawnBoost||1)*0.72;toast('생산 가속!','good');}},
+   {id:'emrg',em:'🆘',name:'긴급지원', desc:'전 라인 보병 소환',cost:90,rep:true,fx(){for(let i=0;i<3;i++){spawnUnit(0,0,i);spawnUnit(0,0,i);}toast('긴급 지원!','good');}},
+   {id:'mass',em:'🔱',name:'학살모드', desc:'공격력 10초 2배', cost:320,rep:true,fx(){G.massacreEnd=G.frame+600;toast('학살 모드!','bad');}},
+   {id:'dres',em:'💠',name:'자원2배',  desc:'15초 자원 2배',   cost:150,rep:true,fx(){G.doubleResEnd=G.frame+900;toast('자원 2배!','gold');}},
+  ],
+  [{id:'bhp',em:'❤️',name:'기지수리',  desc:'타워 HP +500',    cost:120,rep:true,fx(){for(let i=0;i<3;i++)G.allyTowerHp[i]=Math.min(G.allyTowerHp[i]+500,G.maxTowerHp);toast('기지 수리!','good');}},
+   {id:'shld',em:'🛡️',name:'장갑강화', desc:'아군 HP +35%',    cost:195,fx(){G.units.filter(u=>u.side===0).forEach(u=>{u.maxHp=Math.round(u.maxHp*1.35);u.hp=Math.round(u.hp*1.35);});toast('장갑 강화!','good');}},
+   {id:'tret',em:'🔰',name:'터렛강화', desc:'기지 터렛 강화',  cost:260,rep:true,fx(){G.turretLevel=(G.turretLevel||0)+1;toast('터렛 Lv'+G.turretLevel+'!','good');}},
+   {id:'tatk',em:'🏰',name:'타워반격', desc:'타워 자동공격',   cost:280,fx(){G.towerAttack=true;toast('타워 반격!','good');}},
+   {id:'rgn',em:'💚',name:'기지재생',  desc:'초당 5HP 회복',   cost:175,fx(){G.baseRegen=(G.baseRegen||0)+5;toast('기지 재생!','good');}},
+   {id:'emp',em:'🌐',name:'EMP폭탄',   desc:'전 적 4초 마비',  cost:185,rep:true,fx(){G.freezeEnd=G.frame+240;toast('EMP 마비!','wave');}},
+  ],
+  [{id:'sdmg',em:'🎯',name:'저격강화', desc:'저격 피해 +70%',  cost:155,rep:true,fx(){G.snipeDmgBonus=(G.snipeDmgBonus||1)*1.7;toast('저격 강화!','gold');}},
+   {id:'pier',em:'🔫',name:'관통탄',   desc:'관통 +1 (최대5)', cost:210,rep:true,fx(){G.pierceCount=Math.min((G.pierceCount||1)+1,5);document.getElementById('pierce-val').textContent='x'+G.pierceCount;toast('관통 +1!','gold');}},
+   {id:'crit',em:'💥',name:'크리티컬', desc:'치명타율 +25%',   cost:185,rep:true,fx(){G.critBonus=Math.min((G.critBonus||0)+.25,.9);toast('크리 +25%!','gold');}},
+   {id:'aoe',em:'💫',name:'범위저격',  desc:'반경40 범위 피해',cost:245,fx(){G.aoeSnipe=true;toast('범위 저격!','gold');}},
+   {id:'msni',em:'🌀',name:'산탄저격', desc:'근처 4명 추가피해',cost:240,fx(){G.multiSnipe=true;toast('산탄!','gold');}},
+   {id:'cdrd',em:'⚡',name:'스킬가속', desc:'쿨다운 -35%',     cost:135,fx(){G.cdBonus=(G.cdBonus||1)*1.5;toast('스킬 가속!','gold');}},
+  ],
+  [{id:'res',em:'💎',name:'자원증폭',  desc:'수급 +40%',       cost:130,rep:true,fx(){G.resBonus=(G.resBonus||1)*1.4;toast('자원 증폭!','good');}},
+   {id:'xunt',em:'🌟',name:'영웅소환', desc:'전 라인 전차 소환',cost:280,rep:true,fx(){for(let i=0;i<3;i++)spawnUnit(5,0,i);toast('영웅 전차!','gold');}},
+   {id:'spdup',em:'⌛',name:'적속도감', desc:'적 영구 속도 -20%',cost:350,fx(){G.units.filter(u=>u.side===1).forEach(u=>{u.spd*=.8;u.baseSpd=(u.baseSpd||u.spd)*.8;});toast('적 속도 -20%!','wave');}},
+   {id:'clk',em:'👻',name:'은신저격',  desc:'다음 5회 2배피해',cost:200,rep:true,fx(){G.cloakShots=(G.cloakShots||0)+5;toast('은신 저격 5회!','gold');}},
+   {id:'revv',em:'🔄',name:'아군부활', desc:'최근 사망 유닛 부활',cost:240,rep:true,fx(){if(!G.deadUnits||!G.deadUnits.length){toast('부활 없음','bad');return;}const du=G.deadUnits.pop();spawnUnit(du.defId||0,0,du.laneIdx||1);toast('부활!','good');}},
+   {id:'nk2',em:'⚛️',name:'이중핵폭탄',desc:'탑+봇 동시 핵공격',cost:500,rep:true,fx(){[0,2].forEach(li=>G.units.filter(u=>u.side===1&&u.hp>0&&!u.isBoss&&u.laneIdx===li).forEach(u=>killUnit(u,0)));toast('이중 핵폭탄!','bad');}},
+  ],
 ];
+const SHOP_ITEMS=SHOP_TABS_.flat();
 
 // ═══════════════════════════════════
 //  WEATHER
@@ -544,6 +614,7 @@ const WEATHERS = [
   {id:'rain', name:'🌧️ 폭우',  spdMult:0.82,visRange:0.85,rain:true, night:false},
   {id:'fog',  name:'🌫️ 안개',  spdMult:0.9, visRange:0.65,rain:false,night:false},
   {id:'night',name:'🌙 야간',  spdMult:1.0, visRange:0.72,rain:false,night:true},
+  {id:'wind', name:'🌬️ 강풍',   spdMult:1.15,visRange:.9,  rain:false,night:false},
   {id:'storm',name:'⛈️ 폭풍',  spdMult:0.72,visRange:0.75,rain:true, night:true},
 ];
 
@@ -625,7 +696,7 @@ function selectLane(li){
 // ═══════════════════════════════════
 function startGame(diff){
   const dc=DIFF_CONFIG[diff];
-  shopBoughtItems=new Set();
+  shopBoughtItems=new Set();upgLevels_=[0,0,0,0,0,0];G.deadUnits=[];
   rainDrops=Array.from({length:200},()=>({x:Math.random()*2000,y:Math.random()*600,spd:8+Math.random()*6,len:12+Math.random()*10}));
   if(animFrameId) cancelAnimationFrame(animFrameId);
 
@@ -693,9 +764,8 @@ function startGame(diff){
     if(diff===0){
       setTimeout(()=>toast('🟢 초보 모드: 적이 3분 뒤부터 공격합니다! 방어를 준비하세요!','good'),500);
     } else if(diff===3){
-      setTimeout(()=>toast('🔴 극악 모드: 즉시 전 라인 러시! 방심 금지!','bad'),500);
-      // ★ 극악 즉시 소규모 선발대 소환
-      setTimeout(()=>{if(G.running){for(let li=0;li<3;li++){spawnUnit(9,1,li);}}},1200);
+      setTimeout(()=>toast('🔴 극악: 즉시 전 라인 러시! 방심 금지!','bad'),500);
+      setTimeout(()=>{if(G.running){[0,1,2].forEach(li=>{spawnUnit(9,1,li);spawnUnit(9,1,li);});}},900);
     }
   }
   setTimeout(tryStart,60);
@@ -787,6 +857,7 @@ function update(dt){
     G.allyBase=Math.min(G.allyBase+60,G.maxBase);
     G.enemyBase=Math.min(G.enemyBase+60,G.maxBase);
     document.getElementById('wave-badge').textContent='웨이브 '+G.wave;
+  const wf2=document.getElementById('wave-fill');if(wf2)wf2.style.width=((G.waveTimer/1800)*100).toFixed(1)+'%';
     if(G.wave%dc.bossWave===0) spawnBossWave();
     else if(G.wave%dc.miniBossWave===0) spawnMiniBoss();
     else if(G.wave%8===0) spawnEventWave();
@@ -795,7 +866,7 @@ function update(dt){
 
   // Bot AI: 라인별 독립 타이머
   const botDelayFrames=dc.botDelay/16.667;
-  const botStartFrames=(dc.botStartDelay||0)*60;
+  const botStartFrames=(dc.botStartDelay||0)*60; // 초 → 프레임
   for(let li=0;li<3;li++){
     G.botTimers[li]+=dt;
     // 초보 모드: 일정 시간 지나야 봇 소환 시작
@@ -827,6 +898,7 @@ function update(dt){
   }
 
   // Ability cooldowns
+  while(G.abilities.length<6)G.abilities.push({id:G.abilities.length,cd:0,maxCd:600});
   G.abilities.forEach((a,i)=>{
     if(a.cd>0){
       a.cd=Math.max(0,a.cd-dt*(G.cdBonus||1));
@@ -836,7 +908,7 @@ function update(dt){
       const bar=document.getElementById('abar'+i);
       const lbl=document.getElementById('acool'+i);
       if(bar) bar.style.width=(pct*100)+'%';
-      if(lbl) lbl.textContent=a.cd>0?Math.ceil(a.cd/60)+'s':['Q','E','R','W','T'][i];
+      if(lbl) lbl.textContent=a.cd>0?Math.ceil(a.cd/60)+'s':['Q','E','R','W','T','Y'][i];
     }
   });
 
@@ -955,7 +1027,7 @@ function spawnUnit(defId,side,laneIdx){
   const startX=side===0?ALLY_BASE_X+BASE_W/2+10:ENEMY_BASE_X-BASE_W/2-10;
   // 유닛은 라인 Y에서 시작
   const gy=allyGateY(laneIdx);
-  const u={
+  const u={defId:defId,
     uid:G.nextId++,defId,side,laneIdx,
     x:startX, y:gy,
     targetY:laneY(laneIdx), // 라인 Y로 이동
@@ -1003,14 +1075,9 @@ function spawnAlly(defId){
 function botSpawn(laneIdx){
   const dc=DIFF_CONFIG[G.diff];
   const pool=dc.botPool.filter(id=>id!==14&&id!==15);
-  const botRes=Math.max(100, 60+G.wave*28*dc.botResRate); // ★ fix: ensure wave1 can afford units
+  const botRes=Math.max(110,55+G.wave*32*dc.botResRate);
   const affor=pool.map(id=>UNIT_DEFS[id]).filter(d=>d.cost<=botRes);
-  if(!affor.length){
-    // ★ 수정: 아무것도 못 사면 가장 싼 유닛 강제 소환
-    const cheapest=pool.map(id=>UNIT_DEFS[id]).sort((a,b)=>a.cost-b.cost)[0];
-    if(cheapest) spawnUnit(cheapest.id,1,laneIdx);
-    return;
-  }
+  if(!affor.length){const ch=pool.map(id=>UNIT_DEFS[id]).filter(d=>d).sort((a,b)=>a.cost-b.cost)[0];if(ch)spawnUnit(ch.id,1,laneIdx);return;}
   let chosen;
   if(G.diff>=2){affor.sort((a,b)=>b.cost-a.cost);chosen=affor[Math.floor(Math.random()*Math.min(2,affor.length))];}
   else{chosen=affor[Math.floor(Math.random()*affor.length)];}
@@ -1035,7 +1102,7 @@ function botSpawn(laneIdx){
 
   spawnUnit(chosen.id,1,laneIdx);
   // 극악 난이도: 집중 라인 추가 스폰
-  if(G.diff===3&&Math.random()<0.52){
+  if(G.diff===3&&Math.random()<0.45){
     setTimeout(()=>{if(G.running)spawnUnit(chosen.id,1,laneIdx);},400);
   }
 }
@@ -1279,6 +1346,8 @@ function updateUnits(dt,frozen){
 }
 
 function killUnit(unit,killerSide){
+  if(!G.deadUnits) G.deadUnits=[];
+  G.deadUnits.push({defId:unit.defId,laneIdx:unit.laneIdx,side:unit.side,name:unit.name});
   if(unit.hp<=0) return;
   G.score+=unit.reward*G.wave*(killerSide===0?G.combo:1);
   if(killerSide===0){G.kills++;addKillFeed(unit);}
@@ -1424,18 +1493,29 @@ function tryShoot(mx,my){
 //  ABILITIES / SHOP
 // ═══════════════════════════════════
 function useAbility(i){if(!G.running)return;const a=G.abilities[i];if(a.cd>0){toast('쿨다운 중!','bad');return;}ABILITY_DEFS[i].fx();a.cd=a.maxCd;}
-function openShop(){
+function shopTab(i){
+  shopTabIdx_=i;
+  document.querySelectorAll('.shop-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  renderShopGrid_();
+}
+function renderShopGrid_(){
   document.getElementById('shop-res').textContent=Math.floor(G.resources);
   const grid=document.getElementById('shop-grid');grid.innerHTML='';
-  SHOP_ITEMS.forEach(item=>{
-    const bought=shopBoughtItems.has(item.id)&&!item.repeatable;
-    const div=document.createElement('div');div.className='shop-item'+(bought?' bought':'');
-    div.innerHTML=`<span class="sem">${item.em}</span><span class="sname">${item.name}</span><span class="sdesc">${item.desc}</span><span class="scost">${bought?'구매완료':'💎'+item.cost}</span>`;
+  SHOP_TABS_[shopTabIdx_].forEach(item=>{
+    const bought=shopBoughtItems.has(item.id)&&!item.rep;
+    const div=document.createElement('div');div.className='si'+(bought?' bought':'');
+    div.innerHTML='<span class="se">'+item.em+'</span><span class="sn">'+item.name+'</span><span class="sd">'+item.desc+'</span><span class="sc">'+(bought?'구매완료':'💎'+item.cost)+'</span>';
     if(!bought)div.onclick=()=>buyShopItem(item);
     grid.appendChild(div);
   });
+}
+function openShop(){
+  shopTabIdx_=0;
+  document.querySelectorAll('.shop-tab').forEach((t,j)=>t.classList.toggle('active',j===0));
+  renderShopGrid_();
   document.getElementById('shop-modal').style.display='flex';
 }
+
 function closeShop(){document.getElementById('shop-modal').style.display='none';}
 function buyShopItem(item){
   if(G.resources<item.cost){toast('💎 자원 부족!','bad');return;}
@@ -1505,6 +1585,64 @@ function drawMinimap(){
 // ═══════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════
+
+// ══ UPGRADE SYSTEM ══
+const UPGRADES_=[
+  {id:0,name:'보병 강화', maxLv:3,cost:[50,100,180],bonus(lv,u){u.atk=Math.round(u.atk*[1.3,1.3,1.4][lv-1]);u.hp=Math.round(u.hp*[1.2,1.2,1.3][lv-1]);}},
+  {id:1,name:'돌격대 강화',maxLv:3,cost:[70,130,220],bonus(lv,u){u.atk=Math.round(u.atk*[1.3,1.35,1.4][lv-1]);u.spd*=[1.1,1.1,1.15][lv-1];u.baseSpd=u.spd;}},
+  {id:2,name:'중화기 강화',maxLv:3,cost:[100,180,280],bonus(lv,u){u.atk=Math.round(u.atk*[1.35,1.35,1.4][lv-1]);}},
+  {id:3,name:'의무병 강화',maxLv:2,cost:[80,160],bonus(lv,u){u.healMult=(u.healMult||1)*[1.4,1.5][lv-1];}},
+  {id:4,name:'전차 강화', maxLv:3,cost:[150,260,400],bonus(lv,u){u.hp=Math.round(u.hp*[1.3,1.3,1.35][lv-1]);u.maxHp=u.hp;u.atk=Math.round(u.atk*[1.2,1.25,1.3][lv-1]);}},
+  {id:5,name:'닌자 강화', maxLv:2,cost:[90,170],bonus(lv,u){u.atk=Math.round(u.atk*[1.4,1.5][lv-1]);u.spd*=[1.2,1.2][lv-1];u.baseSpd=u.spd;}},
+];
+let upgLevels_=[0,0,0,0,0,0];
+function toggleUpgradePanel(){
+  const p=document.getElementById('upgrade-panel');
+  p.style.display=p.style.display==='none'?'block':'none';
+  if(p.style.display==='block')renderUpgradePanel_();
+}
+function renderUpgradePanel_(){
+  const list=document.getElementById('up-list');if(!list)return;list.innerHTML='';
+  UPGRADES_.forEach(up=>{
+    const lv=upgLevels_[up.id]||0,maxed=lv>=up.maxLv,cost=maxed?0:up.cost[lv];
+    const row=document.createElement('div');row.className='up-row';
+    const pips=Array.from({length:up.maxLv},(_,i)=>'<div class="up-pip'+(i<lv?' on':'')+'"></div>').join('');
+    row.innerHTML='<span class="up-name">'+up.name+'</span><div class="up-bars">'+pips+'</div><button class="up-btn"'+(maxed||!G.running?' disabled':'')+' onclick="doUpgrade_('+up.id+')">'+(maxed?'MAX':'💎'+cost)+'</button>';
+    list.appendChild(row);
+  });
+}
+function doUpgrade_(id){
+  const up=UPGRADES_[id],lv=upgLevels_[id]||0;
+  if(lv>=up.maxLv){toast('최대 레벨!','bad');return;}
+  const cost=up.cost[lv];if(G.resources<cost){toast('자원 부족!','bad');return;}
+  G.resources-=cost;upgLevels_[id]=(upgLevels_[id]||0)+1;
+  G.units.filter(u=>u.side===0&&u.defId===id).forEach(u=>up.bonus(upgLevels_[id],u));
+  toast(up.name+' Lv'+upgLevels_[id]+'!','gold');
+  renderUpgradePanel_();updateHUD();updateButtons();
+}
+
+function drawMinimap_(){
+  const mc=document.getElementById('mm-canvas');if(!mc)return;
+  const mw=mc.width,mh=mc.height,mx=mc.getContext('2d');
+  mx.clearRect(0,0,mw,mh);mx.fillStyle='#040810';mx.fillRect(0,0,mw,mh);
+  [['.28','#b26cf7'],['.55','#22d3ee'],['.82','#10d96e']].forEach(([f,lc],li)=>{
+    const my=parseFloat(f)*mh;mx.strokeStyle=lc+'44';mx.lineWidth=1;mx.setLineDash([3,3]);
+    mx.beginPath();mx.moveTo(0,my);mx.lineTo(mw,my);mx.stroke();mx.setLineDash([]);
+  });
+  mx.fillStyle='#10d96e';mx.fillRect(0,mh*.5-10,4,20);
+  mx.fillStyle='#ff3355';mx.fillRect(mw-4,mh*.5-10,4,20);
+  G.units.filter(u=>u.hp>0&&u.reachedLane).forEach(u=>{
+    const ux=(u.x/W)*mw,uy=(laneY(u.laneIdx)/H)*mh;
+    const r=u.isBoss?3.5:u.isMiniBoss?2.8:1.8;
+    mx.fillStyle=u.isBoss?'#ffd700':u.side===0?'#22d3ee':'#ff3355';
+    mx.beginPath();mx.arc(ux,uy,r,0,Math.PI*2);mx.fill();
+  });
+  for(let li=0;li<3;li++){
+    const my=laneY(li)/H*mh,ap=Math.max(0,G.allyTowerHp[li]/G.maxTowerHp),ep=Math.max(0,G.enemyTowerHp[li]/G.maxTowerHp);
+    mx.fillStyle=ap>.5?'#10d96e':ap>.25?'#ffd700':'#ff3355';mx.fillRect(4,my-2,10*ap,4);
+    mx.fillStyle=ep>.5?'#ff3355':ep>.25?'#ffd700':'#10d96e';mx.fillRect(mw-14,my-2,10*ep,4);
+  }
+}
 function render(){
   if(W===0||H===0) return;
   ctx.clearRect(0,0,W,H);
@@ -1584,6 +1722,7 @@ function render(){
   });
 
   // Particles
+  drawMinimap_();
   G.particles.forEach(p=>{ctx.globalAlpha=Math.min(1,p.life/10);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
 
   // Vignette
@@ -1854,6 +1993,12 @@ function updateLaneStatus(){
 }
 
 function updateButtons(){
+  // 업그레이드 레벨 표시
+  for(let i=0;i<9;i++){
+    const lv=upgLevels_[i]||0;
+    const el=document.getElementById('ulv'+i);
+    if(el)el.textContent=lv>0?'★'.repeat(lv):'';
+  }
   const laneBlocked=G.allyTowerHp&&G.allyTowerHp[G.selectedLane]<=0;
   for(let i=0;i<9;i++){
     const btn=document.getElementById('btn'+i);
@@ -1900,6 +2045,7 @@ function endGame(win){
   document.getElementById('st-kills').textContent=G.kills;
   document.getElementById('st-wave').textContent=G.wave;
   document.getElementById('st-snipes').textContent=G.snipes;
+  const sths=document.getElementById('st-hs');if(sths)sths.textContent=G.headshots||0;
   if(win)spawnFireworks();
   try{window.parent.postMessage({type:'sniper_result',score:G.score,kills:G.kills,wave:G.wave,snipes:G.snipes,win:win?1:0,diff:G.diff},'*');}catch(e){}
 }
@@ -1959,6 +2105,12 @@ document.addEventListener('keydown',e=>{
   if(e.key.toLowerCase()==='f')selectLane(0);
   if(e.key.toLowerCase()==='g')selectLane(1);
   if(e.key.toLowerCase()==='h')selectLane(2);
+  if(e.key.toLowerCase()==='y')useAbility(5);
+  if(e.key.toLowerCase()==='z')toggleUpgradePanel();
+  if(e.key.toLowerCase()==='x'){
+    if(G.resources>=80){G.resources-=80;for(let i=0;i<3;i++)G.allyTowerHp[i]=Math.min(G.allyTowerHp[i]+120,G.maxTowerHp);toast('긴급수리!','good');}
+    else toast('자원부족!','bad');
+  }
 });
 
 let selDiff=0;
