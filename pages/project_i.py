@@ -192,7 +192,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     <div class="diff-card sel" data-d="0">
       <div class="diff-em">🟢</div>
       <div class="diff-name" style="color:#10d96e">초 보</div>
-      <div class="diff-desc">천천히 학습<br>3분 후 적 등장<br>풍부한 자원</div>
+      <div class="diff-desc">천천히 학습<br>20초 후 적 등장<br>풍부한 자원+힌트</div>
       <div class="diff-tag" style="background:rgba(16,217,110,.12);color:#10d96e;border:1px solid rgba(16,217,110,.3);">추천 입문</div>
       <div class="diff-meters">
         <div class="diff-meter-row"><span>적 강도</span><div class="diff-meter-bar"><div class="diff-meter-fill" style="width:18%;background:#10d96e"></div></div></div>
@@ -309,40 +309,40 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       <button class="lane-btn" id="lane-btn-2" onclick="selectLane(2)">⬇️ 봇</button>
     </div>
 
-    <button class="unit-btn" id="btn0" onclick="spawnAlly(0)">
+    <button class="unit-btn" id="btn0" onclick="spawnAlly(0)" title="근접·빠름·저렴">
       <span class="key-badge">1</span><span class="uem">🧍</span><span class="uname">보병</span><span class="ucost">💎30</span>
       <div class="ucool"><div class="ucool-fill" id="cool0" style="width:100%"></div></div>
     </button>
-    <button class="unit-btn" id="btn1" onclick="spawnAlly(1)">
+    <button class="unit-btn" id="btn1" onclick="spawnAlly(1)" title="돌격·고HP·속전속결">
       <span class="key-badge">2</span><span class="uem">🪖</span><span class="uname">돌격대</span><span class="ucost">💎60</span>
       <div class="ucool"><div class="ucool-fill" id="cool1" style="width:100%"></div></div>
     </button>
-    <button class="unit-btn" id="btn2" onclick="spawnAlly(2)">
+    <button class="unit-btn" id="btn2" onclick="spawnAlly(2)" title="원거리·고화력">
       <span class="key-badge">3</span><span class="uem">💪</span><span class="uname">중화기</span><span class="ucost">💎120</span>
       <div class="ucool"><div class="ucool-fill" id="cool2" style="width:100%"></div></div>
     </button>
-    <button class="unit-btn" id="btn3" onclick="spawnAlly(3)">
-      <span class="key-badge">4</span><span class="uem">🏥</span><span class="uname">의무병</span><span class="ucost">💎80</span>
+    <button class="unit-btn" id="btn3" onclick="spawnAlly(3)" title="힐러·아군 회복">
+      <span class="key-badge">4</span><span class="uem">🏥</span><span class="uname">의무병💚</span><span class="ucost">💎80</span>
       <div class="ucool"><div class="ucool-fill" id="cool3" style="width:100%"></div></div>
     </button>
-    <button class="unit-btn" id="btn4" onclick="spawnAlly(4)">
+    <button class="unit-btn" id="btn4" onclick="spawnAlly(4)" title="초장거리·고단발">
       <span class="key-badge">5</span><span class="uem">🎯</span><span class="uname">저격수</span><span class="ucost">💎100</span>
       <div class="ucool"><div class="ucool-fill" id="cool4" style="width:100%"></div></div>
     </button>
-    <button class="unit-btn" id="btn5" onclick="spawnAlly(5)">
-      <span class="key-badge">6</span><span class="uem">🛡️</span><span class="uname">전차</span><span class="ucost">💎200</span>
+    <button class="unit-btn" id="btn5" onclick="spawnAlly(5)" title="최고HP·탱커">
+      <span class="key-badge">6</span><span class="uem">🛡️</span><span class="uname">전차🔒</span><span class="ucost">💎200</span>
       <div class="ucool"><div class="ucool-fill" id="cool5" style="width:100%"></div></div>
     </button>
-    <button class="unit-btn" id="btn6" onclick="spawnAlly(6)">
-      <span class="key-badge">7</span><span class="uem">🤖</span><span class="uname">기갑</span><span class="ucost">💎160</span>
+    <button class="unit-btn" id="btn6" onclick="spawnAlly(6)" title="장갑·내구력">
+      <span class="key-badge">7</span><span class="uem">🤖</span><span class="uname">기갑🔩</span><span class="ucost">💎160</span>
       <div class="ucool"><div class="ucool-fill" id="cool6" style="width:100%"></div></div>
     </button>
-    <button class="unit-btn" id="btn7" onclick="spawnAlly(7)">
-      <span class="key-badge">8</span><span class="uem">🔥</span><span class="uname">화염</span><span class="ucost">💎90</span>
+    <button class="unit-btn" id="btn7" onclick="spawnAlly(7)" title="화염·범위공격">
+      <span class="key-badge">8</span><span class="uem">🔥</span><span class="uname">화염🔥</span><span class="ucost">💎90</span>
       <div class="ucool"><div class="ucool-fill" id="cool7" style="width:100%"></div></div>
     </button>
-    <button class="unit-btn" id="btn8" onclick="spawnAlly(8)">
-      <span class="key-badge">9</span><span class="uem">🥷</span><span class="uname">닌자</span><span class="ucost">💎75</span>
+    <button class="unit-btn" id="btn8" onclick="spawnAlly(8)" title="극속·암살·관통">
+      <span class="key-badge">9</span><span class="uem">🥷</span><span class="uname">닌자⚡</span><span class="ucost">💎75</span>
       <div class="ucool"><div class="ucool-fill" id="cool8" style="width:100%"></div></div>
     </button>
 
@@ -420,26 +420,26 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 //  UNIT DEFINITIONS
 // ═══════════════════════════════════
 const UNIT_DEFS = [
-  {id:0,name:'보병',    em:'🧍',cost:30, hp:130, atk:14, spd:1.0, range:48, ranged:false,pri:1,reward:14,trainTime:32},
-  {id:1,name:'돌격대',  em:'🪖',cost:60, hp:260, atk:30, spd:1.3, range:58, ranged:false,pri:2,reward:25,trainTime:52},
-  {id:2,name:'중화기',  em:'💪',cost:120,hp:420, atk:58, spd:0.65,range:82, ranged:true, pri:4,reward:50,trainTime:80},
-  {id:3,name:'의무병',  em:'🏥',cost:80, hp:160, atk:5,  spd:0.85,range:80, ranged:false,pri:1,reward:20,trainTime:62,healer:true},
-  {id:4,name:'저격수',  em:'🎯',cost:100,hp:100, atk:95, spd:0.58,range:260,ranged:true, pri:3,reward:36,trainTime:72},
-  {id:5,name:'전차',    em:'🛡️',cost:200,hp:900, atk:70, spd:0.45,range:100,ranged:false,pri:5,reward:100,trainTime:128},
-  {id:6,name:'기갑',    em:'🤖',cost:160,hp:580, atk:62, spd:0.56,range:85, ranged:false,pri:5,reward:78,trainTime:98,armored:true},
-  {id:7,name:'화염',    em:'🔥',cost:90, hp:180, atk:44, spd:0.78,range:62, ranged:false,pri:3,reward:32,trainTime:58,flamer:true},
-  {id:8,name:'닌자',    em:'🥷',cost:75, hp:110, atk:58, spd:2.6, range:46, ranged:false,pri:3,reward:28,trainTime:48,ninja:true},
+  {id:0,name:'보병',    em:'🧍',cost:30, hp:150, atk:18, spd:1.1, range:52, ranged:false,pri:1,reward:14,trainTime:28},
+  {id:1,name:'돌격대',  em:'🪖',cost:60, hp:300, atk:36, spd:1.4, range:62, ranged:false,pri:2,reward:25,trainTime:48},
+  {id:2,name:'중화기',  em:'💪',cost:120,hp:480, atk:68, spd:0.72,range:90, ranged:true, pri:4,reward:50,trainTime:75},
+  {id:3,name:'의무병',  em:'🏥',cost:80, hp:200, atk:8,  spd:0.95,range:85, ranged:false,pri:1,reward:20,trainTime:58,healer:true},
+  {id:4,name:'저격수',  em:'🎯',cost:100,hp:120, atk:110,spd:0.65,range:280,ranged:true, pri:3,reward:36,trainTime:68},
+  {id:5,name:'전차',    em:'🛡️',cost:200,hp:1100,atk:82, spd:0.58,range:110,ranged:false,pri:5,reward:100,trainTime:118},
+  {id:6,name:'기갑',    em:'🤖',cost:160,hp:680, atk:72, spd:0.65,range:90, ranged:false,pri:5,reward:78,trainTime:92,armored:true},
+  {id:7,name:'화염',    em:'🔥',cost:90, hp:210, atk:52, spd:0.88,range:68, ranged:false,pri:3,reward:32,trainTime:54,flamer:true},
+  {id:8,name:'닌자',    em:'🥷',cost:75, hp:130, atk:72, spd:2.0, range:50, ranged:false,pri:3,reward:28,trainTime:44,ninja:true},
   // ENEMY (9~18)
-  {id:9, name:'적보병', em:'👹',cost:30, hp:110, atk:11, spd:0.9, range:44, ranged:false,pri:1,reward:11},
-  {id:10,name:'장교',   em:'🎖️',cost:150,hp:320, atk:40, spd:0.85,range:62, ranged:false,pri:3,reward:60},
-  {id:11,name:'로켓병', em:'🚀',cost:180,hp:175, atk:85, spd:0.55,range:210,ranged:true, pri:4,reward:70},
-  {id:12,name:'적탱크', em:'🛡️',cost:280,hp:900, atk:70, spd:0.42,range:92, ranged:false,pri:5,reward:120},
-  {id:13,name:'드론',   em:'🛸',cost:120,hp:85,  atk:32, spd:1.7, range:85, ranged:true, pri:3,reward:42},
-  {id:14,name:'보스',   em:'💀',cost:999,hp:4000,atk:100,spd:0.5, range:110,ranged:false,pri:5,reward:350,isBoss:true},
-  {id:15,name:'미니보스',em:'😈',cost:600,hp:1600,atk:68, spd:0.72,range:92, ranged:false,pri:5,reward:180,isMiniBoss:true},
-  {id:16,name:'특공대', em:'💣',cost:200,hp:190, atk:75, spd:1.5, range:46, ranged:false,pri:4,reward:78,kamikaze:true},
-  {id:17,name:'포격수', em:'🎖️',cost:220,hp:210, atk:100,spd:0.5, range:230,ranged:true, pri:5,reward:88},
-  {id:18,name:'사이보그',em:'🦾',cost:240,hp:480, atk:80, spd:0.95,range:72, ranged:false,pri:5,reward:105},
+  {id:9, name:'적보병', em:'👹',cost:30, hp:120, atk:14, spd:1.0, range:48, ranged:false,pri:1,reward:12},
+  {id:10,name:'장교',   em:'🎖️',cost:150,hp:380, atk:45, spd:0.92,range:66, ranged:false,pri:3,reward:60},
+  {id:11,name:'로켓병', em:'🚀',cost:180,hp:200, atk:95, spd:0.62,range:220,ranged:true, pri:4,reward:70},
+  {id:12,name:'적탱크', em:'🛡️',cost:280,hp:1000,atk:78, spd:0.48,range:98, ranged:false,pri:5,reward:120},
+  {id:13,name:'드론',   em:'🛸',cost:120,hp:100, atk:38, spd:1.8, range:90, ranged:true, pri:3,reward:42},
+  {id:14,name:'보스',   em:'💀',cost:999,hp:4500,atk:110,spd:0.55,range:115,ranged:false,pri:5,reward:350,isBoss:true},
+  {id:15,name:'미니보스',em:'😈',cost:600,hp:1800,atk:75, spd:0.80,range:95, ranged:false,pri:5,reward:180,isMiniBoss:true},
+  {id:16,name:'특공대', em:'💣',cost:200,hp:220, atk:88, spd:1.65,range:50, ranged:false,pri:4,reward:78,kamikaze:true},
+  {id:17,name:'포격수', em:'🎖️',cost:220,hp:240, atk:112,spd:0.55,range:240,ranged:true, pri:5,reward:88},
+  {id:18,name:'사이보그',em:'🦾',cost:240,hp:560, atk:90, spd:1.05,range:78, ranged:false,pri:5,reward:105},
 ];
 
 // ═══════════════════════════════════
@@ -518,22 +518,22 @@ const ABILITY_DEFS = [
 // ═══════════════════════════════════
 const DIFF_CONFIG = [
   {name:'초보',  col:'#10d96e',bgCol:'rgba(16,217,110,.15)',bdCol:'rgba(16,217,110,.35)',
-   resRate:2.8,botResRate:0.38,botPool:[9,9,9],           botDelay:5500,startRes:250,laneHp:1800,bossWave:13,miniBossWave:7,
-   botStrategyInterval:3500,rushProb:0.08,maxTowerHp:1800,
-   botStartDelay:180, // 초보: 봇이 3분 후부터 소환 시작 (프레임)
-   botActionless:true}, // 초보: 봇이 처음엔 아무것도 안 함
+   resRate:3.2,botResRate:0.55,botPool:[9,9,9,10,10],    botDelay:4200,startRes:300,laneHp:2000,bossWave:14,miniBossWave:8,
+   botStrategyInterval:4000,rushProb:0.05,maxTowerHp:2000,
+   botStartDelay:20, // 초보: 봇이 약 20초 뒤부터 천천히 시작 (너무 길면 지루함)
+   botActionless:true,
+   tutorialSpawns:true}, // 초보: 소환 유도 튜토리얼
   {name:'중급',  col:'#4dabf7',bgCol:'rgba(77,171,247,.15)',bdCol:'rgba(77,171,247,.35)',
-   resRate:1.8,botResRate:0.85,botPool:[9,10,10,11],      botDelay:3400,startRes:180,laneHp:1600,bossWave:10,miniBossWave:5,
-   botStrategyInterval:2200,rushProb:0.22,maxTowerHp:1600,
-   botStartDelay:60, // 중급: 봇이 1분 후부터
-   botActionless:false},
+   resRate:1.9,botResRate:0.9,botPool:[9,9,10,10,11,13], botDelay:3000,startRes:190,laneHp:1700,bossWave:10,miniBossWave:5,
+   botStrategyInterval:2000,rushProb:0.20,maxTowerHp:1700,
+   botStartDelay:0,botActionless:false},
   {name:'어려움',col:'#ff8c42',bgCol:'rgba(255,140,66,.15)',bdCol:'rgba(255,140,66,.35)',
-   resRate:1.25,botResRate:1.35,botPool:[10,11,11,12,13], botDelay:2100,startRes:145,laneHp:1400,bossWave:8, miniBossWave:4,
-   botStrategyInterval:1300,rushProb:0.42,maxTowerHp:1400,
+   resRate:1.3,botResRate:1.4,botPool:[10,11,11,12,13,16,17],botDelay:1900,startRes:145,laneHp:1500,bossWave:8,miniBossWave:4,
+   botStrategyInterval:1200,rushProb:0.40,maxTowerHp:1500,
    botStartDelay:0,botActionless:false},
   {name:'극악',  col:'#ff4560',bgCol:'rgba(255,69,96,.15)', bdCol:'rgba(255,69,96,.35)',
-   resRate:0.98,botResRate:1.9,botPool:[9,9,10,13,14,16,11,12,15,17,18],botDelay:1050,startRes:125,laneHp:1250,bossWave:6,miniBossWave:3,
-   botStrategyInterval:750,rushProb:0.62,maxTowerHp:1200,
+   resRate:1.0,botResRate:2.0,botPool:[9,10,11,12,13,16,17,18,11,12],botDelay:950,startRes:125,laneHp:1300,bossWave:6,miniBossWave:3,
+   botStrategyInterval:700,rushProb:0.60,maxTowerHp:1250,
    botStartDelay:0,botActionless:false},
 ];
 
@@ -735,7 +735,11 @@ function startGame(diff){
 
     // 난이도별 시작 안내
     if(diff===0){
-      setTimeout(()=>toast('🟢 초보 모드: 적이 3분 뒤부터 공격합니다! 방어를 준비하세요!','good'),500);
+      setTimeout(()=>toast('🟢 초보 모드: 약 20초 후 적이 쳐들어옵니다!','good'),500);
+      setTimeout(()=>toast('💡 [1]보병 [2]돌격대를 소환해서 준비하세요!','good'),2000);
+      setTimeout(()=>toast('💡 미드(G) 라인 먼저 집중 수비 추천!','wave'),4500);
+      setTimeout(()=>toast('💡 [3]의무병으로 아군을 치료할 수 있어요!','good'),7500);
+      setTimeout(()=>toast('⚠️ 적 출현 임박! 라인 방어 준비!','bad'),18000);
     } else if(diff===3){
       setTimeout(()=>toast('🔴 극악: 즉시 전 라인 러시! 방심 금지!','bad'),500);
       setTimeout(()=>{if(G.running){[0,1,2].forEach(li=>{spawnUnit(9,1,li);spawnUnit(9,1,li);});}},900);
@@ -850,6 +854,11 @@ function update(dt){
       G.botTimers[li]=0;
       botSpawn(li);
     }
+  }
+
+  // 초보 튜토리얼: 30초마다 소환 힌트
+  if(G.diff===0&&G.frame>0&&G.frame%1800===0){
+    checkTutorialSpawn();
   }
 
   // Bot strategy update: 주기적으로 약한 라인으로 집중 전환
@@ -1048,24 +1057,42 @@ function spawnAlly(defId){
 function botSpawn(laneIdx){
   const dc=DIFF_CONFIG[G.diff];
   const pool=dc.botPool.filter(id=>id!==14&&id!==15);
-  const botRes=Math.max(110,55+G.wave*32*dc.botResRate);
-  const affor=pool.map(id=>UNIT_DEFS[id]).filter(d=>d.cost<=botRes);
-  if(!affor.length){const ch=pool.map(id=>UNIT_DEFS[id]).filter(d=>d).sort((a,b)=>a.cost-b.cost)[0];if(ch)spawnUnit(ch.id,1,laneIdx);return;}
+  // 웨이브가 높을수록 강한 유닛 선호
+  const waveBonus=Math.min(G.wave*28, 180);
+  const botRes=Math.max(120, 60+G.wave*35*dc.botResRate + waveBonus);
+  const affor=pool.map(id=>UNIT_DEFS[id]).filter(d=>d&&d.cost<=botRes);
+  if(!affor.length){
+    const ch=pool.map(id=>UNIT_DEFS[id]).filter(d=>d).sort((a,b)=>a.cost-b.cost)[0];
+    if(ch)spawnUnit(ch.id,1,laneIdx);
+    return;
+  }
+
   let chosen;
-  if(G.diff>=2){affor.sort((a,b)=>b.cost-a.cost);chosen=affor[Math.floor(Math.random()*Math.min(2,affor.length))];}
-  else{chosen=affor[Math.floor(Math.random()*affor.length)];}
+  if(G.diff===0){
+    // 초보: 초반은 약한 유닛, 웨이브 늘수록 가끔 강한 유닛 섞음
+    const sortedAsc=affor.slice().sort((a,b)=>a.cost-b.cost);
+    if(G.wave<=3) chosen=sortedAsc[0]; // 초반 보병만
+    else if(G.wave<=6) chosen=sortedAsc[Math.floor(Math.random()*Math.min(2,sortedAsc.length))];
+    else chosen=sortedAsc[Math.floor(Math.random()*sortedAsc.length)]; // 후반 랜덤
+  } else if(G.diff>=2){
+    // 어려움/극악: 강한 유닛 우선 (상위 2개 중 랜덤)
+    affor.sort((a,b)=>b.cost-a.cost);
+    chosen=affor[Math.floor(Math.random()*Math.min(2,affor.length))];
+  } else {
+    // 중급: 완전 랜덤이지만 가끔 강한 유닛
+    if(Math.random()<0.35){
+      affor.sort((a,b)=>b.cost-a.cost);
+      chosen=affor[0];
+    } else {
+      chosen=affor[Math.floor(Math.random()*affor.length)];
+    }
+  }
 
   // ★ 라인 완전 함락 처리 ★
-  // 아군 타워가 파괴된 라인 = 양쪽 모두 해당 라인에서 소환 불가
-  // 적 봇은 살아있는 다른 라인으로 자동 전환
   const allyHp=G.allyTowerHp[laneIdx];
-  const enemyHp=G.enemyTowerHp[laneIdx];
-
   if(allyHp<=0){
-    // 아군 라인 함락됨 → 적 봇은 다른 살아있는 아군 라인으로 공격
     const activeLanes=[0,1,2].filter(li=>G.allyTowerHp[li]>0&&G.enemyTowerHp[li]>0);
     if(activeLanes.length===0){
-      // 모든 라인 함락 → 아무거나 살아있는 라인
       const anyAlive=[0,1,2].filter(li=>G.allyTowerHp[li]>0);
       if(anyAlive.length>0) laneIdx=anyAlive[Math.floor(Math.random()*anyAlive.length)];
     } else {
@@ -1074,9 +1101,14 @@ function botSpawn(laneIdx){
   }
 
   spawnUnit(chosen.id,1,laneIdx);
-  // 극악 난이도: 집중 라인 추가 스폰
+
+  // 어려움: 집중 라인에 가끔 동반 소환
+  if(G.diff===2&&li===G.botFocusLane&&Math.random()<0.30){
+    setTimeout(()=>{if(G.running)spawnUnit(affor[Math.floor(Math.random()*affor.length)].id,1,laneIdx);},500);
+  }
+  // 극악: 집중 라인 추가 스폰
   if(G.diff===3&&Math.random()<0.45){
-    setTimeout(()=>{if(G.running)spawnUnit(chosen.id,1,laneIdx);},400);
+    setTimeout(()=>{if(G.running)spawnUnit(chosen.id,1,laneIdx);},380);
   }
 }
 
@@ -1105,13 +1137,48 @@ function spawnMiniBoss(){
 function spawnEventWave(){
   const ba=document.getElementById('boss-alert');
   ba.style.display='flex';
-  ba.innerHTML='<div class="event-alert-box">🎖️ 전 라인 지원대!</div>';
-  setTimeout(()=>{ba.style.display='none';},2000);
-  for(let li=0;li<3;li++){
-    setTimeout(()=>{if(G.running){spawnUnit(0,0,li);spawnUnit(5,0,li);}},li*250);
+  // 랜덤 이벤트 타입
+  const evType=Math.floor(Math.random()*3);
+  if(evType===0){
+    ba.innerHTML='<div class="event-alert-box">🎖️ 전 라인 지원대!</div>';
+    setTimeout(()=>{ba.style.display='none';},2000);
+    for(let li=0;li<3;li++){
+      setTimeout(()=>{if(G.running){spawnUnit(0,0,li);spawnUnit(5,0,li);}},li*250);
+    }
+    G.resources=Math.min(G.resources+120,900);
+    toast('🎖️ 전 라인 지원 + 💎120!','good');
+  } else if(evType===1){
+    ba.innerHTML='<div class="event-alert-box">⚡ 전격 증원!</div>';
+    setTimeout(()=>{ba.style.display='none';},2000);
+    for(let li=0;li<3;li++){
+      setTimeout(()=>{if(G.running){spawnUnit(1,0,li);spawnUnit(8,0,li);}},li*180);
+    }
+    // 돌격대+닌자 전격 부스트
+    G.units.filter(u=>u.side===0).forEach(u=>{if(!u._blitzed){u.spd*=1.5;u._blitzed=true;}});
+    G.blitzEnd=G.frame+360;
+    toast('⚡ 전격 증원! 전 아군 가속!','gold');
+  } else {
+    ba.innerHTML='<div class="event-alert-box">💰 보급 지원!</div>';
+    setTimeout(()=>{ba.style.display='none';},2000);
+    const bonus=150+G.wave*10;
+    G.resources=Math.min(G.resources+bonus,900);
+    // 전 아군 소량 힐
+    G.units.filter(u=>u.side===0&&u.hp>0).forEach(u=>{u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);});
+    toast('💰 보급! 💎'+bonus+' + 전 아군 25% 회복!','gold');
   }
-  G.resources=Math.min(G.resources+120,900);
-  toast('🎖️ 전 라인 지원 + 💎120!','good');
+}
+
+// 초보 모드 자동 소환 힌트 (처음 5웨이브 동안 유닛이 없으면 소환 유도)
+function checkTutorialSpawn(){
+  if(G.diff!==0||G.wave>5) return;
+  const allyCount=G.units.filter(u=>u.side===0&&u.hp>0).length;
+  if(allyCount===0&&G.resources>=30){
+    toast('💡 유닛이 없어요! [1]보병 소환하세요!','wave');
+    // 자원 충분하면 자동으로 보병 한 명 소환 (튜토리얼)
+    if(G.resources>=60&&G.wave<=2){
+      setTimeout(()=>{if(G.running&&G.units.filter(u=>u.side===0).length===0){spawnUnit(0,0,1);toast('🤖 자동소환: 보병 미드 배치!','good');}},1500);
+    }
+  }
 }
 
 // ═══════════════════════════════════
@@ -1143,10 +1210,20 @@ function updateUnits(dt,frozen){
     }
 
     // 2단계: 라인을 따라 이동 (X축 이동)
-    // 치유사: 같은 라인 아군 회복
+    // 치유사: 같은 라인 아군 회복 + 전체 가장 낮은 HP 아군도 치료
     if(u.healer){
-      const hurt=G.units.filter(o=>o.side===u.side&&o.laneIdx===u.laneIdx&&o.hp>0&&o.hp<o.maxHp&&Math.abs(u.x-o.x)<100);
-      if(hurt.length>0){hurt[0].hp=Math.min(hurt[0].maxHp,hurt[0].hp+0.6*dt);return;}
+      const healRange=130;
+      const hurt=G.units.filter(o=>o.side===u.side&&o.hp>0&&o.hp<o.maxHp&&Math.abs(u.x-o.x)<healRange);
+      if(hurt.length>0){
+        hurt.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)); // 가장 낮은 hp%부터
+        const target=hurt[0];
+        const healAmt=1.4*dt;
+        target.hp=Math.min(target.maxHp,target.hp+healAmt);
+        // 힐 이펙트
+        if(Math.random()<0.08) G.particles.push({x:target.x,y:target.y-18,vx:(Math.random()-.5),vy:-1.2,col:'#10d96e',life:18,size:3});
+        // 의무병은 적 공격 안하고 힐에 집중
+        return;
+      }
     }
 
     if(u.kamikaze&&u.side===1){
@@ -1193,12 +1270,26 @@ function updateUnits(dt,frozen){
       if(u.cooldown<=0){
         u.cooldown=26-G.diff*2;
         if(u.flamer){
+          // 화염: 범위 내 모든 적 피해 + 도트 효과
           const inRange=G.units.filter(o=>o.side!==u.side&&o.hp>0&&o.laneIdx===u.laneIdx&&Math.abs(u.x-o.x)<u.range);
           inRange.forEach(e=>{
-            const fd=u.atk*0.55; e.hp-=fd;
+            const fd=u.atk*0.62; e.hp-=fd;
+            // 화염 도트 (불꽃 파티클)
+            if(Math.random()<0.4) G.particles.push({x:e.x+(Math.random()-.5)*16,y:e.y-10,vx:(Math.random()-.5)*1.5,vy:-1.5-Math.random(),col:'#ff8c42',life:14,size:3+Math.random()*3});
             spawnHit(e.x,e.y,'#ff8c42',Math.round(fd));
             if(e.hp<=0)killUnit(e,u.side===0?0:1);
           });
+        } else if(u.ninja&&u.side===0){
+          // 닌자: 암살 (적 HP 15% 미만이면 즉사 확률 20%)
+          const ninjaTarget=effectiveTarget;
+          if(ninjaTarget&&ninjaTarget.hp/ninjaTarget.maxHp<0.15&&Math.random()<0.20){
+            killUnit(ninjaTarget,0);
+            toast('🥷 닌자 암살!','gold');
+          } else {
+            ninjaTarget.hp-=u.atk;
+            spawnHit(ninjaTarget.x,ninjaTarget.y,'#b26cf7',u.atk);
+            if(ninjaTarget.hp<=0)killUnit(ninjaTarget,u.side===0?0:1);
+          }
         } else if(u.ranged){
           G.bullets.push({x:u.x,y:u.y-18,tx:effectiveTarget.x,ty:effectiveTarget.y-18,col:u.side===0?'#22d3ee':'#ff4560',dmg:u.atk,targetId:effectiveTarget.uid,fromSide:u.side,spd:8,pierce:0,maxPierce:0});
         } else {
