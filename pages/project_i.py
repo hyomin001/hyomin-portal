@@ -236,50 +236,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   </div>
   <button class="start-btn" id="start-btn">⚔️ 전투 시작</button>
   <div class="keyhint">🎯 클릭=저격 | 1~9=유닛 | Q/E/R/W/T/Y=스킬 | F/G/H=라인<br>S=상점 | Z=업그레이드창 | X=긴급수리(💎80)</div>
-</div><div id="diff-select">
-  <div class="ds-title">⚔️ 전장 저격전</div>
-  <div class="ds-sub">3-LANE BATTLEFIELD · SNIPER EDITION</div>
-  <div class="ds-version">VERSION 4.1 · ENHANCED</div>
-  <div class="feature-row">
-    <div class="feat-pill">🗺️ <span>탑·미드·바텀 3라인</span></div>
-    <div class="feat-pill">🎯 <span>헤드샷 시스템</span></div>
-    <div class="feat-pill">🛡️ <span>라인별 타워 HP</span></div>
-    <div class="feat-pill">💥 <span>스킬 5종</span></div>
-    <div class="feat-pill">👹 <span>보스+미니보스</span></div>
-    <div class="feat-pill">🌦️ <span>날씨 시스템</span></div>
-    <div class="feat-pill">🛒 <span>전술 상점</span></div>
-    <div class="feat-pill">🤖 <span>스마트 봇 AI</span></div>
-  </div>
-  <div class="diff-grid">
-    <div class="diff-card sel" data-d="0">
-      <div class="diff-em">🟢</div>
-      <div class="diff-name" style="color:#10d96e">초 보</div>
-      <div class="diff-desc">느린 적 AI<br>풍부한 자원<br>라인 학습용</div>
-      <div class="diff-tag" style="background:rgba(16,217,110,.15);color:#10d96e;border:1px solid rgba(16,217,110,.3);">추천 입문</div>
-    </div>
-    <div class="diff-card" data-d="1">
-      <div class="diff-em">🔵</div>
-      <div class="diff-name" style="color:#4dabf7">중 급</div>
-      <div class="diff-desc">균형 잡힌 전투<br>라인 분산 침투<br>저격 집중 필요</div>
-      <div class="diff-tag" style="background:rgba(77,171,247,.15);color:#4dabf7;border:1px solid rgba(77,171,247,.3);">밸런스</div>
-    </div>
-    <div class="diff-card" data-d="2">
-      <div class="diff-em">🟠</div>
-      <div class="diff-name" style="color:#ff8c42">어 려 움</div>
-      <div class="diff-desc">스마트 AI<br>약한 라인 집중<br>빠른 강유닛</div>
-      <div class="diff-tag" style="background:rgba(255,140,66,.15);color:#ff8c42;border:1px solid rgba(255,140,66,.3);">고수용</div>
-    </div>
-    <div class="diff-card" data-d="3">
-      <div class="diff-em">🔴</div>
-      <div class="diff-name" style="color:#ff4560">극 악</div>
-      <div class="diff-desc">전 라인 동시 러시<br>최강 유닛 폭격<br>1초도 방심 금지</div>
-      <div class="diff-tag" style="background:rgba(255,69,96,.15);color:#ff4560;border:1px solid rgba(255,69,96,.3);">🔥 지옥</div>
-    </div>
-  </div>
-  <button class="start-btn" id="start-btn">⚔️ 전투 시작</button>
-</div>
-
-<!-- GAME -->
+</div><!-- GAME -->
 <div id="game">
   <div class="hud">
     <div class="hud-left">
@@ -444,22 +401,19 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 </div>
 <div class="twrap" id="twrap"></div>
 <div id="result">
-  <div class="grade-box" id="res-grade">S</div>
+  <div class="res-grade" id="res-grade">S</div>
   <div class="res-title" id="res-title">🏆 승리!</div>
-  <div class="res-subtitle" id="res-subtitle"></div>
+  <div class="res-sub" id="res-subtitle"></div>
   <div class="res-grid">
     <div class="ri"><div class="ri-v" id="st-score">0</div><div class="ri-l">최종점수</div></div>
     <div class="ri"><div class="ri-v" id="st-kills">0</div><div class="ri-l">처치수</div></div>
     <div class="ri"><div class="ri-v" id="st-wave">0</div><div class="ri-l">웨이브</div></div>
     <div class="ri"><div class="ri-v" id="st-snipes">0</div><div class="ri-l">저격성공</div></div>
     <div class="ri"><div class="ri-v" id="st-hs">0</div><div class="ri-l">헤드샷</div></div>
-  </div><div class="stat-l">처치 수</div></div>
-    <div class="stat-item"><div class="stat-v" id="st-wave">0</div><div class="stat-l">최고 웨이브</div></div>
-    <div class="stat-item"><div class="stat-v" id="st-snipes">0</div><div class="stat-l">저격 성공</div></div>
   </div>
-  <div class="res-btn-row">
-    <button class="res-btn main" onclick="location.reload()">🔄 다시하기</button>
-    <button class="res-btn menu" onclick="goMenu()">📋 메뉴</button>
+  <div class="res-btns">
+    <button class="rbtn main" onclick="location.reload()">🔄 다시하기</button>
+    <button class="rbtn menu" onclick="goMenu()">📋 메뉴</button>
   </div>
 </div>
 
@@ -543,7 +497,24 @@ const ABILITY_DEFS = [
      },700);
    }},
   {id:4,name:'시간정지',em:'⏸️',key:'t',cd:1200,
-   fx:()=>{G.freezeEnd=G.frame+300;toast('⏸️ 전 라인 시간정지! 5초!','wave');}},
+   fx:()=>{
+     G.freezeEnd=G.frame+300;
+     const fo=document.getElementById('freeze-overlay');
+     if(fo){fo.style.background='rgba(80,160,255,0.15)';setTimeout(()=>{if(fo)fo.style.background='rgba(80,160,255,0)';},5000);}
+     toast('⏸️ 전 라인 시간정지! 5초!','wave');
+   }},
+  {id:5,name:'드론폭격',em:'🛸',key:'y',cd:900,
+   fx:()=>{
+     for(let li=0;li<3;li++){
+       const numBombs=5+G.diff*2;
+       for(let i=0;i<numBombs;i++) setTimeout(()=>{
+         if(!G.running)return;
+         const x=ALLY_BASE_X+80+Math.random()*(W-200);
+         airstrikeBomb(x,laneY(li),li);
+       },li*200+i*120);
+     }
+     toast('🛸 드론폭격! 전 라인 폭격!','gold');
+   }},
 ];
 
 // ═══════════════════════════════════
@@ -715,7 +686,7 @@ function startGame(diff){
     abilities:[
       {id:0,cd:0,maxCd:ABILITY_DEFS[0].cd},{id:1,cd:0,maxCd:ABILITY_DEFS[1].cd},
       {id:2,cd:0,maxCd:ABILITY_DEFS[2].cd},{id:3,cd:0,maxCd:ABILITY_DEFS[3].cd},
-      {id:4,cd:0,maxCd:ABILITY_DEFS[4].cd},
+      {id:4,cd:0,maxCd:ABILITY_DEFS[4].cd},{id:5,cd:0,maxCd:ABILITY_DEFS[5].cd},
     ],
     trainCooldowns:[0,0,0,0,0,0,0,0,0],
     blitzEnd:-1,shieldEnd:-1,freezeEnd:-1,
@@ -1450,7 +1421,7 @@ function tryShoot(mx,my){
 
     G.snipes++;
     G.score+=Math.round(95*G.wave*G.combo*(isHeadshot?2:1));
-    G.combo=Math.min(G.combo+1,12);G.comboTimer=190;
+    G.combo=Math.min(G.combo+1,15);G.comboTimer=190;
     const cv=document.getElementById('combo-val');
     if(cv){cv.textContent='×'+G.combo;cv.classList.remove('combo-flash');void cv.offsetWidth;cv.classList.add('combo-flash');}
 
@@ -2014,7 +1985,7 @@ function updateButtons(){
 // ═══════════════════════════════════
 function addKillFeed(unit){
   const kf=document.getElementById('killfeed');
-  const d=document.createElement('div');d.className='kf-item';
+  const d=document.createElement('div');d.className='kfi';
   d.textContent='['+LANE_NAMES[unit.laneIdx]+'] 🎯 '+unit.em+' '+unit.name+(unit.isBoss?' 🏆':unit.isMiniBoss?' 👑':'');
   d.style.borderColor=unit.isBoss?'rgba(255,215,0,.6)':unit.isMiniBoss?'rgba(255,140,66,.5)':'rgba(255,69,96,.3)';
   d.style.color=unit.isBoss?'#ffd700':unit.isMiniBoss?'#ff8c42':'var(--text)';
