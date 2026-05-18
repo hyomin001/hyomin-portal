@@ -1174,18 +1174,6 @@ if st.session_state.page_view == "portal":
 </div>
     """, unsafe_allow_html=True)
 
-    # ── 실시간 스크롤 태그 배너 ──
-    tags_html = ""
-    tags = [
-        ("🔥 HOT", "hot"),  ("🚀 시즌 2 진행 중", "live"), ("🤖 AI 모의고사", "new"),
-        ("🏆 랭킹 1위 쟁탈전", "gold"), ("⚔️ 던전 런 REBORN", "hot"), ("🎲 인베스트 마블", "gold"),
-        ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"), ("🏅 시즌 1 명예의 전당", "gold"),
-        ("📈 주식·코인·부동산", "live"), ("🎰 카지노 & 게임", "hot"), ("🏎️ 하이퍼카 레이싱", "new"),
-    ]
-    for label, cls in tags * 2:
-        tags_html += f"<span class='scroll-tag {cls}'>{label}</span>"
-    st.markdown(f"<div class='banner-scroll-wrap'><div class='banner-scroll-track'>{tags_html}</div></div>", unsafe_allow_html=True)
-
     # ── 실시간 통계 위젯 ──
     try:
         _prices = {k: v['price'] for k, v in market.get('stock_data', {}).items()}
