@@ -18,6 +18,9 @@ def render(market, nw):
     # 🏆 탭 1: 순위표 로직
     # ==========================================
     with tab_rank:
+        # ── 랭킹 공유 버튼 ──────────────────────────────────────
+        PORTAL_URL = "https://hyomin-app-2gv2xbsxqhrftspwcpgqqw.streamlit.app"  # ← 실제 URL로 변경
+
         users_all = load_db(USERS_FILE, {})
         rank_data = []
         car_tier_map = {"0": "🚙 컴팩트 박스카", "1": "🚗 스포츠 세단", "2": "🏎️ V12 하이퍼카", "3": "🚀 은하철도"}
@@ -64,6 +67,57 @@ def render(market, nw):
             })
             
         rank_data.sort(key=lambda x: x['nw'], reverse=True)
+
+        # ── 내 랭킹 공유 버튼 ──────────────────────────────────
+        _my_uid = st.session_state.logged_in_user
+        _my_rank_info = None
+        for _ri, _rd in enumerate(rank_data):
+            if _rd['uid'] == _my_uid:
+                _my_rank_info = (_ri + 1, _rd['nw'])
+                break
+
+        if _my_rank_info and rank_data:
+            _rank_pos, _rank_nw = _my_rank_info
+            _rank_emoji = "🥇" if _rank_pos == 1 else "🥈" if _rank_pos == 2 else "🥉" if _rank_pos == 3 else f"{_rank_pos}위"
+            _nw_str_share = format_korean_money(_rank_nw)
+            _top1_uid = rank_data[0]['uid']
+            _top1_nw  = format_korean_money(rank_data[0]['nw'])
+            _share_kakao   = f"🌌 효민 포털 현재 랭킹!\n\n{_rank_emoji} 나 ({_my_uid}): {_rank_pos}위 · {_nw_str_share}\n🏆 현재 1위: {_top1_uid} · {_top1_nw}\n\n📈 주식·코인·부동산 + 🎮 게임 10종\n가입하면 바로 5억 지급! 🎁\n👉 {PORTAL_URL}"
+            _share_discord = f"**🌌 효민 포털 시즌 2 랭킹**\n> {_rank_emoji} **{_my_uid}** — {_rank_pos}위 | {_nw_str_share}\n> 🏆 1위: **{_top1_uid}** | {_top1_nw}\n> 📈 주식·코인·부동산 | 🎮 게임 10종 | 가입 시 **5억 지급!**\n🔗 {PORTAL_URL}"
+            st.markdown(f"""
+<div style='background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(0,212,255,0.06));
+     border:1px solid rgba(108,99,255,0.3);border-radius:14px;padding:16px 20px;margin-bottom:18px;'>
+  <div style='display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;'>
+    <div>
+      <div style='color:#00d4ff;font-weight:900;font-size:1rem;'>📢 내 랭킹 친구에게 공유하기</div>
+      <div style='color:#8899bb;font-size:0.82rem;margin-top:3px;'>현재 {_rank_emoji} {_rank_pos}위 · {_nw_str_share} — 자랑해버리기!</div>
+    </div>
+    <div style='display:flex;gap:8px;flex-wrap:wrap;'>
+      <button onclick="
+        navigator.clipboard.writeText({repr(_share_kakao)}).then(()=>{{
+          this.textContent='✅ 복사됨!';
+          this.style.background='rgba(0,255,136,0.2)';this.style.borderColor='rgba(0,255,136,0.5)';
+          setTimeout(()=>{{this.textContent='💬 카카오톡';this.style.background='rgba(255,230,0,0.12)';this.style.borderColor='rgba(255,230,0,0.4)';}},2000);
+        }})
+      " style='background:rgba(255,230,0,0.12);border:1px solid rgba(255,230,0,0.4);color:#ffe600;
+               border-radius:8px;padding:8px 14px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:inherit;'>
+        💬 카카오톡
+      </button>
+      <button onclick="
+        navigator.clipboard.writeText({repr(_share_discord)}).then(()=>{{
+          this.textContent='✅ 복사됨!';
+          this.style.background='rgba(0,255,136,0.2)';this.style.borderColor='rgba(0,255,136,0.5)';
+          setTimeout(()=>{{this.textContent='🎮 디스코드';this.style.background='rgba(88,101,242,0.15)';this.style.borderColor='rgba(88,101,242,0.45)';}},2000);
+        }})
+      " style='background:rgba(88,101,242,0.15);border:1px solid rgba(88,101,242,0.45);color:#7289da;
+               border-radius:8px;padding:8px 14px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:inherit;'>
+        🎮 디스코드
+      </button>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
         medals = ["🥇","🥈","🥉"] + [f"{i}위" for i in range(4, 101)]
         
         for i, r in enumerate(rank_data[:20]):
