@@ -1198,6 +1198,163 @@ padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;al
 </div>""", unsafe_allow_html=True)
 
 
+    # ══════════════════════════════════════════════════════════════
+    # 🖼️ 서비스 미리보기 섹션 (비로그인 유저용 소개)
+    # ══════════════════════════════════════════════════════════════
+    PORTAL_URL = "https://hyomin-app-2gv2xbsxqhrftspwcpgqqw.streamlit.app"  # ← 실제 URL로 변경하세요
+
+    st.markdown("<div class='game-section-title'>🖼️ 서비스 미리보기</div>", unsafe_allow_html=True)
+    st.markdown(f"""
+<div style='background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(0,212,255,0.06));
+     border:1px solid rgba(108,99,255,0.25);border-radius:16px;padding:24px;margin-bottom:20px;'>
+  <div style='color:#00d4ff;font-weight:900;font-size:1.05rem;margin-bottom:6px;'>
+    🎮 로그인 없이 구경해보세요!
+  </div>
+  <div style='color:#8899bb;font-size:0.9rem;margin-bottom:20px;'>
+    친구들과 가상 주식·코인·부동산·게임으로 부자 되기 경쟁 — 가입 즉시 5억 원 지급!
+  </div>
+
+  <!-- 미리보기 카드 그리드 -->
+  <div style='display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;'>
+
+    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(0,229,255,0.2);border-radius:12px;padding:16px;text-align:center;'>
+      <div style='font-size:2.2rem;margin-bottom:8px;'>📈</div>
+      <div style='color:#00d4ff;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>주식 · 코인 · 부동산</div>
+      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>실시간으로 변동하는 주가와 코인 시세를 분석하고 투자하세요. 부동산 임대로 패시브 수익도!</div>
+      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
+        <span style='background:rgba(0,229,255,0.12);color:#00d4ff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>10종목 주식</span>
+        <span style='background:rgba(0,229,255,0.12);color:#00d4ff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>5종 코인</span>
+        <span style='background:rgba(0,229,255,0.12);color:#00d4ff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>부동산</span>
+      </div>
+    </div>
+
+    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(255,214,0,0.25);border-radius:12px;padding:16px;text-align:center;'>
+      <div style='font-size:2.2rem;margin-bottom:8px;'>🎮</div>
+      <div style='color:#ffd700;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>미니게임 10종</div>
+      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>레이싱·좀비슈터·격투·저격전·블랙잭·홀덤·슬롯·광산·던전·마블 보드게임까지!</div>
+      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
+        <span style='background:rgba(255,214,0,0.1);color:#ffd700;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>🏎️ 레이싱</span>
+        <span style='background:rgba(255,214,0,0.1);color:#ffd700;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>🧟 좀비</span>
+        <span style='background:rgba(255,214,0,0.1);color:#ffd700;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>🥊 격투</span>
+      </div>
+    </div>
+
+    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(0,255,136,0.2);border-radius:12px;padding:16px;text-align:center;'>
+      <div style='font-size:2.2rem;margin-bottom:8px;'>🏆</div>
+      <div style='color:#00ff88;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>시즌 랭킹 경쟁</div>
+      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>매 시즌 자산 1위를 향한 치열한 경쟁! 게임 챔피언, 클랜, VIP 라운지도 운영 중.</div>
+      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
+        <span style='background:rgba(0,255,136,0.1);color:#00ff88;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>시즌 2 진행</span>
+        <span style='background:rgba(0,255,136,0.1);color:#00ff88;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>클랜 시스템</span>
+      </div>
+    </div>
+
+    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(192,79,255,0.25);border-radius:12px;padding:16px;text-align:center;'>
+      <div style='font-size:2.2rem;margin-bottom:8px;'>🧠</div>
+      <div style='color:#c04fff;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>AI 무한 모의고사</div>
+      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>공부 내용을 붙여넣으면 AI가 문제를 무한 생성! Gemini 2.5 Flash 탑재.</div>
+      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
+        <span style='background:rgba(192,79,255,0.1);color:#c04fff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>AI 문제 생성</span>
+        <span style='background:rgba(192,79,255,0.1);color:#c04fff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>PDF 업로드</span>
+      </div>
+    </div>
+
+    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(255,51,102,0.25);border-radius:12px;padding:16px;text-align:center;'>
+      <div style='font-size:2.2rem;margin-bottom:8px;'>💻</div>
+      <div style='color:#ff3366;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>THE TERMINAL</div>
+      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>커맨드라인 방탈출 어드벤처! 20스테이지를 클리어하며 해킹 미션 해결.</div>
+      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
+        <span style='background:rgba(255,51,102,0.1);color:#ff3366;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>20스테이지</span>
+        <span style='background:rgba(255,51,102,0.1);color:#ff3366;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>타임어택</span>
+      </div>
+    </div>
+
+    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(255,140,66,0.25);border-radius:12px;padding:16px;text-align:center;'>
+      <div style='font-size:2.2rem;margin-bottom:8px;'>🗳️</div>
+      <div style='color:#ff8c42;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>월드 배틀</div>
+      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>매일 업데이트되는 주제로 실시간 진영 투표! 내 의견을 세계에 알리세요.</div>
+      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
+        <span style='background:rgba(255,140,66,0.1);color:#ff8c42;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>실시간 투표</span>
+        <span style='background:rgba(255,140,66,0.1);color:#ff8c42;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>매일 갱신</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div style='text-align:center;'>
+    <div style='color:#ffd700;font-weight:900;font-size:1.1rem;margin-bottom:4px;'>🎁 가입 즉시 5억 원 지급!</div>
+    <div style='color:#8899bb;font-size:0.85rem;'>지금 가입하고 시즌 2 랭킹 경쟁에 참여하세요</div>
+  </div>
+</div>
+    """, unsafe_allow_html=True)
+
+    # ── 공유하기 섹션 ──────────────────────────────────────────
+    st.markdown("<div class='game-section-title'>📢 친구에게 공유하기</div>", unsafe_allow_html=True)
+
+    _share_msg_kakao = f"🌌 효민 포털에서 같이 부자 되자!\n\n📈 주식·코인·부동산 투자\n🎮 레이싱·좀비·격투 게임 10종\n🏆 시즌 랭킹 경쟁\n\n가입하면 바로 5억 원 지급! 🎁\n👉 {PORTAL_URL}"
+    _share_msg_discord = f"**🌌 효민 포털** 같이 하자!\n> 📈 주식·코인·부동산 | 🎮 게임 10종 | 🏆 시즌 랭킹\n> 가입하면 **5억 원 즉시 지급!** 🎁\n🔗 {PORTAL_URL}"
+    _share_msg_general = f"효민 포털 - 주식·코인·부동산·게임 통합 플랫폼 | 가입 시 5억 지급 | {PORTAL_URL}"
+
+    st.markdown(f"""
+<div style='background:rgba(10,16,32,0.7);border:1px solid rgba(108,99,255,0.25);border-radius:14px;padding:20px;'>
+  <div style='color:#e8f0ff;font-size:0.9rem;margin-bottom:16px;'>
+    👇 아래 버튼으로 친구에게 바로 공유하세요! (클릭하면 메시지가 복사됩니다)
+  </div>
+
+  <div style='display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;'>
+
+    <!-- 카카오톡 공유 -->
+    <button onclick="
+      navigator.clipboard.writeText({repr(_share_msg_kakao)}).then(()=>{{
+        this.textContent='✅ 복사됨!';
+        this.style.background='rgba(0,255,136,0.2)';
+        this.style.borderColor='rgba(0,255,136,0.5)';
+        setTimeout(()=>{{this.textContent='💬 카카오톡용 복사';this.style.background='rgba(255,230,0,0.12)';this.style.borderColor='rgba(255,230,0,0.4)';}},2000);
+      }})
+    " style='background:rgba(255,230,0,0.12);border:1px solid rgba(255,230,0,0.4);color:#ffe600;
+             border-radius:10px;padding:10px 18px;font-size:0.88rem;font-weight:800;cursor:pointer;
+             font-family:inherit;transition:all 0.2s;'>
+      💬 카카오톡용 복사
+    </button>
+
+    <!-- 디스코드 공유 -->
+    <button onclick="
+      navigator.clipboard.writeText({repr(_share_msg_discord)}).then(()=>{{
+        this.textContent='✅ 복사됨!';
+        this.style.background='rgba(0,255,136,0.2)';
+        this.style.borderColor='rgba(0,255,136,0.5)';
+        setTimeout(()=>{{this.textContent='🎮 디스코드용 복사';this.style.background='rgba(88,101,242,0.15)';this.style.borderColor='rgba(88,101,242,0.45)';}},2000);
+      }})
+    " style='background:rgba(88,101,242,0.15);border:1px solid rgba(88,101,242,0.45);color:#7289da;
+             border-radius:10px;padding:10px 18px;font-size:0.88rem;font-weight:800;cursor:pointer;
+             font-family:inherit;transition:all 0.2s;'>
+      🎮 디스코드용 복사
+    </button>
+
+    <!-- 링크 복사 -->
+    <button onclick="
+      navigator.clipboard.writeText('{PORTAL_URL}').then(()=>{{
+        this.textContent='✅ 링크 복사됨!';
+        this.style.background='rgba(0,255,136,0.2)';
+        this.style.borderColor='rgba(0,255,136,0.5)';
+        setTimeout(()=>{{this.textContent='🔗 링크 복사';this.style.background='rgba(0,212,255,0.1)';this.style.borderColor='rgba(0,212,255,0.35)';}},2000);
+      }})
+    " style='background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.35);color:#00d4ff;
+             border-radius:10px;padding:10px 18px;font-size:0.88rem;font-weight:800;cursor:pointer;
+             font-family:inherit;transition:all 0.2s;'>
+      🔗 링크 복사
+    </button>
+
+  </div>
+
+  <!-- 미리보기 텍스트 -->
+  <div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;'>
+    <div style='color:#8899bb;font-size:0.72rem;margin-bottom:6px;font-weight:700;'>💬 카카오톡 메시지 미리보기</div>
+    <div style='color:#c8d8f0;font-size:0.82rem;line-height:1.7;white-space:pre-line;'>{_share_msg_kakao}</div>
+  </div>
+</div>
+    """, unsafe_allow_html=True)
+
     # ── 시스템 공지 & 아키텍처 섹션 ───────────────────────
     with st.expander("📋 시스템 공지 & 전체 아키텍처 구조 보기", expanded=False):
 
