@@ -890,6 +890,290 @@ if st.session_state.page_view == "portal":
     </div>
     """, unsafe_allow_html=True)
 
+
+    # ══════════════════════════════════════════════════════════════
+    # 🖼️ 서비스 미리보기 섹션 (비로그인 유저용 소개)
+    # ══════════════════════════════════════════════════════════════
+    PORTAL_URL = "https://hyomin-app-2gv2xbsxqhrftspwcpgqqw.streamlit.app"  # ← 실제 URL로 변경하세요
+
+    st.markdown("<div class='game-section-title'>🖼️ 서비스 미리보기</div>", unsafe_allow_html=True)
+
+    # ── 서비스 미리보기 위 스크롤 태그 배너 ──
+    _prev_tags_html = ""
+    _prev_tags = [
+        ("🏅 시즌 1 명예의 전당", "gold"), ("📈 주식·코인·부동산", "live"), ("🎰 카지노 & 게임", "hot"),
+        ("🏎️ 하이퍼카 레이싱", "new"), ("🔥 HOT", "hot"), ("🚀 시즌 2 진행 중", "live"),
+        ("🤖 AI 모의고사", "new"), ("🏆 랭킹 1위 쟁탈전", "gold"), ("⚔️ 던전 런 REBORN", "hot"),
+        ("🎲 인베스트 마블", "gold"), ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"),
+    ]
+    for _plabel, _pcls in _prev_tags * 2:
+        _prev_tags_html += f"<span class='scroll-tag {_pcls}'>{_plabel}</span>"
+    st.markdown(f"<div class='banner-scroll-wrap' style='margin-bottom:16px;'><div class='banner-scroll-track'>{_prev_tags_html}</div></div>", unsafe_allow_html=True)
+
+    st.markdown("""
+<style>
+@keyframes carousel-slide {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes card-glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(108,99,255,0.15); }
+  50%       { box-shadow: 0 0 22px rgba(0,212,255,0.35); }
+}
+.preview-carousel-wrap {
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 14px;
+  /* 양 끝 fade-out */
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+.preview-carousel-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  animation: carousel-slide 28s linear infinite;
+}
+.preview-carousel-wrap:hover .preview-carousel-track {
+  animation-play-state: paused;
+}
+.preview-card {
+  flex: 0 0 220px;
+  background: rgba(10,16,32,0.85);
+  border-radius: 14px;
+  padding: 20px 16px 16px;
+  text-align: center;
+  position: relative;
+  animation: card-glow-pulse 4s ease-in-out infinite;
+  transition: transform 0.25s;
+}
+.preview-card:hover { transform: translateY(-4px); }
+.preview-card-icon { font-size: 2.4rem; margin-bottom: 10px; line-height: 1; }
+.preview-card-title { font-weight: 900; font-size: 0.88rem; margin-bottom: 6px; }
+.preview-card-desc { color: #8899bb; font-size: 0.75rem; line-height: 1.55; margin-bottom: 10px; }
+.preview-tag {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin: 2px 2px 0;
+}
+</style>
+
+<div style='color:#00d4ff;font-weight:900;font-size:1rem;margin-bottom:4px;text-align:center;'>
+  🎮 효민 포털에서 이런 걸 즐길 수 있어요
+</div>
+<div style='color:#8899bb;font-size:0.82rem;margin-bottom:14px;text-align:center;'>
+  가입 즉시 5억 원 지급 · 시즌 2 진행 중 · 마우스 올리면 멈춰요
+</div>
+
+<div class="preview-carousel-wrap">
+<div class="preview-carousel-track">
+
+  <!-- 카드 1벌 -->
+  <div class="preview-card" style="border:1px solid rgba(0,212,255,0.3);">
+    <div class="preview-card-icon">📈</div>
+    <div class="preview-card-title" style="color:#00d4ff;">주식 트레이딩</div>
+    <div class="preview-card-desc">실시간 변동 주가로<br>10개 종목에 투자</div>
+    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">10종목</span>
+    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">차트</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,214,0,0.3);">
+    <div class="preview-card-icon">₿</div>
+    <div class="preview-card-title" style="color:#ffd700;">코인 거래소</div>
+    <div class="preview-card-desc">비트코인·이더리움 등<br>5종 코인 실시간 매매</div>
+    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">5종 코인</span>
+    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">레버리지</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
+    <div class="preview-card-icon">🏢</div>
+    <div class="preview-card-title" style="color:#00ff88;">부동산 임대</div>
+    <div class="preview-card-desc">건물 매입 후<br>초당 임대료 수익 획득</div>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">패시브 수익</span>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">건물주</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,51,102,0.3);">
+    <div class="preview-card-icon">🏎️</div>
+    <div class="preview-card-title" style="color:#ff3366;">네온 도주 레이싱</div>
+    <div class="preview-card-desc">5레인 무한 도로<br>니트로 · 경찰 추격</div>
+    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">×8 콤보</span>
+    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">랭킹</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,100,0,0.3);">
+    <div class="preview-card-icon">🧟</div>
+    <div class="preview-card-title" style="color:#ff6400;">좀비 아포칼립스</div>
+    <div class="preview-card-desc">탑다운 슈터<br>웨이브 · 4종 무기</div>
+    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">생존</span>
+    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">업그레이드</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(192,79,255,0.3);">
+    <div class="preview-card-icon">🥊</div>
+    <div class="preview-card-title" style="color:#c04fff;">스트리트 파이터</div>
+    <div class="preview-card-desc">1v1 격투 · 6캐릭터<br>필살기 · 슈퍼 게이지</div>
+    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">PVP</span>
+    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">3라운드</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,229,255,0.3);">
+    <div class="preview-card-icon">🎯</div>
+    <div class="preview-card-title" style="color:#00e5ff;">라인배틀 저격전</div>
+    <div class="preview-card-desc">아군 소환 + 1인칭 저격<br>4가지 난이도</div>
+    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">헤드샷</span>
+    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">S등급</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,215,0,0.3);">
+    <div class="preview-card-icon">⚔️</div>
+    <div class="preview-card-title" style="color:#ffd700;">던전 런 REBORN</div>
+    <div class="preview-card-desc">뱀서라이크 서바이벌<br>4클래스 · 보스 격파</div>
+    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">웨이브</span>
+    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">+2억 보상</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
+    <div class="preview-card-icon">🎲</div>
+    <div class="preview-card-title" style="color:#00ff88;">인베스트 마블</div>
+    <div class="preview-card-desc">AI 봇과 보드게임 대결<br>30턴 · 6가지 승리조건</div>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">보드게임</span>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">AI 대전</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(108,99,255,0.3);">
+    <div class="preview-card-icon">💻</div>
+    <div class="preview-card-title" style="color:#6c63ff;">THE TERMINAL</div>
+    <div class="preview-card-desc">커맨드라인 방탈출<br>20스테이지 해킹 미션</div>
+    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">타임어택</span>
+    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">기록 저장</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,140,66,0.3);">
+    <div class="preview-card-icon">🗳️</div>
+    <div class="preview-card-title" style="color:#ff8c42;">월드 배틀</div>
+    <div class="preview-card-desc">매일 새 주제로<br>실시간 진영 투표</div>
+    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">매일 갱신</span>
+    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">실시간</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(100,200,255,0.3);">
+    <div class="preview-card-icon">🧠</div>
+    <div class="preview-card-title" style="color:#64c8ff;">AI 무한 모의고사</div>
+    <div class="preview-card-desc">Gemini AI가 만드는<br>무한 문제 · PDF 업로드</div>
+    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">AI 생성</span>
+    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">성적 분석</span>
+  </div>
+
+  <!-- 2벌 반복 (무한루프용) -->
+  <div class="preview-card" style="border:1px solid rgba(0,212,255,0.3);">
+    <div class="preview-card-icon">📈</div>
+    <div class="preview-card-title" style="color:#00d4ff;">주식 트레이딩</div>
+    <div class="preview-card-desc">실시간 변동 주가로<br>10개 종목에 투자</div>
+    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">10종목</span>
+    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">차트</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,214,0,0.3);">
+    <div class="preview-card-icon">₿</div>
+    <div class="preview-card-title" style="color:#ffd700;">코인 거래소</div>
+    <div class="preview-card-desc">비트코인·이더리움 등<br>5종 코인 실시간 매매</div>
+    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">5종 코인</span>
+    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">레버리지</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
+    <div class="preview-card-icon">🏢</div>
+    <div class="preview-card-title" style="color:#00ff88;">부동산 임대</div>
+    <div class="preview-card-desc">건물 매입 후<br>초당 임대료 수익 획득</div>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">패시브 수익</span>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">건물주</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,51,102,0.3);">
+    <div class="preview-card-icon">🏎️</div>
+    <div class="preview-card-title" style="color:#ff3366;">네온 도주 레이싱</div>
+    <div class="preview-card-desc">5레인 무한 도로<br>니트로 · 경찰 추격</div>
+    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">×8 콤보</span>
+    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">랭킹</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,100,0,0.3);">
+    <div class="preview-card-icon">🧟</div>
+    <div class="preview-card-title" style="color:#ff6400;">좀비 아포칼립스</div>
+    <div class="preview-card-desc">탑다운 슈터<br>웨이브 · 4종 무기</div>
+    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">생존</span>
+    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">업그레이드</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(192,79,255,0.3);">
+    <div class="preview-card-icon">🥊</div>
+    <div class="preview-card-title" style="color:#c04fff;">스트리트 파이터</div>
+    <div class="preview-card-desc">1v1 격투 · 6캐릭터<br>필살기 · 슈퍼 게이지</div>
+    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">PVP</span>
+    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">3라운드</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,229,255,0.3);">
+    <div class="preview-card-icon">🎯</div>
+    <div class="preview-card-title" style="color:#00e5ff;">라인배틀 저격전</div>
+    <div class="preview-card-desc">아군 소환 + 1인칭 저격<br>4가지 난이도</div>
+    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">헤드샷</span>
+    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">S등급</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,215,0,0.3);">
+    <div class="preview-card-icon">⚔️</div>
+    <div class="preview-card-title" style="color:#ffd700;">던전 런 REBORN</div>
+    <div class="preview-card-desc">뱀서라이크 서바이벌<br>4클래스 · 보스 격파</div>
+    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">웨이브</span>
+    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">+2억 보상</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
+    <div class="preview-card-icon">🎲</div>
+    <div class="preview-card-title" style="color:#00ff88;">인베스트 마블</div>
+    <div class="preview-card-desc">AI 봇과 보드게임 대결<br>30턴 · 6가지 승리조건</div>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">보드게임</span>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">AI 대전</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(108,99,255,0.3);">
+    <div class="preview-card-icon">💻</div>
+    <div class="preview-card-title" style="color:#6c63ff;">THE TERMINAL</div>
+    <div class="preview-card-desc">커맨드라인 방탈출<br>20스테이지 해킹 미션</div>
+    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">타임어택</span>
+    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">기록 저장</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,140,66,0.3);">
+    <div class="preview-card-icon">🗳️</div>
+    <div class="preview-card-title" style="color:#ff8c42;">월드 배틀</div>
+    <div class="preview-card-desc">매일 새 주제로<br>실시간 진영 투표</div>
+    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">매일 갱신</span>
+    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">실시간</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(100,200,255,0.3);">
+    <div class="preview-card-icon">🧠</div>
+    <div class="preview-card-title" style="color:#64c8ff;">AI 무한 모의고사</div>
+    <div class="preview-card-desc">Gemini AI가 만드는<br>무한 문제 · PDF 업로드</div>
+    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">AI 생성</span>
+    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">성적 분석</span>
+  </div>
+
+</div>
+</div>
+
+<div style='text-align:center;margin-top:10px;margin-bottom:6px;'>
+  <span style='color:#ffd700;font-weight:900;font-size:1rem;'>🎁 가입 즉시 5억 원 지급!</span>
+  <span style='color:#8899bb;font-size:0.82rem;margin-left:10px;'>지금 가입하고 시즌 2 랭킹 경쟁에 참여하세요</span>
+</div>
+    """, unsafe_allow_html=True)
+
     # ── 실시간 스크롤 태그 배너 ──
     tags_html = ""
     tags = [
@@ -1198,366 +1482,83 @@ padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;al
 </div>""", unsafe_allow_html=True)
 
 
-    # ══════════════════════════════════════════════════════════════
-    # 🖼️ 서비스 미리보기 섹션 (비로그인 유저용 소개)
-    # ══════════════════════════════════════════════════════════════
-    PORTAL_URL = "https://hyomin-app-2gv2xbsxqhrftspwcpgqqw.streamlit.app"  # ← 실제 URL로 변경하세요
-
-    st.markdown("<div class='game-section-title'>🖼️ 서비스 미리보기</div>", unsafe_allow_html=True)
-
-    # ── 서비스 미리보기 위 스크롤 태그 배너 ──
-    _prev_tags_html = ""
-    _prev_tags = [
-        ("🏅 시즌 1 명예의 전당", "gold"), ("📈 주식·코인·부동산", "live"), ("🎰 카지노 & 게임", "hot"),
-        ("🏎️ 하이퍼카 레이싱", "new"), ("🔥 HOT", "hot"), ("🚀 시즌 2 진행 중", "live"),
-        ("🤖 AI 모의고사", "new"), ("🏆 랭킹 1위 쟁탈전", "gold"), ("⚔️ 던전 런 REBORN", "hot"),
-        ("🎲 인베스트 마블", "gold"), ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"),
-    ]
-    for _plabel, _pcls in _prev_tags * 2:
-        _prev_tags_html += f"<span class='scroll-tag {_pcls}'>{_plabel}</span>"
-    st.markdown(f"<div class='banner-scroll-wrap' style='margin-bottom:16px;'><div class='banner-scroll-track'>{_prev_tags_html}</div></div>", unsafe_allow_html=True)
-
-    st.markdown("""
-<style>
-@keyframes carousel-slide {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-@keyframes card-glow-pulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(108,99,255,0.15); }
-  50%       { box-shadow: 0 0 22px rgba(0,212,255,0.35); }
-}
-.preview-carousel-wrap {
-  overflow: hidden;
-  position: relative;
-  margin-bottom: 14px;
-  /* 양 끝 fade-out */
-  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-}
-.preview-carousel-track {
-  display: flex;
-  gap: 16px;
-  width: max-content;
-  animation: carousel-slide 28s linear infinite;
-}
-.preview-carousel-wrap:hover .preview-carousel-track {
-  animation-play-state: paused;
-}
-.preview-card {
-  flex: 0 0 220px;
-  background: rgba(10,16,32,0.85);
-  border-radius: 14px;
-  padding: 20px 16px 16px;
-  text-align: center;
-  position: relative;
-  animation: card-glow-pulse 4s ease-in-out infinite;
-  transition: transform 0.25s;
-}
-.preview-card:hover { transform: translateY(-4px); }
-.preview-card-icon { font-size: 2.4rem; margin-bottom: 10px; line-height: 1; }
-.preview-card-title { font-weight: 900; font-size: 0.88rem; margin-bottom: 6px; }
-.preview-card-desc { color: #8899bb; font-size: 0.75rem; line-height: 1.55; margin-bottom: 10px; }
-.preview-tag {
-  display: inline-block;
-  border-radius: 999px;
-  padding: 2px 9px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  margin: 2px 2px 0;
-}
-</style>
-
-<div style='color:#00d4ff;font-weight:900;font-size:1rem;margin-bottom:4px;text-align:center;'>
-  🎮 효민 포털에서 이런 걸 즐길 수 있어요
-</div>
-<div style='color:#8899bb;font-size:0.82rem;margin-bottom:14px;text-align:center;'>
-  가입 즉시 5억 원 지급 · 시즌 2 진행 중 · 마우스 올리면 멈춰요
-</div>
-
-<div class="preview-carousel-wrap">
-<div class="preview-carousel-track">
-
-  <!-- 카드 1벌 -->
-  <div class="preview-card" style="border:1px solid rgba(0,212,255,0.3);">
-    <div class="preview-card-icon">📈</div>
-    <div class="preview-card-title" style="color:#00d4ff;">주식 트레이딩</div>
-    <div class="preview-card-desc">실시간 변동 주가로<br>10개 종목에 투자</div>
-    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">10종목</span>
-    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">차트</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,214,0,0.3);">
-    <div class="preview-card-icon">₿</div>
-    <div class="preview-card-title" style="color:#ffd700;">코인 거래소</div>
-    <div class="preview-card-desc">비트코인·이더리움 등<br>5종 코인 실시간 매매</div>
-    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">5종 코인</span>
-    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">레버리지</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
-    <div class="preview-card-icon">🏢</div>
-    <div class="preview-card-title" style="color:#00ff88;">부동산 임대</div>
-    <div class="preview-card-desc">건물 매입 후<br>초당 임대료 수익 획득</div>
-    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">패시브 수익</span>
-    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">건물주</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,51,102,0.3);">
-    <div class="preview-card-icon">🏎️</div>
-    <div class="preview-card-title" style="color:#ff3366;">네온 도주 레이싱</div>
-    <div class="preview-card-desc">5레인 무한 도로<br>니트로 · 경찰 추격</div>
-    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">×8 콤보</span>
-    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">랭킹</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,100,0,0.3);">
-    <div class="preview-card-icon">🧟</div>
-    <div class="preview-card-title" style="color:#ff6400;">좀비 아포칼립스</div>
-    <div class="preview-card-desc">탑다운 슈터<br>웨이브 · 4종 무기</div>
-    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">생존</span>
-    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">업그레이드</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(192,79,255,0.3);">
-    <div class="preview-card-icon">🥊</div>
-    <div class="preview-card-title" style="color:#c04fff;">스트리트 파이터</div>
-    <div class="preview-card-desc">1v1 격투 · 6캐릭터<br>필살기 · 슈퍼 게이지</div>
-    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">PVP</span>
-    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">3라운드</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(0,229,255,0.3);">
-    <div class="preview-card-icon">🎯</div>
-    <div class="preview-card-title" style="color:#00e5ff;">라인배틀 저격전</div>
-    <div class="preview-card-desc">아군 소환 + 1인칭 저격<br>4가지 난이도</div>
-    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">헤드샷</span>
-    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">S등급</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,215,0,0.3);">
-    <div class="preview-card-icon">⚔️</div>
-    <div class="preview-card-title" style="color:#ffd700;">던전 런 REBORN</div>
-    <div class="preview-card-desc">뱀서라이크 서바이벌<br>4클래스 · 보스 격파</div>
-    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">웨이브</span>
-    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">+2억 보상</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
-    <div class="preview-card-icon">🎲</div>
-    <div class="preview-card-title" style="color:#00ff88;">인베스트 마블</div>
-    <div class="preview-card-desc">AI 봇과 보드게임 대결<br>30턴 · 6가지 승리조건</div>
-    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">보드게임</span>
-    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">AI 대전</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(108,99,255,0.3);">
-    <div class="preview-card-icon">💻</div>
-    <div class="preview-card-title" style="color:#6c63ff;">THE TERMINAL</div>
-    <div class="preview-card-desc">커맨드라인 방탈출<br>20스테이지 해킹 미션</div>
-    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">타임어택</span>
-    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">기록 저장</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,140,66,0.3);">
-    <div class="preview-card-icon">🗳️</div>
-    <div class="preview-card-title" style="color:#ff8c42;">월드 배틀</div>
-    <div class="preview-card-desc">매일 새 주제로<br>실시간 진영 투표</div>
-    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">매일 갱신</span>
-    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">실시간</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(100,200,255,0.3);">
-    <div class="preview-card-icon">🧠</div>
-    <div class="preview-card-title" style="color:#64c8ff;">AI 무한 모의고사</div>
-    <div class="preview-card-desc">Gemini AI가 만드는<br>무한 문제 · PDF 업로드</div>
-    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">AI 생성</span>
-    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">성적 분석</span>
-  </div>
-
-  <!-- 2벌 반복 (무한루프용) -->
-  <div class="preview-card" style="border:1px solid rgba(0,212,255,0.3);">
-    <div class="preview-card-icon">📈</div>
-    <div class="preview-card-title" style="color:#00d4ff;">주식 트레이딩</div>
-    <div class="preview-card-desc">실시간 변동 주가로<br>10개 종목에 투자</div>
-    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">10종목</span>
-    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">차트</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,214,0,0.3);">
-    <div class="preview-card-icon">₿</div>
-    <div class="preview-card-title" style="color:#ffd700;">코인 거래소</div>
-    <div class="preview-card-desc">비트코인·이더리움 등<br>5종 코인 실시간 매매</div>
-    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">5종 코인</span>
-    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">레버리지</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
-    <div class="preview-card-icon">🏢</div>
-    <div class="preview-card-title" style="color:#00ff88;">부동산 임대</div>
-    <div class="preview-card-desc">건물 매입 후<br>초당 임대료 수익 획득</div>
-    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">패시브 수익</span>
-    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">건물주</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,51,102,0.3);">
-    <div class="preview-card-icon">🏎️</div>
-    <div class="preview-card-title" style="color:#ff3366;">네온 도주 레이싱</div>
-    <div class="preview-card-desc">5레인 무한 도로<br>니트로 · 경찰 추격</div>
-    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">×8 콤보</span>
-    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">랭킹</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,100,0,0.3);">
-    <div class="preview-card-icon">🧟</div>
-    <div class="preview-card-title" style="color:#ff6400;">좀비 아포칼립스</div>
-    <div class="preview-card-desc">탑다운 슈터<br>웨이브 · 4종 무기</div>
-    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">생존</span>
-    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">업그레이드</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(192,79,255,0.3);">
-    <div class="preview-card-icon">🥊</div>
-    <div class="preview-card-title" style="color:#c04fff;">스트리트 파이터</div>
-    <div class="preview-card-desc">1v1 격투 · 6캐릭터<br>필살기 · 슈퍼 게이지</div>
-    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">PVP</span>
-    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">3라운드</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(0,229,255,0.3);">
-    <div class="preview-card-icon">🎯</div>
-    <div class="preview-card-title" style="color:#00e5ff;">라인배틀 저격전</div>
-    <div class="preview-card-desc">아군 소환 + 1인칭 저격<br>4가지 난이도</div>
-    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">헤드샷</span>
-    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">S등급</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,215,0,0.3);">
-    <div class="preview-card-icon">⚔️</div>
-    <div class="preview-card-title" style="color:#ffd700;">던전 런 REBORN</div>
-    <div class="preview-card-desc">뱀서라이크 서바이벌<br>4클래스 · 보스 격파</div>
-    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">웨이브</span>
-    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">+2억 보상</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
-    <div class="preview-card-icon">🎲</div>
-    <div class="preview-card-title" style="color:#00ff88;">인베스트 마블</div>
-    <div class="preview-card-desc">AI 봇과 보드게임 대결<br>30턴 · 6가지 승리조건</div>
-    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">보드게임</span>
-    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">AI 대전</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(108,99,255,0.3);">
-    <div class="preview-card-icon">💻</div>
-    <div class="preview-card-title" style="color:#6c63ff;">THE TERMINAL</div>
-    <div class="preview-card-desc">커맨드라인 방탈출<br>20스테이지 해킹 미션</div>
-    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">타임어택</span>
-    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">기록 저장</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(255,140,66,0.3);">
-    <div class="preview-card-icon">🗳️</div>
-    <div class="preview-card-title" style="color:#ff8c42;">월드 배틀</div>
-    <div class="preview-card-desc">매일 새 주제로<br>실시간 진영 투표</div>
-    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">매일 갱신</span>
-    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">실시간</span>
-  </div>
-
-  <div class="preview-card" style="border:1px solid rgba(100,200,255,0.3);">
-    <div class="preview-card-icon">🧠</div>
-    <div class="preview-card-title" style="color:#64c8ff;">AI 무한 모의고사</div>
-    <div class="preview-card-desc">Gemini AI가 만드는<br>무한 문제 · PDF 업로드</div>
-    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">AI 생성</span>
-    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">성적 분석</span>
-  </div>
-
-</div>
-</div>
-
-<div style='text-align:center;margin-top:10px;margin-bottom:6px;'>
-  <span style='color:#ffd700;font-weight:900;font-size:1rem;'>🎁 가입 즉시 5억 원 지급!</span>
-  <span style='color:#8899bb;font-size:0.82rem;margin-left:10px;'>지금 가입하고 시즌 2 랭킹 경쟁에 참여하세요</span>
-</div>
-    """, unsafe_allow_html=True)
 
     # ── 공유하기 섹션 ──────────────────────────────────────────
     st.markdown("<div class='game-section-title'>📢 친구에게 공유하기</div>", unsafe_allow_html=True)
 
-    _share_msg_kakao = f"🌌 효민 포털에서 같이 부자 되자!\n\n📈 주식·코인·부동산 투자\n🎮 레이싱·좀비·격투 게임 10종\n🏆 시즌 랭킹 경쟁\n\n가입하면 바로 5억 원 지급! 🎁\n👉 {PORTAL_URL}"
+    _share_msg_kakao   = f"🌌 효민 포털에서 같이 부자 되자!\n\n📈 주식·코인·부동산 투자\n🎮 레이싱·좀비·격투 게임 10종\n🏆 시즌 랭킹 경쟁\n\n가입하면 바로 5억 원 지급! 🎁\n👉 {PORTAL_URL}"
     _share_msg_discord = f"**🌌 효민 포털** 같이 하자!\n> 📈 주식·코인·부동산 | 🎮 게임 10종 | 🏆 시즌 랭킹\n> 가입하면 **5억 원 즉시 지급!** 🎁\n🔗 {PORTAL_URL}"
-    _share_msg_general = f"효민 포털 - 주식·코인·부동산·게임 통합 플랫폼 | 가입 시 5억 지급 | {PORTAL_URL}"
 
-    st.markdown(f"""
+    import streamlit.components.v1 as _components
+    import json as _json
+
+    _share_html = f"""
 <style>
-.share-btn {{
-  border-radius: 10px;
-  padding: 12px 20px;
-  font-size: 0.9rem;
-  font-weight: 800;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
+body {{ margin:0; background:transparent; font-family:'Noto Sans KR',sans-serif; }}
+.share-wrap {{
+  background: linear-gradient(135deg,rgba(10,16,32,0.95),rgba(15,24,48,0.95));
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 16px;
+  padding: 20px;
 }}
-.share-btn:hover {{ transform: translateY(-2px); filter: brightness(1.15); }}
+.share-desc {{ color:#e8f0ff; font-size:0.88rem; margin-bottom:16px; }}
+.share-desc span {{ color:#8899bb; }}
+.btn-row {{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:18px; }}
+.share-btn {{
+  border-radius:10px; padding:11px 20px; font-size:0.88rem; font-weight:800;
+  cursor:pointer; font-family:inherit; transition:all 0.2s; border:1px solid;
+  white-space:nowrap;
+}}
+.share-btn:hover {{ transform:translateY(-2px); filter:brightness(1.2); }}
+.btn-kakao  {{ background:rgba(255,230,0,0.12);  border-color:rgba(255,230,0,0.4);  color:#ffe600; }}
+.btn-discord{{ background:rgba(88,101,242,0.15); border-color:rgba(88,101,242,0.45);color:#7289da; }}
+.btn-link   {{ background:rgba(0,212,255,0.10);  border-color:rgba(0,212,255,0.35); color:#00d4ff; }}
+.preview-box {{
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:14px;
+}}
+.preview-label {{ color:#8899bb; font-size:0.72rem; font-weight:700; margin-bottom:8px; }}
+.preview-text  {{ color:#c8d8f0; font-size:0.82rem; line-height:1.8; white-space:pre-line; }}
 </style>
-
-<div style='background:linear-gradient(135deg,rgba(10,16,32,0.9),rgba(15,24,48,0.9));border:1px solid rgba(108,99,255,0.3);border-radius:16px;padding:22px;'>
-
-  <div style='color:#e8f0ff;font-size:0.88rem;margin-bottom:18px;'>
-    👇 아래 버튼으로 친구에게 바로 공유하세요! <span style='color:#8899bb;'>(클릭하면 메시지가 복사됩니다)</span>
+<div class="share-wrap">
+  <div class="share-desc">👇 아래 버튼으로 친구에게 바로 공유하세요! <span>(클릭하면 메시지가 복사됩니다)</span></div>
+  <div class="btn-row">
+    <button class="share-btn btn-kakao" onclick="copyMsg('kakao', this)">💬 카카오톡용 복사</button>
+    <button class="share-btn btn-discord" onclick="copyMsg('discord', this)">🎮 디스코드용 복사</button>
+    <button class="share-btn btn-link" onclick="copyMsg('link', this)">🔗 링크 복사</button>
   </div>
-
-  <div style='display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;'>
-
-    <button class="share-btn" onclick="
-      navigator.clipboard.writeText({repr(_share_msg_kakao)}).then(()=>{{
-        this.innerHTML='✅ 복사됨!';
-        this.style.background='rgba(0,255,136,0.2)';
-        this.style.borderColor='rgba(0,255,136,0.5)';
-        setTimeout(()=>{{this.innerHTML='💬 카카오톡용 복사';this.style.background='rgba(255,230,0,0.12)';this.style.borderColor='rgba(255,230,0,0.4)';}},2000);
-      }})
-    " style='background:rgba(255,230,0,0.12);border:1px solid rgba(255,230,0,0.4);color:#ffe600;'>
-      💬 카카오톡용 복사
-    </button>
-
-    <button class="share-btn" onclick="
-      navigator.clipboard.writeText({repr(_share_msg_discord)}).then(()=>{{
-        this.innerHTML='✅ 복사됨!';
-        this.style.background='rgba(0,255,136,0.2)';
-        this.style.borderColor='rgba(0,255,136,0.5)';
-        setTimeout(()=>{{this.innerHTML='🎮 디스코드용 복사';this.style.background='rgba(88,101,242,0.15)';this.style.borderColor='rgba(88,101,242,0.45)';}},2000);
-      }})
-    " style='background:rgba(88,101,242,0.15);border:1px solid rgba(88,101,242,0.45);color:#7289da;'>
-      🎮 디스코드용 복사
-    </button>
-
-    <button class="share-btn" onclick="
-      navigator.clipboard.writeText('{PORTAL_URL}').then(()=>{{
-        this.innerHTML='✅ 링크 복사됨!';
-        this.style.background='rgba(0,255,136,0.2)';
-        this.style.borderColor='rgba(0,255,136,0.5)';
-        setTimeout(()=>{{this.innerHTML='🔗 링크 복사';this.style.background='rgba(0,212,255,0.1)';this.style.borderColor='rgba(0,212,255,0.35)';}},2000);
-      }})
-    " style='background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.35);color:#00d4ff;'>
-      🔗 링크 복사
-    </button>
-
+  <div class="preview-box">
+    <div class="preview-label">💬 카카오톡 메시지 미리보기</div>
+    <div class="preview-text" id="kakao-preview"></div>
   </div>
-
-  <!-- 미리보기 텍스트 박스 -->
-  <div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;'>
-    <div style='color:#8899bb;font-size:0.72rem;margin-bottom:8px;font-weight:700;letter-spacing:0.05em;'>💬 카카오톡 메시지 미리보기</div>
-    <div style='color:#c8d8f0;font-size:0.84rem;line-height:1.8;white-space:pre-line;'>{_share_msg_kakao}</div>
-  </div>
-
 </div>
-    """, unsafe_allow_html=True)
-
+<script>
+const msgs = {{
+  kakao:   {_json.dumps(_share_msg_kakao)},
+  discord: {_json.dumps(_share_msg_discord)},
+  link:    {_json.dumps(PORTAL_URL)}
+}};
+const origLabels = {{
+  kakao: '💬 카카오톡용 복사', discord: '🎮 디스코드용 복사', link: '🔗 링크 복사'
+}};
+document.getElementById('kakao-preview').textContent = msgs.kakao;
+function copyMsg(type, btn) {{
+  navigator.clipboard.writeText(msgs[type]).then(() => {{
+    btn.textContent = '✅ 복사됨!';
+    btn.style.background = 'rgba(0,255,136,0.2)';
+    btn.style.borderColor = 'rgba(0,255,136,0.5)';
+    btn.style.color = '#00ff88';
+    setTimeout(() => {{
+      btn.textContent = origLabels[type];
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }}, 2000);
+  }});
+}}
+</script>
+"""
+    _components.html(_share_html, height=260, scrolling=False)
     # ── 시스템 공지 & 아키텍처 섹션 ───────────────────────
     with st.expander("📋 시스템 공지 & 전체 아키텍처 구조 보기", expanded=False):
 
