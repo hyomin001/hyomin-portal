@@ -1204,87 +1204,267 @@ padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;al
     PORTAL_URL = "https://hyomin-app-2gv2xbsxqhrftspwcpgqqw.streamlit.app"  # ← 실제 URL로 변경하세요
 
     st.markdown("<div class='game-section-title'>🖼️ 서비스 미리보기</div>", unsafe_allow_html=True)
-    st.markdown(f"""
-<div style='background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(0,212,255,0.06));
-     border:1px solid rgba(108,99,255,0.25);border-radius:16px;padding:24px;margin-bottom:20px;'>
-  <div style='color:#00d4ff;font-weight:900;font-size:1.05rem;margin-bottom:6px;'>
-    🎮 로그인 없이 구경해보세요!
-  </div>
-  <div style='color:#8899bb;font-size:0.9rem;margin-bottom:20px;'>
-    친구들과 가상 주식·코인·부동산·게임으로 부자 되기 경쟁 — 가입 즉시 5억 원 지급!
-  </div>
+    st.markdown("""
+<style>
+@keyframes carousel-slide {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes card-glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(108,99,255,0.15); }
+  50%       { box-shadow: 0 0 22px rgba(0,212,255,0.35); }
+}
+.preview-carousel-wrap {
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 14px;
+  /* 양 끝 fade-out */
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+.preview-carousel-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  animation: carousel-slide 28s linear infinite;
+}
+.preview-carousel-wrap:hover .preview-carousel-track {
+  animation-play-state: paused;
+}
+.preview-card {
+  flex: 0 0 220px;
+  background: rgba(10,16,32,0.85);
+  border-radius: 14px;
+  padding: 20px 16px 16px;
+  text-align: center;
+  position: relative;
+  animation: card-glow-pulse 4s ease-in-out infinite;
+  transition: transform 0.25s;
+}
+.preview-card:hover { transform: translateY(-4px); }
+.preview-card-icon { font-size: 2.4rem; margin-bottom: 10px; line-height: 1; }
+.preview-card-title { font-weight: 900; font-size: 0.88rem; margin-bottom: 6px; }
+.preview-card-desc { color: #8899bb; font-size: 0.75rem; line-height: 1.55; margin-bottom: 10px; }
+.preview-tag {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin: 2px 2px 0;
+}
+</style>
 
-  <!-- 미리보기 카드 그리드 -->
-  <div style='display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;'>
+<div style='color:#00d4ff;font-weight:900;font-size:1rem;margin-bottom:4px;text-align:center;'>
+  🎮 효민 포털에서 이런 걸 즐길 수 있어요
+</div>
+<div style='color:#8899bb;font-size:0.82rem;margin-bottom:14px;text-align:center;'>
+  가입 즉시 5억 원 지급 · 시즌 2 진행 중 · 마우스 올리면 멈춰요
+</div>
 
-    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(0,229,255,0.2);border-radius:12px;padding:16px;text-align:center;'>
-      <div style='font-size:2.2rem;margin-bottom:8px;'>📈</div>
-      <div style='color:#00d4ff;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>주식 · 코인 · 부동산</div>
-      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>실시간으로 변동하는 주가와 코인 시세를 분석하고 투자하세요. 부동산 임대로 패시브 수익도!</div>
-      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
-        <span style='background:rgba(0,229,255,0.12);color:#00d4ff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>10종목 주식</span>
-        <span style='background:rgba(0,229,255,0.12);color:#00d4ff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>5종 코인</span>
-        <span style='background:rgba(0,229,255,0.12);color:#00d4ff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>부동산</span>
-      </div>
-    </div>
+<div class="preview-carousel-wrap">
+<div class="preview-carousel-track">
 
-    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(255,214,0,0.25);border-radius:12px;padding:16px;text-align:center;'>
-      <div style='font-size:2.2rem;margin-bottom:8px;'>🎮</div>
-      <div style='color:#ffd700;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>미니게임 10종</div>
-      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>레이싱·좀비슈터·격투·저격전·블랙잭·홀덤·슬롯·광산·던전·마블 보드게임까지!</div>
-      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
-        <span style='background:rgba(255,214,0,0.1);color:#ffd700;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>🏎️ 레이싱</span>
-        <span style='background:rgba(255,214,0,0.1);color:#ffd700;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>🧟 좀비</span>
-        <span style='background:rgba(255,214,0,0.1);color:#ffd700;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>🥊 격투</span>
-      </div>
-    </div>
-
-    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(0,255,136,0.2);border-radius:12px;padding:16px;text-align:center;'>
-      <div style='font-size:2.2rem;margin-bottom:8px;'>🏆</div>
-      <div style='color:#00ff88;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>시즌 랭킹 경쟁</div>
-      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>매 시즌 자산 1위를 향한 치열한 경쟁! 게임 챔피언, 클랜, VIP 라운지도 운영 중.</div>
-      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
-        <span style='background:rgba(0,255,136,0.1);color:#00ff88;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>시즌 2 진행</span>
-        <span style='background:rgba(0,255,136,0.1);color:#00ff88;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>클랜 시스템</span>
-      </div>
-    </div>
-
-    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(192,79,255,0.25);border-radius:12px;padding:16px;text-align:center;'>
-      <div style='font-size:2.2rem;margin-bottom:8px;'>🧠</div>
-      <div style='color:#c04fff;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>AI 무한 모의고사</div>
-      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>공부 내용을 붙여넣으면 AI가 문제를 무한 생성! Gemini 2.5 Flash 탑재.</div>
-      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
-        <span style='background:rgba(192,79,255,0.1);color:#c04fff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>AI 문제 생성</span>
-        <span style='background:rgba(192,79,255,0.1);color:#c04fff;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>PDF 업로드</span>
-      </div>
-    </div>
-
-    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(255,51,102,0.25);border-radius:12px;padding:16px;text-align:center;'>
-      <div style='font-size:2.2rem;margin-bottom:8px;'>💻</div>
-      <div style='color:#ff3366;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>THE TERMINAL</div>
-      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>커맨드라인 방탈출 어드벤처! 20스테이지를 클리어하며 해킹 미션 해결.</div>
-      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
-        <span style='background:rgba(255,51,102,0.1);color:#ff3366;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>20스테이지</span>
-        <span style='background:rgba(255,51,102,0.1);color:#ff3366;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>타임어택</span>
-      </div>
-    </div>
-
-    <div style='background:rgba(10,16,32,0.8);border:1px solid rgba(255,140,66,0.25);border-radius:12px;padding:16px;text-align:center;'>
-      <div style='font-size:2.2rem;margin-bottom:8px;'>🗳️</div>
-      <div style='color:#ff8c42;font-weight:800;font-size:0.9rem;margin-bottom:6px;'>월드 배틀</div>
-      <div style='color:#8899bb;font-size:0.78rem;line-height:1.5;'>매일 업데이트되는 주제로 실시간 진영 투표! 내 의견을 세계에 알리세요.</div>
-      <div style='margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;'>
-        <span style='background:rgba(255,140,66,0.1);color:#ff8c42;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>실시간 투표</span>
-        <span style='background:rgba(255,140,66,0.1);color:#ff8c42;border-radius:999px;padding:2px 9px;font-size:0.7rem;font-weight:700;'>매일 갱신</span>
-      </div>
-    </div>
-
+  <!-- 카드 1벌 -->
+  <div class="preview-card" style="border:1px solid rgba(0,212,255,0.3);">
+    <div class="preview-card-icon">📈</div>
+    <div class="preview-card-title" style="color:#00d4ff;">주식 트레이딩</div>
+    <div class="preview-card-desc">실시간 변동 주가로<br>10개 종목에 투자</div>
+    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">10종목</span>
+    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">차트</span>
   </div>
 
-  <div style='text-align:center;'>
-    <div style='color:#ffd700;font-weight:900;font-size:1.1rem;margin-bottom:4px;'>🎁 가입 즉시 5억 원 지급!</div>
-    <div style='color:#8899bb;font-size:0.85rem;'>지금 가입하고 시즌 2 랭킹 경쟁에 참여하세요</div>
+  <div class="preview-card" style="border:1px solid rgba(255,214,0,0.3);">
+    <div class="preview-card-icon">₿</div>
+    <div class="preview-card-title" style="color:#ffd700;">코인 거래소</div>
+    <div class="preview-card-desc">비트코인·이더리움 등<br>5종 코인 실시간 매매</div>
+    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">5종 코인</span>
+    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">레버리지</span>
   </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
+    <div class="preview-card-icon">🏢</div>
+    <div class="preview-card-title" style="color:#00ff88;">부동산 임대</div>
+    <div class="preview-card-desc">건물 매입 후<br>초당 임대료 수익 획득</div>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">패시브 수익</span>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">건물주</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,51,102,0.3);">
+    <div class="preview-card-icon">🏎️</div>
+    <div class="preview-card-title" style="color:#ff3366;">네온 도주 레이싱</div>
+    <div class="preview-card-desc">5레인 무한 도로<br>니트로 · 경찰 추격</div>
+    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">×8 콤보</span>
+    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">랭킹</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,100,0,0.3);">
+    <div class="preview-card-icon">🧟</div>
+    <div class="preview-card-title" style="color:#ff6400;">좀비 아포칼립스</div>
+    <div class="preview-card-desc">탑다운 슈터<br>웨이브 · 4종 무기</div>
+    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">생존</span>
+    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">업그레이드</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(192,79,255,0.3);">
+    <div class="preview-card-icon">🥊</div>
+    <div class="preview-card-title" style="color:#c04fff;">스트리트 파이터</div>
+    <div class="preview-card-desc">1v1 격투 · 6캐릭터<br>필살기 · 슈퍼 게이지</div>
+    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">PVP</span>
+    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">3라운드</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,229,255,0.3);">
+    <div class="preview-card-icon">🎯</div>
+    <div class="preview-card-title" style="color:#00e5ff;">라인배틀 저격전</div>
+    <div class="preview-card-desc">아군 소환 + 1인칭 저격<br>4가지 난이도</div>
+    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">헤드샷</span>
+    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">S등급</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,215,0,0.3);">
+    <div class="preview-card-icon">⚔️</div>
+    <div class="preview-card-title" style="color:#ffd700;">던전 런 REBORN</div>
+    <div class="preview-card-desc">뱀서라이크 서바이벌<br>4클래스 · 보스 격파</div>
+    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">웨이브</span>
+    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">+2억 보상</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
+    <div class="preview-card-icon">🎲</div>
+    <div class="preview-card-title" style="color:#00ff88;">인베스트 마블</div>
+    <div class="preview-card-desc">AI 봇과 보드게임 대결<br>30턴 · 6가지 승리조건</div>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">보드게임</span>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">AI 대전</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(108,99,255,0.3);">
+    <div class="preview-card-icon">💻</div>
+    <div class="preview-card-title" style="color:#6c63ff;">THE TERMINAL</div>
+    <div class="preview-card-desc">커맨드라인 방탈출<br>20스테이지 해킹 미션</div>
+    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">타임어택</span>
+    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">기록 저장</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,140,66,0.3);">
+    <div class="preview-card-icon">🗳️</div>
+    <div class="preview-card-title" style="color:#ff8c42;">월드 배틀</div>
+    <div class="preview-card-desc">매일 새 주제로<br>실시간 진영 투표</div>
+    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">매일 갱신</span>
+    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">실시간</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(100,200,255,0.3);">
+    <div class="preview-card-icon">🧠</div>
+    <div class="preview-card-title" style="color:#64c8ff;">AI 무한 모의고사</div>
+    <div class="preview-card-desc">Gemini AI가 만드는<br>무한 문제 · PDF 업로드</div>
+    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">AI 생성</span>
+    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">성적 분석</span>
+  </div>
+
+  <!-- 2벌 반복 (무한루프용) -->
+  <div class="preview-card" style="border:1px solid rgba(0,212,255,0.3);">
+    <div class="preview-card-icon">📈</div>
+    <div class="preview-card-title" style="color:#00d4ff;">주식 트레이딩</div>
+    <div class="preview-card-desc">실시간 변동 주가로<br>10개 종목에 투자</div>
+    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">10종목</span>
+    <span class="preview-tag" style="background:rgba(0,212,255,0.12);color:#00d4ff;">차트</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,214,0,0.3);">
+    <div class="preview-card-icon">₿</div>
+    <div class="preview-card-title" style="color:#ffd700;">코인 거래소</div>
+    <div class="preview-card-desc">비트코인·이더리움 등<br>5종 코인 실시간 매매</div>
+    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">5종 코인</span>
+    <span class="preview-tag" style="background:rgba(255,214,0,0.1);color:#ffd700;">레버리지</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
+    <div class="preview-card-icon">🏢</div>
+    <div class="preview-card-title" style="color:#00ff88;">부동산 임대</div>
+    <div class="preview-card-desc">건물 매입 후<br>초당 임대료 수익 획득</div>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">패시브 수익</span>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">건물주</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,51,102,0.3);">
+    <div class="preview-card-icon">🏎️</div>
+    <div class="preview-card-title" style="color:#ff3366;">네온 도주 레이싱</div>
+    <div class="preview-card-desc">5레인 무한 도로<br>니트로 · 경찰 추격</div>
+    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">×8 콤보</span>
+    <span class="preview-tag" style="background:rgba(255,51,102,0.1);color:#ff3366;">랭킹</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,100,0,0.3);">
+    <div class="preview-card-icon">🧟</div>
+    <div class="preview-card-title" style="color:#ff6400;">좀비 아포칼립스</div>
+    <div class="preview-card-desc">탑다운 슈터<br>웨이브 · 4종 무기</div>
+    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">생존</span>
+    <span class="preview-tag" style="background:rgba(255,100,0,0.1);color:#ff6400;">업그레이드</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(192,79,255,0.3);">
+    <div class="preview-card-icon">🥊</div>
+    <div class="preview-card-title" style="color:#c04fff;">스트리트 파이터</div>
+    <div class="preview-card-desc">1v1 격투 · 6캐릭터<br>필살기 · 슈퍼 게이지</div>
+    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">PVP</span>
+    <span class="preview-tag" style="background:rgba(192,79,255,0.1);color:#c04fff;">3라운드</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,229,255,0.3);">
+    <div class="preview-card-icon">🎯</div>
+    <div class="preview-card-title" style="color:#00e5ff;">라인배틀 저격전</div>
+    <div class="preview-card-desc">아군 소환 + 1인칭 저격<br>4가지 난이도</div>
+    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">헤드샷</span>
+    <span class="preview-tag" style="background:rgba(0,229,255,0.1);color:#00e5ff;">S등급</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,215,0,0.3);">
+    <div class="preview-card-icon">⚔️</div>
+    <div class="preview-card-title" style="color:#ffd700;">던전 런 REBORN</div>
+    <div class="preview-card-desc">뱀서라이크 서바이벌<br>4클래스 · 보스 격파</div>
+    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">웨이브</span>
+    <span class="preview-tag" style="background:rgba(255,215,0,0.1);color:#ffd700;">+2억 보상</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(0,255,136,0.3);">
+    <div class="preview-card-icon">🎲</div>
+    <div class="preview-card-title" style="color:#00ff88;">인베스트 마블</div>
+    <div class="preview-card-desc">AI 봇과 보드게임 대결<br>30턴 · 6가지 승리조건</div>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">보드게임</span>
+    <span class="preview-tag" style="background:rgba(0,255,136,0.1);color:#00ff88;">AI 대전</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(108,99,255,0.3);">
+    <div class="preview-card-icon">💻</div>
+    <div class="preview-card-title" style="color:#6c63ff;">THE TERMINAL</div>
+    <div class="preview-card-desc">커맨드라인 방탈출<br>20스테이지 해킹 미션</div>
+    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">타임어택</span>
+    <span class="preview-tag" style="background:rgba(108,99,255,0.1);color:#6c63ff;">기록 저장</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(255,140,66,0.3);">
+    <div class="preview-card-icon">🗳️</div>
+    <div class="preview-card-title" style="color:#ff8c42;">월드 배틀</div>
+    <div class="preview-card-desc">매일 새 주제로<br>실시간 진영 투표</div>
+    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">매일 갱신</span>
+    <span class="preview-tag" style="background:rgba(255,140,66,0.1);color:#ff8c42;">실시간</span>
+  </div>
+
+  <div class="preview-card" style="border:1px solid rgba(100,200,255,0.3);">
+    <div class="preview-card-icon">🧠</div>
+    <div class="preview-card-title" style="color:#64c8ff;">AI 무한 모의고사</div>
+    <div class="preview-card-desc">Gemini AI가 만드는<br>무한 문제 · PDF 업로드</div>
+    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">AI 생성</span>
+    <span class="preview-tag" style="background:rgba(100,200,255,0.1);color:#64c8ff;">성적 분석</span>
+  </div>
+
+</div>
+</div>
+
+<div style='text-align:center;margin-top:10px;margin-bottom:6px;'>
+  <span style='color:#ffd700;font-weight:900;font-size:1rem;'>🎁 가입 즉시 5억 원 지급!</span>
+  <span style='color:#8899bb;font-size:0.82rem;margin-left:10px;'>지금 가입하고 시즌 2 랭킹 경쟁에 참여하세요</span>
 </div>
     """, unsafe_allow_html=True)
 
