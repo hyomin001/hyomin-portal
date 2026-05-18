@@ -1204,6 +1204,19 @@ padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;al
     PORTAL_URL = "https://hyomin-app-2gv2xbsxqhrftspwcpgqqw.streamlit.app"  # ← 실제 URL로 변경하세요
 
     st.markdown("<div class='game-section-title'>🖼️ 서비스 미리보기</div>", unsafe_allow_html=True)
+
+    # ── 서비스 미리보기 위 스크롤 태그 배너 ──
+    _prev_tags_html = ""
+    _prev_tags = [
+        ("🏅 시즌 1 명예의 전당", "gold"), ("📈 주식·코인·부동산", "live"), ("🎰 카지노 & 게임", "hot"),
+        ("🏎️ 하이퍼카 레이싱", "new"), ("🔥 HOT", "hot"), ("🚀 시즌 2 진행 중", "live"),
+        ("🤖 AI 모의고사", "new"), ("🏆 랭킹 1위 쟁탈전", "gold"), ("⚔️ 던전 런 REBORN", "hot"),
+        ("🎲 인베스트 마블", "gold"), ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"),
+    ]
+    for _plabel, _pcls in _prev_tags * 2:
+        _prev_tags_html += f"<span class='scroll-tag {_pcls}'>{_plabel}</span>"
+    st.markdown(f"<div class='banner-scroll-wrap' style='margin-bottom:16px;'><div class='banner-scroll-track'>{_prev_tags_html}</div></div>", unsafe_allow_html=True)
+
     st.markdown("""
 <style>
 @keyframes carousel-slide {
@@ -1476,62 +1489,72 @@ padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;al
     _share_msg_general = f"효민 포털 - 주식·코인·부동산·게임 통합 플랫폼 | 가입 시 5억 지급 | {PORTAL_URL}"
 
     st.markdown(f"""
-<div style='background:rgba(10,16,32,0.7);border:1px solid rgba(108,99,255,0.25);border-radius:14px;padding:20px;'>
-  <div style='color:#e8f0ff;font-size:0.9rem;margin-bottom:16px;'>
-    👇 아래 버튼으로 친구에게 바로 공유하세요! (클릭하면 메시지가 복사됩니다)
+<style>
+.share-btn {{
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}}
+.share-btn:hover {{ transform: translateY(-2px); filter: brightness(1.15); }}
+</style>
+
+<div style='background:linear-gradient(135deg,rgba(10,16,32,0.9),rgba(15,24,48,0.9));border:1px solid rgba(108,99,255,0.3);border-radius:16px;padding:22px;'>
+
+  <div style='color:#e8f0ff;font-size:0.88rem;margin-bottom:18px;'>
+    👇 아래 버튼으로 친구에게 바로 공유하세요! <span style='color:#8899bb;'>(클릭하면 메시지가 복사됩니다)</span>
   </div>
 
-  <div style='display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;'>
+  <div style='display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;'>
 
-    <!-- 카카오톡 공유 -->
-    <button onclick="
+    <button class="share-btn" onclick="
       navigator.clipboard.writeText({repr(_share_msg_kakao)}).then(()=>{{
-        this.textContent='✅ 복사됨!';
+        this.innerHTML='✅ 복사됨!';
         this.style.background='rgba(0,255,136,0.2)';
         this.style.borderColor='rgba(0,255,136,0.5)';
-        setTimeout(()=>{{this.textContent='💬 카카오톡용 복사';this.style.background='rgba(255,230,0,0.12)';this.style.borderColor='rgba(255,230,0,0.4)';}},2000);
+        setTimeout(()=>{{this.innerHTML='💬 카카오톡용 복사';this.style.background='rgba(255,230,0,0.12)';this.style.borderColor='rgba(255,230,0,0.4)';}},2000);
       }})
-    " style='background:rgba(255,230,0,0.12);border:1px solid rgba(255,230,0,0.4);color:#ffe600;
-             border-radius:10px;padding:10px 18px;font-size:0.88rem;font-weight:800;cursor:pointer;
-             font-family:inherit;transition:all 0.2s;'>
+    " style='background:rgba(255,230,0,0.12);border:1px solid rgba(255,230,0,0.4);color:#ffe600;'>
       💬 카카오톡용 복사
     </button>
 
-    <!-- 디스코드 공유 -->
-    <button onclick="
+    <button class="share-btn" onclick="
       navigator.clipboard.writeText({repr(_share_msg_discord)}).then(()=>{{
-        this.textContent='✅ 복사됨!';
+        this.innerHTML='✅ 복사됨!';
         this.style.background='rgba(0,255,136,0.2)';
         this.style.borderColor='rgba(0,255,136,0.5)';
-        setTimeout(()=>{{this.textContent='🎮 디스코드용 복사';this.style.background='rgba(88,101,242,0.15)';this.style.borderColor='rgba(88,101,242,0.45)';}},2000);
+        setTimeout(()=>{{this.innerHTML='🎮 디스코드용 복사';this.style.background='rgba(88,101,242,0.15)';this.style.borderColor='rgba(88,101,242,0.45)';}},2000);
       }})
-    " style='background:rgba(88,101,242,0.15);border:1px solid rgba(88,101,242,0.45);color:#7289da;
-             border-radius:10px;padding:10px 18px;font-size:0.88rem;font-weight:800;cursor:pointer;
-             font-family:inherit;transition:all 0.2s;'>
+    " style='background:rgba(88,101,242,0.15);border:1px solid rgba(88,101,242,0.45);color:#7289da;'>
       🎮 디스코드용 복사
     </button>
 
-    <!-- 링크 복사 -->
-    <button onclick="
+    <button class="share-btn" onclick="
       navigator.clipboard.writeText('{PORTAL_URL}').then(()=>{{
-        this.textContent='✅ 링크 복사됨!';
+        this.innerHTML='✅ 링크 복사됨!';
         this.style.background='rgba(0,255,136,0.2)';
         this.style.borderColor='rgba(0,255,136,0.5)';
-        setTimeout(()=>{{this.textContent='🔗 링크 복사';this.style.background='rgba(0,212,255,0.1)';this.style.borderColor='rgba(0,212,255,0.35)';}},2000);
+        setTimeout(()=>{{this.innerHTML='🔗 링크 복사';this.style.background='rgba(0,212,255,0.1)';this.style.borderColor='rgba(0,212,255,0.35)';}},2000);
       }})
-    " style='background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.35);color:#00d4ff;
-             border-radius:10px;padding:10px 18px;font-size:0.88rem;font-weight:800;cursor:pointer;
-             font-family:inherit;transition:all 0.2s;'>
+    " style='background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.35);color:#00d4ff;'>
       🔗 링크 복사
     </button>
 
   </div>
 
-  <!-- 미리보기 텍스트 -->
-  <div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;'>
-    <div style='color:#8899bb;font-size:0.72rem;margin-bottom:6px;font-weight:700;'>💬 카카오톡 메시지 미리보기</div>
-    <div style='color:#c8d8f0;font-size:0.82rem;line-height:1.7;white-space:pre-line;'>{_share_msg_kakao}</div>
+  <!-- 미리보기 텍스트 박스 -->
+  <div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;'>
+    <div style='color:#8899bb;font-size:0.72rem;margin-bottom:8px;font-weight:700;letter-spacing:0.05em;'>💬 카카오톡 메시지 미리보기</div>
+    <div style='color:#c8d8f0;font-size:0.84rem;line-height:1.8;white-space:pre-line;'>{_share_msg_kakao}</div>
   </div>
+
 </div>
     """, unsafe_allow_html=True)
 
