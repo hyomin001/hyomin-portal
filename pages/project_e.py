@@ -328,9 +328,11 @@ function flushJ() { for (const k in JKEYS) delete JKEYS[k]; MOUSE.clicked = fals
 
 // ── PARTICLES ──────────────────────────────────────────────
 const PARTS = [];
+const PARTS_MAX = 600; // ✅ [PERF FIX] 파티클 최대 수 제한으로 렉 방지
 function spawnP(x, y, o = {}) {
   const n = o.n || 8;
   for (let i = 0; i < n; i++) {
+    if (PARTS.length >= PARTS_MAX) PARTS.splice(0, Math.ceil(PARTS_MAX * 0.1)); // 오래된 것부터 제거
     const a = (o.dir || 0) + (Math.random() - .5) * (o.spread || Math.PI * 2);
     const s = (o.sMin || 1) + Math.random() * (o.sMax || 5);
     const cols = Array.isArray(o.col) ? o.col : [o.col || '#fff'];
@@ -419,7 +421,9 @@ function drawWaves() {
 
 // Projectiles
 const PROJS = [];
+const PROJS_MAX = 200; // ✅ [PERF FIX] 발사체 최대 수 제한
 function spawnProj(x, y, vx, vy, dmg, col, owner, opts = {}) {
+  if (PROJS.length >= PROJS_MAX) return; // 이미 꽉 찼으면 스킵
   PROJS.push({ x, y, vx, vy, dmg, col, owner, alive: true,
     life: opts.life || 2.2, sz: opts.sz || 8,
     pierce: opts.pierce || 0, pierceHit: [],
@@ -505,7 +509,9 @@ const RELIC_POOL = [
 
 function showRelicChoice() {
   if (!G) return;
-  // ✅ [BUG FIX] 레벨업 모달이 열려있으면 0.6초 후 재시도 (보스 처치 후 레벨업이 동시 발생하는 경우)
+  // ✅ [BUG FIX] 게임 종료(over/win) 상태면 유물 선택 완전히 취소 (무한 재시도 방지)
+  if (G.phase === 'over' || G.phase === 'win') return;
+  // 레벨업 모달이 열려있으면 0.6초 후 재시도 (보스 처치 후 레벨업이 동시 발생하는 경우)
   if (G.phase !== 'play') {
     setTimeout(() => showRelicChoice(), 600);
     return;
@@ -1270,8 +1276,11 @@ function updateEnemies(dt) {
       }
     }
   }
-  // Remove dead enemies that finished death anim
-  G.enemies = G.enemies.filter(e => e.alive || (e.dying && e.deathTimer > 0));
+  // ✅ [PERF FIX] filter() 대신 역방향 splice로 새 배열 생성 없이 in-place 정리
+  for (let i = G.enemies.length - 1; i >= 0; i--) {
+    const e = G.enemies[i];
+    if (!e.alive && !(e.dying && e.deathTimer > 0)) G.enemies.splice(i, 1);
+  }
 }
 
 function updateBossAI(b, p, dt) {
@@ -1987,7 +1996,8 @@ const sfx_item = () => { ensureAudio(); beep(900,'sine',.1,.2); };
 
 // ── MAIN LOOP ─────────────────────────────────────────────
 function loop(ts) {
-  const dt = Math.min((ts - lastTs) / 1000, .05);
+  // ✅ [PERF FIX] dt 클램프를 .033으로 낮춤: 탭 전환/렉 복귀 시 물리 튀는 현상 방지
+  const dt = Math.min((ts - lastTs) / 1000, .033);
   lastTs = ts;
   timer += dt;
 
