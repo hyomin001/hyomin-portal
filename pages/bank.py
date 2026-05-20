@@ -8,7 +8,7 @@ from utils.core import format_korean_money, cooldown_remaining, set_cooldown, sy
 
 def render(market, nw):
     st.title("🏦 하이리스크 뱅크")
-    st.markdown("<div class='card' style='margin-bottom:16px;'><div style='color:#94A3B8;font-size:0.82rem;'>⚠️ 대출 조건: 10초마다 <b style='color:#FF4B4B;'>2% 복리 이자</b>가 붙습니다.</div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='card' style='margin-bottom:16px;'><div style='color:#B0BAC8;font-size:0.82rem;'>⚠️ 대출 조건: 10초마다 <b style='color:#FF4B4B;'>2% 복리 이자</b>가 붙습니다.</div></div>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
     c1.metric("💵 현금",    format_korean_money(st.session_state.global_cash))

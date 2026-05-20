@@ -6,7 +6,7 @@ from utils.database import log_tx, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
     st.title("⚽ 조기축구 승부차기")
-    st.markdown("<div style='color:#94A3B8;margin-bottom:16px;'>키커와 골키퍼의 피 말리는 심리전! 5판 3선승제로 승부합니다.</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#B0BAC8;margin-bottom:16px;'>키커와 골키퍼의 피 말리는 심리전! 5판 3선승제로 승부합니다.</div>", unsafe_allow_html=True)
 
     if 'ps_state' not in st.session_state:
         st.session_state.update({
@@ -23,7 +23,7 @@ def render(market, nw):
              border:2px solid rgba(0,255,136,0.3);border-radius:18px;margin-bottom:24px;'>
           <div style='font-size:4rem;'>🥅</div>
           <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#00FF88;margin-top:8px;font-weight:900;'>PENALTY SHOOTOUT</div>
-          <div style='color:#94A3B8;margin-top:10px;font-size:0.88rem;'>승리 시 베팅금의 2배 획득! (무승부 시 원금 반환)</div>
+          <div style='color:#B0BAC8;margin-top:10px;font-size:0.88rem;'>승리 시 베팅금의 2배 획득! (무승부 시 원금 반환)</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -58,7 +58,7 @@ def render(market, nw):
 
         st.markdown(f"""
         <div class='scoreboard'>
-          <div style='color:#94A3B8;font-size:0.9rem;letter-spacing:2px;margin-bottom:12px;'>🏆 조기축구 결승전 승부차기</div>
+          <div style='color:#B0BAC8;font-size:0.9rem;letter-spacing:2px;margin-bottom:12px;'>🏆 조기축구 결승전 승부차기</div>
           <div style='display:flex;justify-content:space-around;align-items:center;'>
             <div><div class='team-label'>{st.session_state.logged_in_user} (나)</div></div>
             <div>
@@ -124,7 +124,7 @@ def render(market, nw):
                  border-radius:18px;padding:28px;margin:20px 0;box-shadow:0 0 30px {result_col}44;'>
               <div style='font-size:1.8rem;font-weight:900;color:{result_col};'>{result_txt}</div>
               <div style='font-size:1.3rem;font-weight:900;margin-top:10px;'>{net_str}</div>
-              <div style='color:#94A3B8;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
+              <div style='color:#B0BAC8;font-size:0.8rem;margin-top:8px;'>지급액: {format_korean_money(prize)}</div>
             </div>
             """, unsafe_allow_html=True)
 

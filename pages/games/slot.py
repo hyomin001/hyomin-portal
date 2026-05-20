@@ -21,8 +21,8 @@ def render(market, nw):
 
     st.markdown(f"""
 <div class='card' style='text-align:center;'>
-  <div style='color:#94A3B8;font-size:0.82rem;'>비용: <b style='color:#FFD600;'>{format_korean_money(tier['cost'])}</b> &nbsp;|&nbsp; 잭팟: <b style='color:#FF00FF;'>{format_korean_money(tier['jackpot'])}</b></div>
-  <div style='color:#94A3B8;font-size:0.78rem;margin-top:4px;'>💎=3개 잭팟, 같은 기호 3개=고배당, 2개=소배당</div>
+  <div style='color:#B0BAC8;font-size:0.82rem;'>비용: <b style='color:#FFD600;'>{format_korean_money(tier['cost'])}</b> &nbsp;|&nbsp; 잭팟: <b style='color:#FF00FF;'>{format_korean_money(tier['jackpot'])}</b></div>
+  <div style='color:#B0BAC8;font-size:0.78rem;margin-top:4px;'>💎=3개 잭팟, 같은 기호 3개=고배당, 2개=소배당</div>
 </div>""", unsafe_allow_html=True)
 
     slot_display = st.empty()

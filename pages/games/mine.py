@@ -7,7 +7,7 @@ from utils.database import log_tx, save_market, atomic_add_cash
 
 def render(market, nw):
     st.title("⛏️ 효민 광산")
-    st.markdown("<div style='color:#94A3B8;margin-bottom:16px;'>곡괭이를 들어 광물을 캐세요!</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#B0BAC8;margin-bottom:16px;'>곡괭이를 들어 광물을 캐세요!</div>", unsafe_allow_html=True)
 
     uid  = st.session_state.logged_in_user
     cash = st.session_state.global_cash
@@ -26,7 +26,7 @@ def render(market, nw):
 <div style='background: linear-gradient(135deg, rgba(139,69,19,0.15), rgba(0,0,0,0.3)); border: 1px solid rgba(205,127,50,0.3); border-radius: 14px; padding: 20px; text-align: center;'>
   <div style='font-size:2rem;margin-bottom:8px;'>⛏️</div>
   <div style='font-size:1.2rem;font-weight:900;color:{mine_color};'>{mine_label}</div>
-  <div style='color:#94A3B8;font-size:0.82rem;margin-top:6px;'>광산 티어가 높을수록 희귀 광물 확률 ↑</div>
+  <div style='color:#B0BAC8;font-size:0.82rem;margin-top:6px;'>광산 티어가 높을수록 희귀 광물 확률 ↑</div>
 </div>""", unsafe_allow_html=True)
 
     st.write("")
@@ -34,7 +34,7 @@ def render(market, nw):
     rows_html = "<table class='stock-table'><thead><tr><th>광물</th><th style='text-align:right;'>가치</th><th style='text-align:right;'>기본 확률</th></tr></thead><tbody>"
     for item in MINE_ITEMS:
         adj_prob = min(item['prob'] + tier_bonus, 0.99)
-        rows_html += f"<tr><td>{item['icon']} {item['name']}</td><td style='text-align:right;color:#FFD600;font-weight:900;'>{format_korean_money(item['value'])}</td><td style='text-align:right;color:#94A3B8;'>{adj_prob*100:.1f}%</td></tr>"
+        rows_html += f"<tr><td>{item['icon']} {item['name']}</td><td style='text-align:right;color:#FFD600;font-weight:900;'>{format_korean_money(item['value'])}</td><td style='text-align:right;color:#B0BAC8;'>{adj_prob*100:.1f}%</td></tr>"
     rows_html += "</tbody></table>"
     st.markdown(rows_html, unsafe_allow_html=True)
     st.write("")

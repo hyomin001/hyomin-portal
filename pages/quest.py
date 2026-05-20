@@ -36,7 +36,7 @@ def get_progress_hint(qid, nw, st_session, market):
 
 def render(market, nw):
     st.title("📅 일일 퀘스트")
-    st.markdown("<div style='color:#94A3B8;margin-bottom:20px;'>매일 자정에 초기화됩니다. 달성하고 보상을 수령하세요!</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#B0BAC8;margin-bottom:20px;'>매일 자정에 초기화됩니다. 달성하고 보상을 수령하세요!</div>", unsafe_allow_html=True)
     
     today_str = datetime.now(KST).strftime("%Y-%m-%d")
     dq = st.session_state.get('daily_quests', {})
@@ -55,7 +55,7 @@ def render(market, nw):
             <div style='display:flex; justify-content:space-between; align-items:center;'>
                 <div>
                     <span style='font-size:1.5rem;'>{q['icon']}</span> <b style='font-size:1.1rem; color:#E2E8F0;'>{q['name']}</b>
-                    <div style='color:#94A3B8; font-size:0.85rem; margin-top:4px;'>{q['desc']}</div>
+                    <div style='color:#B0BAC8; font-size:0.85rem; margin-top:4px;'>{q['desc']}</div>
                 </div>
                 <div style='text-align:right;'>
                     <div style='color:#FFD600; font-weight:900;'>{format_korean_money(q['reward'])}</div>

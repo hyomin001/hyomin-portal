@@ -15,7 +15,7 @@ def render(market, nw):
         <div style='flex: 1;'>
             <div style='color:#00FF88; font-weight:900; font-size:1.1rem; margin-bottom:5px;'>{st.session_state.equipped_title}</div>
             <div style='font-size: 2rem; font-family: "Orbitron", monospace; font-weight: 900; color: #fff; line-height: 1.2;'>{st.session_state.logged_in_user}</div>
-            <div style='color:#94A3B8; font-size:0.9rem; margin-top:5px;'>환영합니다! 우주에서의 새로운 하루가 시작되었습니다.</div>
+            <div style='color:#B0BAC8; font-size:0.9rem; margin-top:5px;'>환영합니다! 우주에서의 새로운 하루가 시작되었습니다.</div>
         </div>
         <div style='text-align: right; border-left: 1px solid rgba(0,229,255,0.3); padding-left: 20px;'>
             <div style='color:#94A3B8; font-size:0.9rem;'>보유 현금</div>
@@ -94,7 +94,7 @@ def render(market, nw):
     with c3:
         st.markdown(f"""
         <div class='card' style='text-align:center;'>
-            <div style='color:#94A3B8; font-size:0.9rem;'>💳 갚아야 할 대출금</div>
+            <div style='color:#B0BAC8; font-size:0.9rem;'>💳 갚아야 할 대출금</div>
             <div style='color:#FF4B4B; font-size:1.5rem; font-weight:900;'>{format_korean_money(st.session_state.loan)}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -107,7 +107,7 @@ def render(market, nw):
         )
         st.markdown(f"""
         <div class='card' style='text-align:center;'>
-            <div style='color:#94A3B8; font-size:0.9rem;'>🏢 수금 대기 중인 임대료</div>
+            <div style='color:#B0BAC8; font-size:0.9rem;'>🏢 수금 대기 중인 임대료</div>
             <div style='color:#00FF88; font-size:1.5rem; font-weight:900;'>{format_korean_money(total_rent_pending)}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -156,7 +156,7 @@ def render(market, nw):
             st.markdown(f"""
 <div class='card' style='text-align:center;padding:14px;'>
   <div style='font-size:1.4rem;'>{s['icon']}</div>
-  <div style='font-size:0.78rem;color:#94A3B8;margin:4px 0;'>{d['name'][:6]}</div>
+  <div style='font-size:0.78rem;color:#B0BAC8;margin:4px 0;'>{d['name'][:6]}</div>
   <div style='font-size:1rem;font-weight:900;color:#E2E8F0;'>₩{d['price']:,}</div>
   <div style='font-size:0.85rem;color:{clr};font-weight:900;'>{arrow} {abs(diff):.2f}%</div>
 </div>""", unsafe_allow_html=True)

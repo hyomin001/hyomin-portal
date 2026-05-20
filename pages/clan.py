@@ -95,7 +95,7 @@ def render(market, nw):
               <div style='font-size:3rem;'>{cdata['icon']}</div>
               <div style='font-size:1.8rem;font-weight:900;color:#FFF;'>{s_my_clan}</div>
               <div style='color:#00E5FF;font-weight:700;'>{s_my_rank} {s_uid}</div>
-              <div style='color:#94A3B8;margin-top:8px;'>"{s_desc}"</div>
+              <div style='color:#B0BAC8;margin-top:8px;'>"{s_desc}"</div>
             </div>
             """, unsafe_allow_html=True)
 

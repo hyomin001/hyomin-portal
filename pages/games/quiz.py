@@ -136,7 +136,7 @@ def render(market, nw):
         <div style='background:linear-gradient(135deg,rgba(100,0,200,0.1),rgba(0,0,100,0.15));
              border:1px solid rgba(180,0,255,0.3);border-radius:14px;padding:20px;margin-bottom:20px;'>
           <div style='font-size:1.1rem;font-weight:900;color:#CC88FF;margin-bottom:8px;'>🔮 사주 정보 입력</div>
-          <div style='color:#94A3B8;font-size:0.85rem;'>볼 때마다 다른 결과가 나옵니다. 비용: <b style='color:#FFD600;'>{format_korean_money(SAJU_COST)}</b></div>
+          <div style='color:#B0BAC8;font-size:0.85rem;'>볼 때마다 다른 결과가 나옵니다. 비용: <b style='color:#FFD600;'>{format_korean_money(SAJU_COST)}</b></div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -182,7 +182,7 @@ def render(market, nw):
          border:2px solid rgba(180,0,255,0.5);border-radius:18px;padding:24px;text-align:center;margin-bottom:24px;'>
       <div style='font-size:3rem;margin-bottom:8px;'>{result['zodiac'].split()[0]}</div>
       <div style='font-size:1.4rem;font-weight:900;color:#CC88FF;'>{name}님의 사주</div>
-      <div style='color:#94A3B8;font-size:0.82rem;margin-top:6px;'>{today.strftime("%Y년 %m월 %d일")} 감정</div>
+      <div style='color:#B0BAC8;font-size:0.82rem;margin-top:6px;'>{today.strftime("%Y년 %m월 %d일")} 감정</div>
       <div style='display:flex;justify-content:center;gap:16px;margin-top:14px;flex-wrap:wrap;'>
         <span style='background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:4px 12px;color:#FFD600;font-size:0.82rem;'>{result['zodiac']}</span>
         <span style='background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.3);border-radius:8px;padding:4px 12px;color:#00E5FF;font-size:0.82rem;'>{result['star_sign']}</span>
@@ -196,7 +196,7 @@ def render(market, nw):
     food_match = result['food_element'] == result['element']
     st.markdown(f"""
     <div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 18px;margin-bottom:16px;'>
-      <div style='color:#94A3B8;font-size:0.78rem;margin-bottom:6px;'>🍽️ 최근 식사의 오행 분석</div>
+      <div style='color:#B0BAC8;font-size:0.78rem;margin-bottom:6px;'>🍽️ 최근 식사의 오행 분석</div>
       <div style='color:#E2E8F0;font-size:0.9rem;'>마지막 식사의 오행: <b style='color:#FFD600;'>{result['food_element']}</b>
       {"&nbsp; ✨ <b style='color:#FFD600;'>나의 오행과 일치! 재물운 +1 보너스</b>" if food_match else ""}</div>
     </div>
@@ -235,14 +235,14 @@ def render(market, nw):
     with c1:
         st.markdown(f"""
         <div style='background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:14px;text-align:center;'>
-          <div style='color:#94A3B8;font-size:0.78rem;'>오늘의 행운 아이템</div>
+          <div style='color:#B0BAC8;font-size:0.78rem;'>오늘의 행운 아이템</div>
           <div style='color:#FFD600;font-size:1.2rem;font-weight:900;margin-top:6px;'>{result['lucky_item']}</div>
         </div>
         """, unsafe_allow_html=True)
     with c2:
         st.markdown(f"""
         <div style='background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.3);border-radius:10px;padding:14px;text-align:center;'>
-          <div style='color:#94A3B8;font-size:0.78rem;'>오늘의 행운 숫자</div>
+          <div style='color:#B0BAC8;font-size:0.78rem;'>오늘의 행운 숫자</div>
           <div style='color:#00E5FF;font-size:1.2rem;font-weight:900;margin-top:6px;'>{result['lucky_num']}</div>
         </div>
         """, unsafe_allow_html=True)

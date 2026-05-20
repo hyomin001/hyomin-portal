@@ -7,7 +7,7 @@ from utils.database import load_db, save_db, log_tx, save_market, atomic_deduct_
 
 def render(market, nw):
     st.title("🛠️ 커스텀 튜닝 차고지")
-    st.markdown("<div style='color:#94A3B8;margin-bottom:16px;'>차량을 구매하고 우주 최고의 하이퍼카로 개조하세요!</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#B0BAC8;margin-bottom:16px;'>차량을 구매하고 우주 최고의 하이퍼카로 개조하세요!</div>", unsafe_allow_html=True)
 
     uid = st.session_state.logged_in_user
     us = load_db(USERS_FILE, {})
@@ -100,7 +100,7 @@ def render(market, nw):
 
                     col1, col2 = st.columns([3, 1])
                     with col1:
-                        st.markdown(f"**{part_name}** (Lv.{current_lv}/5) <br> <span style='color:#94A3B8;font-size:0.8rem;'>비용: {format_korean_money(cost)} | 성공률: {prob*100:.0f}%</span>", unsafe_allow_html=True)
+                        st.markdown(f"**{part_name}** (Lv.{current_lv}/5) <br> <span style='color:#B0BAC8;font-size:0.8rem;'>비용: {format_korean_money(cost)} | 성공률: {prob*100:.0f}%</span>", unsafe_allow_html=True)
                     with col2:
                         if st.button("🔨 강화", key=f"tune_{active_t}_{part_key}", use_container_width=True):
                             if st.session_state.global_cash < cost: st.error("잔액 부족!")

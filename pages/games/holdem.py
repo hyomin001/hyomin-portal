@@ -22,7 +22,7 @@ def card_html(card):
     return f"<div style='display:inline-block; padding:15px 20px; margin:5px; background:linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02)); border:1px solid {color}66; border-radius:10px; color:{color}; font-weight:900; font-size:1.6rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align:center; min-width:60px;'><div style='font-size:1rem; margin-bottom:-5px;'>{card['suit']}</div><div>{card['rank']}</div></div>"
 
 def hidden_card_html():
-    return "<div style='display:inline-block; padding:15px 20px; margin:5px; background:linear-gradient(145deg, #1E293B, #0F172A); border:1px solid #334155; border-radius:10px; color:#94A3B8; font-weight:900; font-size:1.6rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align:center; min-width:60px;'><div style='font-size:1rem; margin-bottom:-5px;'>🂠</div><div>?</div></div>"
+    return "<div style='display:inline-block; padding:15px 20px; margin:5px; background:linear-gradient(145deg, #1E293B, #0F172A); border:1px solid #334155; border-radius:10px; color:#B0BAC8; font-weight:900; font-size:1.6rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align:center; min-width:60px;'><div style='font-size:1rem; margin-bottom:-5px;'>🂠</div><div>?</div></div>"
 
 # ─────────────────────────────
 # 🔍 2. 실시간 족보 판독기
@@ -123,7 +123,7 @@ def advance_stage(state):
 # ─────────────────────────────
 def render(market, nw):
     st.title("🃏 텍사스 홀덤 카지노")
-    st.markdown("<div style='color:#94A3B8;margin-bottom:16px;'>딜러와 1:1 진검승부! 실시간으로 변하는 족보를 확인하며 베팅하세요.</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#B0BAC8;margin-bottom:16px;'>딜러와 1:1 진검승부! 실시간으로 변하는 족보를 확인하며 베팅하세요.</div>", unsafe_allow_html=True)
 
     uid = st.session_state.logged_in_user
 
@@ -201,7 +201,7 @@ def render(market, nw):
         <div style='text-align:center; background:rgba(255,214,0,0.1); border:2px solid #FFD600; border-radius:15px; padding:20px; box-shadow: 0 0 15px rgba(255,214,0,0.2);'>
             <div style='color:#FFD600; font-weight:900; font-size:1.1rem; margin-bottom:5px;'>💰 총 상금 (POT)</div>
             <div style='color:#FFFFFF; font-size:1.8rem; font-weight:900;'>{format_korean_money(state['pot'])}</div>
-            <div style='color:#94A3B8; font-size:0.85rem; margin-top:10px;'>현재 스테이지: <b style='color:#00E5FF;'>{state['stage'].upper()}</b></div>
+            <div style='color:#B0BAC8; font-size:0.85rem; margin-top:10px;'>현재 스테이지: <b style='color:#00E5FF;'>{state['stage'].upper()}</b></div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -225,7 +225,7 @@ def render(market, nw):
         comm_html = "<div style='text-align:center; margin-bottom:20px;'>" + "".join([card_html(c) for c in state['community']]) + "</div>"
         st.markdown(comm_html, unsafe_allow_html=True)
     else:
-        st.markdown("<div style='text-align:center; color:#94A3B8; padding:30px; font-style:italic;'>아직 바닥에 카드가 깔리지 않았습니다.</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center; color:#B0BAC8; padding:30px; font-style:italic;'>아직 바닥에 카드가 깔리지 않았습니다.</div>", unsafe_allow_html=True)
 
     st.write("---")
 

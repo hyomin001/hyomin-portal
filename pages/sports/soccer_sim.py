@@ -7,7 +7,7 @@ from utils.database import log_tx, atomic_deduct_cash, atomic_add_cash
 
 def render(market, nw):
     st.title("🏆 구단주 시뮬레이터")
-    st.markdown("<div style='color:#94A3B8;margin-bottom:16px;'>베팅 금액을 0원으로 설정하면 <b>'친선 경기(소액 기본 보상)'</b>로 진행됩니다.</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#B0BAC8;margin-bottom:16px;'>베팅 금액을 0원으로 설정하면 <b>'친선 경기(소액 기본 보상)'</b>로 진행됩니다.</div>", unsafe_allow_html=True)
 
     FORMATION_STATS = {
         "4-4-2 (균형)":     {"atk": 0.30, "def": 0.27, "emoji": "⚖️"},
@@ -93,11 +93,11 @@ def render(market, nw):
 
                 scoreboard.markdown(f"""
 <div class='scoreboard'>
-  <div style='color:#94A3B8;font-size:0.78rem;letter-spacing:2px;margin-bottom:16px;'>{stadium}</div>
+  <div style='color:#B0BAC8;font-size:0.78rem;letter-spacing:2px;margin-bottom:16px;'>{stadium}</div>
   <div style='display:flex;justify-content:space-around;align-items:center;'>
-    <div><div class='team-label'>{my_team}</div><div style='color:#94A3B8;font-size:0.78rem;'>{my_form}</div></div>
+    <div><div class='team-label'>{my_team}</div><div style='color:#B0BAC8;font-size:0.78rem;'>{my_form}</div></div>
     <div><div class='score-number'>{h_score} : {a_score}</div><div class='match-time'>⏱ {real_min}' / 90'</div></div>
-    <div><div class='team-label'>{opp_team}</div><div style='color:#94A3B8;font-size:0.78rem;'>{opp_form}</div></div>
+    <div><div class='team-label'>{opp_team}</div><div style='color:#B0BAC8;font-size:0.78rem;'>{opp_form}</div></div>
   </div>
 </div>""", unsafe_allow_html=True)
                 comm_box.markdown("".join(f"<div class='commentary-item'>{c}</div>" for c in commentaries[:6]), unsafe_allow_html=True)

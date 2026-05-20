@@ -90,7 +90,7 @@ def render(market, nw):
   <div style='display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;'>
     <div>
       <div style='color:#00d4ff;font-weight:900;font-size:1rem;'>📢 내 랭킹 친구에게 공유하기</div>
-      <div style='color:#94A3B8;font-size:0.82rem;margin-top:3px;'>현재 {_rank_emoji} {_rank_pos}위 · {_nw_str_share} — 자랑해버리기!</div>
+      <div style='color:#B0BAC8;font-size:0.82rem;margin-top:3px;'>현재 {_rank_emoji} {_rank_pos}위 · {_nw_str_share} — 자랑해버리기!</div>
     </div>
     <div style='display:flex;gap:8px;flex-wrap:wrap;'>
       <button onclick="
@@ -137,7 +137,7 @@ def render(market, nw):
     <div style='display:flex; align-items:center;'>
       <span style='font-size:1.3rem; min-width:40px;'>{medals[i]}</span>
       <span style='font-weight:900; color:#CBD5E1; font-size:1.1rem; margin-right:10px;'>{s_uid} {me}</span>
-      <span style='color:#94A3B8; font-size:0.85rem;'>{s_title}</span>
+      <span style='color:#B0BAC8; font-size:0.85rem;'>{s_title}</span>
     </div>
     <span style='font-weight:900; color:{nw_color}; font-size:1.1rem;'>{format_korean_money(r['nw'])}</span>
   </div>
@@ -186,12 +186,12 @@ def render(market, nw):
     <span style='font-size:1.3rem;'>{d_medals[i]}</span>
     <div>
       <span style='font-weight:900;color:#CBD5E1;margin-right:6px;'>{s_du} {me}</span>
-      <span style='color:#94A3B8;font-size:0.82rem;'>{s_dt}</span>
+      <span style='color:#B0BAC8;font-size:0.82rem;'>{s_dt}</span>
     </div>
   </div>
   <div style='text-align:right;'>
     <div style='font-weight:900;color:{col};font-size:1rem;'>🗡️ {d["score"]:,}점</div>
-    <div style='font-size:0.8rem;color:#94A3B8;'>킬 {d["kills"]} · 클리어 {d["clears"]}회</div>
+    <div style='font-size:0.8rem;color:#B0BAC8;'>킬 {d["kills"]} · 클리어 {d["clears"]}회</div>
   </div>
 </div>""", unsafe_allow_html=True)
         else:
@@ -276,12 +276,12 @@ def render(market, nw):
     <span style='font-size:1.1rem;'>{gmedals[i]}</span>
     <div>
       <span style='font-weight:900;color:#CBD5E1;margin-right:4px;'>{s_uid} {me}</span>
-      <span style='color:#94A3B8;font-size:0.78rem;'>{s_ttl}</span>
+      <span style='color:#B0BAC8;font-size:0.78rem;'>{s_ttl}</span>
     </div>
   </div>
   <div style='text-align:right;'>
     <div style='font-weight:900;color:{col_str};font-size:0.95rem;'>{gdef["icon"]} {score_disp}</div>
-    <div style='font-size:0.75rem;color:#94A3B8;'>{sub_txt}</div>
+    <div style='font-size:0.75rem;color:#B0BAC8;'>{sub_txt}</div>
   </div>
 </div>""", unsafe_allow_html=True)
 
@@ -317,12 +317,12 @@ def render(market, nw):
     <span style='font-size:1.1rem;'>{m_medals[i]}</span>
     <div>
       <span style='font-weight:900;color:#CBD5E1;margin-right:4px;'>{s_uid} {me}</span>
-      <span style='color:#94A3B8;font-size:0.78rem;'>{s_ttl}</span>
+      <span style='color:#B0BAC8;font-size:0.78rem;'>{s_ttl}</span>
     </div>
   </div>
   <div style='text-align:right;'>
     <div style='font-weight:900;color:{col_str};font-size:0.95rem;'>🌍 ₩{m["nw"]:,}</div>
-    <div style='font-size:0.75rem;color:#94A3B8;'>승리 {m["wins"]}회</div>
+    <div style='font-size:0.75rem;color:#B0BAC8;'>승리 {m["wins"]}회</div>
   </div>
 </div>""", unsafe_allow_html=True)
 
@@ -398,7 +398,7 @@ def render(market, nw):
                                 <b style='color:#FFFFFF; font-size:1.05rem;'>{s_name}</b>{me_badge}
                                 <span style='color:#94A3B8; font-size:0.85rem; margin-left:8px;'>{s_ctitle}</span>
                             </span>
-                            <span style='color:#94A3B8; font-size:0.8rem;'>{c.get('time','')}</span>
+                            <span style='color:#B0BAC8; font-size:0.8rem;'>{c.get('time','')}</span>
                         </div>
                         <div style='color:#E2E8F0; font-size:0.95rem; line-height: 1.5;'>{s_comment}</div>
                     </div>

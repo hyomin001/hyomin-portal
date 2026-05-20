@@ -64,8 +64,8 @@ def render(market, nw):
             cat_ico = cat_icons.get(log['category'], "📋")
             st.markdown(f"""
 <div class='tx-row' style='display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.9rem;'>
-  <span style='color:#94A3B8;min-width:110px;'>{log['time']}</span>
-  <span style='color:#94A3B8;min-width:60px;'>{cat_ico} {log['category']}</span>
+  <span style='color:#B0BAC8;min-width:110px;'>{log['time']}</span>
+  <span style='color:#B0BAC8;min-width:60px;'>{cat_ico} {log['category']}</span>
   <span style='color:#94A3B8;flex:1;margin:0 12px;'>{log['desc']}</span>
   <span style='color:{color};font-weight:900;'>{arrow} {sign}{format_korean_money(abs(amt))}</span>
 </div>""", unsafe_allow_html=True)

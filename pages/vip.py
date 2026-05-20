@@ -20,10 +20,10 @@ def render(market, nw):
 
     st.markdown(f"""
 <div class='vip-banner'>
-  <div style='color:#94A3B8;font-size:0.8rem;letter-spacing:2px;margin-bottom:12px;'>🕵️ INSIDER INTELLIGENCE</div>
+  <div style='color:#B0BAC8;font-size:0.8rem;letter-spacing:2px;margin-bottom:12px;'>🕵️ INSIDER INTELLIGENCE</div>
   <div style='font-size:1.4rem;font-weight:900;color:#FFD600;'>{nxt_ico} {nxt_nm}</div>
   <div style='font-size:1.1rem;font-weight:900;color:{clr};margin-top:10px;'>{status}</div>
-  <div style='color:#94A3B8;font-size:0.78rem;margin-top:14px;'>※ 정보 유출 시 창조주의 징벌이 따릅니다</div>
+  <div style='color:#B0BAC8;font-size:0.78rem;margin-top:14px;'>※ 정보 유출 시 창조주의 징벌이 따릅니다</div>
 </div>""", unsafe_allow_html=True)
 
     st.write("")

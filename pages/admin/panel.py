@@ -287,7 +287,7 @@ def render(market, nw):
                     # 🛡️ XSS 방어: 작성자 닉네임과 게시판 글 내용 모두 HTML 이스케이프 적용
                     safe_name = html.escape(c.get('name', ''))
                     safe_comment = html.escape(c.get('comment', ''))
-                    st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;'><b style='color:#00E5FF;'>{safe_name}</b>: {safe_comment} <span style='color:#94A3B8; font-size:0.8rem;'>({c.get('time','')})</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;'><b style='color:#00E5FF;'>{safe_name}</b>: {safe_comment} <span style='color:#B0BAC8; font-size:0.8rem;'>({c.get('time','')})</span></div>", unsafe_allow_html=True)
                 with col_btn:
                     if st.button("🗑️ 삭제", key=f"del_board_{idx}", use_container_width=True):
                         all_c.pop(idx) 
@@ -496,7 +496,7 @@ def render(market, nw):
         if _mongo_ok:
             for _col in [USERS_FILE, MARKET_FILE, COMMENTS_FILE, TXLOG_FILE, REALESTATE_MARKET_FILE]:
                 _col_name = _col.replace(".json", "").replace("_db", "")
-                st.markdown(f"<div style='color:#94A3B8;font-size:0.85rem;margin-left:12px;'>📂 컬렉션: <b>{_col_name}</b></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color:#B0BAC8;font-size:0.85rem;margin-left:12px;'>📂 컬렉션: <b>{_col_name}</b></div>", unsafe_allow_html=True)
             
         st.write("---")
         st.markdown("### 🚨 긴급 데이터 백업 (다운로드)")
@@ -550,7 +550,7 @@ def render(market, nw):
                 
                 st.markdown(f"""
                 <div style='font-size:0.85rem; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);'>
-                    <span style='color:#94A3B8;'>[{log['time']}]</span> 
+                    <span style='color:#B0BAC8;'>[{log['time']}]</span> 
                     <b style='color:#00E5FF;'>{safe_uid}</b>님이 
                     <span style='color:#94A3B8;'>{safe_desc}</span> 
                     <b style='color:{color};'>({sign}{format_korean_money(amt)})</b>
@@ -624,7 +624,7 @@ def render(market, nw):
         
         st.markdown(f"""
         <div style='background:rgba(0,229,255,0.08);border:1px solid #00E5FF; border-radius:12px;padding:20px;margin-bottom:16px;'>
-          <div style='color:#94A3B8;font-size:0.82rem;'>현재 운영 중인 시즌</div>
+          <div style='color:#B0BAC8;font-size:0.82rem;'>현재 운영 중인 시즌</div>
           <div style='font-size:2rem;font-weight:900;color:#FFD600;'>시즌 {cur_season}</div>
           <div style='color:#94A3B8;margin-top:8px;'>종료 예정: <b style='color:#FF00FF;'>{season_end_dt}</b></div>
           <div style='color:#94A3B8;'>잔여: <b style='color:#00FF88;'>{remain_sec // 86400}일 {(remain_sec % 86400) // 3600}시간</b></div>
@@ -758,14 +758,14 @@ def render(market, nw):
                         # 🛡️ XSS 방어 적용
                         safe_sender = html.escape(m.get('sender', '알 수 없음'))
                         safe_content = html.escape(m.get('content', ''))
-                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'><b style='color:#00E5FF;'>{safe_sender}</b> → {safe_content} <br><span style='color:#94A3B8;'>{m['time']}</span></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'><b style='color:#00E5FF;'>{safe_sender}</b> → {safe_content} <br><span style='color:#B0BAC8;'>{m['time']}</span></div>", unsafe_allow_html=True)
                 with col_out:
                     st.markdown(f"**📤 {target_u}의 보낸 쪽지**")
                     for m in reversed(u_msgs.get("outbox", [])):
                         # 🛡️ XSS 방어 적용
                         safe_receiver = html.escape(m.get('receiver', '알 수 없음'))
                         safe_content = html.escape(m.get('content', ''))
-                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>→ <b style='color:#FFD600;'>{safe_receiver}</b>: {safe_content} <br><span style='color:#94A3B8;'>{m['time']}</span></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size:0.8rem; padding:8px; background:rgba(255,255,255,0.03); border-radius:5px; margin-bottom:5px;'>→ <b style='color:#FFD600;'>{safe_receiver}</b>: {safe_content} <br><span style='color:#B0BAC8;'>{m['time']}</span></div>", unsafe_allow_html=True)
 
             with admin_sub_tabs[1]:
                 st.markdown("**🌐 우주 전체 쪽지 타임라인**")
@@ -779,7 +779,7 @@ def render(market, nw):
                     safe_from = html.escape(log.get('from', '알 수 없음'))
                     safe_to = html.escape(log.get('to', '알 수 없음'))
                     safe_content = html.escape(log.get('content', ''))
-                    st.markdown(f"<div style='font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding:5px 0;'><span style='color:#94A3B8;'>[{log['time']}]</span> <b style='color:#00E5FF;'>{safe_from}</b> ➔ <b style='color:#FFD600;'>{safe_to}</b> : {safe_content}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding:5px 0;'><span style='color:#B0BAC8;'>[{log['time']}]</span> <b style='color:#00E5FF;'>{safe_from}</b> ➔ <b style='color:#FFD600;'>{safe_to}</b> : {safe_content}</div>", unsafe_allow_html=True)
 
             with admin_sub_tabs[2]:
                 if st.button("💣 우주 전체 쪽지 DB 초기화", use_container_width=True, type="secondary"):
