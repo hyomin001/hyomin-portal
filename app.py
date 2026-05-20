@@ -303,9 +303,10 @@ def _do_login(uid: str, users: dict, device_mode: str):
     visitors = {k: v for k, v in visitors.items() if k >= today}
     stats["daily_visitors"] = visitors
     save_stats(stats)
-    st.success("로그인 성공!")
-    time.sleep(0.5)
-    st.session_state.page_view = "portal"
+    # 로그인 후 pending_page(게임 버튼에서 설정된 목적지)로 이동
+    _pending = st.session_state.pop('_pending_page', None)
+    st.session_state.page_view = _pending if _pending else "portal"
+    st.toast("✅ 로그인 성공!", icon="✅")
     st.rerun()
 
 
@@ -1240,8 +1241,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "universe"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "universe"
+                st.session_state.page_view = "login"
             st.rerun()
 
         st.markdown("""
@@ -1256,8 +1257,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_b"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_b"
+                st.session_state.page_view = "login"
             st.rerun()
 
     with col2:
@@ -1273,8 +1274,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_a"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_a"
+                st.session_state.page_view = "login"
             st.rerun()
 
         st.markdown(f"""
@@ -1290,8 +1291,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_d"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_d"
+                st.session_state.page_view = "login"
             st.rerun()
 
     with col3:
@@ -1308,8 +1309,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_c"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_c"
+                st.session_state.page_view = "login"
             st.rerun()
 
         st.markdown(f"""
@@ -1325,8 +1326,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_e"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_e"
+                st.session_state.page_view = "login"
             st.rerun()
 
     # ── 신규 게임 행 ──────────────────────────────────────────
@@ -1347,8 +1348,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_f"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_f"
+                st.session_state.page_view = "login"
             st.rerun()
 
     with nc2:
@@ -1365,8 +1366,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_g"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_g"
+                st.session_state.page_view = "login"
             st.rerun()
 
     with nc3:
@@ -1383,8 +1384,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_h"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_h"
+                st.session_state.page_view = "login"
             st.rerun()
 
     with nc4:
@@ -1401,8 +1402,8 @@ if st.session_state.page_view == "portal":
             if st.session_state.get('logged_in_user'):
                 st.session_state.page_view = "project_i"
             else:
-                st.warning("⚠️ 로그인이 필요합니다.")
-                time.sleep(0.8); st.session_state.page_view = "login"
+                st.session_state['_pending_page'] = "project_i"
+                st.session_state.page_view = "login"
             st.rerun()
 
 
@@ -2240,12 +2241,20 @@ elif st.session_state.page_view == "login":
     if st.button("🔙 포털 메인으로"):
         st.session_state.page_view = "portal"; st.rerun()
 
-    st.markdown("""
+    _page_names = {
+        "universe": "효민 유니버스", "project_a": "AI 아카데미", "project_b": "월드 배틀",
+        "project_c": "더 터미널", "project_d": "인베스트 마블", "project_e": "던전 런",
+        "project_f": "네온 도주 레이싱", "project_g": "좀비 아포칼립스",
+        "project_h": "스트리트 파이터 EX", "project_i": "라인 배틀 저격전",
+    }
+    _pending_name = _page_names.get(st.session_state.get('_pending_page', ''), '')
+    _subtitle = f"로그인 후 <b>{_pending_name}</b>(으)로 이동합니다." if _pending_name else "안전한 서비스 이용을 위해 로그인해주세요."
+    st.markdown(f"""
     <div style='text-align:center;padding:40px 0 20px;'>
       <div style='font-family:"Orbitron",sans-serif;font-size:1.8rem;font-weight:900;
         background:linear-gradient(135deg,#6c63ff,#00d4ff);-webkit-background-clip:text;
         -webkit-text-fill-color:transparent;letter-spacing:3px;'>HYOMIN ID</div>
-      <p style='color:#8899bb;margin-top:8px;'>안전한 서비스 이용을 위해 로그인해주세요.</p>
+      <p style='color:#8899bb;margin-top:8px;'>{_subtitle}</p>
     </div>
     """, unsafe_allow_html=True)
 
