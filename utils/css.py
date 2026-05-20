@@ -135,6 +135,7 @@ div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
+.card { color: #E2E8F0 !important; }
 .card:hover { border-color: rgba(0, 229, 255, 0.3) !important; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.1); }
 
 /* 테이블 (주식, 코인) */
