@@ -159,11 +159,17 @@ div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: #000000
 }
 [data-testid="collapsedControl"] *, [data-testid="stSidebarCollapseButton"] * { opacity: 0 !important; font-size: 0 !important; }
 
-/* =====================================================
-   전역 텍스트 흰색 처리 - 어두운 배경 대응
-   드롭다운/팝업은 아래 별도 규칙에서 덮어씌움
-====================================================== */
-div, span, p, li, td, th, label, a, small, strong, b, em, i {
+/* 메인 컨텐츠 영역만 전역 흰 글씨 - 사이드바 제외 */
+[data-testid="stMain"] div,
+[data-testid="stMain"] span,
+[data-testid="stMain"] p,
+[data-testid="stMain"] li,
+[data-testid="stMain"] td,
+[data-testid="stMain"] th,
+[data-testid="stMain"] small,
+[data-testid="stMain"] strong,
+[data-testid="stMain"] b,
+[data-testid="stMain"] em {
   color: #E2E8F0;
 }
 
@@ -181,9 +187,19 @@ div[data-baseweb="select"] div,
   color: #000000 !important;
 }
 
-/* 버튼 텍스트는 별도 스타일 유지 */
-.stButton > button { color: #00E5FF !important; }
-.stButton > button:hover { color: #000 !important; }
+/* 버튼 색상 유지 - 내부 span/div 포함 */
+.stButton > button,
+.stButton > button span,
+.stButton > button div,
+.stButton > button p {
+  color: #00E5FF !important;
+}
+.stButton > button:hover,
+.stButton > button:hover span,
+.stButton > button:hover div,
+.stButton > button:hover p {
+  color: #000000 !important;
+}
 
 /* 스포츠 스코어보드 */
 .scoreboard { background:rgba(10,14,26,0.85); border:1px solid rgba(0,229,255,0.25); border-radius:16px; padding:24px 32px; text-align:center; margin:12px 0; }
@@ -191,7 +207,5 @@ div[data-baseweb="select"] div,
 .score-number { font-family:'Orbitron',sans-serif !important; font-size:2.8rem !important; font-weight:900 !important; color:#FFD600 !important; }
 .match-time { font-size:0.85rem !important; color:#94A3B8 !important; }
 .commentary-item { border-left:3px solid rgba(0,229,255,0.4); border-radius:0 8px 8px 0; padding:8px 14px; margin:4px 0; color:#CBD5E1 !important; }
-
-/* card 기본 텍스트 */
 .card { color: #E2E8F0 !important; }
 """
