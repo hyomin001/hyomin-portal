@@ -30,9 +30,9 @@ def render(market, nw):
         st.markdown(f"""
 <div style='background:linear-gradient(135deg,rgba(0,255,136,0.08),rgba(0,100,50,0.1));
      border:1px solid rgba(0,255,136,0.3);border-radius:14px;padding:18px;text-align:center;margin-bottom:16px;'>
-  <div style='color:#888;font-size:0.82rem;letter-spacing:2px;margin-bottom:6px;'>누적 임대 수익</div>
+  <div style='color:#94A3B8;font-size:0.82rem;letter-spacing:2px;margin-bottom:6px;'>누적 임대 수익</div>
   <div style='font-family:Orbitron,monospace;font-size:1.8rem;font-weight:900;color:#00FF88;'>{format_korean_money(pending)}</div>
-  <div style='color:#888;font-size:0.78rem;margin-top:6px;'>초당 {format_korean_money(total_income_rate)} 수입 중</div>
+  <div style='color:#94A3B8;font-size:0.78rem;margin-top:6px;'>초당 {format_korean_money(total_income_rate)} 수입 중</div>
 </div>""", unsafe_allow_html=True)
 
         cd_rent = cooldown_remaining("rent_collect", 3.0)
@@ -73,12 +73,12 @@ def render(market, nw):
     <span style='font-size:1.8rem;'>{info['icon']}</span>
     <div>
       <div style='font-weight:900;font-size:1rem;color:#E2E8F0;'>{info['name']}</div>
-      <div style='color:#888;font-size:0.8rem;'>{info['desc']}</div>
+      <div style='color:#94A3B8;font-size:0.8rem;'>{info['desc']}</div>
       <div style='margin-top:4px;'>
         <span style='color:#FFD600;font-weight:900;'>{format_korean_money(info['base_price'])}</span>
-        <span style='color:#777;margin:0 8px;'>|</span>
+        <span style='color:#94A3B8;margin:0 8px;'>|</span>
         <span style='color:#00FF88;font-weight:900;font-size:0.9rem;'>+{format_korean_money(info['income'])}/초</span>
-        <span style='color:#888;margin-left:10px;font-size:0.78rem;'>잔여 {il['remaining']}개</span>
+        <span style='color:#94A3B8;margin-left:10px;font-size:0.78rem;'>잔여 {il['remaining']}개</span>
       </div>
     </div>
   </div>
@@ -227,16 +227,16 @@ def render(market, nw):
       <span style='font-size:2rem;'>{info['icon']}</span>
       <div>
         <div style='font-weight:900;font-size:1.05rem;color:#E2E8F0;'>{info['name']}</div>
-        <div style='color:#888;font-size:0.8rem;'>{info['desc']}</div>
+        <div style='color:#94A3B8;font-size:0.8rem;'>{info['desc']}</div>
         <div style='margin-top:4px;'>
           <span style='color:#94A3B8;font-size:0.82rem;'>보유 {cnt}채 (판매 등록 {my_listed}채)</span>
-          <span style='color:#777;margin:0 8px;'>|</span>
+          <span style='color:#94A3B8;margin:0 8px;'>|</span>
           <span style='color:#00FF88;font-weight:900;font-size:0.9rem;'>+{format_korean_money(info['income'] * cnt)}/초</span>
         </div>
       </div>
     </div>
     <div style='text-align:right;'>
-      <div style='color:#888;font-size:0.78rem;'>현재 평가액</div>
+      <div style='color:#94A3B8;font-size:0.78rem;'>현재 평가액</div>
       <div style='color:#FFD600;font-weight:900;'>{format_korean_money(info['base_price'] * cnt * 0.8)}</div>
     </div>
   </div>
@@ -303,11 +303,11 @@ def render(market, nw):
     <div>
       <span style='font-size:1.2rem;'>{info.get('icon','🏠')}</span>
       <b style='color:#E2E8F0;margin-left:8px;'>{info.get('name','?')}</b>
-      <span style='color:#888;font-size:0.78rem;margin-left:8px;'>등록: {listed_dt}</span>
+      <span style='color:#94A3B8;font-size:0.78rem;margin-left:8px;'>등록: {listed_dt}</span>
     </div>
     <div style='text-align:right;'>
       <div style='color:#FFD600;font-weight:900;'>{format_korean_money(li['price'])}</div>
-      <div style='color:#888;font-size:0.78rem;'>실수령 {format_korean_money(li.get('net_receive', li['price']))}</div>
+      <div style='color:#94A3B8;font-size:0.78rem;'>실수령 {format_korean_money(li.get('net_receive', li['price']))}</div>
     </div>
   </div>
 </div>""", unsafe_allow_html=True)

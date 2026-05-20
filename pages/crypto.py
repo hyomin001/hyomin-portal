@@ -120,7 +120,7 @@ def render(market, nw):
                 <div style='flex:1; text-align:right;'><span style='color:#94A3B8;font-size:0.85rem;'>수익률</span><br><b style='color:{roi_col};font-size:1.2rem;'>{roi_arr} {my_roi:+.2f}%</b></div>
             </div>""", unsafe_allow_html=True)
         else:
-            st.markdown("<div style='background:rgba(255,255,255,0.03); border:1px dashed rgba(255,255,255,0.1); padding:12px; border-radius:10px; margin-bottom:18px; color:#888; text-align:center;'>현재 보유 중인 코인이 없습니다.</div>", unsafe_allow_html=True)
+            st.markdown("<div style='background:rgba(255,255,255,0.03); border:1px dashed rgba(255,255,255,0.1); padding:12px; border-radius:10px; margin-bottom:18px; color:#94A3B8; text-align:center;'>현재 보유 중인 코인이 없습니다.</div>", unsafe_allow_html=True)
         
         tab_buy, tab_sell = st.tabs(["🟢 매수", "🔴 매도"])
         

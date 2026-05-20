@@ -9,7 +9,7 @@ from utils.database import load_db, save_db, log_tx, save_market, atomic_add_cas
 
 def render(market, nw):
     st.title("🗡️ 전설의 명검 강화소")
-    st.markdown("<div style='color:#888;margin-bottom:16px;'>당신의 운과 욕망을 시험하세요. <b>+5~+9강은 실패 시 50% 확률로 파괴, +10강부터는 확정 파괴</b>됩니다.</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#94A3B8;margin-bottom:16px;'>당신의 운과 욕망을 시험하세요. <b>+5~+9강은 실패 시 50% 확률로 파괴, +10강부터는 확정 파괴</b>됩니다.</div>", unsafe_allow_html=True)
     u_lv = st.session_state.get('weapon_level', 0)
     w_info = FORGE_DATA[u_lv]
     

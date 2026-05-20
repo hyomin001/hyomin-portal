@@ -84,7 +84,7 @@ def render(market, nw):
          border:2px solid rgba(180,0,255,0.4);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;'>
       <div style='font-size:2rem;'>🎴</div>
       <div style='font-size:1.3rem;font-weight:900;color:#FF00FF;margin-top:8px;'>시즌 {market.get('season_num',1)} 한정 가챠</div>
-      <div style='color:#888;font-size:0.85rem;margin-top:6px;'>1회당 {format_korean_money(GACHA_TICKET_PRICE)} | 전설 칭호 획득 시 서버 전체 공지!</div>
+      <div style='color:#94A3B8;font-size:0.85rem;margin-top:6px;'>1회당 {format_korean_money(GACHA_TICKET_PRICE)} | 전설 칭호 획득 시 서버 전체 공지!</div>
       <div style='margin-top:10px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);border-radius:8px;padding:8px 14px;display:inline-block;'>
         <span style='color:#FFD600;font-weight:900;'>⭐ 천장 보정: {pulls_to_pity}회 이내 전설 100% 보장</span>
         <div style='background:rgba(255,215,0,0.2);border-radius:4px;height:6px;margin-top:6px;'>

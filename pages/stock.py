@@ -32,7 +32,7 @@ def render(market, nw):
             pct  = diff / d['history'][-2] * 100  if len(d['history']) > 1 else 0
             cls  = "p-up" if diff > 0 else "p-down" if diff < 0 else "p-flat"
             arr  = "▲"    if diff > 0 else "▼"       if diff < 0 else "━"
-            rows += f"<tr><td>{s['icon']} {d['name']}</td><td style='text-align:right;font-weight:900;color:#E2E8F0;'>₩{d['price']:,}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td><td style='text-align:right;color:#888;'>₩{d['history'][-2]:,}</td></tr>"
+            rows += f"<tr><td>{s['icon']} {d['name']}</td><td style='text-align:right;font-weight:900;color:#E2E8F0;'>₩{d['price']:,}</td><td class='{cls}' style='text-align:right;'>{arr} {abs(pct):.2f}%</td><td style='text-align:right;color:#94A3B8;'>₩{d['history'][-2]:,}</td></tr>"
         st.markdown(f"<table class='stock-table'><thead><tr><th>종목</th><th style='text-align:right;'>현재가</th><th style='text-align:right;'>변동률</th><th style='text-align:right;'>전일가</th></tr></thead><tbody>{rows}</tbody></table>", unsafe_allow_html=True)
 
     with tab_port:
@@ -96,7 +96,7 @@ def render(market, nw):
                 <div style='flex:1;text-align:right;'><span style='color:#94A3B8;font-size:0.85rem;'>수익률</span><br><b style='color:{roi_col};font-size:1.2rem;'>{roi_arr} {my_roi:+.2f}%</b></div>
             </div>""", unsafe_allow_html=True)
         else:
-            st.markdown("<div style='background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.1);padding:12px;border-radius:10px;margin-bottom:18px;color:#888;text-align:center;'>현재 보유 중인 주식이 없습니다.</div>", unsafe_allow_html=True)
+            st.markdown("<div style='background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.1);padding:12px;border-radius:10px;margin-bottom:18px;color:#94A3B8;text-align:center;'>현재 보유 중인 주식이 없습니다.</div>", unsafe_allow_html=True)
 
         qty_input = st.number_input("거래 수량 (주)", min_value=1, step=1, value=1)
         cost      = qty_input * cp
@@ -108,7 +108,7 @@ def render(market, nw):
 
         if bulk_rem  > 0: st.markdown(f"<span class='cooldown-badge'>풀매수/풀매도 쿨다운 {bulk_rem:.1f}초</span>",  unsafe_allow_html=True)
         if trade_rem > 0: st.markdown(f"<span class='cooldown-badge'>일반 거래 쿨다운 {trade_rem:.1f}초</span>", unsafe_allow_html=True)
-        st.markdown(f"<div style='color:#888;font-size:0.78rem;margin-bottom:8px;'>풀매수/풀매도 오늘 남은 횟수: <b style='color:#FFD600;'>{bulk_left}회</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='color:#94A3B8;font-size:0.78rem;margin-bottom:8px;'>풀매수/풀매도 오늘 남은 횟수: <b style='color:#FFD600;'>{bulk_left}회</b></div>", unsafe_allow_html=True)
 
         # ─────────────────────────────────────────────────────────────────
         # FIX: _safe_buy — 매수 시 DB 포트폴리오 재검증 추가

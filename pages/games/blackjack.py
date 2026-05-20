@@ -55,7 +55,7 @@ def render(market, nw):
              border:2px solid rgba(255,215,0,0.3);border-radius:18px;margin-bottom:24px;'>
           <div style='font-size:4rem;'>🃏</div>
           <div style='font-family:Orbitron,monospace;font-size:1.3rem;color:#FFD600;margin-top:8px;font-weight:900;'>BLACKJACK</div>
-          <div style='color:#888;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 더블다운 = 카드 1장 추가 + 베팅 2배 &nbsp;|&nbsp; 스플릿 = 페어 분리</div>
+          <div style='color:#94A3B8;margin-top:10px;font-size:0.88rem;'>블랙잭(A+10) = 베팅의 1.5배 추가 지급 &nbsp;|&nbsp; 더블다운 = 카드 1장 추가 + 베팅 2배 &nbsp;|&nbsp; 스플릿 = 페어 분리</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -265,7 +265,7 @@ def render(market, nw):
                  border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 0 30px {res_col}44;'>
               <div style='font-size:1.5rem;font-weight:900;color:{res_col};'>{result}</div>
               <div style='font-size:1.2rem;font-weight:900;color:{net_col};margin-top:8px;'>{net_str}</div>
-              <div style='color:#888;font-size:0.8rem;margin-top:6px;'>지급액: {format_korean_money(prize)}</div>
+              <div style='color:#94A3B8;font-size:0.8rem;margin-top:6px;'>지급액: {format_korean_money(prize)}</div>
             </div>
             """, unsafe_allow_html=True)
             return prize

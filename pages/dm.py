@@ -10,7 +10,7 @@ from utils.database import load_db, save_db
 
 def render(market, nw):
     st.title("✉️ 1:1 비밀 쪽지함")
-    st.markdown("<div style='color:#888;margin-bottom:16px;'>다른 시민들과 은밀하게 작전을 모의하거나 흥정하세요. 시스템은 여러분의 대화를 엿듣지 않습니다. (아마도요)</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#94A3B8;margin-bottom:16px;'>다른 시민들과 은밀하게 작전을 모의하거나 흥정하세요. 시스템은 여러분의 대화를 엿듣지 않습니다. (아마도요)</div>", unsafe_allow_html=True)
 
     uid = st.session_state.logged_in_user
     msg_db = load_db(MESSAGES_FILE, {})  # 👈 상수로 교체
@@ -55,7 +55,7 @@ def render(market, nw):
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #00E5FF;'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
                     <span style='font-size:0.9rem;'>{read_badge}보낸 사람: <b style='color:#00E5FF;'>{safe_sender}</b></span>
-                    <span style='color:#777;font-size:0.75rem;'>{m.get('time', '')}</span>
+                    <span style='color:#94A3B8;font-size:0.75rem;'>{m.get('time', '')}</span>
                   </div>
                   <div style='color:#CBD5E1;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
                     {safe_content}
@@ -88,7 +88,7 @@ def render(market, nw):
                 <div class='card' style='padding:14px 18px; margin:8px 0; border-left:4px solid #FFD600; background:rgba(255,215,0,0.02);'>
                   <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
                     <span style='font-size:0.9rem;color:#94A3B8;'>받는 사람: <b style='color:#FFD600;'>{safe_receiver}</b></span>
-                    <span style='color:#777;font-size:0.75rem;'>{m.get('time', '')}</span>
+                    <span style='color:#94A3B8;font-size:0.75rem;'>{m.get('time', '')}</span>
                   </div>
                   <div style='color:#94A3B8;font-size:0.95rem;line-height:1.5;word-break:break-all;'>
                     {safe_content}

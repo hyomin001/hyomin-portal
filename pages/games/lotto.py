@@ -15,10 +15,10 @@ def render(market, nw):
 
     st.markdown(f"""
     <div style='background: linear-gradient(135deg, #11052C, #2A0845); border: 1px solid rgba(255, 0, 255, 0.3); border-radius: 16px; padding: 28px; text-align: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.6);'>
-      <div style='color:#888;font-size:0.8rem;letter-spacing:3px;margin-bottom:10px;'>JACKPOT POOL</div>
+      <div style='color:#94A3B8;font-size:0.8rem;letter-spacing:3px;margin-bottom:10px;'>JACKPOT POOL</div>
       <div style='font-size: 2.5rem; color: #FF00FF; text-shadow: 0 0 15px rgba(255,0,255,0.5); font-weight: 900;'>₩{market['lotto_pool']:,}</div>
-      <div style='color:#888;margin-top:14px;font-size:0.88rem;'>⏱ 추첨까지 <b style='color:#FF00FF;'>{rem//60}분 {rem%60}초</b></div>
-      <div style='color:#888;font-size:0.82rem;margin-top:6px;'>내 당첨 확률: <b style='color:#FFD600;'>{my_pct:.1f}%</b> ({my_t}장 / 전체 {total_tickets}장)</div>
+      <div style='color:#94A3B8;margin-top:14px;font-size:0.88rem;'>⏱ 추첨까지 <b style='color:#FF00FF;'>{rem//60}분 {rem%60}초</b></div>
+      <div style='color:#94A3B8;font-size:0.82rem;margin-top:6px;'>내 당첨 확률: <b style='color:#FFD600;'>{my_pct:.1f}%</b> ({my_t}장 / 전체 {total_tickets}장)</div>
     </div>""", unsafe_allow_html=True)
 
     st.write("")
