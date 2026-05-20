@@ -951,7 +951,7 @@ if st.session_state.page_view == "portal":
 .preview-card:hover { transform: translateY(-4px); }
 .preview-card-icon { font-size: 2.4rem; margin-bottom: 10px; line-height: 1; }
 .preview-card-title { font-weight: 900; font-size: 0.88rem; margin-bottom: 6px; }
-.preview-card-desc { color: #8899bb; font-size: 0.75rem; line-height: 1.55; margin-bottom: 10px; }
+.preview-card-desc { color: #94A3B8; font-size: 0.75rem; line-height: 1.55; margin-bottom: 10px; }
 .preview-tag {
   display: inline-block;
   border-radius: 999px;
@@ -965,7 +965,7 @@ if st.session_state.page_view == "portal":
 <div style='color:#00d4ff;font-weight:900;font-size:1rem;margin-bottom:4px;text-align:center;'>
   🎮 효민 포털에서 이런 걸 즐길 수 있어요
 </div>
-<div style='color:#8899bb;font-size:0.82rem;margin-bottom:14px;text-align:center;'>
+<div style='color:#94A3B8;font-size:0.82rem;margin-bottom:14px;text-align:center;'>
   가입 즉시 5억 원 지급 · 시즌 2 진행 중 · 마우스 올리면 멈춰요
 </div>
 
@@ -1171,7 +1171,7 @@ if st.session_state.page_view == "portal":
 
 <div style='text-align:center;margin-top:10px;margin-bottom:6px;'>
   <span style='color:#ffd700;font-weight:900;font-size:1rem;'>🎁 가입 즉시 5억 원 지급!</span>
-  <span style='color:#8899bb;font-size:0.82rem;margin-left:10px;'>지금 가입하고 시즌 2 랭킹 경쟁에 참여하세요</span>
+  <span style='color:#94A3B8;font-size:0.82rem;margin-left:10px;'>지금 가입하고 시즌 2 랭킹 경쟁에 참여하세요</span>
 </div>
     """, unsafe_allow_html=True)
 
@@ -1413,7 +1413,7 @@ if st.session_state.page_view == "portal":
     _season_records = market.get("season_records", {})
     if not _season_records:
         st.markdown("""
-<div style='background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:28px;text-align:center;color:#64748B;'>
+<div style='background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:28px;text-align:center;color:#94A3B8;'>
   🏛️ 아직 종료된 시즌이 없습니다. 첫 시즌이 끝나면 이곳에 기록이 새겨집니다.
 </div>""", unsafe_allow_html=True)
     else:
@@ -1465,7 +1465,7 @@ padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;al
                             st.markdown(f"""
 <div style='background:rgba(255,255,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:10px;
 padding:9px 14px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;'>
-  <div><div style='font-size:0.75rem;color:#64748B;'>{_gname}</div>
+  <div><div style='font-size:0.75rem;color:#94A3B8;'>{_gname}</div>
   <div style='font-weight:700;color:#CBD5E1;'>🥇 {_guser}</div></div>
   <div style='font-weight:900;color:#00E5FF;font-size:0.9rem;'>{_gdisp}</div>
 </div>""", unsafe_allow_html=True)
@@ -1491,7 +1491,7 @@ body {{ margin:0; background:transparent; font-family:'Noto Sans KR',sans-serif;
   padding: 20px;
 }}
 .share-desc {{ color:#e8f0ff; font-size:0.88rem; margin-bottom:16px; }}
-.share-desc span {{ color:#8899bb; }}
+.share-desc span {{ color:#94A3B8; }}
 .btn-row {{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:18px; }}
 .share-btn {{
   border-radius:10px; padding:11px 20px; font-size:0.88rem; font-weight:800;
@@ -1506,7 +1506,7 @@ body {{ margin:0; background:transparent; font-family:'Noto Sans KR',sans-serif;
   background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
   border-radius:10px; padding:14px;
 }}
-.preview-label {{ color:#8899bb; font-size:0.72rem; font-weight:700; margin-bottom:8px; }}
+.preview-label {{ color:#94A3B8; font-size:0.72rem; font-weight:700; margin-bottom:8px; }}
 .preview-text  {{ color:#c8d8f0; font-size:0.82rem; line-height:1.8; white-space:pre-line; }}
 </style>
 <div class="share-wrap">
@@ -2207,7 +2207,7 @@ function copyMsg(type, btn) {{
                 # 관리자 전용 확인 처리 버튼
                 if _is_admin_portal:
                     _btn_lbl = "☑️ 확인 취소" if _checked else "✅ 확인 처리"
-                    _btn_style = "color:#8899bb;" if _checked else "color:#00ff88;"
+                    _btn_style = "color:#94A3B8;" if _checked else "color:#00ff88;"
                     if st.button(_btn_lbl, key=f"fb_ck_{_fb.get('id', _fi)}", use_container_width=True):
                         _fb_edit = load_db(_FEEDBACK_FILE, [])
                         if not isinstance(_fb_edit, list): _fb_edit = []
@@ -2254,7 +2254,7 @@ elif st.session_state.page_view == "login":
       <div style='font-family:"Orbitron",sans-serif;font-size:1.8rem;font-weight:900;
         background:linear-gradient(135deg,#6c63ff,#00d4ff);-webkit-background-clip:text;
         -webkit-text-fill-color:transparent;letter-spacing:3px;'>HYOMIN ID</div>
-      <p style='color:#8899bb;margin-top:8px;'>{_subtitle}</p>
+      <p style='color:#94A3B8;margin-top:8px;'>{_subtitle}</p>
     </div>
     """, unsafe_allow_html=True)
 
