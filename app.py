@@ -2400,7 +2400,7 @@ elif st.session_state.page_view == "universe":
     CATEGORY_MENUS = {
         "📈 경제":        ["🏠 홈 광장 (튜토리얼)", "📈 주식 트레이딩", "🪙 코인 거래소", "🏢 부동산 거래소", "🏦 은행 (대출/송금)", "📜 내 거래 기록"],
         "🎮 미니게임":    ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "🃏 텍사스 홀덤", "💻 사주팔자", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
-        "🌟 성장 & 혜택": ["📅 일일 퀘스트", "👑 칭호 상점"],
+        "🌟 성장 & 혜택": ["👤 내 프로필", "🐾 펫 키우기", "📅 일일 퀘스트", "👑 칭호 상점"],
         "⚽ 스포츠":      ["⚽ 구단주 시뮬레이터", "⚽ 조기축구 승부차기", "🏎️ 하이퍼카 레이싱", "🛠️ 커스텀 튜닝 차고지"],
         "👥 커뮤니티":    ["🏰 길드/클랜", "🏅 랭킹 & 게시판", "✉️ 개인 쪽지함"],
     }
@@ -2468,6 +2468,8 @@ elif st.session_state.page_view == "universe":
     elif menu == "🏢 부동산 거래소":         from pages import real_estate;       real_estate.render(market, nw)
     elif menu == "🏦 은행 (대출/송금)":      from pages import bank;              bank.render(market, nw)
     elif menu == "📜 내 거래 기록":          from pages import txlog;             txlog.render(market, nw)
+    elif menu == "👤 내 프로필":              from pages import profile;           profile.render(market, nw)
+    elif menu == "🐾 펫 키우기":              from pages import pet;               pet.render(market, nw)
     elif menu == "📅 일일 퀘스트":           from pages import quest;             quest.render(market, nw)
     elif menu == "👑 칭호 상점":             from pages import title_shop;        title_shop.render(market, nw)
     elif menu == "🏅 랭킹 & 게시판": from pages import ranking;           ranking.render(market, nw)
