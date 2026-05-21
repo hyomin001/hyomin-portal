@@ -315,7 +315,6 @@ def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp):
     rarity_color = sp.get('rarity_color','#00E5FF')
     rarity       = sp.get('rarity','일반')
     stage        = get_pet_stage(lv)
-    bond_lv      = min(pet.get('bond',0)//20, 5)
 
     if stage == 'egg':    sprite = sp.get('egg','🥚')
     elif stage == 'baby': sprite = sp.get('baby','🐱')
@@ -338,7 +337,6 @@ def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp):
     particles = json.dumps(ptcl_map.get(species, ['✨','💫','⭐']))
 
     mood_name, mood_data = get_mood(pet)
-    mood_emoji = mood_data['emoji']
     mood_color = mood_data['color']
 
     bg_map = {
@@ -354,278 +352,164 @@ def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp):
     bg1, bg2 = bg_map.get(species, ('#0a0f1e','#080d18'))
     if stage == 'legend': bg1, bg2 = '#0a000e','#000a0e'
 
-    c1 = 'true' if exp_pct >= 20 else 'false'
-    c2 = 'true' if exp_pct >= 40 else 'false'
-    c3 = 'true' if exp_pct >= 60 else 'false'
-    c4 = 'true' if exp_pct >= 80 else 'false'
-
     def bc(v): return '#ff4b4b' if v<30 else '#ffd600' if v<60 else '#00ff88'
     hp_col, hun_col, hap_col = bc(hp), bc(hunger), bc(happy)
 
-    remaining_pct = 100 - exp_pct
     ptcl_interval = 600 if stage=='legend' else 1200 if stage=='adult' else 900
 
-    js_vars = (
-        f'const PET_STAGE="{stage}";'
-        f'const PET_SPECIES="{species}";'
-        f'const SPRITE="{sprite}";'
-        f'const PET_NAME="{name}";'
-        f'const LEVEL={lv};'
-        f'const RAR_COLOR="{rarity_color}";'
-        f'const RARITY_TXT="{rarity}";'
-        f'const EXP_PCT={exp_pct};'
-        f'const HUNGER={hunger};'
-        f'const HAPPY={happy};'
-        f'const HP_VAL={hp};'
-        f'const HAS_WINGS={"true" if has_wings else "false"};'
-        f'const WING_EMOJI="{wing_emoji}";'
-        f'const PARTICLES={particles};'
-        f'const MOOD_EMOJI="{mood_emoji}";'
-        f'const MOOD_COLOR="{mood_color}";'
-        f'const MOOD_TXT="{mood_name}";'
-        f'const BOND_LV={bond_lv};'
-        f'const CRACK1={c1};const CRACK2={c2};const CRACK3={c3};const CRACK4={c4};'
-        f'const HP_COL="{hp_col}";const HUN_COL="{hun_col}";const HAP_COL="{hap_col}";'
-        f'const BG1="{bg1}";const BG2="{bg2}";'
-        f'const PTCL_INTERVAL={ptcl_interval};'
-        f'const REMAINING_PCT={remaining_pct};'
-        f'const IS_LEGEND={"true" if stage=="legend" else "false"};'
-        f'const IS_EGG={"true" if stage=="egg" else "false"};'
-    )
+    # ── 기분에 따른 스프라이트 애니메이션 클래스 결정 (Python에서 처리)
+    if happy >= 80 and hunger >= 70:
+        sprite_anim = f"petFloat 3s ease-in-out infinite, petGlowHappy 2.2s ease-in-out infinite"
+    elif stage == 'legend':
+        sprite_anim = f"legendFloat 3.5s ease-in-out infinite, legendGlow 2s ease-in-out infinite"
+    elif hp < 30 or hunger < 20:
+        sprite_anim = f"petSleep 4s ease-in-out infinite"
+    elif happy < 40:
+        sprite_anim = f"petSad 2s ease-in-out infinite"
+    else:
+        sprite_anim = f"petFloat 3s ease-in-out infinite, petGlow 2.5s ease-in-out infinite"
+
+    # ── 알 균열 가시성
+    c1_op = "1" if exp_pct >= 20 else "0"
+    c2_op = "1" if exp_pct >= 40 else "0"
+    c3_op = "1" if exp_pct >= 60 else "0"
+    c4_op = "1" if exp_pct >= 80 else "0"
+    inner_op = "0.75" if exp_pct >= 80 else "0.45" if exp_pct >= 60 else "0.22" if exp_pct >= 40 else "0"
+    egg_anim = "eggShake 0.18s ease-in-out infinite" if exp_pct >= 80 else "eggWobble 2.5s ease-in-out infinite"
+    remaining_pct = 100 - exp_pct
+
+    # ── HTML로 직접 렌더링할 센터 콘텐츠 생성
+    if stage == 'egg':
+        center_html = f"""
+        <div id="egg-wrap" onclick="eggClick(event)" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;position:relative;z-index:5;">
+          <svg id="egg-svg" viewBox="0 0 120 148" width="165" height="202"
+               xmlns="http://www.w3.org/2000/svg"
+               style="animation:{egg_anim};filter:drop-shadow(0 0 24px {rarity_color});">
+            <defs>
+              <radialGradient id="eg" cx="38%" cy="30%" r="68%">
+                <stop offset="0%" stop-color="#fffbf0"/>
+                <stop offset="65%" stop-color="#f0d888"/>
+                <stop offset="100%" stop-color="#d4a840"/>
+              </radialGradient>
+              <radialGradient id="ig" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="{rarity_color}" stop-opacity="0.7"/>
+                <stop offset="100%" stop-color="{rarity_color}" stop-opacity="0"/>
+              </radialGradient>
+              <filter id="ds"><feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="{rarity_color}" flood-opacity="0.6"/></filter>
+              <filter id="cs"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="{rarity_color}" flood-opacity="0.9"/></filter>
+            </defs>
+            <ellipse cx="60" cy="83" rx="50" ry="70" fill="url(#eg)" filter="url(#ds)"/>
+            <ellipse cx="60" cy="83" rx="45" ry="64" fill="url(#ig)" opacity="{inner_op}" style="animation:innerGlowPulse 0.9s ease-in-out infinite"/>
+            <ellipse cx="40" cy="48" rx="14" ry="20" fill="white" opacity="0.38" transform="rotate(-22,40,48)"/>
+            <ellipse cx="72" cy="37" rx="5" ry="7" fill="white" opacity="0.22"/>
+            <g opacity="{c1_op}"><polyline points="65,18 70,33 62,46 68,57" stroke="#7a3a05" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="animation:crackGlow 1s ease-in-out infinite"/></g>
+            <g opacity="{c2_op}"><polyline points="96,72 88,85 93,98 86,112" stroke="#7a3a05" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g opacity="{c3_op}"><polyline points="24,68 32,81 26,95 33,108" stroke="#7a3a05" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g opacity="{c4_op}">
+              <polyline points="52,12 57,28 50,46 58,62 52,78 58,94 52,110 57,126" stroke="#4a1a00" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="52,12 57,28 50,46 58,62 52,78 58,94 52,110 57,126" stroke="{rarity_color}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" filter="url(#cs)" style="animation:crackGlow 0.5s ease-in-out infinite"/>
+              <line x1="58" y1="62" x2="78" y2="55" stroke="#4a1a00" stroke-width="3" stroke-linecap="round"/>
+              <line x1="58" y1="62" x2="78" y2="55" stroke="{rarity_color}" stroke-width="1.2" stroke-linecap="round" opacity="0.9"/>
+              <line x1="52" y1="78" x2="32" y2="72" stroke="#4a1a00" stroke-width="2.5" stroke-linecap="round"/>
+            </g>
+            <ellipse cx="60" cy="83" rx="50" ry="70" fill="none" stroke="{rarity_color}" stroke-width="1.5" opacity="0.5"/>
+          </svg>
+          <div id="hatch-info" style="margin-top:14px;text-align:center;">
+            <div id="hatch-lbl" style="color:{rarity_color};font-size:12px;font-weight:900;letter-spacing:1px;margin-bottom:7px;">
+              {"💥 부화 임박!!!" if exp_pct >= 80 else f"🥚 부화까지 {remaining_pct}% 남음"}
+            </div>
+            <div style="width:170px;height:7px;background:rgba(255,255,255,0.1);border-radius:4px;margin:0 auto;overflow:hidden;">
+              <div style="width:{exp_pct}%;height:100%;border-radius:4px;background:linear-gradient(90deg,{rarity_color},#fff8);"></div>
+            </div>
+          </div>
+        </div>"""
+    else:
+        # 날개 HTML
+        wings_html = ""
+        if has_wings:
+            wings_html = f"""
+            <span class="wing wing-l" style="position:absolute;top:50%;font-size:42px;z-index:2;pointer-events:none;left:0;transform-origin:right center;animation:wingL 0.38s ease-in-out infinite;">{wing_emoji}</span>
+            <span class="wing wing-r" style="position:absolute;top:50%;font-size:42px;z-index:2;pointer-events:none;right:0;transform-origin:left center;animation:wingR 0.38s ease-in-out infinite 0.19s;">{wing_emoji}</span>"""
+
+        # 전설 링 HTML
+        rings_html = ""
+        if stage == 'legend':
+            rings_html = """
+            <div style="position:absolute;width:240px;height:240px;border-radius:50%;border:2px dashed rgba(255,255,255,0.12);pointer-events:none;z-index:1;animation:ringRot 6s linear infinite;"></div>
+            <div style="position:absolute;width:180px;height:180px;border-radius:50%;border:1px solid rgba(255,255,255,0.08);pointer-events:none;z-index:1;animation:ringRot 4s linear infinite reverse;"></div>
+            <div style="position:absolute;width:300px;height:300px;border-radius:50%;border:1px dashed rgba(255,255,255,0.05);pointer-events:none;z-index:1;animation:ringRot 10s linear infinite;"></div>"""
+
+        center_html = f"""
+        {rings_html}
+        <div id="pet-area" style="position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;padding:20px 70px;z-index:5;">
+          {wings_html}
+          <span id="sprite" style="font-size:108px;line-height:1;position:relative;z-index:5;display:block;text-align:center;transition:transform 0.15s;animation:{sprite_anim};">{sprite}</span>
+        </div>"""
 
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
-<script>{js_vars}</script>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box;}}
 body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace;}}
 #app{{
   width:100%;height:440px;
-  background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%);
-  border:2px solid var(--rar);border-radius:22px;position:relative;
+  background:linear-gradient(160deg,{bg1} 0%,{bg2} 100%);
+  border:2px solid {rarity_color};border-radius:22px;position:relative;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 60px color-mix(in srgb,var(--rar) 30%,transparent),
-             inset 0 0 100px rgba(0,0,0,0.7);
+  box-shadow:0 0 60px {rarity_color}44,inset 0 0 100px rgba(0,0,0,0.7);
 }}
-#bg-canvas{{position:absolute;inset:0;width:100%;height:100%;opacity:0.55;}}
+#bg-canvas{{position:absolute;inset:0;width:100%;height:100%;z-index:0;}}
 #grid{{
-  position:absolute;inset:0;pointer-events:none;
+  position:absolute;inset:0;pointer-events:none;z-index:1;
   background-image:
     linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),
     linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);
   background-size:40px 40px;
 }}
-.corner{{position:absolute;width:22px;height:22px;border-color:var(--rar);border-style:solid;opacity:0.5;}}
+.corner{{position:absolute;width:22px;height:22px;border-color:{rarity_color};border-style:solid;opacity:0.5;z-index:10;}}
 .tl{{top:10px;left:10px;border-width:2px 0 0 2px;}}
 .tr{{top:10px;right:10px;border-width:2px 2px 0 0;}}
 .bl{{bottom:10px;left:10px;border-width:0 0 2px 2px;}}
 .br{{bottom:10px;right:10px;border-width:0 2px 2px 0;}}
-
-/* BADGES */
-#rar-badge{{
-  position:absolute;top:14px;left:16px;
-  background:rgba(0,0,0,0.75);border:1px solid var(--rar);border-radius:12px;
-  padding:5px 13px;color:var(--rar);font-size:11px;font-weight:900;
-  letter-spacing:1px;backdrop-filter:blur(6px);z-index:10;
-}}
-#lv-badge{{
-  position:absolute;top:12px;right:16px;
-  background:rgba(0,0,0,0.8);border:1px solid var(--rar);border-radius:14px;
-  padding:7px 15px;text-align:center;backdrop-filter:blur(6px);z-index:10;
-}}
+#rar-badge{{position:absolute;top:14px;left:16px;background:rgba(0,0,0,0.85);border:1px solid {rarity_color};border-radius:12px;padding:5px 13px;color:{rarity_color};font-size:11px;font-weight:900;letter-spacing:1px;z-index:20;}}
+#lv-badge{{position:absolute;top:12px;right:16px;background:rgba(0,0,0,0.88);border:1px solid {rarity_color};border-radius:14px;padding:7px 15px;text-align:center;z-index:20;}}
 #lv-num{{color:#FFD600;font-size:22px;font-weight:900;line-height:1;}}
 #lv-lbl{{color:#64748b;font-size:9px;letter-spacing:2px;margin-top:1px;}}
-#mood-badge{{
-  position:absolute;top:14px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,0.7);border:1px solid var(--mood);border-radius:14px;
-  padding:4px 14px;font-size:12px;color:var(--mood);font-weight:700;
-  white-space:nowrap;backdrop-filter:blur(4px);z-index:10;
-}}
-#name-tag{{
-  position:absolute;bottom:90px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,0.65);border:1px solid var(--rar);border-radius:20px;
-  padding:4px 18px;color:#fff;font-size:13px;font-weight:900;letter-spacing:2px;
-  white-space:nowrap;text-shadow:0 0 10px var(--rar);z-index:10;
-}}
-
-/* EGG */
-#egg-wrap{{display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;position:relative;}}
-#egg-svg{{filter:drop-shadow(0 0 24px var(--rar));transition:filter 0.4s;}}
-#egg-wrap:hover #egg-svg{{filter:drop-shadow(0 0 45px var(--rar)) drop-shadow(0 0 14px #fff6);}}
-#hatch-info{{margin-top:14px;text-align:center;}}
-#hatch-lbl{{color:var(--rar);font-size:12px;font-weight:900;letter-spacing:1px;margin-bottom:7px;}}
-#hatch-bar-bg{{width:170px;height:7px;background:rgba(255,255,255,0.1);border-radius:4px;margin:0 auto;overflow:hidden;}}
-#hatch-fill{{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--rar),#fff8);transition:width 1s;}}
-
-/* PET */
-#pet-area{{
-  position:relative;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;user-select:none;padding:20px 70px;
-}}
-#sprite{{
-  font-size:108px;line-height:1;position:relative;z-index:3;
-  display:block;text-align:center;transition:transform 0.15s;
-}}
-#sprite:active{{transform:scale(0.85)!important;}}
-.wing{{position:absolute;top:50%;font-size:42px;z-index:2;pointer-events:none;}}
-.wing-l{{left:0;transform-origin:right center;}}
-.wing-r{{right:0;transform-origin:left center;}}
-
-/* Legend rings */
-#ring1{{
-  position:absolute;width:240px;height:240px;border-radius:50%;
-  border:2px dashed rgba(255,255,255,0.12);
-  pointer-events:none;z-index:1;
-}}
-#ring2{{
-  position:absolute;width:180px;height:180px;border-radius:50%;
-  border:1px solid rgba(255,255,255,0.08);
-  pointer-events:none;z-index:1;
-}}
-#ring3{{
-  position:absolute;width:300px;height:300px;border-radius:50%;
-  border:1px dashed rgba(255,255,255,0.05);
-  pointer-events:none;z-index:1;
-}}
-
-/* STATUS */
-#status{{position:absolute;bottom:14px;left:18px;right:18px;z-index:10;}}
+#mood-badge{{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);border:1px solid {mood_color};border-radius:14px;padding:4px 14px;font-size:12px;color:{mood_color};font-weight:700;white-space:nowrap;z-index:20;}}
+#name-tag{{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);border:1px solid {rarity_color};border-radius:20px;padding:4px 18px;color:#fff;font-size:13px;font-weight:900;letter-spacing:2px;white-space:nowrap;text-shadow:0 0 10px {rarity_color};z-index:20;}}
+#status{{position:absolute;bottom:14px;left:18px;right:18px;z-index:20;}}
 .bar-row{{display:flex;align-items:center;gap:8px;margin-bottom:5px;}}
 .bar-lbl{{color:#94a3b8;font-size:10px;width:50px;flex-shrink:0;}}
 .bar-bg{{flex:1;background:rgba(255,255,255,0.08);border-radius:3px;height:5px;overflow:hidden;}}
-.bar-fill{{height:100%;border-radius:3px;transition:width 0.8s ease;}}
+.bar-fill{{height:100%;border-radius:3px;}}
 .bar-val{{color:#e2e8f0;font-size:10px;width:26px;text-align:right;flex-shrink:0;}}
-
-/* EFX LAYER */
 #efx{{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:50;}}
 .ptcl{{position:absolute;pointer-events:none;font-size:14px;animation:ptclRise linear forwards;opacity:0;}}
 .heart{{position:absolute;pointer-events:none;font-size:20px;z-index:60;animation:heartUp 1.5s ease-out forwards;}}
 .spark{{position:absolute;pointer-events:none;z-index:60;font-size:15px;animation:sparkPop 0.65s ease-out forwards;}}
 .fire-shot{{position:absolute;pointer-events:none;font-size:22px;animation:fireShoot 0.7s ease-out forwards;}}
-.lvup-text{{
-  position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
-  color:#FFD600;font-size:28px;font-weight:900;pointer-events:none;
-  animation:lvupPop 2s ease-out forwards;z-index:70;white-space:nowrap;
-  text-shadow:0 0 20px #ffd600;
-}}
-
-@keyframes ptclRise{{
-  0%{{opacity:0;transform:translateY(0) translateX(0) scale(0.4);}}
-  8%{{opacity:0.75;}}
-  90%{{opacity:0.2;}}
-  100%{{opacity:0;transform:translateY(-310px) translateX(var(--dx)) scale(1.1);}}
-}}
-@keyframes heartUp{{
-  0%{{opacity:1;transform:translateY(0) scale(0.4) rotate(var(--r));}}
-  45%{{opacity:1;transform:translateY(-50px) scale(1.1) rotate(var(--r));}}
-  100%{{opacity:0;transform:translateY(-110px) scale(0.7) rotate(var(--r));}}
-}}
-@keyframes sparkPop{{
-  0%{{opacity:1;transform:scale(0) rotate(0);}}
-  50%{{opacity:1;transform:scale(1.7) rotate(180deg);}}
-  100%{{opacity:0;transform:scale(0.2) rotate(360deg) translate(var(--sx),var(--sy));}}
-}}
-@keyframes fireShoot{{
-  0%{{opacity:1;transform:translate(0,0) scale(0.6);}}
-  100%{{opacity:0;transform:translate(var(--fx),var(--fy)) scale(1.4);}}
-}}
-@keyframes lvupPop{{
-  0%{{opacity:0;transform:translate(-50%,10px) scale(0.5);}}
-  15%{{opacity:1;transform:translate(-50%,-50px) scale(1.2);}}
-  70%{{opacity:1;transform:translate(-50%,-60px) scale(1);}}
-  100%{{opacity:0;transform:translate(-50%,-90px) scale(0.8);}}
-}}
-
-/* MOOD-SPECIFIC ANIMATIONS */
-.mood-happy #sprite   {{animation:petFloat 3s ease-in-out infinite,petGlowHappy 2.2s ease-in-out infinite;}}
-.mood-excited #sprite {{animation:petBounce 0.5s ease-in-out infinite,petGlowHappy 0.8s ease-in-out infinite;}}
-.mood-sleep #sprite   {{animation:petSleep 4s ease-in-out infinite;}}
-.mood-sad #sprite     {{animation:petSad 2s ease-in-out infinite;}}
-.mood-default #sprite {{animation:petFloat 3s ease-in-out infinite,petGlow 2.5s ease-in-out infinite;}}
-.mood-legend #sprite  {{animation:legendFloat 3.5s ease-in-out infinite,legendGlow 2s ease-in-out infinite;}}
-.wing-l {{animation:wingL 0.38s ease-in-out infinite;}}
-.wing-r {{animation:wingR 0.38s ease-in-out infinite 0.19s;}}
-#ring1 {{animation:ringRot 6s linear infinite;}}
-#ring2 {{animation:ringRot 4s linear infinite reverse;}}
-#ring3 {{animation:ringRot 10s linear infinite;}}
-
-.petting #sprite {{
+#pet-area.petting #sprite{{
   animation:petHappy 0.25s ease-in-out infinite!important;
-  filter:drop-shadow(0 0 35px var(--rar)) drop-shadow(0 0 18px #ffff0088)!important;
+  filter:drop-shadow(0 0 35px {rarity_color}) drop-shadow(0 0 18px #ffff0088)!important;
 }}
-
-@keyframes petFloat{{
-  0%,100%{{transform:translateY(0) rotate(-2deg) scale(1);}}
-  25%{{transform:translateY(-20px) rotate(0) scale(1.03);}}
-  50%{{transform:translateY(-30px) rotate(2.5deg) scale(1.05);}}
-  75%{{transform:translateY(-15px) rotate(0) scale(1.02);}}
-}}
-@keyframes petBounce{{
-  0%,100%{{transform:translateY(0) scale(1) rotate(-3deg);}}
-  50%{{transform:translateY(-35px) scale(1.1) rotate(3deg);}}
-}}
-@keyframes petSleep{{
-  0%,100%{{transform:translateY(0) rotate(-5deg) scale(0.95);}}
-  50%{{transform:translateY(-8px) rotate(-3deg) scale(0.97);}}
-}}
-@keyframes petSad{{
-  0%,100%{{transform:translateY(0) rotate(-1deg);}}
-  50%{{transform:translateY(-10px) rotate(1deg);}}
-}}
-@keyframes petGlow{{
-  0%,100%{{filter:drop-shadow(0 0 12px var(--rar));}}
-  50%{{filter:drop-shadow(0 0 30px var(--rar));}}
-}}
-@keyframes petGlowHappy{{
-  0%,100%{{filter:drop-shadow(0 0 18px var(--rar));}}
-  50%{{filter:drop-shadow(0 0 45px var(--rar)) drop-shadow(0 0 20px #ffffffaa);}}
-}}
-@keyframes legendFloat{{
-  0%,100%{{transform:translateY(0) rotate(-2deg) scale(1);}}
-  25%{{transform:translateY(-25px) rotate(0) scale(1.05);}}
-  50%{{transform:translateY(-40px) rotate(3deg) scale(1.08);}}
-  75%{{transform:translateY(-18px) rotate(0) scale(1.03);}}
-}}
-@keyframes legendGlow{{
-  0%,100%{{filter:drop-shadow(0 0 25px #ff00ff88) drop-shadow(0 0 40px #00ffff55);}}
-  50%{{filter:drop-shadow(0 0 55px #ff00ffcc) drop-shadow(0 0 80px #00ffff99);}}
-}}
-@keyframes petHappy{{
-  0%,100%{{transform:translateY(-20px) rotate(-7deg) scale(1.13);}}
-  50%{{transform:translateY(-30px) rotate(7deg) scale(1.18);}}
-}}
-@keyframes wingL{{
-  0%,100%{{transform:translateY(-50%) scaleX(-1) scaleY(1);}}
-  50%{{transform:translateY(-42%) scaleX(-0.4) scaleY(0.8);}}
-}}
-@keyframes wingR{{
-  0%,100%{{transform:translateY(-50%) scaleX(1) scaleY(1);}}
-  50%{{transform:translateY(-42%) scaleX(0.4) scaleY(0.8);}}
-}}
+@keyframes petFloat{{0%,100%{{transform:translateY(0) rotate(-2deg) scale(1);}}25%{{transform:translateY(-20px) rotate(0) scale(1.03);}}50%{{transform:translateY(-30px) rotate(2.5deg) scale(1.05);}}75%{{transform:translateY(-15px) rotate(0) scale(1.02);}}}}
+@keyframes petSleep{{0%,100%{{transform:translateY(0) rotate(-5deg) scale(0.95);}}50%{{transform:translateY(-8px) rotate(-3deg) scale(0.97);}}}}
+@keyframes petSad{{0%,100%{{transform:translateY(0) rotate(-1deg);}}50%{{transform:translateY(-10px) rotate(1deg);}}}}
+@keyframes petGlow{{0%,100%{{filter:drop-shadow(0 0 12px {rarity_color});}}50%{{filter:drop-shadow(0 0 30px {rarity_color});}}}}
+@keyframes petGlowHappy{{0%,100%{{filter:drop-shadow(0 0 18px {rarity_color});}}50%{{filter:drop-shadow(0 0 45px {rarity_color}) drop-shadow(0 0 20px #ffffffaa);}}}}
+@keyframes legendFloat{{0%,100%{{transform:translateY(0) rotate(-2deg) scale(1);}}25%{{transform:translateY(-25px) rotate(0) scale(1.05);}}50%{{transform:translateY(-40px) rotate(3deg) scale(1.08);}}75%{{transform:translateY(-18px) rotate(0) scale(1.03);}}}}
+@keyframes legendGlow{{0%,100%{{filter:drop-shadow(0 0 25px #ff00ff88) drop-shadow(0 0 40px #00ffff55);}}50%{{filter:drop-shadow(0 0 55px #ff00ffcc) drop-shadow(0 0 80px #00ffff99);}}}}
+@keyframes petHappy{{0%,100%{{transform:translateY(-20px) rotate(-7deg) scale(1.13);}}50%{{transform:translateY(-30px) rotate(7deg) scale(1.18);}}}}
+@keyframes wingL{{0%,100%{{transform:translateY(-50%) scaleX(-1) scaleY(1);}}50%{{transform:translateY(-42%) scaleX(-0.4) scaleY(0.8);}}}}
+@keyframes wingR{{0%,100%{{transform:translateY(-50%) scaleX(1) scaleY(1);}}50%{{transform:translateY(-42%) scaleX(0.4) scaleY(0.8);}}}}
 @keyframes ringRot{{from{{transform:rotate(0)}}to{{transform:rotate(360deg)}}}}
-@keyframes eggWobble{{
-  0%,100%{{transform:rotate(-5deg) translateY(0);}}
-  25%{{transform:rotate(0) translateY(-12px);}}
-  50%{{transform:rotate(5deg) translateY(0);}}
-  75%{{transform:rotate(0) translateY(-6px);}}
-}}
-@keyframes eggShake{{
-  0%,100%{{transform:translateX(0) rotate(0);}}
-  10%{{transform:translateX(-14px) rotate(-10deg);}}
-  20%{{transform:translateX(14px) rotate(10deg);}}
-  30%{{transform:translateX(-10px) rotate(-6deg);}}
-  40%{{transform:translateX(10px) rotate(6deg);}}
-  55%{{transform:translateX(-6px) rotate(-3deg);}}
-  65%{{transform:translateX(6px) rotate(3deg);}}
-  80%{{transform:translateX(-3px) rotate(-1deg);}}
-}}
-@keyframes innerGlowPulse{{
-  0%,100%{{opacity:0.3;}}
-  50%{{opacity:0.85;}}
-}}
-@keyframes crackGlow{{
-  0%,100%{{stroke-opacity:0.7;}}
-  50%{{stroke-opacity:1;filter:drop-shadow(0 0 4px var(--rar));}}
-}}
+@keyframes eggWobble{{0%,100%{{transform:rotate(-5deg) translateY(0);}}25%{{transform:rotate(0) translateY(-12px);}}50%{{transform:rotate(5deg) translateY(0);}}75%{{transform:rotate(0) translateY(-6px);}}}}
+@keyframes eggShake{{0%,100%{{transform:translateX(0) rotate(0);}}10%{{transform:translateX(-14px) rotate(-10deg);}}20%{{transform:translateX(14px) rotate(10deg);}}30%{{transform:translateX(-10px) rotate(-6deg);}}40%{{transform:translateX(10px) rotate(6deg);}}55%{{transform:translateX(-6px) rotate(-3deg);}}65%{{transform:translateX(6px) rotate(3deg);}}80%{{transform:translateX(-3px) rotate(-1deg);}}}}
+@keyframes innerGlowPulse{{0%,100%{{opacity:0.3;}}50%{{opacity:0.85;}}}}
+@keyframes crackGlow{{0%,100%{{stroke-opacity:0.7;}}50%{{stroke-opacity:1;}}}}
+@keyframes ptclRise{{0%{{opacity:0;transform:translateY(0) scale(0.4);}}8%{{opacity:0.75;}}90%{{opacity:0.2;}}100%{{opacity:0;transform:translateY(-310px) translateX(var(--dx)) scale(1.1);}}}}
+@keyframes heartUp{{0%{{opacity:1;transform:translateY(0) scale(0.4) rotate(var(--r));}}45%{{opacity:1;transform:translateY(-50px) scale(1.1) rotate(var(--r));}}100%{{opacity:0;transform:translateY(-110px) scale(0.7) rotate(var(--r));}}}}
+@keyframes sparkPop{{0%{{opacity:1;transform:scale(0) rotate(0);}}50%{{opacity:1;transform:scale(1.7) rotate(180deg);}}100%{{opacity:0;transform:scale(0.2) rotate(360deg) translate(var(--sx),var(--sy));}}}}
+@keyframes fireShoot{{0%{{opacity:1;transform:translate(0,0) scale(0.6);}}100%{{opacity:0;transform:translate(var(--fx),var(--fy)) scale(1.4);}}}}
 </style>
 </head>
 <body>
@@ -637,15 +521,12 @@ body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace
 
   <div id="rar-badge">★ {rarity}</div>
   <div id="lv-badge"><div id="lv-num">Lv.{lv}</div><div id="lv-lbl">LEVEL</div></div>
-  <div id="mood-badge" id="mood-badge">{mood_data['emoji']} {mood_name}</div>
-
+  <div id="mood-badge">{mood_data['emoji']} {mood_name}</div>
   <div id="efx"></div>
 
-  <!-- Dynamic center content rendered by JS -->
-  <div id="center"></div>
+  {center_html}
 
   <div id="name-tag">♦ {name} ♦</div>
-
   <div id="status">
     <div class="bar-row">
       <div class="bar-lbl">❤️ HP</div>
@@ -666,38 +547,39 @@ body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace
 </div>
 
 <script>
-// Apply CSS variables
-const root = document.documentElement;
-root.style.setProperty('--rar', RAR_COLOR);
-root.style.setProperty('--mood', MOOD_COLOR);
-root.style.setProperty('--bg1', BG1);
-root.style.setProperty('--bg2', BG2);
-document.getElementById('app').style.background =
-  'linear-gradient(160deg,' + BG1 + ' 0%,' + BG2 + ' 100%)';
+const RAR_COLOR="{rarity_color}";
+const PARTICLES={particles};
+const PET_SPECIES="{species}";
+const IS_EGG={"true" if stage=="egg" else "false"};
+const IS_LEGEND={"true" if stage=="legend" else "false"};
+const PTCL_INTERVAL={ptcl_interval};
+const APP = document.getElementById('app');
+const EFX = document.getElementById('efx');
 
 // ── Canvas starfield
 const canvas = document.getElementById('bg-canvas');
 const ctx    = canvas.getContext('2d');
-canvas.width  = 700; canvas.height = 440;
-const stars = Array.from({{length:90}}, () => ({{
+canvas.width=700; canvas.height=440;
+const stars = Array.from({{length:90}}, ()=>({{
   x:Math.random()*700, y:Math.random()*440,
   r:Math.random()*1.6+0.2, op:Math.random(), spd:Math.random()*0.018+0.006, dir:1
 }}));
-// Nebula orbs
-const orbs = [
-  {{x:120,y:100,r:80,  col:RAR_COLOR, op:0.06}},
-  {{x:580,y:330,r:100, col:RAR_COLOR, op:0.05}},
-  {{x:350,y:220,r:130, col:'#ffffff', op:0.02}},
+const orbs=[
+  {{x:120,y:100,r:80, col:RAR_COLOR,op:0.06}},
+  {{x:580,y:330,r:100,col:RAR_COLOR,op:0.05}},
+  {{x:350,y:220,r:130,col:'#ffffff', op:0.02}},
 ];
-function drawBg() {{
+function drawBg(){{
   ctx.clearRect(0,0,700,440);
-  orbs.forEach(o => {{
-    const g = ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
-    g.addColorStop(0,o.col.replace('#','rgba(') + ','+o.op+')');
+  orbs.forEach(o=>{{
+    const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+    const rgb=o.col.replace(/^#/,'');
+    const r=parseInt(rgb.slice(0,2),16),g2=parseInt(rgb.slice(2,4),16),b=parseInt(rgb.slice(4,6),16);
+    g.addColorStop(0,`rgba(${{r}},${{g2}},${{b}},${{o.op}})`);
     g.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,Math.PI*2); ctx.fill();
   }});
-  stars.forEach(s => {{
+  stars.forEach(s=>{{
     s.op += s.spd * s.dir;
     if(s.op>1||s.op<0.08) s.dir*=-1;
     ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
