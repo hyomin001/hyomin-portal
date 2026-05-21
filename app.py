@@ -305,7 +305,11 @@ def _do_login(uid: str, users: dict, device_mode: str):
     save_stats(stats)
     # 로그인 후 pending_page(게임 버튼에서 설정된 목적지)로 이동
     _pending = st.session_state.pop('_pending_page', None)
+    _pending_cat  = st.session_state.pop('_pending_menu_cat', None)
+    _pending_menu = st.session_state.pop('_pending_menu_page', None)
     st.session_state.page_view = _pending if _pending else "portal"
+    if _pending_cat:  st.session_state.current_category = _pending_cat
+    if _pending_menu: st.session_state.current_page = _pending_menu
     st.toast("✅ 로그인 성공!", icon="✅")
     st.rerun()
 
@@ -1407,6 +1411,53 @@ if st.session_state.page_view == "portal":
             st.rerun()
 
 
+
+    # ── 유저 성장 서비스 ──────────────────────────────────────
+    st.markdown("<div class='game-section-title'>🌱 유저 성장 서비스</div>", unsafe_allow_html=True)
+    pc1, pc2 = st.columns(2)
+
+    with pc1:
+        st.markdown("""
+        <div class='game-card' style='border-color:rgba(0,229,255,0.45);min-height:180px;position:relative;'>
+          <div class='card-badge' style='background:rgba(0,229,255,0.15);color:#00E5FF;border:1px solid rgba(0,229,255,0.4);'>👤 프로필</div>
+          <div class='card-icon'>🧑‍🚀</div>
+          <div class='card-title'>내 프로필</div>
+          <div class='card-desc'>아바타 · 배지 컬렉션 · 게임 기록<br>성장 타임라인 · 상태 메시지 설정</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("프로필 보기 👤", use_container_width=True, key="btn_profile"):
+            if st.session_state.get('logged_in_user'):
+                st.session_state.page_view = "universe"
+                st.session_state.current_category = "🌟 성장 & 혜택"
+                st.session_state.current_page = "👤 내 프로필"
+            else:
+                st.session_state['_pending_page'] = "universe"
+                st.session_state['_pending_menu_cat'] = "🌟 성장 & 혜택"
+                st.session_state['_pending_menu_page'] = "👤 내 프로필"
+                st.session_state.page_view = "login"
+            st.rerun()
+
+    with pc2:
+        st.markdown("""
+        <div class='game-card' style='border-color:rgba(0,255,136,0.45);min-height:180px;position:relative;'>
+          <div class='card-badge' style='background:rgba(0,255,136,0.15);color:#00FF88;border:1px solid rgba(0,255,136,0.4);'>🐾 펫</div>
+          <div class='card-icon'>🐾</div>
+          <div class='card-title'>펫 키우기</div>
+          <div class='card-desc'>8종 펫 입양 · 훈련 · 악세서리 장착<br>레벨업 · 스킬 해금 · 패시브 수입</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("펫 키우기 🐾", use_container_width=True, key="btn_pet"):
+            if st.session_state.get('logged_in_user'):
+                st.session_state.page_view = "universe"
+                st.session_state.current_category = "🌟 성장 & 혜택"
+                st.session_state.current_page = "🐾 펫 키우기"
+            else:
+                st.session_state['_pending_page'] = "universe"
+                st.session_state['_pending_menu_cat'] = "🌟 성장 & 혜택"
+                st.session_state['_pending_menu_page'] = "🐾 펫 키우기"
+                st.session_state.page_view = "login"
+            st.rerun()
+
     # ── 명예의 전당 ───────────────────────────────────────────
     st.markdown("<div class='game-section-title'>🏛️ 명예의 전당</div>", unsafe_allow_html=True)
 
@@ -1615,16 +1666,16 @@ function copyMsg(type, btn) {{
 
             st.markdown("""
 <div class="arch-card">
-    <h4>🧩 39개 독립 모듈 구조</h4>
+    <h4>🧩 41개 독립 모듈 구조</h4>
     <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>39개의 독립 모듈</b>로 구성됩니다.
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>41개의 독립 모듈</b>로 구성됩니다.
         각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
         한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
         유지보수 및 신규 기능 추가가 용이한 구조입니다.
     </p>
     <div style="margin-top:10px;">
         <span class="arch-badge">app.py (진입점)</span>
-        <span class="arch-badge">pages/ (27개 페이지)</span>
+        <span class="arch-badge">pages/ (29개 페이지)</span>
         <span class="arch-badge">utils/ (6개 유틸)</span>
         <span class="arch-badge">독립 렌더링</span>
     </div>
@@ -1734,6 +1785,8 @@ function copyMsg(type, btn) {{
     <div class="module-item"><strong>pages/ranking.py</strong>시즌 랭킹·게시판</div>
     <div class="module-item"><strong>pages/clan.py</strong>길드·클랜 시스템</div>
     <div class="module-item"><strong>pages/dm.py</strong>개인 쪽지·읽음 표시</div>
+    <div class="module-item"><strong>pages/profile.py</strong>유저 프로필·배지·아바타·게임기록</div>
+    <div class="module-item"><strong>pages/pet.py</strong>펫 입양·육성·훈련·악세서리·패시브수입</div>
     <div class="module-item"><strong>pages/quest.py</strong>일일 퀘스트·보상</div>
     <div class="module-item"><strong>pages/title_shop.py</strong>칭호 상점·장착</div>
     <div class="module-item"><strong>pages/vip.py</strong>VIP 전용 라운지</div>
@@ -1778,7 +1831,7 @@ function copyMsg(type, btn) {{
         효민 유니버스는 <b>현실과 동일한 자본주의 경제 시스템</b>을 체험하는 경제 시뮬레이션입니다.
         가입 즉시 <b>초기 정착금 5억 원</b>이 지급되며, 주식·코인·부동산·은행 등
         다양한 금융 수단으로 자산을 불려 나갈 수 있습니다.
-        랭킹 시스템, 클랜, 일일 퀘스트, 미니게임, VIP 라운지까지 갖춘 풀 스케일 경제 세계입니다.
+        랭킹 시스템, 클랜, 일일 퀘스트, 미니게임, VIP 라운지, 유저 프로필, 펫 키우기까지 갖춘 풀 스케일 경제 세계입니다.
     </p>
     <div style="margin-top:12px;">
         <span class="arch-badge">📈 주식 트레이딩</span>
@@ -1788,6 +1841,8 @@ function copyMsg(type, btn) {{
         <span class="arch-badge">🏆 시즌 랭킹</span>
         <span class="arch-badge">⚔️ 클랜 시스템</span>
         <span class="arch-badge">🎰 미니게임 8종</span>
+        <span class="arch-badge">👤 유저 프로필</span>
+        <span class="arch-badge">🐾 펫 키우기</span>
     </div>
     <div style="margin-top:10px;background:rgba(0,212,255,0.08);border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:var(--cyan) !important;font-weight:700;">💡 입문 가이드</p>
@@ -2088,6 +2143,73 @@ function copyMsg(type, btn) {{
 </div>
             """, unsafe_allow_html=True)
 
+
+        # ── 유저 성장 서비스 가이드 ────────────────────────────
+        st.markdown("### 🌱 유저 성장 서비스 가이드")
+        st.markdown("---")
+
+        col_pg1, col_pg2 = st.columns(2)
+
+        with col_pg1:
+            st.markdown("""
+<div class="arch-card" style="border-left-color:#00E5FF;">
+    <h4 style="color:#00E5FF !important;">👤 내 프로필 &#8212; 나만의 캐릭터 카드</h4>
+    <p>
+        효민 유니버스에서의 모든 활동이 하나의 <b>게임 캐릭터 프로필</b>로 집약됩니다.
+        순자산에 따라 <b>Lv.1 튜토리얼 중</b>부터 <b>Lv.100 우주신</b>까지 성장하며,
+        달성한 목표에 따라 <b>배지 12종</b>이 자동으로 수여됩니다.
+        아바타는 20종 중 선택 가능하며, 잠긴 아바타는 <b>30억</b>에 해금할 수 있습니다.
+        상태 메시지를 설정해 다른 유저들에게 현재 상태를 알릴 수도 있습니다.
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge" style="color:#00E5FF !important;background:rgba(0,229,255,0.1);border-color:rgba(0,229,255,0.3);">🧑‍🚀 아바타 20종</span>
+        <span class="arch-badge" style="color:#00E5FF !important;background:rgba(0,229,255,0.1);border-color:rgba(0,229,255,0.3);">🏅 배지 12종</span>
+        <span class="arch-badge" style="color:#00E5FF !important;background:rgba(0,229,255,0.1);border-color:rgba(0,229,255,0.3);">⚡ Lv.1~100 성장</span>
+        <span class="arch-badge" style="color:#00E5FF !important;background:rgba(0,229,255,0.1);border-color:rgba(0,229,255,0.3);">📊 자산 현황 요약</span>
+        <span class="arch-badge" style="color:#00E5FF !important;background:rgba(0,229,255,0.1);border-color:rgba(0,229,255,0.3);">🎮 게임 기록 6종</span>
+        <span class="arch-badge" style="color:#00E5FF !important;background:rgba(0,229,255,0.1);border-color:rgba(0,229,255,0.3);">💬 상태 메시지</span>
+    </div>
+    <div style="margin-top:10px;background:rgba(0,229,255,0.07);border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:var(--cyan) !important;font-weight:700;">💡 활용 팁</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
+            ① 유니버스 입장 → ② 🌟 성장 & 혜택 → 👤 내 프로필 → ③ 아바타 선택
+            → ④ 상태 메시지 설정 → ⑤ 배지 달성 현황 확인 → ⑥ 게임 기록 조회
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
+        with col_pg2:
+            st.markdown("""
+<div class="arch-card" style="border-left-color:#00FF88;">
+    <h4 style="color:#00FF88 !important;">🐾 펫 키우기 &#8212; 나만의 동반자</h4>
+    <p>
+        <b>8종의 펫</b>을 입양해 함께 성장시키는 육성 시스템입니다.
+        먹이주기·훈련·놀아주기로 EXP를 쌓아 레벨업하며,
+        <b>레벨 20</b> 달성 시 시간당 <b>패시브 수입</b>이 발생합니다.
+        악세서리 5종으로 능력치를 강화하고, 레벨별 <b>스킬 8종</b>을 해금하세요.
+        레벨 40을 달성하면 외형이 <b>전설 폼</b>으로 각성합니다!
+    </p>
+    <div style="margin-top:12px;">
+        <span class="arch-badge" style="color:#00FF88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🐉 8종 펫 (전설~일반)</span>
+        <span class="arch-badge" style="color:#00FF88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🍖 먹이 4종</span>
+        <span class="arch-badge" style="color:#00FF88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🎮 훈련 미니게임 4종</span>
+        <span class="arch-badge" style="color:#00FF88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">👗 악세서리 5종</span>
+        <span class="arch-badge" style="color:#00FF88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">⚔️ 스킬 8종</span>
+        <span class="arch-badge" style="color:#00FF88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">💰 패시브 수입 (Lv.20+)</span>
+        <span class="arch-badge" style="color:#00FF88 !important;background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);">🌟 전설 각성 (Lv.40)</span>
+    </div>
+    <div style="margin-top:10px;background:rgba(0,255,136,0.07);border-radius:8px;padding:10px 12px;">
+        <p style="margin:0;font-size:0.85rem;color:var(--green) !important;font-weight:700;">💡 육성 팁</p>
+        <p style="margin:4px 0 0 0;font-size:0.82rem;color:var(--text2) !important;">
+            드래곤(500억) → 최고 패시브 수입 | 럭키 고양이(1000만) → 입문용 추천.
+            방치하면 배고픔·행복도 하락 → HP 감소. 악세서리 "왕관 모자" 장착 시 EXP +10%.
+            Lv.20 넘으면 접속할 때마다 자동으로 수입 수령!
+        </p>
+    </div>
+</div>
+            """, unsafe_allow_html=True)
+
     # ── 유저 소통 창구 ──────────────────────────────────────────
     _FEEDBACK_FILE = "portal_feedback"
     _TYPE_META = {
@@ -2242,6 +2364,7 @@ elif st.session_state.page_view == "login":
         "project_c": "더 터미널", "project_d": "인베스트 마블", "project_e": "던전 런",
         "project_f": "네온 도주 레이싱", "project_g": "좀비 아포칼립스",
         "project_h": "스트리트 파이터 EX", "project_i": "라인 배틀 저격전",
+        "universe_profile": "내 프로필", "universe_pet": "펫 키우기",
     }
     _pending_name = _page_names.get(st.session_state.get('_pending_page', ''), '')
     _subtitle = f"로그인 후 <b>{_pending_name}</b>(으)로 이동합니다." if _pending_name else "안전한 서비스 이용을 위해 로그인해주세요."
