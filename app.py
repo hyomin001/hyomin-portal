@@ -1615,9 +1615,9 @@ function copyMsg(type, btn) {{
 
             st.markdown("""
 <div class="arch-card">
-    <h4>🧩 40개 독립 모듈 구조</h4>
+    <h4>🧩 39개 독립 모듈 구조</h4>
     <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>40개의 독립 모듈</b>로 구성됩니다.
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>39개의 독립 모듈</b>로 구성됩니다.
         각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
         한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
         유지보수 및 신규 기능 추가가 용이한 구조입니다.
@@ -1625,7 +1625,7 @@ function copyMsg(type, btn) {{
     <div style="margin-top:10px;">
         <span class="arch-badge">app.py (진입점)</span>
         <span class="arch-badge">pages/ (27개 페이지)</span>
-        <span class="arch-badge">utils/ (5개 유틸)</span>
+        <span class="arch-badge">utils/ (6개 유틸)</span>
         <span class="arch-badge">독립 렌더링</span>
     </div>
 </div>
@@ -1685,19 +1685,16 @@ function copyMsg(type, btn) {{
 
             st.markdown("""
 <div class="arch-card" style="border-left-color:#ffd700;">
-    <h4 style="color:#ffd700 !important;">⏰ 서버 상시 가동 — cron-job.org Keepalive</h4>
+    <h4 style="color:#ffd700 !important;">⏰ 서버 상시 가동 — UptimeRobot Keepalive</h4>
     <p>
         Streamlit Cloud는 일정 시간 접속이 없으면 서버가 슬립 상태로 전환됩니다.
-        이를 방지하기 위해 <b>cron-job.org</b>를 이용해 주기적으로 서버에 핑을 보내
+        이를 방지하기 위해 <b>UptimeRobot</b>을 이용해 5분마다 서버에 핑을 보내
         24시간 상시 깨어 있는 상태를 유지합니다.
-        <code style="background:rgba(255,215,0,0.15);padding:1px 5px;border-radius:3px;">?ping=1</code> 쿼리로
-        접속 시 시즌 자동 전환 체크도 함께 수행합니다.
     </p>
     <div style="margin-top:10px;">
-        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">cron-job.org</span>
-        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">?ping=1 엔드포인트</span>
+        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">UptimeRobot</span>
+        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">5분 간격 모니터링</span>
         <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">슬립 방지 24/7</span>
-        <span class="arch-badge" style="color:#ffd700!important;background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35);">시즌 자동 전환 트리거</span>
     </div>
 </div>
             """, unsafe_allow_html=True)
@@ -1734,7 +1731,7 @@ function copyMsg(type, btn) {{
     <div class="module-item"><strong>pages/real_estate.py</strong>부동산 매입·임대료 수익</div>
     <div class="module-item"><strong>pages/bank.py</strong>대출·송금·이자 계산</div>
     <div class="module-item"><strong>pages/txlog.py</strong>개인 거래 내역 조회</div>
-    <div class="module-item"><strong>pages/ranking.py</strong>시즌1 랭킹·게시판</div>
+    <div class="module-item"><strong>pages/ranking.py</strong>시즌 랭킹·게시판</div>
     <div class="module-item"><strong>pages/clan.py</strong>길드·클랜 시스템</div>
     <div class="module-item"><strong>pages/dm.py</strong>개인 쪽지·읽음 표시</div>
     <div class="module-item"><strong>pages/quest.py</strong>일일 퀘스트·보상</div>
@@ -1791,7 +1788,6 @@ function copyMsg(type, btn) {{
         <span class="arch-badge">🏆 시즌 랭킹</span>
         <span class="arch-badge">⚔️ 클랜 시스템</span>
         <span class="arch-badge">🎰 미니게임 8종</span>
-        <span class="arch-badge">🚀 시즌 2 개막 예고</span>
     </div>
     <div style="margin-top:10px;background:rgba(0,212,255,0.08);border-radius:8px;padding:10px 12px;">
         <p style="margin:0;font-size:0.85rem;color:var(--cyan) !important;font-weight:700;">💡 입문 가이드</p>
