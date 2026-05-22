@@ -17,7 +17,7 @@ from utils.css import GLOBAL_CSS
 # ==============================
 # 2. 페이지 기본 설정
 # ==============================
-st.set_page_config(page_title="HYOMIN PORTAL", page_icon="🌐", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="HYOMIN PORTAL", page_icon="🌐", layout="wide", initial_sidebar_state="auto")
 
 # ── Google AdSense 소유권 확인 + 광고 코드 ──────────────────
 st.markdown("""
@@ -2379,7 +2379,31 @@ elif st.session_state.page_view == "login":
 
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
-        device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"], horizontal=True)
+        # JS 기반 자동 모바일/PC 감지
+        if 'auto_device_detected' not in st.session_state:
+            st.components.v1.html("""
+<script>
+function detectDevice() {
+    var isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    var msg = isMobile ? 'mobile' : 'pc';
+    // Streamlit에 메시지 전달 (query param 방식)
+    if (isMobile && !window.location.search.includes('_dev=mobile')) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('_dev', 'mobile');
+        window.location.replace(url.toString());
+    }
+}
+detectDevice();
+</script>
+""", height=0)
+        _qdev = st.query_params.get('_dev', '')
+        if _qdev == 'mobile':
+            _default_device = "📱 모바일 (스마트폰)"
+        else:
+            _default_device = "🖥️ PC (데스크탑)"
+        device_mode = st.radio("접속 환경", ["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"],
+                               index=["🖥️ PC (데스크탑)", "📱 모바일 (스마트폰)"].index(_default_device),
+                               horizontal=True)
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
 
         with tabs[0]:
@@ -2542,6 +2566,16 @@ elif st.session_state.page_view == "universe":
     my_unread  = sum(1 for m in msg_db_check.get(st.session_state.logged_in_user, {}).get("inbox", []) if not m.get("read", False))
     unread_txt = f" 🔴{my_unread}" if my_unread > 0 else ""
     is_pc_mode = "PC" in st.session_state.get('device_mode', '🖥️ PC (데스크탑)')
+
+    # PC모드일 때 첫 로그인 시 사이드바 자동 열기
+    if is_pc_mode and not st.session_state.get('_sidebar_opened'):
+        st.session_state['_sidebar_opened'] = True
+        st.markdown("""<script>
+        setTimeout(function(){
+            var btn = window.parent.document.querySelector('[data-testid="collapsedControl"]');
+            if(btn) btn.click();
+        }, 300);
+        </script>""", unsafe_allow_html=True)
 
     if is_pc_mode:
         with st.sidebar:
