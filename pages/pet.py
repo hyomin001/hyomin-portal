@@ -451,7 +451,7 @@ def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp):
 *{{margin:0;padding:0;box-sizing:border-box;}}
 body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace;}}
 #app{{
-  width:100%;height:440px;
+  width:100%;min-height:380px;height:clamp(360px,50vw,440px);
   background:linear-gradient(160deg,{bg1} 0%,{bg2} 100%);
   border:2px solid {rarity_color};border-radius:22px;position:relative;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
@@ -559,9 +559,16 @@ const EFX = document.getElementById('efx');
 // ── Canvas starfield
 const canvas = document.getElementById('bg-canvas');
 const ctx    = canvas.getContext('2d');
-canvas.width=700; canvas.height=440;
+function resizeCanvas() {{
+  canvas.width = APP.clientWidth || window.innerWidth;
+  canvas.height = APP.clientHeight || 440;
+}}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+const CW = () => canvas.width;
+const CH = () => canvas.height;
 const stars = Array.from({{length:90}}, ()=>({{
-  x:Math.random()*700, y:Math.random()*440,
+  x:Math.random()*CW(), y:Math.random()*CH(),
   r:Math.random()*1.6+0.2, op:Math.random(), spd:Math.random()*0.018+0.006, dir:1
 }}));
 const orbs=[
@@ -570,7 +577,7 @@ const orbs=[
   {{x:350,y:220,r:130,col:'#ffffff', op:0.02}},
 ];
 function drawBg(){{
-  ctx.clearRect(0,0,700,440);
+  ctx.clearRect(0,0,CW(),CH());
   orbs.forEach(o=>{{
     const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
     const rgb=o.col.replace(/^#/,'');
@@ -910,7 +917,7 @@ def render(market, nw):
     # ── Animated pet card
     components.html(
         generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp),
-        height=450
+        height=460
     )
 
     # Stat bar below the card
