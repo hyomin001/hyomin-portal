@@ -1,5 +1,7 @@
-# pages/pet.py — MEGA ULTIMATE EDITION v4.0 🐾
+# pages/pet.py — MEGA ULTIMATE EDITION v5.0 🐾
 # 드래곤 알 부화 / 날개짓 / 쓰다듬기 / 탐험 / 배틀 / 업적 / 일지 완전판
+# v5 추가: 먹이 반응 애니메이션, 버튼 연타 미니게임, 일일 펫 대화,
+#          배틀 타격 이펙트+데미지 팝업, 포토카드 탭, 계절/날씨, 특수 먹이 레시피
 import streamlit as st
 import streamlit.components.v1 as components
 import time, random, json
@@ -16,35 +18,51 @@ PET_SPECIES = {
     "dragon":  {"name":"드래곤",    "egg":"🥚","baby":"🐉","adult":"🐲","legend":"🌌",
                 "desc":"전설의 화염룡. 성장할수록 막대한 수익과 불꽃 능력을 얻는다!",
                 "price":500_000_000,"rarity":"전설","rarity_color":"#FF6B00",
-                "ability":"화염 브레스 — 배틀 시 추가 화염 데미지"},
+                "ability":"화염 브레스 — 배틀 시 추가 화염 데미지",
+                "season_comment":{"봄":"봄비에 날개가 젖어 짜증나...","여름":"더위? 내가 더 뜨거운데?","가을":"낙엽이 불타는 것 같아서 기분 좋아!","겨울":"눈을 불로 녹여줄게!"},
+                "weather_comment":{"맑음":"화창한 날엔 하늘 높이 날고 싶어!","비":"비는... 별로야.","눈":"눈밭에서 뒹굴고 싶어!","흐림":"흐린 날엔 그냥 자고 싶어..."}},
     "wolf":    {"name":"황금 늑대", "egg":"🥚","baby":"🐺","adult":"🦊","legend":"⭐",
                 "desc":"황금빛 모피의 신비 늑대. 광산 보너스!",
                 "price":100_000_000,"rarity":"희귀","rarity_color":"#FFD600",
-                "ability":"황금 발톱 — 광산 수입 +15%"},
+                "ability":"황금 발톱 — 광산 수입 +15%",
+                "season_comment":{"봄":"봄 바람에 털이 날려~ 아름다워!","여름":"더운 여름엔 개울가가 최고야!","가을":"추수철엔 먹을 게 많아서 좋아!","겨울":"눈밭 질주가 제일 신나!"},
+                "weather_comment":{"맑음":"황금빛 햇살이 내 털에 반짝여!","비":"비 냄새... 뭔가 사냥하고 싶어진다!","눈":"눈밭 달리기 최고!","흐림":"흐린 날엔 멀리서 뭔가 냄새가 나..."}},
     "penguin": {"name":"황제 펭귄", "egg":"🥚","baby":"🐧","adult":"🐧","legend":"👑",
                 "desc":"남극의 황제. 주식 투자 행운!",
                 "price":50_000_000,"rarity":"고급","rarity_color":"#00E5FF",
-                "ability":"빙하 방패 — 배틀 방어력 +20%"},
+                "ability":"빙하 방패 — 배틀 방어력 +20%",
+                "season_comment":{"봄":"따뜻해지면 빙하가 녹아서 슬퍼...","여름":"더위 너무 싫어!! 에어컨 틀어줘!","가을":"이 정도 온도가 딱 좋아!","겨울":"겨울이 최고야! 나의 계절이야!"},
+                "weather_comment":{"맑음":"햇빛이 빙하에 반짝여서 예뻐!","비":"비보다 눈이 좋은데...","눈":"눈이다!! 신나!!","흐림":"흐린 날엔 바다 보며 멍 때리기~"}},
     "cat":     {"name":"럭키 고양이","egg":"🥚","baby":"🐱","adult":"🐈","legend":"🍀",
                 "desc":"행운을 부르는 신비한 고양이.",
                 "price":10_000_000,"rarity":"일반","rarity_color":"#00FF88",
-                "ability":"럭키 포 — 퀘스트 보상 +10%"},
+                "ability":"럭키 포 — 퀘스트 보상 +10%",
+                "season_comment":{"봄":"봄 햇살 아래 낮잠이 최고야~ 냐옹","여름":"여름엔 시원한 데 누워있을 거야.","가을":"가을 바람이 시원해서 산책하기 좋아!","겨울":"이불 속이 최고야! 나올 생각 없어."},
+                "weather_comment":{"맑음":"햇살 가득한 창가가 최애 자리야~","비":"비는 싫어! 창문이나 보고 있을게.","눈":"눈은 신기해... 잡으려다가 녹더라.","흐림":"흐린 날엔 그냥 하루 종일 잘 거야."}},
     "unicorn": {"name":"유니콘",    "egg":"🥚","baby":"🦄","adult":"🦄","legend":"🌈",
                 "desc":"무지개빛 유니콘. 코인 거래 보너스!",
                 "price":200_000_000,"rarity":"영웅","rarity_color":"#DD00FF",
-                "ability":"무지개 마법 — 코인 수익 +12%"},
+                "ability":"무지개 마법 — 코인 수익 +12%",
+                "season_comment":{"봄":"봄꽃밭에서 뛰어놀고 싶어!","여름":"무지개가 자주 떠서 여름이 좋아!","가을":"단풍빛이 내 갈기랑 비슷해!","겨울":"흰 눈밭에 무지개 발자국 남기기!"},
+                "weather_comment":{"맑음":"무지개가 잘 보이는 날이야!","비":"비 뒤에 무지개가 뜰 거야, 기다려!","눈":"눈 위를 달리면 무지개 먼지가 나!","흐림":"흐린 날엔 내가 빛이 되어줄게!"}},
     "phoenix": {"name":"불사조",    "egg":"🔥","baby":"🐦","adult":"🦅","legend":"🌟",
                 "desc":"불사의 새. 강화 보너스!",
                 "price":300_000_000,"rarity":"영웅","rarity_color":"#FF9500",
-                "ability":"불사 재생 — HP 자동 회복 2배"},
+                "ability":"불사 재생 — HP 자동 회복 2배",
+                "season_comment":{"봄":"봄에 다시 태어나는 기분이야!","여름":"뜨거운 여름이 내 본령이야!","가을":"타오르는 단풍처럼 아름다워!","겨울":"내 불꽃이 가장 빛나는 계절!"},
+                "weather_comment":{"맑음":"맑은 하늘을 날고 싶어!","비":"빗물이 내 불꽃을 끄려 하지만... 절대 못 꺼!","눈":"눈을 녹이며 나는 게 최고야!","흐림":"흐린 날에도 내 불꽃은 꺼지지 않아!"}},
     "slime":   {"name":"황금 슬라임","egg":"🟡","baby":"🫧","adult":"💛","legend":"💰",
                 "desc":"돈 먹고 자라는 슬라임. 패시브 수입 증가!",
                 "price":30_000_000,"rarity":"고급","rarity_color":"#FFEE00",
-                "ability":"황금 흡수 — 패시브 수입 +20%"},
+                "ability":"황금 흡수 — 패시브 수입 +20%",
+                "season_comment":{"봄":"봄비에 몸이 퉁퉁 불어서 좋아~","여름":"뜨거우면 녹을 것 같아... 그늘 줘!","가을":"낙엽이 나한테 달라붙어 귀찮아.","겨울":"눈이 오면 얼어붙을 것 같아 무서워!"},
+                "weather_comment":{"맑음":"햇살에 반짝반짝 빛나는 게 좋아!","비":"빗물이 맛있어! (핥아봄)","눈":"차가워... 빨리 녹아줘!","흐림":"흐린 날엔 코인이나 먹을게."}},
     "fox":     {"name":"구미호",    "egg":"🥚","baby":"🦊","adult":"🦊","legend":"🌙",
                 "desc":"아홉 꼬리 여우. 도박 보너스!",
                 "price":150_000_000,"rarity":"희귀","rarity_color":"#FF6699",
-                "ability":"미혹의 눈 — 도박 승률 +5%"},
+                "ability":"미혹의 눈 — 도박 승률 +5%",
+                "season_comment":{"봄":"봄밤에 달빛이 아름다워...","여름":"여름 축제에서 미혹시키기 딱 좋아!","가을":"보름달 아래서 춤추는 가을이 최고야!","겨울":"눈 덮인 달밤에 꼬리가 아홉 개 빛나~"},
+                "weather_comment":{"맑음":"맑은 날엔 꼬리가 더 예뻐 보여!","비":"비 오는 날 밤엔 신비로운 기운이 넘쳐!","눈":"눈 위에 발자국 남기는 걸 좋아해.","흐림":"흐린 날 안개 속이 내 무대야!"}},
 }
 
 PET_FOOD = {
@@ -140,6 +158,84 @@ TRAINING_GAMES = [
 
 EXP_PER_LEVEL = 200
 
+# ── 계절 / 날씨
+WEATHER_ICONS = {"맑음":"☀️","비":"🌧️","흐림":"☁️","눈":"❄️"}
+SEASON_BG = {
+    "봄":  {"particles":["🌸","🌺","🌷","💐","🦋"]},
+    "여름":{"particles":["☀️","🌊","🌴","🍉","⭐"]},
+    "가을":{"particles":["🍂","🍁","🌾","🎃","🍄"]},
+    "겨울":{"particles":["❄️","⛄","🌨️","🔵","✨"]},
+}
+
+def get_season():
+    m = datetime.now(KST).month
+    if m in [3,4,5]:    return "봄",  "🌸"
+    elif m in [6,7,8]:  return "여름","☀️"
+    elif m in [9,10,11]:return "가을","🍂"
+    else:               return "겨울","❄️"
+
+def get_weather():
+    """날짜 시드 기반 결정론적 날씨 (API 없이)"""
+    today = datetime.now(KST)
+    seed  = today.year * 10000 + today.month * 100 + today.day
+    random.seed(seed)
+    w = random.choice(["맑음","맑음","맑음","비","흐림","눈"])
+    random.seed()
+    return w
+
+# ── 일일 펫 대화
+DAILY_QUOTES = {
+    "신남":   ["오늘 뭔가 좋은 일이 생길 것 같아!","나 요즘 너무 행복해!! 같이 뛰어놀자!","오늘은 탐험 가고 싶어! 어서 가자!","최고의 하루가 될 것 같은 느낌이야!"],
+    "행복":   ["오늘 날씨가 딱 좋다~ 기분 굿!","맛있는 거 더 주면 안 돼? 히힝~","오늘 하루도 잘 부탁해!","같이 있으면 항상 기분이 좋아!"],
+    "배고픔": ["배고파... 밥 줘... 제발...","먹이를 안 주면... 삐질 거야.","꼬르륵... 들려? 내 배 소리..."],
+    "아픔":   ["몸이 안 좋아... 쉬고 싶어...","HP가 부족해... 회복 좀 해줘...","오늘은 배틀 하기 싫어. 아파..."],
+    "피곤":   ["너무 피곤해... 좀 쉬자...","오늘은 그냥 같이 쉬면 안 돼?","훈련은 내일 하면 안 될까..."],
+    "슬픔":   ["같이 놀아줘... 심심해...","왜 이렇게 혼자인 것 같지...","오늘 조금 슬퍼. 안아줘."],
+    "보통":   ["오늘 뭐 할까?","탐험이나 갈까? 아니면 훈련?","그냥저냥 괜찮은 하루야.","뭔가 먹고 싶긴 한데..."],
+}
+
+def get_daily_quote(pet):
+    """기분+종족+계절+날씨 조합 일일 한마디 (날짜 고정)"""
+    mood_name, _ = get_mood(pet)
+    quotes    = DAILY_QUOTES.get(mood_name, DAILY_QUOTES['보통'])
+    sp_data   = PET_SPECIES.get(pet.get('species','cat'), {})
+    season, _ = get_season()
+    weather   = get_weather()
+    seed = int(datetime.now(KST).strftime("%Y%m%d"))
+    random.seed(seed)
+    q = random.choice(quotes)
+    extras = [sp_data.get('season_comment',{}).get(season,""),
+              sp_data.get('weather_comment',{}).get(weather,"")]
+    extras = [x for x in extras if x]
+    extra  = f" ({random.choice(extras)})" if extras else ""
+    random.seed()
+    return q + extra
+
+# ── 특수 먹이 레시피
+SPECIAL_RECIPES = {
+    "golden_meal": {
+        "name":"황금 만찬","icon":"🌟",
+        "desc":"일반 사료 + 고급 사료 + 달빛 열매 조합",
+        "ingredients":{"kibble":1,"gourmet":1,"moonberry":1},
+        "exp":800,"happiness":60,"hunger_restore":100,
+        "special":"EXP 대폭 + 유대감 +10","bond_bonus":10,
+    },
+    "dragon_feast": {
+        "name":"드래곤 향연","icon":"🔥",
+        "desc":"용의 심장 + 별의 가루 + 프리미엄 사료 조합",
+        "ingredients":{"dragonmeat":1,"stardust":1,"premium":1},
+        "exp":5000,"happiness":100,"hunger_restore":100,
+        "special":"EXP 대폭 + HP 완전 회복","bond_bonus":20,
+    },
+    "lucky_blend": {
+        "name":"행운의 블렌드","icon":"🍀",
+        "desc":"일반 사료 + 별의 가루 + 고급 사료 조합",
+        "ingredients":{"kibble":1,"stardust":1,"gourmet":1},
+        "exp":600,"happiness":80,"hunger_restore":80,
+        "special":"행복도 대폭 상승 + 유대감 +15","bond_bonus":15,
+    },
+}
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 🎨 SVG PET SPRITES — 치비 캐릭터 (알→새끼→성체→전설)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -233,6 +329,7 @@ def default_pet():
         "battles_total":0,"journal":[],"achievements":[],
         "expedition":None,"personality":"",
         "total_exp_gained":0,"highest_bond":0,
+        "recipes_made":0,
     }
 
 def load_pet(uid, users=None):
@@ -329,8 +426,10 @@ def check_and_award_achievements(pet):
     h   = pet.get('happiness',100)
     ex  = pet.get('expeditions',0)
     bw  = pet.get('battles_won',0)
+    bt  = pet.get('battles_total',0)
     bd  = pet.get('bond',0)
     ac  = len(pet.get('accessories',[]))
+    rm  = pet.get('recipes_made',0)
     existing = pet.get('achievements',[])
     checks = {
         "first_feed":tf>=1,"well_fed":tf>=50,"feast":tf>=500,
@@ -338,6 +437,7 @@ def check_and_award_achievements(pet):
         "happy_max":h>=100,"explorer1":ex>=1,"explorer10":ex>=10,
         "battle_win1":bw>=1,"battle_win10":bw>=10,
         "hatched":lv>=5,"bonded":bd>=3,"full_acc":ac>=2,"legend":lv>=40,
+        "chef":rm>=1,"battler100":bt>=100,
     }
     for ach_id, cond in checks.items():
         if cond and ach_id not in existing:
@@ -374,7 +474,7 @@ def get_available_monsters(lv):
 # 🎨 HTML ANIMATION GENERATOR
 # ══════════════════════════════════════════════════════════════════════════════
 
-def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp):
+def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp, feed_anim=False):
     species      = pet.get('species','cat')
     name         = pet.get('name','펫')
     rarity_color = sp.get('rarity_color','#00E5FF')
@@ -400,6 +500,15 @@ def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp):
         'slime':   ['💛','✨','💰','🟡','⭐'],
     }
     particles = json.dumps(ptcl_map.get(species, ['✨','💫','⭐']))
+
+    # 계절 파티클
+    season_name, season_icon = get_season()
+    weather_now = get_weather()
+    weather_icon_now = WEATHER_ICONS.get(weather_now, "☀️")
+    season_particles = json.dumps(SEASON_BG[season_name]['particles'])
+
+    # 먹이 반응 애니메이션 플래그
+    feed_anim_js = "true" if feed_anim else "false"
 
     mood_name, mood_data = get_mood(pet)
     mood_color = mood_data['color']
@@ -536,6 +645,7 @@ body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace
 #lv-num{{color:#FFD600;font-size:22px;font-weight:900;line-height:1;}}
 #lv-lbl{{color:#64748b;font-size:9px;letter-spacing:2px;margin-top:1px;}}
 #mood-badge{{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);border:1px solid {mood_color};border-radius:14px;padding:4px 14px;font-size:12px;color:{mood_color};font-weight:700;white-space:nowrap;z-index:20;}}
+#season-badge{{position:absolute;top:50px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);border-radius:10px;padding:2px 10px;font-size:10px;color:#94A3B8;white-space:nowrap;z-index:20;}}
 #name-tag{{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);border:1px solid {rarity_color};border-radius:20px;padding:4px 18px;color:#fff;font-size:13px;font-weight:900;letter-spacing:2px;white-space:nowrap;text-shadow:0 0 10px {rarity_color};z-index:20;}}
 #status{{position:absolute;bottom:14px;left:18px;right:18px;z-index:20;}}
 .bar-row{{display:flex;align-items:center;gap:8px;margin-bottom:5px;}}
@@ -548,6 +658,8 @@ body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace
 .heart{{position:absolute;pointer-events:none;font-size:20px;z-index:60;animation:heartUp 1.5s ease-out forwards;}}
 .spark{{position:absolute;pointer-events:none;z-index:60;font-size:15px;animation:sparkPop 0.65s ease-out forwards;}}
 .fire-shot{{position:absolute;pointer-events:none;font-size:22px;animation:fireShoot 0.7s ease-out forwards;}}
+.dmg-num{{position:absolute;pointer-events:none;font-weight:900;z-index:70;animation:dmgFloat 1.2s ease-out forwards;}}
+.eat-anim{{position:absolute;pointer-events:none;font-size:28px;z-index:70;animation:eatBounce 0.9s ease-out forwards;}}
 #pet-area.petting #sprite{{
   animation:petHappy 0.25s ease-in-out infinite!important;
   filter:drop-shadow(0 0 35px {rarity_color}) drop-shadow(0 0 18px #ffff0088)!important;
@@ -573,6 +685,9 @@ body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace
 @keyframes heartUp{{0%{{opacity:1;transform:translateY(0) scale(0.4) rotate(var(--r));}}45%{{opacity:1;transform:translateY(-50px) scale(1.1) rotate(var(--r));}}100%{{opacity:0;transform:translateY(-110px) scale(0.7) rotate(var(--r));}}}}
 @keyframes sparkPop{{0%{{opacity:1;transform:scale(0) rotate(0);}}50%{{opacity:1;transform:scale(1.7) rotate(180deg);}}100%{{opacity:0;transform:scale(0.2) rotate(360deg) translate(var(--sx),var(--sy));}}}}
 @keyframes fireShoot{{0%{{opacity:1;transform:translate(0,0) scale(0.6);}}100%{{opacity:0;transform:translate(var(--fx),var(--fy)) scale(1.4);}}}}
+@keyframes dmgFloat{{0%{{opacity:1;transform:translateY(0) scale(1.2);}}40%{{opacity:1;transform:translateY(-40px) scale(1.4);}}100%{{opacity:0;transform:translateY(-90px) scale(0.8);}}}}
+@keyframes eatBounce{{0%{{opacity:1;transform:scale(0.5) rotate(-20deg);}}40%{{opacity:1;transform:scale(1.4) rotate(10deg);}}100%{{opacity:0;transform:scale(0.8) translateY(-50px);}}}}
+@keyframes screenShake{{0%,100%{{transform:translate(0,0);}}10%{{transform:translate(-8px,-4px);}}20%{{transform:translate(8px,4px);}}30%{{transform:translate(-6px,2px);}}40%{{transform:translate(6px,-2px);}}55%{{transform:translate(-4px,4px);}}65%{{transform:translate(4px,-4px);}}80%{{transform:translate(-2px,2px);}}}}
 </style>
 </head>
 <body>
@@ -585,6 +700,7 @@ body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace
   <div id="rar-badge">★ {rarity}</div>
   <div id="lv-badge"><div id="lv-num">Lv.{lv}</div><div id="lv-lbl">LEVEL</div></div>
   <div id="mood-badge">{mood_data['emoji']} {mood_name}</div>
+  <div id="season-badge">{season_icon} {season_name} · {weather_icon_now} {weather_now}</div>
   <div id="efx"></div>
 
   {center_html}
@@ -612,10 +728,12 @@ body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace
 <script>
 const RAR_COLOR="{rarity_color}";
 const PARTICLES={particles};
+const SEASON_P={season_particles};
 const PET_SPECIES="{species}";
 const IS_EGG={"true" if stage=="egg" else "false"};
 const IS_LEGEND={"true" if stage=="legend" else "false"};
 const PTCL_INTERVAL={ptcl_interval};
+const FEED_ANIM={feed_anim_js};
 const APP = document.getElementById('app');
 const EFX = document.getElementById('efx');
 
@@ -709,7 +827,9 @@ window.onPetClick = function(e) {{
 function spawnPtcl() {{
   const p=document.createElement('div');
   p.className='ptcl';
-  p.textContent=PARTICLES[Math.floor(Math.random()*PARTICLES.length)];
+  // 20% 확률로 계절 파티클
+  const pool = Math.random() < 0.2 ? SEASON_P : PARTICLES;
+  p.textContent=pool[Math.floor(Math.random()*pool.length)];
   const dx=(Math.random()-0.5)*100;
   p.style.setProperty('--dx',dx+'px');
   p.style.left=Math.random()*100+'%';
@@ -808,6 +928,90 @@ if(IS_LEGEND) {{
     setTimeout(()=>f.remove(),900);
   }}, 250);
 }}
+
+// ── 먹이 반응 애니메이션 (먹이 버튼 클릭 시 자동 실행)
+function triggerFeedAnimation() {{
+  const sprite = document.getElementById('sprite');
+  if(sprite) {{
+    sprite.style.transition = 'transform 0.12s';
+    sprite.style.transform  = 'scale(1.35) translateY(-22px) rotate(6deg)';
+    setTimeout(()=>{{ sprite.style.transform='scale(1.1) translateY(-10px) rotate(-4deg)'; }},180);
+    setTimeout(()=>{{ sprite.style.transform='scale(1.2) translateY(-15px) rotate(3deg)'; }},360);
+    setTimeout(()=>{{ sprite.style.transform='scale(1.05) translateY(-5px) rotate(-1deg)'; }},540);
+    setTimeout(()=>{{ sprite.style.transform=''; sprite.style.transition=''; }},700);
+  }}
+  const cx=APP.clientWidth/2, cy=APP.clientHeight/2;
+  // 하트 폭발
+  for(let i=0;i<16;i++) {{
+    setTimeout(()=>spawnHeart(cx+(Math.random()-0.5)*140,cy+(Math.random()-0.5)*100),i*50);
+  }}
+  // 먹이 이모지 이펙트
+  const foodEmojis=['🍖','✨','💕','😋','🌟','💗'];
+  foodEmojis.forEach((e,i)=>{{
+    setTimeout(()=>{{
+      const el=document.createElement('div');
+      el.className='eat-anim';
+      el.textContent=e;
+      el.style.left=(cx+(Math.random()-0.5)*110)+'px';
+      el.style.top =(cy+(Math.random()-0.5)*80)+'px';
+      EFX.appendChild(el);
+      setTimeout(()=>el.remove(),1000);
+    }},i*75);
+  }});
+  // 만족 텍스트 팝업
+  setTimeout(()=>{{
+    const t=document.createElement('div');
+    t.className='dmg-num';
+    t.textContent='냠냠~ 😋';
+    t.style.cssText='color:#FFD600;font-size:22px;left:50%;top:36%;transform:translateX(-50%);text-shadow:0 0 12px #FFD600;';
+    EFX.appendChild(t);
+    setTimeout(()=>t.remove(),1500);
+  }},300);
+}}
+if(FEED_ANIM) setTimeout(triggerFeedAnimation, 150);
+
+// ── 배틀 타격 이펙트 (Python에서 st.rerun 후 컴포넌트가 다시 로드될 때 호출)
+window.triggerBattleHit = function(damage, isCrit) {{
+  // 화면 흔들림
+  APP.style.animation = 'screenShake 0.45s ease-out';
+  setTimeout(()=>{{ APP.style.animation=''; }}, 500);
+  // 피격 플래시
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:absolute;inset:0;background:rgba(255,50,50,0.18);z-index:40;pointer-events:none;border-radius:22px;';
+  APP.appendChild(flash);
+  setTimeout(()=>flash.remove(), 200);
+  // 데미지 숫자
+  const cx=APP.clientWidth/2, cy=APP.clientHeight*0.40;
+  const d=document.createElement('div');
+  d.className='dmg-num';
+  d.textContent=(isCrit?'💥 CRIT! ':'')+'-'+damage+'HP';
+  d.style.cssText='color:'+(isCrit?'#FF3333':'#FF8800')+';font-size:'+(isCrit?28:22)+'px;left:'+(cx+(Math.random()-0.5)*60)+'px;top:'+cy+'px;text-shadow:0 0 14px '+(isCrit?'#FF0000':'#FF8800')+';';
+  EFX.appendChild(d);
+  setTimeout(()=>d.remove(),1400);
+  // 스파크 이펙트
+  const hits=['💥','⚡','✨','💫'];
+  for(let i=0;i<8;i++) {{
+    setTimeout(()=>{{
+      const s=document.createElement('div'); s.className='spark';
+      s.textContent=hits[Math.floor(Math.random()*hits.length)];
+      const a=(i/8)*Math.PI*2; const dist=30+Math.random()*50;
+      s.style.setProperty('--sx',Math.cos(a)*dist+'px');
+      s.style.setProperty('--sy',Math.sin(a)*dist+'px');
+      s.style.left=(cx+(Math.random()-0.5)*70)+'px';
+      s.style.top =(cy+(Math.random()-0.5)*50)+'px';
+      s.style.fontSize='20px';
+      EFX.appendChild(s); setTimeout(()=>s.remove(),850);
+    }},i*28);
+  }}
+}};
+window.triggerPetAttack = function(damage) {{
+  const cx=APP.clientWidth*0.28, cy=APP.clientHeight*0.42;
+  const d=document.createElement('div'); d.className='dmg-num';
+  d.textContent='⚔️ -'+damage+'HP';
+  d.style.cssText='color:#00FF88;font-size:22px;left:'+cx+'px;top:'+cy+'px;text-shadow:0 0 10px #00FF88;';
+  EFX.appendChild(d); setTimeout(()=>d.remove(),1300);
+  spawnSparks(cx,cy,6);
+}};
 </script>
 </body></html>"""
 
@@ -986,9 +1190,25 @@ def render(market, nw):
                 if lvup: st.toast(f"🎉 레벨업! Lv.{pet['level']}!", icon="⬆️")
                 st.rerun()
 
+    # ── 일일 펫 한마디 (기분+계절+날씨 조합)
+    season_name, season_icon = get_season()
+    weather_now     = get_weather()
+    weather_icon_now = WEATHER_ICONS.get(weather_now, "☀️")
+    daily_quote = get_daily_quote(pet)
+    st.markdown(f"""
+    <div style='background:rgba(255,214,0,0.06);border:1px solid rgba(255,214,0,0.25);
+                border-radius:14px;padding:14px 18px;margin-bottom:14px;
+                font-style:italic;color:#FFD600;font-size:0.95rem;'>
+        <span style='font-size:1.1rem;'>{mood_data['emoji']}</span>
+        &nbsp;<b>{pet.get('name','펫')}</b>: "{daily_quote}"
+        <span style='float:right;color:#64748B;font-size:0.8rem;'>{season_icon}{season_name} · {weather_icon_now}{weather_now}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
     # ── Animated pet card
+    feed_anim_flag = st.session_state.pop('feed_animation', False)
     components.html(
-        generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp),
+        generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp, feed_anim=feed_anim_flag),
         height=460
     )
 
@@ -1019,7 +1239,7 @@ def render(market, nw):
     st.write("")
 
     # ── TABS ──────────────────────────────────────────────────────────────────
-    tabs = st.tabs(["🍖 먹이주기","🎮 훈련","🗺️ 탐험","⚔️ 배틀","👗 아이템","📜 스킬","🏆 업적","📖 일지","📊 정보"])
+    tabs = st.tabs(["🍖 먹이주기","🎮 훈련","🗺️ 탐험","⚔️ 배틀","👗 아이템","🧪 레시피","📜 스킬","🏆 업적","📸 포토카드","📖 일지","📊 정보"])
 
     # ── TAB 1: 먹이주기
     with tabs[0]:
@@ -1057,6 +1277,7 @@ def render(market, nw):
                         save_pet(uid, pet)
                         sync_user_data()
                         log_tx(uid, "펫", f"{pet['name']} 먹이({food['name']}×{qty})", -total_cost)
+                        st.session_state['feed_animation'] = True
                         st.toast(f"🍖 {food['icon']}×{qty}! EXP +{gained_exp}", icon="✅")
                         if leveled_up:
                             st.balloons()
@@ -1066,6 +1287,118 @@ def render(market, nw):
     # ── TAB 2: 훈련
     with tabs[1]:
         st.markdown('<div class="pet-tab-header">🎮 훈련 미니게임</div>', unsafe_allow_html=True)
+
+        # ──────────────────────────────────────────
+        # 실제 플레이 가능 미니게임: 버튼 연타 챌린지
+        # ──────────────────────────────────────────
+        st.markdown("#### 💪 버튼 연타 챌린지 (실제 플레이!)")
+        st.markdown('<div class="pet-sub">10초 안에 버튼을 최대한 많이 눌러라! 많이 누를수록 EXP 더 많이!</div>', unsafe_allow_html=True)
+
+        MASH_DURATION = 10  # 초
+        MASH_COST     = 2_000_000
+        if 'mash_active' not in st.session_state: st.session_state.mash_active = False
+        if 'mash_count'  not in st.session_state: st.session_state.mash_count  = 0
+        if 'mash_start'  not in st.session_state: st.session_state.mash_start  = 0
+        if 'mash_done'   not in st.session_state: st.session_state.mash_done   = False
+
+        if not st.session_state.mash_active and not st.session_state.mash_done:
+            st.markdown(f"""
+            <div class='pet-card' style='text-align:center;'>
+                <div style='font-size:3rem;'>💪</div>
+                <div style='color:#E2E8F0;font-weight:900;margin:10px 0;font-size:1.1rem;'>버튼 연타 챌린지</div>
+                <div style='color:#64748B;font-size:0.85rem;'>10초 동안 버튼을 눌러라! 클릭수 × 3 EXP 획득</div>
+                <div style='margin-top:10px;'>
+                    <span class='stat-chip' style='background:rgba(255,107,0,0.15);color:#FF6B00;'>⏱️ 10초</span>
+                    <span class='stat-chip' style='background:rgba(255,214,0,0.12);color:#FFD600;'>💰 비용 {format_korean_money(MASH_COST)}</span>
+                    <span class='stat-chip' style='background:rgba(0,255,136,0.12);color:#00FF88;'>🏆 연타수 × 3 EXP</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🚀 게임 시작!", key="mash_start_btn", use_container_width=True):
+                if st.session_state.global_cash < MASH_COST:
+                    st.error("현금 부족!")
+                elif pet.get('happiness', 100) < 10:
+                    st.error("행복도가 너무 낮아요! 먼저 같이 놀아주세요.")
+                else:
+                    st.session_state.global_cash -= MASH_COST
+                    atomic_deduct_cash(uid, MASH_COST)
+                    st.session_state.mash_active = True
+                    st.session_state.mash_count  = 0
+                    st.session_state.mash_start  = time.time()
+                    st.session_state.mash_done   = False
+                    st.rerun()
+
+        elif st.session_state.mash_active:
+            elapsed   = time.time() - st.session_state.mash_start
+            remaining = max(0.0, MASH_DURATION - elapsed)
+            pct       = (1 - remaining / MASH_DURATION) * 100
+
+            if remaining > 0:
+                st.markdown(f"""
+                <div style='text-align:center;background:rgba(255,107,0,0.08);border:2px solid #FF6B00;
+                            border-radius:14px;padding:22px;margin-bottom:12px;'>
+                    <div style='font-size:3rem;font-weight:900;color:#FF6B00;line-height:1;'>{remaining:.1f}초</div>
+                    <div style='font-size:2rem;color:#FFD600;margin:10px 0;'>💥 {st.session_state.mash_count}회 연타!</div>
+                    <div style='background:rgba(255,255,255,0.08);border-radius:6px;height:12px;margin:8px 0;overflow:hidden;'>
+                        <div style='background:linear-gradient(90deg,#FF6B00,#FFD600);width:{pct:.0f}%;height:100%;border-radius:6px;transition:width 0.1s;'></div>
+                    </div>
+                    <div style='color:#94A3B8;font-size:0.8rem;margin-top:6px;'>버튼을 빠르게 눌러라!</div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button("👊 연타!!!", key="mash_btn", use_container_width=True, type="primary"):
+                    st.session_state.mash_count += 1
+                    st.rerun()
+                if st.button("🔄 시간 새로고침", key="mash_refresh", use_container_width=True):
+                    st.rerun()
+            else:
+                st.session_state.mash_active = False
+                st.session_state.mash_done   = True
+                st.rerun()
+
+        elif st.session_state.mash_done:
+            count      = st.session_state.mash_count
+            exp_reward = count * 3
+            if count >= 60:   grade = "🌟 전설급!! 신의 손속도!";  grade_color = "#FFD600"
+            elif count >= 40: grade = "💪 최강! 탁월한 연타력!";   grade_color = "#FF6B00"
+            elif count >= 25: grade = "✅ 좋아! 잘 했어!";         grade_color = "#00FF88"
+            elif count >= 10: grade = "😅 조금 더 연습하자!";       grade_color = "#00E5FF"
+            else:             grade = "🐌 더 빠르게!";              grade_color = "#94A3B8"
+
+            st.markdown(f"""
+            <div style='text-align:center;background:rgba(0,255,136,0.06);border:2px solid #00FF88;
+                        border-radius:14px;padding:28px;'>
+                <div style='font-size:2rem;color:{grade_color};margin-bottom:8px;'>{grade}</div>
+                <div style='color:#FFD600;font-size:2rem;font-weight:900;margin:10px 0;'>🖱️ {count}회 연타!</div>
+                <div style='color:#00FF88;font-size:1.2rem;'>EXP +{exp_reward}</div>
+                <div style='color:#64748B;font-size:0.8rem;margin-top:8px;'>클릭 {count}회 × 3 EXP = {exp_reward} EXP</div>
+            </div>
+            """, unsafe_allow_html=True)
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("🎁 보상 수령!", key="mash_claim", use_container_width=True):
+                    pet['happiness']   = max(0, pet.get('happiness', 100) - 8)
+                    pet['last_played'] = time.time()
+                    pet['bond']        = pet.get('bond', 0) + 5
+                    pet, leveled_up, gained_exp = add_exp(pet, exp_reward)
+                    add_journal(pet, f"💪 버튼 연타 {count}회! EXP+{gained_exp}")
+                    save_pet(uid, pet)
+                    sync_user_data()
+                    log_tx(uid, "펫", f"{pet['name']} 버튼연타 미니게임", -MASH_COST)
+                    st.session_state.mash_done  = False
+                    st.session_state.mash_count = 0
+                    st.toast(f"💪 {count}회 연타! EXP +{gained_exp}", icon="🎮")
+                    if leveled_up:
+                        st.balloons()
+                        st.toast(f"🎉 레벨업! Lv.{pet['level']}!", icon="⬆️")
+                    st.rerun()
+            with c2:
+                if st.button("❌ 결과 닫기", key="mash_retry", use_container_width=True):
+                    st.session_state.mash_done  = False
+                    st.session_state.mash_count = 0
+                    st.rerun()
+
+        st.write("---")
+        st.markdown("#### 🧪 기타 훈련")
         st.markdown('<div class="pet-sub">훈련으로 EXP를 올리세요. 대성공 시 보너스!</div>', unsafe_allow_html=True)
         train_cols = st.columns(3)
         for i, tg in enumerate(TRAINING_GAMES):
@@ -1282,9 +1615,33 @@ def render(market, nw):
                 </div>
                 """, unsafe_allow_html=True)
 
+            # ── 배틀 이펙트: session에 저장된 공격 정보로 iframe에 JS 전달
+            _efx = st.session_state.pop('battle_efx', None)
+            if _efx:
+                _pd   = _efx.get('pet_dmg', 0)
+                _md   = _efx.get('mob_dmg', 0)
+                _crit = 'true' if _efx.get('crit', False) else 'false'
+                components.html(f"""
+                <script>
+                // 부모 iframe(애니메이션 카드)의 전역 함수 탐색 후 호출
+                try {{
+                  const frames = window.parent.document.querySelectorAll('iframe');
+                  frames.forEach(function(fr) {{
+                    try {{
+                      if(fr.contentWindow && fr.contentWindow.triggerBattleHit) {{
+                        fr.contentWindow.triggerBattleHit({_md}, {_crit});
+                        fr.contentWindow.triggerPetAttack({_pd});
+                      }}
+                    }} catch(e) {{}}
+                  }});
+                }} catch(e) {{}}
+                </script>
+                """, height=0)
+
             # Battle log
             for log_line in bs['log'][-6:]:
-                st.markdown(f"<div style='color:#94A3B8;font-size:0.83rem;padding:2px 0;'>▸ {log_line}</div>", unsafe_allow_html=True)
+                line_color = "#FF4B4B" if "💥" in log_line else "#00FF88" if "🩸" in log_line else "#94A3B8"
+                st.markdown(f"<div style='color:{line_color};font-size:0.83rem;padding:2px 0;'>▸ {log_line}</div>", unsafe_allow_html=True)
 
             if bs['over']:
                 if bs['won']:
@@ -1314,24 +1671,29 @@ def render(market, nw):
                 ca, cb, cc = st.columns(3)
                 with ca:
                     if st.button("⚔️ 일반 공격", use_container_width=True, key="atk_normal"):
-                        dmg_pet = max(0, pet_stats['atk'] - mob['def'] + random.randint(-5,8))
+                        crit    = random.random() < 0.15
+                        dmg_pet = max(1, pet_stats['atk'] - mob['def'] + random.randint(-5,8))
+                        if crit: dmg_pet = int(dmg_pet * 1.8)
                         dmg_mob = max(0, mob['atk'] - pet_stats['def'] + random.randint(-3,6))
                         bs['monster_hp'] -= dmg_pet; bs['pet_hp'] -= dmg_mob
-                        bs['log'].append(f"💥 {pet['name']} → {mob['name']}: -{dmg_pet}HP")
+                        bs['log'].append(f"{'💥 크리티컬! ' if crit else '💥 '}{pet['name']} → {mob['name']}: -{dmg_pet}HP")
                         bs['log'].append(f"🩸 {mob['name']} → {pet['name']}: -{dmg_mob}HP")
                         bs['turn'] += 1
+                        # 배틀 이펙트 세션 저장
+                        st.session_state['battle_efx'] = {'pet_dmg': dmg_pet, 'mob_dmg': dmg_mob, 'crit': crit}
                         if bs['monster_hp'] <= 0: bs['over']=True; bs['won']=True
                         elif bs['pet_hp'] <= 0: bs['over']=True; bs['won']=False
                         st.rerun()
                 with cb:
                     if st.button("🔥 강공격 (HP-10)", use_container_width=True, key="atk_heavy"):
-                        dmg_pet = max(0, int(pet_stats['atk']*1.8) - mob['def'] + random.randint(-4,12))
+                        dmg_pet = max(1, int(pet_stats['atk']*1.8) - mob['def'] + random.randint(-4,12))
                         dmg_mob = max(0, mob['atk'] - pet_stats['def'] + random.randint(-2,5))
                         bs['pet_hp']     -= 10
                         bs['monster_hp'] -= dmg_pet; bs['pet_hp'] -= dmg_mob
                         bs['log'].append(f"💥💥 강공격! {mob['name']}: -{dmg_pet}HP (자상-10HP)")
                         bs['log'].append(f"🩸 {mob['name']}: -{dmg_mob}HP")
                         bs['turn'] += 1
+                        st.session_state['battle_efx'] = {'pet_dmg': dmg_pet, 'mob_dmg': dmg_mob, 'crit': True}
                         if bs['monster_hp'] <= 0: bs['over']=True; bs['won']=True
                         elif bs['pet_hp'] <= 0: bs['over']=True; bs['won']=False
                         st.rerun()
@@ -1345,6 +1707,7 @@ def render(market, nw):
                             dmg = max(0, mob['atk'] - pet_stats['def'] + random.randint(0,8))
                             bs['pet_hp'] -= dmg
                             bs['log'].append(f"❌ 도망 실패! 반격 -{dmg}HP")
+                            st.session_state['battle_efx'] = {'pet_dmg': 0, 'mob_dmg': dmg, 'crit': False}
                             if bs['pet_hp'] <= 0: bs['over']=True; bs['won']=False
                         bs['turn'] += 1
                         st.rerun()
@@ -1385,8 +1748,65 @@ def render(market, nw):
                             add_journal(pet, f"👗 {acc['name']} 장착!")
                             st.toast(f"🎉 {acc['name']} 장착!", icon="✅"); st.rerun()
 
-    # ── TAB 6: 스킬
+    # ── TAB 6: 특수 먹이 레시피 (NEW)
     with tabs[5]:
+        st.markdown('<div class="pet-tab-header">🧪 특수 먹이 레시피</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pet-sub">재료 3가지를 조합해 강력한 특수 먹이를 만드세요! 일반 먹이보다 훨씬 강력합니다.</div>', unsafe_allow_html=True)
+
+        for r_id, recipe in SPECIAL_RECIPES.items():
+            with st.expander(f"{recipe['icon']} {recipe['name']} — {recipe['desc']}", expanded=False):
+                ingredient_names = []
+                total_cost = 0
+                for food_id, qty_needed in recipe['ingredients'].items():
+                    fd = PET_FOOD.get(food_id, {})
+                    ingredient_names.append(f"{fd.get('icon','?')} {fd.get('name','?')} ×{qty_needed}")
+                    total_cost += fd.get('price', 0) * qty_needed
+
+                st.markdown(f"""
+                <div style='background:rgba(255,255,255,0.04);border-radius:10px;padding:14px;margin-bottom:12px;'>
+                    <div style='color:#94A3B8;font-size:0.8rem;margin-bottom:8px;'>📦 필요 재료:</div>
+                    <div style='display:flex;gap:10px;flex-wrap:wrap;'>
+                        {"".join(f"<span class='stat-chip' style='background:rgba(255,214,0,0.1);color:#FFD600;'>{ing}</span>" for ing in ingredient_names)}
+                    </div>
+                    <div style='margin-top:12px;color:#94A3B8;font-size:0.8rem;'>
+                        💰 총 비용: <span style='color:#FFD600;font-weight:900;'>{format_korean_money(total_cost)}</span>
+                    </div>
+                    <div style='margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;'>
+                        <span class='stat-chip' style='background:rgba(0,229,255,0.1);color:#00E5FF;'>⚡ EXP +{recipe["exp"]}</span>
+                        <span class='stat-chip' style='background:rgba(255,100,150,0.1);color:#FF6699;'>😊 행복 +{recipe["happiness"]}</span>
+                        <span class='stat-chip' style='background:rgba(0,255,136,0.1);color:#00FF88;'>🍖 허기 +{recipe["hunger_restore"]}</span>
+                    </div>
+                    <div style='margin-top:8px;color:#DD00FF;font-size:0.85rem;font-weight:700;'>✨ 특수 효과: {recipe["special"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if st.button(f"🧪 {recipe['name']} 제조!", key=f"recipe_{r_id}", use_container_width=True):
+                    if st.session_state.global_cash < total_cost:
+                        st.error(f"재료 비용 부족! {format_korean_money(total_cost)} 필요")
+                    else:
+                        st.session_state.global_cash -= total_cost
+                        atomic_deduct_cash(uid, total_cost)
+                        pet['hunger']    = min(100, pet.get('hunger', 100)    + recipe['hunger_restore'])
+                        pet['happiness'] = min(100, pet.get('happiness', 100) + recipe['happiness'])
+                        pet['hp']        = min(100, pet.get('hp', 100)        + 20)
+                        pet['last_fed']  = time.time()
+                        pet['total_fed'] = pet.get('total_fed', 0) + 1
+                        pet['bond']      = pet.get('bond', 0) + recipe.get('bond_bonus', 10)
+                        pet['recipes_made'] = pet.get('recipes_made', 0) + 1
+                        pet, leveled_up, gained_exp = add_exp(pet, recipe['exp'])
+                        add_journal(pet, f"🧪 {recipe['name']} 제조! EXP+{gained_exp}")
+                        save_pet(uid, pet)
+                        sync_user_data()
+                        log_tx(uid, "펫", f"{pet['name']} 레시피: {recipe['name']}", -total_cost)
+                        st.session_state['feed_animation'] = True
+                        st.toast(f"✨ {recipe['name']} 제조 성공! EXP +{gained_exp}", icon="🧪")
+                        if leveled_up:
+                            st.balloons()
+                            st.toast(f"🎉 레벨업! Lv.{pet['level']}!", icon="⬆️")
+                        st.rerun()
+
+    # ── TAB 7: 스킬
+    with tabs[6]:
         st.markdown('<div class="pet-tab-header">📜 펫 스킬</div>', unsafe_allow_html=True)
         sk_cols = st.columns(5)
         for i,skill in enumerate(PET_SKILLS):
@@ -1404,8 +1824,8 @@ def render(market, nw):
                 </div>
                 """, unsafe_allow_html=True)
 
-    # ── TAB 7: 업적
-    with tabs[6]:
+    # ── TAB 8: 업적
+    with tabs[7]:
         st.markdown('<div class="pet-tab-header">🏆 펫 업적</div>', unsafe_allow_html=True)
         earned_ids = pet.get('achievements',[])
         earned_count = len(earned_ids)
@@ -1436,8 +1856,77 @@ def render(market, nw):
                 </div>
                 """, unsafe_allow_html=True)
 
-    # ── TAB 8: 일지
-    with tabs[7]:
+    # ── TAB 9: 포토카드 (NEW)
+    with tabs[8]:
+        st.markdown('<div class="pet-tab-header">📸 펫 포토카드</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pet-sub">내 펫의 현황을 예쁜 프로필 카드로 확인하세요! 스크린샷으로 공유하세요 📷</div>', unsafe_allow_html=True)
+
+        _stage_nm = {"egg":"알","baby":"새끼","adult":"성체","legend":"전설"}.get(stage,"성체")
+        _svg_big  = get_svg_sprite(pet['species'], stage)
+        _ach_cnt  = len(pet.get('achievements', []))
+        _bday     = pet.get('birth_date','?')
+        _days     = 0
+        if _bday and _bday != '?':
+            try:
+                from datetime import datetime as _dt
+                _days = (_dt.now() - _dt.strptime(_bday, "%Y-%m-%d")).days
+            except: pass
+        _sn, _si = get_season()
+        _wn      = get_weather()
+        _wi      = WEATHER_ICONS.get(_wn,"☀️")
+
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg,{sp['rarity_color']}22 0%,#0a0f1e 50%,{sp['rarity_color']}11 100%);
+            border:2px solid {sp['rarity_color']};border-radius:24px;padding:28px 24px;
+            max-width:440px;margin:0 auto;box-shadow:0 0 40px {sp['rarity_color']}44;
+            font-family:'Courier New',monospace;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-10px;right:-10px;font-size:110px;opacity:0.04;user-select:none;">{sp.get('legend','⭐')}</div>
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="color:{sp['rarity_color']};font-size:0.8rem;font-weight:900;letter-spacing:3px;margin-bottom:6px;">★ {sp['rarity'].upper()} ★</div>
+                <div style="font-size:1.7rem;font-weight:900;color:#E2E8F0;letter-spacing:2px;">{pet.get('name','펫')}</div>
+                <div style="color:#64748B;font-size:0.8rem;margin-top:4px;">{sp['name']} · {_stage_nm} 단계 · {pet.get('personality','?')}</div>
+            </div>
+            <div style="width:140px;height:140px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;
+                background:radial-gradient(circle,{sp['rarity_color']}22 0%,transparent 70%);border-radius:50%;
+                filter:drop-shadow(0 0 18px {sp['rarity_color']}88);">{_svg_big}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#64748B;font-size:0.7rem;">⚡ 레벨</div><div style="color:#FFD600;font-weight:900;font-size:1.2rem;">Lv.{lv}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#64748B;font-size:0.7rem;">💕 유대감</div><div style="color:#FF6699;font-weight:900;font-size:1rem;">{get_bond_title(bond_lv)}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#64748B;font-size:0.7rem;">🏆 업적</div><div style="color:#FFD600;font-weight:900;font-size:1.2rem;">{_ach_cnt}/{len(PET_ACHIEVEMENTS)}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#64748B;font-size:0.7rem;">⚔️ 배틀</div><div style="color:#FF4B4B;font-weight:900;font-size:1.1rem;">{pet.get('battles_won',0)}승/{pet.get('battles_total',0)}전</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#64748B;font-size:0.7rem;">🗺️ 탐험</div><div style="color:#00E5FF;font-weight:900;font-size:1.2rem;">{pet.get('expeditions',0)}회</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#64748B;font-size:0.7rem;">🌟 함께한 날</div><div style="color:#00FF88;font-weight:900;font-size:1.2rem;">{_days}일</div>
+                </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;text-align:center;margin-bottom:14px;">
+                <span style="color:{mood_data['color']};font-size:1.2rem;">{mood_data['emoji']}</span>
+                <span style="color:{mood_data['color']};font-weight:700;"> {mood_name}</span>
+                <span style="color:#475569;margin:0 10px;">·</span>
+                <span style="color:#94A3B8;">{_si}{_sn} {_wi}{_wn}</span>
+            </div>
+            <div style="background:{sp['rarity_color']}18;border:1px solid {sp['rarity_color']}44;border-radius:10px;padding:10px;text-align:center;margin-bottom:12px;">
+                <div style="color:{sp['rarity_color']};font-size:0.75rem;font-weight:900;margin-bottom:4px;">🎯 종족 고유 능력</div>
+                <div style="color:#E2E8F0;font-size:0.82rem;">{sp['ability']}</div>
+            </div>
+            <div style="text-align:center;color:#475569;font-size:0.72rem;">🎂 탄생일: {_bday} · {_si}{_sn}에 태어난 {sp['name']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.write("")
+        st.info("💡 카드를 스크린샷 찍어 친구들에게 공유해보세요!")
+
+    # ── TAB 10: 일지
+    with tabs[9]:
         st.markdown('<div class="pet-tab-header">📖 펫 일지</div>', unsafe_allow_html=True)
         st.markdown('<div class="pet-sub">펫과의 활동 기록이 자동으로 남습니다.</div>', unsafe_allow_html=True)
         journal = pet.get('journal', [])
@@ -1453,8 +1942,8 @@ def render(market, nw):
                 </div>
                 """, unsafe_allow_html=True)
 
-    # ── TAB 9: 정보/분양
-    with tabs[8]:
+    # ── TAB 11: 정보/분양
+    with tabs[10]:
         st.markdown('<div class="pet-tab-header">📊 펫 상세 정보</div>', unsafe_allow_html=True)
         equipped = pet.get('accessories',[])
         pet_skills_list = pet.get('skills',[])
@@ -1466,6 +1955,7 @@ def render(market, nw):
             ("⚡ 레벨/단계", f"Lv.{lv} ({stage.upper()})"),
             ("🧬 총 EXP",    f"{pet.get('total_exp_gained',0):,}"),
             ("🍖 총 먹인 횟수", f"{pet.get('total_fed',0):,}회"),
+            ("🧪 레시피 제조", f"{pet.get('recipes_made',0):,}회"),
             ("💕 유대감",    get_bond_title(bond_lv)),
             ("🗺️ 탐험 횟수", f"{pet.get('expeditions',0)}회"),
             ("⚔️ 배틀 전적", f"{pet.get('battles_won',0)}승 / {pet.get('battles_total',0)}전"),
