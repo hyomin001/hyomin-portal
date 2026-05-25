@@ -320,7 +320,7 @@ def build_svg_sprites():
 
     RABBIT_BABY = """<svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="rbbg" cx="45%" cy="35%" r="60%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#a8edea"/></radialGradient></defs><rect x="33" y="0" width="9" height="26" rx="5" fill="#a8edea"/><rect x="58" y="0" width="9" height="26" rx="5" fill="#a8edea"/><rect x="34" y="1" width="7" height="22" rx="3.5" fill="#ffb3d1" opacity="0.8"/><rect x="59" y="1" width="7" height="22" rx="3.5" fill="#ffb3d1" opacity="0.8"/><ellipse cx="50" cy="72" rx="26" ry="22" fill="url(#rbbg)"/><ellipse cx="50" cy="76" rx="14" ry="12" fill="#e0faf8" opacity="0.9"/><ellipse cx="36" cy="90" rx="9" ry="6" fill="#a8edea" transform="rotate(8,36,90)"/><ellipse cx="64" cy="90" rx="9" ry="6" fill="#a8edea" transform="rotate(-8,64,90)"/><ellipse cx="32" cy="96" rx="7" ry="4" fill="#7ed8d4"/><ellipse cx="68" cy="96" rx="7" ry="4" fill="#7ed8d4"/><ellipse cx="50" cy="44" rx="14" ry="12" fill="url(#rbbg)"/><ellipse cx="50" cy="28" rx="22" ry="20" fill="url(#rbbg)"/><ellipse cx="38" cy="28" rx="7" ry="6" fill="#fff"/><ellipse cx="62" cy="28" rx="7" ry="6" fill="#fff"/><ellipse cx="38" cy="28" rx="5" ry="4" fill="#a8edea"/><ellipse cx="62" cy="28" rx="5" ry="4" fill="#a8edea"/><ellipse cx="38" cy="28" rx="2" ry="3.5" fill="#111"/><ellipse cx="62" cy="28" rx="2" ry="3.5" fill="#111"/><circle cx="36" cy="26" r="1.5" fill="#fff"/><circle cx="60" cy="26" r="1.5" fill="#fff"/><ellipse cx="50" cy="37" rx="5" ry="3" fill="#ffb3d1"/><circle cx="50" cy="93" r="6" fill="#fff" opacity="0.95"/><ellipse cx="30" cy="36" rx="5" ry="3" fill="#ffb3d1" opacity="0.5"/><ellipse cx="70" cy="36" rx="5" ry="3" fill="#ffb3d1" opacity="0.5"/></svg>"""
 
-    RABBIT_ADULT = """<svg viewBox="0 0 100 125" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="rbag" cx="40%" cy="30%" r="65%"><stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#a8edea"/><stop offset="100%" stop-color="#48c9c0"/></radialGradient><filter id="rbglow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect x="30" y="0" width="11" height="30" rx="6" fill="#a8edea" filter="url(#rbglow)"/><rect x="59" y="0" width="11" height="30" rx="6" fill="#a8edea" filter="url(#rbglow)"/><rect x="31" y="1" width="9" height="26" rx="4.5" fill="#ffb3d1" opacity="0.85"/><rect x="60" y="1" width="9" height="26" rx="4.5" fill="#ffb3d1" opacity="0.85"/><path d="M76,60 Q96,52 94,68 Q86,66 80,62" fill="#7ed8d4"/><path d="M78,58 Q98,48 96,66" stroke="#a8edea" stroke-width="2.5" fill="none" stroke-linecap="round"/><ellipse cx="50" cy="74" rx="28" ry="24" fill="url(#rbag)"/><ellipse cx="50" cy="78" rx="16" ry="14" fill="#e0faf8" opacity="0.8"/><path d="M34" y1="94" width="10" height="18" rx="5" fill="url(#rbag)"/><!-- legs --><path d="M34,95 Q26,115 30,122 Q38,114 40,100" fill="#7ed8d4"/><path d="M66,95 Q74,115 70,122 Q62,114 60,100" fill="#7ed8d4"/><ellipse cx="32" cy="122" rx="8" ry="4" fill="#a8edea"/><ellipse cx="68" cy="122" rx="8" ry="4" fill="#a8edea"/><ellipse cx="50" cy="32" rx="26" ry="24" fill="url(#rbag)"/><ellipse cx="38" cy="24" rx="8" ry="7" fill="#fff"/><ellipse cx="62" cy="24" rx="8" ry="7" fill="#fff"/><ellipse cx="38" cy="24" rx="6" ry="5" fill="#a8edea" filter="url(#rbglow)"/><ellipse cx="62" cy="24" rx="6" ry="5" fill="#a8edea" filter="url(#rbglow)"/><ellipse cx="38" cy="24" rx="2" ry="4" fill="#111"/><ellipse cx="62" cy="24" rx="2" ry="4" fill="#111"/><circle cx="36" cy="22" r="1.8" fill="#fff"/><circle cx="60" cy="22" r="1.8" fill="#fff"/><ellipse cx="50" cy="37" rx="6" ry="4" fill="#ffb3d1"/><circle cx="50" cy="97" r="8" fill="#fff" opacity="0.92"/><text x="46" y="8" font-size="8" fill="#48c9c0" filter="url(#rbglow)">🌕</text></svg>"""
+    RABBIT_ADULT = """<svg viewBox="0 0 100 125" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="rbag" cx="40%" cy="30%" r="65%"><stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#a8edea"/><stop offset="100%" stop-color="#48c9c0"/></radialGradient><filter id="rbglow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect x="30" y="0" width="11" height="30" rx="6" fill="#a8edea" filter="url(#rbglow)"/><rect x="59" y="0" width="11" height="30" rx="6" fill="#a8edea" filter="url(#rbglow)"/><rect x="31" y="1" width="9" height="26" rx="4.5" fill="#ffb3d1" opacity="0.85"/><rect x="60" y="1" width="9" height="26" rx="4.5" fill="#ffb3d1" opacity="0.85"/><path d="M76,60 Q96,52 94,68 Q86,66 80,62" fill="#7ed8d4"/><path d="M78,58 Q98,48 96,66" stroke="#a8edea" stroke-width="2.5" fill="none" stroke-linecap="round"/><ellipse cx="50" cy="74" rx="28" ry="24" fill="url(#rbag)"/><ellipse cx="50" cy="78" rx="16" ry="14" fill="#e0faf8" opacity="0.8"/><path d="M34,95 Q26,115 30,122 Q38,114 40,100" fill="#7ed8d4"/><path d="M66,95 Q74,115 70,122 Q62,114 60,100" fill="#7ed8d4"/><ellipse cx="32" cy="122" rx="8" ry="4" fill="#a8edea"/><ellipse cx="68" cy="122" rx="8" ry="4" fill="#a8edea"/><ellipse cx="50" cy="32" rx="26" ry="24" fill="url(#rbag)"/><ellipse cx="38" cy="24" rx="8" ry="7" fill="#fff"/><ellipse cx="62" cy="24" rx="8" ry="7" fill="#fff"/><ellipse cx="38" cy="24" rx="6" ry="5" fill="#a8edea" filter="url(#rbglow)"/><ellipse cx="62" cy="24" rx="6" ry="5" fill="#a8edea" filter="url(#rbglow)"/><ellipse cx="38" cy="24" rx="2" ry="4" fill="#111"/><ellipse cx="62" cy="24" rx="2" ry="4" fill="#111"/><circle cx="36" cy="22" r="1.8" fill="#fff"/><circle cx="60" cy="22" r="1.8" fill="#fff"/><ellipse cx="50" cy="37" rx="6" ry="4" fill="#ffb3d1"/><circle cx="50" cy="97" r="8" fill="#fff" opacity="0.92"/><text x="46" y="8" font-size="8" fill="#48c9c0" filter="url(#rbglow)">🌕</text></svg>"""
 
     SEAHORSE_BABY = """<svg viewBox="0 0 80 115" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="shbg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#7b61ff"/><stop offset="100%" stop-color="#4c1d95"/></linearGradient><radialGradient id="shbelly" cx="40%" cy="40%" r="60%"><stop offset="0%" stop-color="#c4b5fd" stop-opacity="0.7"/><stop offset="100%" stop-color="#7b61ff" stop-opacity="0"/></radialGradient></defs><!-- crown --><path d="M36,6 L32,0 L36,5 L40,1 L44,5 L48,0 L44,6" fill="#e879f9" stroke="#c026d3" stroke-width="0.5"/><path d="M34,18 Q28,20 26,30 Q28,26 30,22 Q32,28 34,24" fill="#a78bfa" opacity="0.7"/><path d="M46,18 Q52,20 54,30 Q52,26 50,22 Q48,28 46,24" fill="#a78bfa" opacity="0.5"/><!-- body curve --><path d="M40,22 Q60,22 62,42 Q62,62 48,78 Q40,88 36,100 Q34,108 40,112" fill="none" stroke="url(#shbg)" stroke-width="16" stroke-linecap="round"/><path d="M40,22 Q60,22 62,42 Q62,62 48,78 Q40,88 36,100 Q34,108 40,112" fill="none" stroke="url(#shbelly)" stroke-width="8" stroke-linecap="round"/><!-- head --><ellipse cx="40" cy="18" rx="15" ry="13" fill="url(#shbg)"/><!-- eyes --><circle cx="34" cy="14" r="5" fill="#fff"/><circle cx="46" cy="14" r="5" fill="#fff"/><circle cx="34" cy="14" r="3" fill="#7b61ff"/><circle cx="46" cy="14" r="3" fill="#7b61ff"/><circle cx="33" cy="13" r="1.5" fill="#fff"/><circle cx="45" cy="13" r="1.5" fill="#fff"/><!-- snout --><path d="M37,22 L40,28 L43,22" fill="none" stroke="#c4b5fd" stroke-width="1.5"/><!-- fins --><path d="M60,36 Q74,32 70,44 Q64,44 62,38" fill="#a78bfa" opacity="0.75"/><path d="M60,56 Q74,52 70,64 Q64,64 62,58" fill="#7b61ff" opacity="0.65"/><!-- shine dots --><circle cx="24" cy="36" r="2" fill="#e879f9" opacity="0.6"/><circle cx="62" cy="76" r="2" fill="#06b6d4" opacity="0.6"/></svg>"""
 
@@ -543,14 +543,16 @@ def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp, fe
     wing_emoji = '🔥' if species == 'dragon' else '🌟' if species == 'phoenix' else '💫'
 
     ptcl_map = {
-        'dragon':  ['🔥','⚡','✨','💛','🌋'],
-        'phoenix': ['🔥','✨','🌟','💛','☀️'],
-        'unicorn': ['🌈','✨','💜','💫','🦄'],
-        'fox':     ['🌙','✨','🦊','💫','⭐'],
-        'wolf':    ['⭐','✨','🌕','💛','❄️'],
-        'cat':     ['✨','💫','🌟','🐾','💕'],
-        'penguin': ['❄️','⛄','✨','💎','🌊'],
-        'slime':   ['💛','✨','💰','🟡','⭐'],
+        'dragon':   ['🔥','⚡','✨','💛','🌋'],
+        'phoenix':  ['🔥','✨','🌟','💛','☀️'],
+        'unicorn':  ['🌈','✨','💜','💫','🦄'],
+        'fox':      ['🌙','✨','🦊','💫','⭐'],
+        'wolf':     ['⭐','✨','🌕','💛','❄️'],
+        'cat':      ['✨','💫','🌟','🐾','💕'],
+        'penguin':  ['❄️','⛄','✨','💎','🌊'],
+        'slime':    ['💛','✨','💰','🟡','⭐'],
+        'rabbit':   ['🌕','✨','🐰','🌟','💫'],
+        'seahorse': ['🌊','✨','🌈','💜','🫧'],
     }
     particles = json.dumps(ptcl_map.get(species, ['✨','💫','⭐']))
 
@@ -567,14 +569,16 @@ def generate_pet_animation_html(pet, sp, lv, exp, exp_pct, hunger, happy, hp, fe
     mood_color = mood_data['color']
 
     bg_map = {
-        'dragon': ('#200800','#120300'),
-        'phoenix':('#1f0900','#0f0500'),
-        'unicorn':('#0c0018','#060010'),
-        'fox':    ('#140010','#0a0010'),
-        'wolf':   ('#080808','#050510'),
-        'cat':    ('#060e08','#030a05'),
-        'penguin':('#020e1e','#010c18'),
-        'slime':  ('#0d0e00','#080900'),
+        'dragon':   ('#200800','#120300'),
+        'phoenix':  ('#1f0900','#0f0500'),
+        'unicorn':  ('#0c0018','#060010'),
+        'fox':      ('#140010','#0a0010'),
+        'wolf':     ('#080808','#050510'),
+        'cat':      ('#060e08','#030a05'),
+        'penguin':  ('#020e1e','#010c18'),
+        'slime':    ('#0d0e00','#080900'),
+        'rabbit':   ('#071a18','#040f0e'),
+        'seahorse': ('#0a0020','#060018'),
     }
     bg1, bg2 = bg_map.get(species, ('#0a0f1e','#080d18'))
     if stage == 'legend': bg1, bg2 = '#0a000e','#000a0e'
@@ -1509,7 +1513,7 @@ def render(market, nw):
                     pet['last_played'] = time.time()
                     pet['bond']        = pet.get('bond', 0) + 5
                     pet, leveled_up, gained_exp = add_exp(pet, exp_reward)
-                    add_journal(pet, f"💪 버튼 연타 {count}회! EXP+{gained_exp}")
+                    add_journal(pet, f"💪 버튼 연타 훈련 {count}회! EXP+{gained_exp}")
                     save_pet(uid, pet)
                     sync_user_data()
                     log_tx(uid, "펫", f"{pet['name']} 버튼연타 미니게임", -MASH_COST)
@@ -1623,6 +1627,13 @@ def render(market, nw):
                 </div>
             </div>
             """, unsafe_allow_html=True)
+            st.write("")
+            if st.button("🚫 탐험 강제 귀환 (보상 없음)", key="cancel_expedition", use_container_width=False):
+                pet['expedition'] = None
+                add_journal(pet, f"🚫 {z.get('name','탐험')} 탐험 강제 귀환")
+                save_pet(uid, pet)
+                st.toast("탐험을 취소했어요.", icon="🚫")
+                st.rerun()
         else:
             exp_cols = st.columns(3)
             for i, (z_id, z) in enumerate(EXPEDITION_ZONES.items()):
@@ -1778,7 +1789,16 @@ def render(market, nw):
 
             # Battle log
             for log_line in bs['log'][-6:]:
-                line_color = "#FF4B4B" if "💥" in log_line else "#00FF88" if "🩸" in log_line else "#94A3B8"
+                if "💥" in log_line or "크리티컬" in log_line:
+                    line_color = "#FF4B4B"
+                elif "⚡✨" in log_line or "필살기" in log_line:
+                    line_color = "#FFD600"
+                elif "🩸" in log_line:
+                    line_color = "#FF8844"
+                elif "🏃" in log_line or "도망" in log_line:
+                    line_color = "#00E5FF"
+                else:
+                    line_color = "#94A3B8"
                 st.markdown(f"<div style='color:{line_color};font-size:0.83rem;padding:2px 0;'>▸ {log_line}</div>", unsafe_allow_html=True)
 
             if bs['over']:
@@ -1788,6 +1808,7 @@ def render(market, nw):
                     st.error(f"💀 패배... {pet['name']}이(가) 쓰러졌어요.")
                 if st.button("🔄 배틀 종료", use_container_width=True, key="battle_end"):
                     if bs['won']:
+                        pet['hp'] = max(1, bs['pet_hp'])  # 실제 남은 HP 반영
                         pet, lvup, ge = add_exp(pet, mob['reward_exp'])
                         atomic_add_cash(uid, mob['reward_cash'])
                         st.session_state.global_cash += mob['reward_cash']
@@ -1800,8 +1821,8 @@ def render(market, nw):
                         sync_user_data()
                     else:
                         pet['battles_total'] = pet.get('battles_total',0) + 1
-                        pet['hp'] = max(1, pet.get('hp',100) - 20)
-                        add_journal(pet, f"⚔️ {mob['name']}에게 패배... HP -20")
+                        pet['hp'] = max(1, bs['pet_hp'])  # 실제 남은 HP 반영 (최소 1)
+                        add_journal(pet, f"⚔️ {mob['name']}에게 패배... HP:{pet['hp']}")
                         save_pet(uid, pet)
                     st.session_state.battle_state = None
                     st.rerun()
@@ -2104,7 +2125,7 @@ def render(market, nw):
 
         # 카테고리 필터
         filter_opt = st.selectbox("🔍 필터", ["전체","🎉 레벨업","🍖 먹이","⚔️ 배틀","🗺️ 탐험","🧪 레시피","💪 훈련","🤗 쓰다듬기"], key="journal_filter")
-        filter_kw  = {"전체":None,"🎉 레벨업":"레벨업","🍖 먹이":"먹임","⚔️ 배틀":"배틀","🗺️ 탐험":"탐험","🧪 레시피":"레시피","💪 훈련":"훈련","🤗 쓰다듬기":"쓰다듬"}.get(filter_opt)
+        filter_kw  = {"전체":None,"🎉 레벨업":"레벨업","🍖 먹이":"먹","⚔️ 배틀":"배틀","🗺️ 탐험":"탐험","🧪 레시피":"레시피","💪 훈련":"훈련","🤗 쓰다듬기":"쓰다듬"}.get(filter_opt)
         filtered = [e for e in journal if filter_kw is None or filter_kw in e]
 
         if not filtered:
