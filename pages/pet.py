@@ -1,7 +1,14 @@
-# pages/pet.py — MEGA ULTIMATE EDITION v5.0 🐾
-# 드래곤 알 부화 / 날개짓 / 쓰다듬기 / 탐험 / 배틀 / 업적 / 일지 완전판
-# v5 추가: 먹이 반응 애니메이션, 버튼 연타 미니게임, 일일 펫 대화,
-#          배틀 타격 이펙트+데미지 팝업, 포토카드 탭, 계절/날씨, 특수 먹이 레시피
+# pages/pet.py — MEGA ULTIMATE EDITION v6.0 🐾
+# v6 업그레이드:
+#   · 신규 펫 2종 (럭키 래빗🐰, 레인보우 해마🌊)
+#   · 포션/HP 회복 아이템 추가 + 빠른 먹이기 버튼
+#   · 배틀 종족 필살기 시스템 (쿨다운제)
+#   · 탐험 진행 프로그레스바
+#   · 업적 달성 시 현금 보상
+#   · 쓰다듬기 버튼 (독립 쿨타임 5분, 유대감↑)
+#   · 악세서리 슬롯 3개로 확장
+#   · 일지 카테고리 필터링
+#   · AI 펫 채팅 (Claude API 연동)
 import streamlit as st
 import streamlit.components.v1 as components
 import time, random, json
@@ -19,69 +26,97 @@ PET_SPECIES = {
                 "desc":"전설의 화염룡. 성장할수록 막대한 수익과 불꽃 능력을 얻는다!",
                 "price":500_000_000,"rarity":"전설","rarity_color":"#FF6B00",
                 "ability":"화염 브레스 — 배틀 시 추가 화염 데미지",
+                "special_skill":{"name":"🔥 화염 폭풍","desc":"전체 화염 데미지 ×3.0 + 크리티컬 확정","dmg_mult":3.0,"crit":True,"cooldown":5},
                 "season_comment":{"봄":"봄비에 날개가 젖어 짜증나...","여름":"더위? 내가 더 뜨거운데?","가을":"낙엽이 불타는 것 같아서 기분 좋아!","겨울":"눈을 불로 녹여줄게!"},
                 "weather_comment":{"맑음":"화창한 날엔 하늘 높이 날고 싶어!","비":"비는... 별로야.","눈":"눈밭에서 뒹굴고 싶어!","흐림":"흐린 날엔 그냥 자고 싶어..."}},
     "wolf":    {"name":"황금 늑대", "egg":"🥚","baby":"🐺","adult":"🦊","legend":"⭐",
                 "desc":"황금빛 모피의 신비 늑대. 광산 보너스!",
                 "price":100_000_000,"rarity":"희귀","rarity_color":"#FFD600",
                 "ability":"황금 발톱 — 광산 수입 +15%",
+                "special_skill":{"name":"⚡ 황금 질주","desc":"초고속 2연타 ×1.6 + 회피율 상승","dmg_mult":1.6,"crit":False,"cooldown":3},
                 "season_comment":{"봄":"봄 바람에 털이 날려~ 아름다워!","여름":"더운 여름엔 개울가가 최고야!","가을":"추수철엔 먹을 게 많아서 좋아!","겨울":"눈밭 질주가 제일 신나!"},
                 "weather_comment":{"맑음":"황금빛 햇살이 내 털에 반짝여!","비":"비 냄새... 뭔가 사냥하고 싶어진다!","눈":"눈밭 달리기 최고!","흐림":"흐린 날엔 멀리서 뭔가 냄새가 나..."}},
     "penguin": {"name":"황제 펭귄", "egg":"🥚","baby":"🐧","adult":"🐧","legend":"👑",
                 "desc":"남극의 황제. 주식 투자 행운!",
                 "price":50_000_000,"rarity":"고급","rarity_color":"#00E5FF",
                 "ability":"빙하 방패 — 배틀 방어력 +20%",
+                "special_skill":{"name":"❄️ 빙결 포격","desc":"빙하 폭발! ×2.2 + 상대 다음 공격력 -50%","dmg_mult":2.2,"crit":False,"cooldown":4},
                 "season_comment":{"봄":"따뜻해지면 빙하가 녹아서 슬퍼...","여름":"더위 너무 싫어!! 에어컨 틀어줘!","가을":"이 정도 온도가 딱 좋아!","겨울":"겨울이 최고야! 나의 계절이야!"},
                 "weather_comment":{"맑음":"햇빛이 빙하에 반짝여서 예뻐!","비":"비보다 눈이 좋은데...","눈":"눈이다!! 신나!!","흐림":"흐린 날엔 바다 보며 멍 때리기~"}},
     "cat":     {"name":"럭키 고양이","egg":"🥚","baby":"🐱","adult":"🐈","legend":"🍀",
                 "desc":"행운을 부르는 신비한 고양이.",
                 "price":10_000_000,"rarity":"일반","rarity_color":"#00FF88",
                 "ability":"럭키 포 — 퀘스트 보상 +10%",
+                "special_skill":{"name":"🍀 행운의 발톱","desc":"랜덤 배율 ×0.5~4.0! 운에 맡겨라","dmg_mult":2.0,"crit":False,"cooldown":3},
                 "season_comment":{"봄":"봄 햇살 아래 낮잠이 최고야~ 냐옹","여름":"여름엔 시원한 데 누워있을 거야.","가을":"가을 바람이 시원해서 산책하기 좋아!","겨울":"이불 속이 최고야! 나올 생각 없어."},
                 "weather_comment":{"맑음":"햇살 가득한 창가가 최애 자리야~","비":"비는 싫어! 창문이나 보고 있을게.","눈":"눈은 신기해... 잡으려다가 녹더라.","흐림":"흐린 날엔 그냥 하루 종일 잘 거야."}},
     "unicorn": {"name":"유니콘",    "egg":"🥚","baby":"🦄","adult":"🦄","legend":"🌈",
                 "desc":"무지개빛 유니콘. 코인 거래 보너스!",
                 "price":200_000_000,"rarity":"영웅","rarity_color":"#DD00FF",
                 "ability":"무지개 마법 — 코인 수익 +12%",
+                "special_skill":{"name":"🌈 오로라 폭발","desc":"무지개 폭발 ×2.5 + HP 10 회복","dmg_mult":2.5,"crit":True,"cooldown":5},
                 "season_comment":{"봄":"봄꽃밭에서 뛰어놀고 싶어!","여름":"무지개가 자주 떠서 여름이 좋아!","가을":"단풍빛이 내 갈기랑 비슷해!","겨울":"흰 눈밭에 무지개 발자국 남기기!"},
                 "weather_comment":{"맑음":"무지개가 잘 보이는 날이야!","비":"비 뒤에 무지개가 뜰 거야, 기다려!","눈":"눈 위를 달리면 무지개 먼지가 나!","흐림":"흐린 날엔 내가 빛이 되어줄게!"}},
     "phoenix": {"name":"불사조",    "egg":"🔥","baby":"🐦","adult":"🦅","legend":"🌟",
                 "desc":"불사의 새. 강화 보너스!",
                 "price":300_000_000,"rarity":"영웅","rarity_color":"#FF9500",
                 "ability":"불사 재생 — HP 자동 회복 2배",
+                "special_skill":{"name":"☀️ 피닉스 버스트","desc":"재생의 불꽃 ×2.8 + HP 15 회복","dmg_mult":2.8,"crit":True,"cooldown":5},
                 "season_comment":{"봄":"봄에 다시 태어나는 기분이야!","여름":"뜨거운 여름이 내 본령이야!","가을":"타오르는 단풍처럼 아름다워!","겨울":"내 불꽃이 가장 빛나는 계절!"},
                 "weather_comment":{"맑음":"맑은 하늘을 날고 싶어!","비":"빗물이 내 불꽃을 끄려 하지만... 절대 못 꺼!","눈":"눈을 녹이며 나는 게 최고야!","흐림":"흐린 날에도 내 불꽃은 꺼지지 않아!"}},
     "slime":   {"name":"황금 슬라임","egg":"🟡","baby":"🫧","adult":"💛","legend":"💰",
                 "desc":"돈 먹고 자라는 슬라임. 패시브 수입 증가!",
                 "price":30_000_000,"rarity":"고급","rarity_color":"#FFEE00",
                 "ability":"황금 흡수 — 패시브 수입 +20%",
+                "special_skill":{"name":"💰 황금 용해","desc":"황금 도포 ×2.0 + 이번 배틀 현금 보너스","dmg_mult":2.0,"crit":False,"cooldown":3},
                 "season_comment":{"봄":"봄비에 몸이 퉁퉁 불어서 좋아~","여름":"뜨거우면 녹을 것 같아... 그늘 줘!","가을":"낙엽이 나한테 달라붙어 귀찮아.","겨울":"눈이 오면 얼어붙을 것 같아 무서워!"},
                 "weather_comment":{"맑음":"햇살에 반짝반짝 빛나는 게 좋아!","비":"빗물이 맛있어! (핥아봄)","눈":"차가워... 빨리 녹아줘!","흐림":"흐린 날엔 코인이나 먹을게."}},
     "fox":     {"name":"구미호",    "egg":"🥚","baby":"🦊","adult":"🦊","legend":"🌙",
                 "desc":"아홉 꼬리 여우. 도박 보너스!",
                 "price":150_000_000,"rarity":"희귀","rarity_color":"#FF6699",
                 "ability":"미혹의 눈 — 도박 승률 +5%",
+                "special_skill":{"name":"🌙 구미 환상","desc":"환상 기만 ×2.6 + 크리티컬 확정","dmg_mult":2.6,"crit":True,"cooldown":4},
                 "season_comment":{"봄":"봄밤에 달빛이 아름다워...","여름":"여름 축제에서 미혹시키기 딱 좋아!","가을":"보름달 아래서 춤추는 가을이 최고야!","겨울":"눈 덮인 달밤에 꼬리가 아홉 개 빛나~"},
                 "weather_comment":{"맑음":"맑은 날엔 꼬리가 더 예뻐 보여!","비":"비 오는 날 밤엔 신비로운 기운이 넘쳐!","눈":"눈 위에 발자국 남기는 걸 좋아해.","흐림":"흐린 날 안개 속이 내 무대야!"}},
+    # ── v6 신규 종족 ──
+    "rabbit":  {"name":"럭키 래빗", "egg":"🥚","baby":"🐰","adult":"🐇","legend":"🌠",
+                "desc":"달나라 행운 토끼! 가챠·이벤트 보너스 + 초고속 연타기.",
+                "price":80_000_000,"rarity":"희귀","rarity_color":"#A8EDEA",
+                "ability":"달빛 도약 — 탐험 희귀 아이템 확률 +8%",
+                "special_skill":{"name":"🌕 달빛 연타","desc":"초고속 5연타! 총 데미지 ×3.5","dmg_mult":3.5,"crit":False,"cooldown":5},
+                "season_comment":{"봄":"봄 달밤에 방아 찧는 게 너무 신나!","여름":"여름엔 수박이 최고야~ 냠냠!","가을":"추석 보름달이 제일 커서 좋아!","겨울":"눈밭에서 깡충깡충 뛰는 게 재밌어!"},
+                "weather_comment":{"맑음":"달이 잘 보여서 기분 최고야!","비":"비 맞으면 귀가 축 처져...","눈":"눈 위 발자국 귀엽지 않아?","흐림":"달이 안 보여서 슬퍼."}},
+    "seahorse":{"name":"레인보우 해마","egg":"🥚","baby":"🌊","adult":"🦭","legend":"🌈",
+                "desc":"무지개빛 해마. 색이 바뀌는 신비한 존재!",
+                "price":120_000_000,"rarity":"희귀","rarity_color":"#7B61FF",
+                "ability":"색채 마력 — 패시브 수입 +10% & 방어력 보너스",
+                "special_skill":{"name":"🌊 프리즘 웨이브","desc":"무지개 파도 ×2.1 + 3턴 독 (매 턴 20HP)","dmg_mult":2.1,"crit":False,"cooldown":4},
+                "season_comment":{"봄":"봄 바닷물이 따뜻해서 좋아!","여름":"여름 바다가 내 무대야!","가을":"파도 소리 들으면서 쉬는 게 최고!","겨울":"찬 바다에서도 난 괜찮아!"},
+                "weather_comment":{"맑음":"맑은 날엔 몸 색이 더 예뻐!","비":"빗방울이 바다랑 섞이는 게 신기해!","눈":"눈꽃이 바다에 녹는 걸 보고 있어.","흐림":"흐린 날엔 몸 색이 어둡게 변해."}},
 }
 
 PET_FOOD = {
-    "kibble":   {"name":"일반 사료",    "icon":"🍖","price":500_000,    "exp":10, "happiness":5,  "hunger_restore":15},
-    "gourmet":  {"name":"고급 사료",    "icon":"🥩","price":2_000_000,  "exp":40, "happiness":15, "hunger_restore":30},
-    "premium":  {"name":"프리미엄 사료","icon":"🍗","price":8_000_000,  "exp":100,"happiness":30, "hunger_restore":50},
-    "stardust": {"name":"별의 가루",    "icon":"✨","price":50_000_000, "exp":500,"happiness":50, "hunger_restore":100},
-    "dragonmeat":{"name":"용의 심장",   "icon":"💎","price":200_000_000,"exp":2000,"happiness":80,"hunger_restore":100},
-    "moonberry":{"name":"달빛 열매",    "icon":"🫐","price":20_000_000, "exp":200,"happiness":40, "hunger_restore":60},
+    "kibble":    {"name":"일반 사료",    "icon":"🍖","price":500_000,     "exp":10,  "happiness":5,  "hunger_restore":15, "hp_restore":0},
+    "gourmet":   {"name":"고급 사료",    "icon":"🥩","price":2_000_000,   "exp":40,  "happiness":15, "hunger_restore":30, "hp_restore":0},
+    "premium":   {"name":"프리미엄 사료","icon":"🍗","price":8_000_000,   "exp":100, "happiness":30, "hunger_restore":50, "hp_restore":0},
+    "stardust":  {"name":"별의 가루",    "icon":"✨","price":50_000_000,  "exp":500, "happiness":50, "hunger_restore":100,"hp_restore":0},
+    "dragonmeat":{"name":"용의 심장",   "icon":"💎","price":200_000_000, "exp":2000,"happiness":80, "hunger_restore":100,"hp_restore":0},
+    "moonberry": {"name":"달빛 열매",    "icon":"🫐","price":20_000_000,  "exp":200, "happiness":40, "hunger_restore":60, "hp_restore":0},
+    # v6 신규 — 포션/회복 아이템
+    "potion_s":  {"name":"소형 포션",   "icon":"🧪","price":3_000_000,   "exp":0,   "happiness":5,  "hunger_restore":0,  "hp_restore":25},
+    "potion_l":  {"name":"대형 포션",   "icon":"💊","price":15_000_000,  "exp":0,   "happiness":10, "hunger_restore":0,  "hp_restore":60},
+    "elixir":    {"name":"전설의 영약", "icon":"⚗️","price":100_000_000, "exp":300, "happiness":50, "hunger_restore":30, "hp_restore":100},
 }
 
 PET_ACCESSORIES = {
-    "collar": {"name":"황금 목걸이","icon":"📿","price":20_000_000,  "desc":"행운 +5%",    "bonus_type":"luck",   "bonus":5},
-    "hat":    {"name":"왕관 모자",  "icon":"👑","price":50_000_000,  "desc":"EXP +10%",   "bonus_type":"exp",    "bonus":10},
-    "armor":  {"name":"미스릴 갑옷","icon":"🛡️","price":100_000_000, "desc":"수입 +8%",   "bonus_type":"income", "bonus":8},
+    "collar": {"name":"황금 목걸이","icon":"📿","price":20_000_000,  "desc":"행운 +5%",      "bonus_type":"luck",   "bonus":5},
+    "hat":    {"name":"왕관 모자",  "icon":"👑","price":50_000_000,  "desc":"EXP +10%",     "bonus_type":"exp",    "bonus":10},
+    "armor":  {"name":"미스릴 갑옷","icon":"🛡️","price":100_000_000, "desc":"수입 +8%",     "bonus_type":"income", "bonus":8},
     "wings":  {"name":"불사의 날개","icon":"🦋","price":200_000_000, "desc":"행복도 유지", "bonus_type":"happy",  "bonus":20},
     "gem":    {"name":"드래곤 젬",  "icon":"💎","price":500_000_000, "desc":"모든 보너스+5%","bonus_type":"all", "bonus":5},
     "amulet": {"name":"별빛 부적",  "icon":"🔮","price":80_000_000,  "desc":"배틀 ATK+15%","bonus_type":"battle","bonus":15},
-    "ribbon": {"name":"행운의 리본","icon":"🎀","price":15_000_000,  "desc":"탐험 보상+10%","bonus_type":"exp",  "bonus":10},
+    "ribbon":  {"name":"행운의 리본","icon":"🎀","price":15_000_000,  "desc":"탐험 보상+10%", "bonus_type":"exp",    "bonus":10},
+    "crystal": {"name":"달빛 크리스탈","icon":"🔷","price":60_000_000, "desc":"HP 감소 완화",  "bonus_type":"hp",     "bonus":30},
 }
 
 PET_SKILLS = [
@@ -120,21 +155,25 @@ WILD_MONSTERS = [
 ]
 
 PET_ACHIEVEMENTS = [
-    {"id":"first_feed",    "icon":"🍖","name":"첫 식사",     "desc":"처음으로 먹이를 줬다",           "condition":"total_fed >= 1"},
-    {"id":"well_fed",      "icon":"🤤","name":"맛있겠다",    "desc":"총 50번 먹이기 완료",             "condition":"total_fed >= 50"},
-    {"id":"feast",         "icon":"🏆","name":"미식가",      "desc":"총 500번 먹이기 완료",            "condition":"total_fed >= 500"},
-    {"id":"lv10",          "icon":"⚡","name":"성장통",      "desc":"레벨 10 달성",                    "condition":"level >= 10"},
-    {"id":"lv25",          "icon":"🌟","name":"영웅의 탄생", "desc":"레벨 25 달성",                    "condition":"level >= 25"},
-    {"id":"lv50",          "icon":"🌌","name":"전설이 되다", "desc":"레벨 50 달성",                    "condition":"level >= 50"},
-    {"id":"happy_max",     "icon":"😊","name":"행복 만점",   "desc":"행복도 100 달성",                 "condition":"happiness >= 100"},
-    {"id":"explorer1",     "icon":"🗺️","name":"탐험가",      "desc":"첫 탐험 완료",                    "condition":"expeditions >= 1"},
-    {"id":"explorer10",    "icon":"🌍","name":"세계 정복자", "desc":"탐험 10회 완료",                  "condition":"expeditions >= 10"},
-    {"id":"battle_win1",   "icon":"⚔️","name":"첫 승리",     "desc":"배틀 첫 승리",                    "condition":"battles_won >= 1"},
-    {"id":"battle_win10",  "icon":"🏅","name":"전투의 달인", "desc":"배틀 10승",                       "condition":"battles_won >= 10"},
-    {"id":"hatched",       "icon":"🐣","name":"탄생의 기적", "desc":"알에서 부화",                     "condition":"level >= 5"},
-    {"id":"bonded",        "icon":"💕","name":"절친",        "desc":"유대감 레벨 3 달성",             "condition":"bond >= 3"},
-    {"id":"full_acc",      "icon":"👑","name":"풀 장착",     "desc":"악세서리 2개 장착",               "condition":"accessories >= 2"},
-    {"id":"legend",        "icon":"🌌","name":"우주의 뜻",   "desc":"전설 단계 도달 (Lv.40)",          "condition":"level >= 40"},
+    {"id":"first_feed",    "icon":"🍖","name":"첫 식사",      "desc":"처음으로 먹이를 줬다",       "reward":500_000},
+    {"id":"well_fed",      "icon":"🤤","name":"맛있겠다",     "desc":"총 50번 먹이기 완료",         "reward":2_000_000},
+    {"id":"feast",         "icon":"🏆","name":"미식가",       "desc":"총 500번 먹이기 완료",        "reward":10_000_000},
+    {"id":"lv10",          "icon":"⚡","name":"성장통",       "desc":"레벨 10 달성",                "reward":5_000_000},
+    {"id":"lv25",          "icon":"🌟","name":"영웅의 탄생",  "desc":"레벨 25 달성",                "reward":20_000_000},
+    {"id":"lv50",          "icon":"🌌","name":"전설이 되다",  "desc":"레벨 50 달성",                "reward":100_000_000},
+    {"id":"happy_max",     "icon":"😊","name":"행복 만점",    "desc":"행복도 100 달성",              "reward":1_000_000},
+    {"id":"explorer1",     "icon":"🗺️","name":"탐험가",       "desc":"첫 탐험 완료",                "reward":1_000_000},
+    {"id":"explorer10",    "icon":"🌍","name":"세계 정복자",  "desc":"탐험 10회 완료",               "reward":15_000_000},
+    {"id":"battle_win1",   "icon":"⚔️","name":"첫 승리",      "desc":"배틀 첫 승리",                 "reward":500_000},
+    {"id":"battle_win10",  "icon":"🏅","name":"전투의 달인",  "desc":"배틀 10승",                    "reward":8_000_000},
+    {"id":"hatched",       "icon":"🐣","name":"탄생의 기적",  "desc":"알에서 부화 (Lv.5)",           "reward":500_000},
+    {"id":"bonded",        "icon":"💕","name":"절친",         "desc":"유대감 레벨 3 달성",           "reward":3_000_000},
+    {"id":"full_acc",      "icon":"👑","name":"풀 장착",      "desc":"악세서리 2개 장착",             "reward":5_000_000},
+    {"id":"legend",        "icon":"🌌","name":"우주의 뜻",    "desc":"전설 단계 도달 (Lv.40)",        "reward":50_000_000},
+    {"id":"petting30",     "icon":"🤗","name":"스킨십 왕",    "desc":"쓰다듬기 30회",                "reward":3_000_000},
+    {"id":"skill_use5",    "icon":"⚡","name":"필살기 마스터","desc":"종족 필살기 5회 사용",          "reward":7_000_000},
+    {"id":"chef",          "icon":"🧑‍🍳","name":"셰프",         "desc":"레시피 1회 제조",              "reward":2_000_000},
+    {"id":"battler100",    "icon":"💪","name":"백전노장",      "desc":"배틀 100전",                   "reward":30_000_000},
 ]
 
 MOOD_SYSTEM = {
@@ -279,15 +318,25 @@ def build_svg_sprites():
 
     GENERIC_EGG = """<svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="egg_g" cx="38%" cy="30%" r="68%"><stop offset="0%" stop-color="#fffbf0"/><stop offset="65%" stop-color="#f0d888"/><stop offset="100%" stop-color="#d4a840"/></radialGradient></defs><ellipse cx="40" cy="58" rx="34" ry="48" fill="url(#egg_g)"/><ellipse cx="26" cy="32" rx="10" ry="14" fill="white" opacity="0.35" transform="rotate(-22,26,32)"/></svg>"""
 
+    RABBIT_BABY = """<svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="rbbg" cx="45%" cy="35%" r="60%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#a8edea"/></radialGradient></defs><rect x="33" y="0" width="9" height="26" rx="5" fill="#a8edea"/><rect x="58" y="0" width="9" height="26" rx="5" fill="#a8edea"/><rect x="34" y="1" width="7" height="22" rx="3.5" fill="#ffb3d1" opacity="0.8"/><rect x="59" y="1" width="7" height="22" rx="3.5" fill="#ffb3d1" opacity="0.8"/><ellipse cx="50" cy="72" rx="26" ry="22" fill="url(#rbbg)"/><ellipse cx="50" cy="76" rx="14" ry="12" fill="#e0faf8" opacity="0.9"/><ellipse cx="36" cy="90" rx="9" ry="6" fill="#a8edea" transform="rotate(8,36,90)"/><ellipse cx="64" cy="90" rx="9" ry="6" fill="#a8edea" transform="rotate(-8,64,90)"/><ellipse cx="32" cy="96" rx="7" ry="4" fill="#7ed8d4"/><ellipse cx="68" cy="96" rx="7" ry="4" fill="#7ed8d4"/><ellipse cx="50" cy="44" rx="14" ry="12" fill="url(#rbbg)"/><ellipse cx="50" cy="28" rx="22" ry="20" fill="url(#rbbg)"/><ellipse cx="38" cy="28" rx="7" ry="6" fill="#fff"/><ellipse cx="62" cy="28" rx="7" ry="6" fill="#fff"/><ellipse cx="38" cy="28" rx="5" ry="4" fill="#a8edea"/><ellipse cx="62" cy="28" rx="5" ry="4" fill="#a8edea"/><ellipse cx="38" cy="28" rx="2" ry="3.5" fill="#111"/><ellipse cx="62" cy="28" rx="2" ry="3.5" fill="#111"/><circle cx="36" cy="26" r="1.5" fill="#fff"/><circle cx="60" cy="26" r="1.5" fill="#fff"/><ellipse cx="50" cy="37" rx="5" ry="3" fill="#ffb3d1"/><circle cx="50" cy="93" r="6" fill="#fff" opacity="0.95"/><ellipse cx="30" cy="36" rx="5" ry="3" fill="#ffb3d1" opacity="0.5"/><ellipse cx="70" cy="36" rx="5" ry="3" fill="#ffb3d1" opacity="0.5"/></svg>"""
+
+    RABBIT_ADULT = """<svg viewBox="0 0 100 125" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="rbag" cx="40%" cy="30%" r="65%"><stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#a8edea"/><stop offset="100%" stop-color="#48c9c0"/></radialGradient><filter id="rbglow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect x="30" y="0" width="11" height="30" rx="6" fill="#a8edea" filter="url(#rbglow)"/><rect x="59" y="0" width="11" height="30" rx="6" fill="#a8edea" filter="url(#rbglow)"/><rect x="31" y="1" width="9" height="26" rx="4.5" fill="#ffb3d1" opacity="0.85"/><rect x="60" y="1" width="9" height="26" rx="4.5" fill="#ffb3d1" opacity="0.85"/><path d="M76,60 Q96,52 94,68 Q86,66 80,62" fill="#7ed8d4"/><path d="M78,58 Q98,48 96,66" stroke="#a8edea" stroke-width="2.5" fill="none" stroke-linecap="round"/><ellipse cx="50" cy="74" rx="28" ry="24" fill="url(#rbag)"/><ellipse cx="50" cy="78" rx="16" ry="14" fill="#e0faf8" opacity="0.8"/><path d="M34" y1="94" width="10" height="18" rx="5" fill="url(#rbag)"/><!-- legs --><path d="M34,95 Q26,115 30,122 Q38,114 40,100" fill="#7ed8d4"/><path d="M66,95 Q74,115 70,122 Q62,114 60,100" fill="#7ed8d4"/><ellipse cx="32" cy="122" rx="8" ry="4" fill="#a8edea"/><ellipse cx="68" cy="122" rx="8" ry="4" fill="#a8edea"/><ellipse cx="50" cy="32" rx="26" ry="24" fill="url(#rbag)"/><ellipse cx="38" cy="24" rx="8" ry="7" fill="#fff"/><ellipse cx="62" cy="24" rx="8" ry="7" fill="#fff"/><ellipse cx="38" cy="24" rx="6" ry="5" fill="#a8edea" filter="url(#rbglow)"/><ellipse cx="62" cy="24" rx="6" ry="5" fill="#a8edea" filter="url(#rbglow)"/><ellipse cx="38" cy="24" rx="2" ry="4" fill="#111"/><ellipse cx="62" cy="24" rx="2" ry="4" fill="#111"/><circle cx="36" cy="22" r="1.8" fill="#fff"/><circle cx="60" cy="22" r="1.8" fill="#fff"/><ellipse cx="50" cy="37" rx="6" ry="4" fill="#ffb3d1"/><circle cx="50" cy="97" r="8" fill="#fff" opacity="0.92"/><text x="46" y="8" font-size="8" fill="#48c9c0" filter="url(#rbglow)">🌕</text></svg>"""
+
+    SEAHORSE_BABY = """<svg viewBox="0 0 80 115" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="shbg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#7b61ff"/><stop offset="100%" stop-color="#4c1d95"/></linearGradient><radialGradient id="shbelly" cx="40%" cy="40%" r="60%"><stop offset="0%" stop-color="#c4b5fd" stop-opacity="0.7"/><stop offset="100%" stop-color="#7b61ff" stop-opacity="0"/></radialGradient></defs><!-- crown --><path d="M36,6 L32,0 L36,5 L40,1 L44,5 L48,0 L44,6" fill="#e879f9" stroke="#c026d3" stroke-width="0.5"/><path d="M34,18 Q28,20 26,30 Q28,26 30,22 Q32,28 34,24" fill="#a78bfa" opacity="0.7"/><path d="M46,18 Q52,20 54,30 Q52,26 50,22 Q48,28 46,24" fill="#a78bfa" opacity="0.5"/><!-- body curve --><path d="M40,22 Q60,22 62,42 Q62,62 48,78 Q40,88 36,100 Q34,108 40,112" fill="none" stroke="url(#shbg)" stroke-width="16" stroke-linecap="round"/><path d="M40,22 Q60,22 62,42 Q62,62 48,78 Q40,88 36,100 Q34,108 40,112" fill="none" stroke="url(#shbelly)" stroke-width="8" stroke-linecap="round"/><!-- head --><ellipse cx="40" cy="18" rx="15" ry="13" fill="url(#shbg)"/><!-- eyes --><circle cx="34" cy="14" r="5" fill="#fff"/><circle cx="46" cy="14" r="5" fill="#fff"/><circle cx="34" cy="14" r="3" fill="#7b61ff"/><circle cx="46" cy="14" r="3" fill="#7b61ff"/><circle cx="33" cy="13" r="1.5" fill="#fff"/><circle cx="45" cy="13" r="1.5" fill="#fff"/><!-- snout --><path d="M37,22 L40,28 L43,22" fill="none" stroke="#c4b5fd" stroke-width="1.5"/><!-- fins --><path d="M60,36 Q74,32 70,44 Q64,44 62,38" fill="#a78bfa" opacity="0.75"/><path d="M60,56 Q74,52 70,64 Q64,64 62,58" fill="#7b61ff" opacity="0.65"/><!-- shine dots --><circle cx="24" cy="36" r="2" fill="#e879f9" opacity="0.6"/><circle cx="62" cy="76" r="2" fill="#06b6d4" opacity="0.6"/></svg>"""
+
+    SEAHORSE_ADULT = """<svg viewBox="0 0 90 130" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="shag" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e879f9"/><stop offset="25%" stop-color="#7b61ff"/><stop offset="60%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#10b981"/></linearGradient><radialGradient id="shabelly" cx="38%" cy="38%" r="58%"><stop offset="0%" stop-color="#e0d7ff" stop-opacity="0.6"/><stop offset="100%" stop-color="#7b61ff" stop-opacity="0"/></radialGradient><filter id="shglow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><!-- crown --><path d="M40,8 L34,0 L39,7 L43,2 L47,7 L50,1 L46,8" fill="#e879f9" stroke="#c026d3" stroke-width="0.8" filter="url(#shglow)"/><circle cx="34" cy="0" r="2.5" fill="#f0abfc" filter="url(#shglow)"/><circle cx="50" cy="1" r="2" fill="#67e8f9" filter="url(#shglow)"/><!-- neck fins --><path d="M34,22 Q24,24 22,36 Q26,30 30,26 Q30,34 34,30" fill="#a78bfa" opacity="0.85"/><path d="M50,22 Q60,24 62,36 Q58,30 54,26 Q54,34 50,30" fill="#e879f9" opacity="0.7"/><!-- body curve --><path d="M42,26 Q66,26 68,52 Q68,76 52,96 Q42,108 38,118 Q36,126 44,128" fill="none" stroke="url(#shag)" stroke-width="20" stroke-linecap="round" filter="url(#shglow)"/><path d="M42,26 Q66,26 68,52 Q68,76 52,96 Q42,108 38,118 Q36,126 44,128" fill="none" stroke="url(#shabelly)" stroke-width="10" stroke-linecap="round"/><!-- head --><ellipse cx="42" cy="20" rx="18" ry="16" fill="url(#shag)" filter="url(#shglow)"/><!-- eyes --><circle cx="34" cy="15" r="7" fill="#fff"/><circle cx="50" cy="15" r="7" fill="#fff"/><circle cx="34" cy="15" r="5" fill="#7b61ff" filter="url(#shglow)"/><circle cx="50" cy="15" r="5" fill="#7b61ff" filter="url(#shglow)"/><circle cx="32" cy="13" r="2.5" fill="#fff"/><circle cx="48" cy="13" r="2.5" fill="#fff"/><!-- snout --><path d="M38,26 L42,34 L46,26" fill="none" stroke="#c4b5fd" stroke-width="2"/><!-- big fins --><path d="M64,44 Q82,38 78,54 Q70,54 66,48" fill="#a78bfa" opacity="0.9" filter="url(#shglow)"/><path d="M64,68 Q82,62 78,78 Q70,78 66,72" fill="#06b6d4" opacity="0.85" filter="url(#shglow)"/><!-- sparkle dots --><circle cx="20" cy="50" r="3" fill="#e879f9" opacity="0.5" filter="url(#shglow)"/><circle cx="68" cy="94" r="3" fill="#10b981" opacity="0.55" filter="url(#shglow)"/><text x="26" y="12" font-size="10" fill="#e879f9" filter="url(#shglow)">✦</text></svg>"""
+
     return {
-        'dragon':  {'egg': GENERIC_EGG, 'baby': DRAGON_BABY,  'adult': DRAGON_ADULT,  'legend': DRAGON_LEGEND},
-        'phoenix': {'egg': GENERIC_EGG, 'baby': PHOENIX_BABY, 'adult': PHOENIX_ADULT, 'legend': PHOENIX_ADULT},
-        'unicorn': {'egg': GENERIC_EGG, 'baby': UNICORN_BABY, 'adult': UNICORN_ADULT, 'legend': UNICORN_ADULT},
-        'wolf':    {'egg': GENERIC_EGG, 'baby': WOLF_BABY,    'adult': WOLF_ADULT,    'legend': WOLF_ADULT},
-        'cat':     {'egg': GENERIC_EGG, 'baby': CAT_BABY,     'adult': CAT_ADULT,     'legend': CAT_ADULT},
-        'penguin': {'egg': GENERIC_EGG, 'baby': PENGUIN_BABY, 'adult': PENGUIN_ADULT, 'legend': PENGUIN_ADULT},
-        'fox':     {'egg': GENERIC_EGG, 'baby': FOX_BABY,     'adult': FOX_ADULT,     'legend': FOX_ADULT},
-        'slime':   {'egg': GENERIC_EGG, 'baby': SLIME_BABY,   'adult': SLIME_ADULT,   'legend': SLIME_ADULT},
+        'dragon':   {'egg': GENERIC_EGG, 'baby': DRAGON_BABY,    'adult': DRAGON_ADULT,    'legend': DRAGON_LEGEND},
+        'phoenix':  {'egg': GENERIC_EGG, 'baby': PHOENIX_BABY,   'adult': PHOENIX_ADULT,   'legend': PHOENIX_ADULT},
+        'unicorn':  {'egg': GENERIC_EGG, 'baby': UNICORN_BABY,   'adult': UNICORN_ADULT,   'legend': UNICORN_ADULT},
+        'wolf':     {'egg': GENERIC_EGG, 'baby': WOLF_BABY,      'adult': WOLF_ADULT,      'legend': WOLF_ADULT},
+        'cat':      {'egg': GENERIC_EGG, 'baby': CAT_BABY,       'adult': CAT_ADULT,       'legend': CAT_ADULT},
+        'penguin':  {'egg': GENERIC_EGG, 'baby': PENGUIN_BABY,   'adult': PENGUIN_ADULT,   'legend': PENGUIN_ADULT},
+        'fox':      {'egg': GENERIC_EGG, 'baby': FOX_BABY,       'adult': FOX_ADULT,       'legend': FOX_ADULT},
+        'slime':    {'egg': GENERIC_EGG, 'baby': SLIME_BABY,     'adult': SLIME_ADULT,     'legend': SLIME_ADULT},
+        'rabbit':   {'egg': GENERIC_EGG, 'baby': RABBIT_BABY,    'adult': RABBIT_ADULT,    'legend': RABBIT_ADULT},
+        'seahorse': {'egg': GENERIC_EGG, 'baby': SEAHORSE_BABY,  'adult': SEAHORSE_ADULT,  'legend': SEAHORSE_ADULT},
     }
 
 _SVG_SPRITES = None
@@ -323,13 +372,14 @@ def default_pet():
         "species":None,"name":"","level":0,"exp":0,
         "happiness":100,"hunger":100,"hp":100,
         "accessories":[],"skills":[],"last_fed":0,
-        "last_played":0,"passive_collected":0,
+        "last_played":0,"last_petted":0,"passive_collected":0,
         "birth_date":"","total_fed":0,
         "bond":0,"expeditions":0,"battles_won":0,
         "battles_total":0,"journal":[],"achievements":[],
         "expedition":None,"personality":"",
         "total_exp_gained":0,"highest_bond":0,
-        "recipes_made":0,
+        "recipes_made":0,"pet_count":0,"skill_used":0,
+        "skill_cooldown":0,"chat_history":[],
     }
 
 def load_pet(uid, users=None):
@@ -430,6 +480,8 @@ def check_and_award_achievements(pet):
     bd  = pet.get('bond',0)
     ac  = len(pet.get('accessories',[]))
     rm  = pet.get('recipes_made',0)
+    pc  = pet.get('pet_count',0)
+    su  = pet.get('skill_used',0)
     existing = pet.get('achievements',[])
     checks = {
         "first_feed":tf>=1,"well_fed":tf>=50,"feast":tf>=500,
@@ -438,6 +490,7 @@ def check_and_award_achievements(pet):
         "battle_win1":bw>=1,"battle_win10":bw>=10,
         "hatched":lv>=5,"bonded":bd>=3,"full_acc":ac>=2,"legend":lv>=40,
         "chef":rm>=1,"battler100":bt>=100,
+        "petting30":pc>=30,"skill_use5":su>=5,
     }
     for ach_id, cond in checks.items():
         if cond and ach_id not in existing:
@@ -1153,14 +1206,43 @@ def render(market, nw):
     mood_name, mood_data = get_mood(pet)
     bond_lv = min(pet.get('bond',0)//20, 5)
 
-    # Awards achievements
+    # Awards achievements + cash rewards
     new_ach = check_and_award_achievements(pet)
     if new_ach:
         save_pet(uid, pet)
         for ach_id in new_ach:
             ach_data = next((a for a in PET_ACHIEVEMENTS if a['id']==ach_id), None)
             if ach_data:
-                st.toast(f"🏆 업적 달성: {ach_data['icon']} {ach_data['name']}!", icon="🎉")
+                reward = ach_data.get('reward', 0)
+                if reward > 0:
+                    atomic_add_cash(uid, reward)
+                    st.session_state.global_cash += reward
+                    st.toast(f"🏆 업적: {ach_data['icon']} {ach_data['name']} +{format_korean_money(reward)}!", icon="🎉")
+                else:
+                    st.toast(f"🏆 업적 달성: {ach_data['icon']} {ach_data['name']}!", icon="🎉")
+
+    # ── 쓰다듬기 버튼 (독립 쿨타임 5분)
+    last_petted  = pet.get('last_petted', 0)
+    pet_cooldown = max(0, 300 - (time.time() - last_petted))
+    pc1, pc2, pc3 = st.columns([1,2,1])
+    with pc2:
+        if pet_cooldown > 0:
+            m, s = int(pet_cooldown//60), int(pet_cooldown%60)
+            st.markdown(f"<div style='text-align:center;color:#64748B;font-size:0.82rem;padding:6px;'>🤗 쓰다듬기 쿨타임: {m}분 {s}초</div>", unsafe_allow_html=True)
+        else:
+            if st.button("🤗 쓰다듬기! (유대감↑ 행복↑)", use_container_width=True, key="pet_btn"):
+                pet['happiness']   = min(100, pet.get('happiness',100) + 15)
+                pet['bond']        = pet.get('bond',0) + 3
+                pet['last_petted'] = time.time()
+                pet['pet_count']   = pet.get('pet_count',0) + 1
+                ge_p = random.randint(2,8)
+                pet, lvup_p, ge_p = add_exp(pet, ge_p)
+                add_journal(pet, f"🤗 쓰다듬어줬다! 행복+15 유대감+3 EXP+{ge_p}")
+                save_pet(uid, pet)
+                st.session_state['feed_animation'] = True
+                st.toast(f"🤗 {pet['name']}이(가) 좋아해요! 행복 +15", icon="💕")
+                if lvup_p: st.balloons(); st.toast(f"🎉 레벨업! Lv.{pet['level']}!", icon="⬆️")
+                st.rerun()
 
     # Expedition return
     if st.session_state.get('expedition_returned') and pet.get('expedition'):
@@ -1239,46 +1321,93 @@ def render(market, nw):
     st.write("")
 
     # ── TABS ──────────────────────────────────────────────────────────────────
-    tabs = st.tabs(["🍖 먹이주기","🎮 훈련","🗺️ 탐험","⚔️ 배틀","👗 아이템","🧪 레시피","📜 스킬","🏆 업적","📸 포토카드","📖 일지","📊 정보"])
+    tabs = st.tabs(["🍖 먹이주기","🎮 훈련","🗺️ 탐험","⚔️ 배틀","👗 아이템","🧪 레시피","📜 스킬","🏆 업적","📸 포토카드","📖 일지","📊 정보","💬 채팅"])
 
     # ── TAB 1: 먹이주기
     with tabs[0]:
-        st.markdown('<div class="pet-tab-header">🍖 먹이 선택</div>', unsafe_allow_html=True)
-        st.markdown('<div class="pet-sub">먹이를 줄수록 EXP와 행복도가 오릅니다.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pet-tab-header">🍖 먹이 & 회복 아이템</div>', unsafe_allow_html=True)
+
+        # ── 빠른 먹이기
+        st.markdown("#### ⚡ 빠른 먹이기")
+        qf1, qf2, qf3, qf4 = st.columns(4)
+        quick_items = [
+            ("kibble",   3, qf1),
+            ("gourmet",  1, qf2),
+            ("potion_s", 1, qf3),
+            ("potion_l", 1, qf4),
+        ]
+        for f_id, qty, col in quick_items:
+            food = PET_FOOD[f_id]
+            cost = food['price'] * qty
+            with col:
+                label = f"{food['icon']} {food['name']}" + (f" ×{qty}" if qty>1 else "")
+                if st.button(f"{label}\n{format_korean_money(cost)}", key=f"quick_{f_id}", use_container_width=True):
+                    if st.session_state.global_cash < cost:
+                        st.error("현금 부족!")
+                    else:
+                        st.session_state.global_cash -= cost
+                        atomic_deduct_cash(uid, cost)
+                        pet['hunger']    = min(100, pet.get('hunger',100) + food['hunger_restore']*qty)
+                        pet['happiness'] = min(100, pet.get('happiness',100) + food['happiness']*qty)
+                        pet['hp']        = min(100, pet.get('hp',100) + (food.get('hp_restore',0) or 5)*qty)
+                        pet['last_fed']  = time.time()
+                        pet['total_fed'] = pet.get('total_fed',0) + qty
+                        pet['bond']      = pet.get('bond',0) + qty
+                        pet, lv_up, ge = add_exp(pet, food['exp']*qty)
+                        tag = "💊" if food.get('hp_restore',0) else "🍖"
+                        add_journal(pet, f"{tag} {food['name']}×{qty} 사용! HP+{food.get('hp_restore',0)*qty if food.get('hp_restore',0) else ''} EXP+{ge}")
+                        save_pet(uid, pet); sync_user_data()
+                        log_tx(uid,"펫",f"{pet['name']} {food['name']}×{qty}",-cost)
+                        st.session_state['feed_animation'] = True
+                        st.toast(f"{food['icon']}×{qty}! EXP+{ge}", icon="✅")
+                        if lv_up: st.balloons(); st.toast(f"🎉 레벨업! Lv.{pet['level']}!", icon="⬆️")
+                        st.rerun()
+
+        st.write("---")
+        st.markdown("#### 🍽️ 전체 목록")
+        st.markdown('<div class="pet-sub">먹이줄수록 EXP·행복도↑ | 포션은 HP 직접 회복</div>', unsafe_allow_html=True)
         food_cols = st.columns(3)
         for i, (f_id, food) in enumerate(PET_FOOD.items()):
             with food_cols[i % 3]:
+                hp_r = food.get('hp_restore', 0)
+                is_potion = hp_r > 0
+                border = "border-color:#FF4B4B44;" if is_potion else ""
                 st.markdown(f"""
-                <div class='pet-card' style='text-align:center;'>
+                <div class='pet-card' style='text-align:center;{border}'>
                     <div style='font-size:2.8rem;'>{food['icon']}</div>
                     <div style='color:#E2E8F0;font-weight:700;margin-top:8px;'>{food['name']}</div>
-                    <div style='color:#64748B;font-size:0.75rem;margin-top:4px;'>
-                        EXP +{food['exp']} &nbsp;|&nbsp; 행복 +{food['happiness']} &nbsp;|&nbsp; 허기 +{food['hunger_restore']}
+                    <div style='color:{"#FF4B4B" if is_potion else "#00E5FF"};font-size:0.75rem;margin-top:4px;'>
+                        {"❤️ HP +" + str(hp_r) if is_potion else "EXP +" + str(food['exp'])}
+                        {" | 행복 +" + str(food['happiness']) if not is_potion else ""}
+                        {" | 허기 +" + str(food['hunger_restore']) if food['hunger_restore'] else ""}
                     </div>
                     <div style='color:#FFD600;font-weight:900;margin-top:8px;font-size:1rem;'>{format_korean_money(food['price'])}</div>
                 </div>
                 """, unsafe_allow_html=True)
                 qty = st.number_input("수량", min_value=1, max_value=50, value=1, key=f"food_qty_{f_id}")
-                if st.button(f"{food['icon']} 먹이기 ×{qty}", key=f"feed_{f_id}", use_container_width=True):
+                if st.button(f"{food['icon']} {'포션 사용' if is_potion else '먹이기'} ×{qty}", key=f"feed_{f_id}", use_container_width=True):
                     total_cost = food['price'] * qty
                     if st.session_state.global_cash < total_cost:
                         st.error("현금 부족!")
                     else:
                         st.session_state.global_cash -= total_cost
                         atomic_deduct_cash(uid, total_cost)
-                        pet['hunger']    = min(100, pet.get('hunger',100) + food['hunger_restore'] * qty)
-                        pet['happiness'] = min(100, pet.get('happiness',100) + food['happiness'] * qty)
-                        pet['hp']        = min(100, pet.get('hp',100) + 5 * qty)
+                        pet['hunger']    = min(100, pet.get('hunger',100) + food['hunger_restore']*qty)
+                        pet['happiness'] = min(100, pet.get('happiness',100) + food['happiness']*qty)
+                        if is_potion:
+                            pet['hp'] = min(100, pet.get('hp',100) + hp_r*qty)
+                        else:
+                            pet['hp'] = min(100, pet.get('hp',100) + 5*qty)
                         pet['last_fed']  = time.time()
                         pet['total_fed'] = pet.get('total_fed',0) + qty
                         pet['bond']      = pet.get('bond',0) + qty
-                        pet, leveled_up, gained_exp = add_exp(pet, food['exp'] * qty)
-                        add_journal(pet, f"🍖 {food['name']}×{qty} 먹임! EXP+{gained_exp}")
-                        save_pet(uid, pet)
-                        sync_user_data()
-                        log_tx(uid, "펫", f"{pet['name']} 먹이({food['name']}×{qty})", -total_cost)
+                        pet, leveled_up, gained_exp = add_exp(pet, food['exp']*qty)
+                        tag = "💊" if is_potion else "🍖"
+                        add_journal(pet, f"{tag} {food['name']}×{qty}! {f'HP+{hp_r*qty}' if is_potion else f'EXP+{gained_exp}'}")
+                        save_pet(uid, pet); sync_user_data()
+                        log_tx(uid,"펫",f"{pet['name']} 먹이({food['name']}×{qty})",-total_cost)
                         st.session_state['feed_animation'] = True
-                        st.toast(f"🍖 {food['icon']}×{qty}! EXP +{gained_exp}", icon="✅")
+                        st.toast(f"{food['icon']}×{qty}! {'HP +' + str(hp_r*qty) if is_potion else 'EXP +' + str(gained_exp)}", icon="✅")
                         if leveled_up:
                             st.balloons()
                             st.toast(f"🎉 레벨업! Lv.{pet['level']}!", icon="⬆️")
@@ -1472,16 +1601,25 @@ def render(market, nw):
         current_exp = pet.get('expedition')
         if current_exp and time.time() < current_exp.get('return_time',0):
             z = EXPEDITION_ZONES.get(current_exp['zone'],{})
-            remain_s = current_exp['return_time'] - time.time()
-            remain_h = int(remain_s // 3600)
-            remain_m = int((remain_s % 3600) // 60)
+            remain_s  = current_exp['return_time'] - time.time()
+            total_s   = z.get('duration_h',1) * 3600
+            elapsed_s = total_s - remain_s
+            progress  = min(100, int(elapsed_s / total_s * 100)) if total_s>0 else 0
+            remain_h  = int(remain_s // 3600)
+            remain_m  = int((remain_s % 3600) // 60)
             st.markdown(f"""
             <div style='background:rgba(0,229,255,0.06);border:1px solid #00E5FF44;
                         border-radius:14px;padding:20px;text-align:center;'>
                 <div style='font-size:2.5rem;margin-bottom:8px;'>{z.get("icon","🗺️")}</div>
-                <div style='color:#00E5FF;font-size:1.1rem;font-weight:900;'>{z.get("name","탐험")} 진행 중</div>
+                <div style='color:#00E5FF;font-size:1.1rem;font-weight:900;'>{z.get("name","탐험")} 탐험 중!</div>
                 <div style='color:#94A3B8;margin-top:8px;font-size:0.9rem;'>
                     ⏳ 귀환까지 <span style='color:#FFD600;font-weight:900;'>{remain_h}시간 {remain_m}분</span>
+                </div>
+                <div style='margin-top:14px;'>
+                    <div style='color:#64748B;font-size:0.75rem;margin-bottom:6px;'>탐험 진행도 {progress}%</div>
+                    <div style='background:rgba(255,255,255,0.08);border-radius:8px;height:10px;overflow:hidden;'>
+                        <div style='background:linear-gradient(90deg,#00E5FF,#00FF88);width:{progress}%;height:100%;border-radius:8px;transition:width 0.5s;'></div>
+                    </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -1668,7 +1806,9 @@ def render(market, nw):
                     st.session_state.battle_state = None
                     st.rerun()
             else:
-                ca, cb, cc = st.columns(3)
+                sp_skill = sp.get('special_skill', {})
+                b_skill_cd = bs.get('skill_cd', pet.get('skill_cooldown', 0))
+                ca, cb, cc, cd = st.columns(4)
                 with ca:
                     if st.button("⚔️ 일반 공격", use_container_width=True, key="atk_normal"):
                         crit    = random.random() < 0.15
@@ -1679,13 +1819,13 @@ def render(market, nw):
                         bs['log'].append(f"{'💥 크리티컬! ' if crit else '💥 '}{pet['name']} → {mob['name']}: -{dmg_pet}HP")
                         bs['log'].append(f"🩸 {mob['name']} → {pet['name']}: -{dmg_mob}HP")
                         bs['turn'] += 1
-                        # 배틀 이펙트 세션 저장
+                        if b_skill_cd > 0: bs['skill_cd'] = b_skill_cd - 1
                         st.session_state['battle_efx'] = {'pet_dmg': dmg_pet, 'mob_dmg': dmg_mob, 'crit': crit}
                         if bs['monster_hp'] <= 0: bs['over']=True; bs['won']=True
                         elif bs['pet_hp'] <= 0: bs['over']=True; bs['won']=False
                         st.rerun()
                 with cb:
-                    if st.button("🔥 강공격 (HP-10)", use_container_width=True, key="atk_heavy"):
+                    if st.button("🔥 강공격 (-10HP)", use_container_width=True, key="atk_heavy"):
                         dmg_pet = max(1, int(pet_stats['atk']*1.8) - mob['def'] + random.randint(-4,12))
                         dmg_mob = max(0, mob['atk'] - pet_stats['def'] + random.randint(-2,5))
                         bs['pet_hp']     -= 10
@@ -1693,11 +1833,39 @@ def render(market, nw):
                         bs['log'].append(f"💥💥 강공격! {mob['name']}: -{dmg_pet}HP (자상-10HP)")
                         bs['log'].append(f"🩸 {mob['name']}: -{dmg_mob}HP")
                         bs['turn'] += 1
+                        if b_skill_cd > 0: bs['skill_cd'] = b_skill_cd - 1
                         st.session_state['battle_efx'] = {'pet_dmg': dmg_pet, 'mob_dmg': dmg_mob, 'crit': True}
                         if bs['monster_hp'] <= 0: bs['over']=True; bs['won']=True
                         elif bs['pet_hp'] <= 0: bs['over']=True; bs['won']=False
                         st.rerun()
                 with cc:
+                    skill_ready = b_skill_cd <= 0
+                    skill_label = f"⚡ {sp_skill.get('name','필살기')}" if skill_ready else f"⏳ CD {b_skill_cd}턴"
+                    if st.button(skill_label, use_container_width=True, key="atk_skill",
+                                 disabled=not skill_ready, type="primary" if skill_ready else "secondary"):
+                        mult   = sp_skill.get('dmg_mult', 2.0)
+                        # 고양이 필살기: 랜덤 배율
+                        if pet.get('species') == 'cat':
+                            mult = random.uniform(0.5, 4.0)
+                        force_crit = sp_skill.get('crit', False) or (mult > 3.0)
+                        dmg_pet = max(1, int(pet_stats['atk'] * mult) - mob['def'] + random.randint(0,10))
+                        dmg_mob = max(0, mob['atk'] - pet_stats['def'] + random.randint(-5,3))
+                        bs['monster_hp'] -= dmg_pet; bs['pet_hp'] -= dmg_mob
+                        # 유니콘/피닉스 HP 회복
+                        heal = 0
+                        if pet.get('species') == 'unicorn': heal = 10; bs['pet_hp'] = min(100, bs['pet_hp']+heal)
+                        if pet.get('species') == 'phoenix': heal = 15; bs['pet_hp'] = min(100, bs['pet_hp']+heal)
+                        bs['skill_cd'] = sp_skill.get('cooldown', 4)
+                        pet['skill_used'] = pet.get('skill_used',0) + 1
+                        heal_str = f" HP+{heal}" if heal else ""
+                        bs['log'].append(f"⚡✨ {sp_skill.get('name','필살기')}!! -{dmg_pet}HP{heal_str}")
+                        bs['log'].append(f"🩸 {mob['name']} → {pet['name']}: -{dmg_mob}HP")
+                        bs['turn'] += 1
+                        st.session_state['battle_efx'] = {'pet_dmg': dmg_pet, 'mob_dmg': dmg_mob, 'crit': True}
+                        if bs['monster_hp'] <= 0: bs['over']=True; bs['won']=True
+                        elif bs['pet_hp'] <= 0: bs['over']=True; bs['won']=False
+                        st.rerun()
+                with cd:
                     if st.button("🏃 도망가기", use_container_width=True, key="atk_flee"):
                         flee = random.random() < (0.4 + pet_stats['spd']/200)
                         if flee:
@@ -1715,7 +1883,7 @@ def render(market, nw):
     # ── TAB 5: 아이템
     with tabs[4]:
         st.markdown('<div class="pet-tab-header">👗 악세서리 상점</div>', unsafe_allow_html=True)
-        st.markdown('<div class="pet-sub">악세서리를 장착해 능력을 강화하세요! 최대 2개.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pet-sub">악세서리를 장착해 능력을 강화하세요! 최대 3개.</div>', unsafe_allow_html=True)
         equipped = pet.get('accessories',[])
         acc_cols = st.columns(3)
         for i,(acc_id, acc) in enumerate(PET_ACCESSORIES.items()):
@@ -1737,7 +1905,7 @@ def render(market, nw):
                         save_pet(uid,pet); st.rerun()
                 else:
                     if st.button("구매·장착", key=f"buy_acc_{acc_id}", use_container_width=True):
-                        if len(equipped)>=2: st.error("최대 2개!")
+                        if len(equipped)>=3: st.error("최대 3개까지 장착 가능!")
                         elif st.session_state.global_cash < acc['price']: st.error("현금 부족!")
                         else:
                             st.session_state.global_cash -= acc['price']
@@ -1830,19 +1998,21 @@ def render(market, nw):
         earned_ids = pet.get('achievements',[])
         earned_count = len(earned_ids)
         total_count  = len(PET_ACHIEVEMENTS)
+        total_reward = sum(a.get('reward',0) for a in PET_ACHIEVEMENTS if a['id'] in earned_ids)
         st.markdown(f"""
         <div style='background:rgba(255,214,0,0.06);border:1px solid #FFD60033;
                     border-radius:12px;padding:14px;margin-bottom:16px;text-align:center;'>
             <div style='color:#FFD600;font-size:1.4rem;font-weight:900;'>{earned_count}/{total_count}</div>
-            <div style='color:#94A3B8;font-size:0.85rem;margin-top:4px;'>업적 달성</div>
+            <div style='color:#94A3B8;font-size:0.85rem;margin-top:4px;'>업적 달성 · 총 보상 {format_korean_money(total_reward)} 수령</div>
             <div style='background:rgba(255,255,255,0.08);border-radius:4px;height:6px;margin-top:10px;overflow:hidden;'>
-                <div style='background:#FFD600;width:{int(earned_count/total_count*100)}%;height:100%;border-radius:4px;'></div>
+                <div style='background:#FFD600;width:{int(earned_count/max(total_count,1)*100)}%;height:100%;border-radius:4px;'></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
         ach_cols = st.columns(3)
         for i, ach in enumerate(PET_ACHIEVEMENTS):
             has = ach['id'] in earned_ids
+            reward = ach.get('reward', 0)
             with ach_cols[i%3]:
                 st.markdown(f"""
                 <div class='pet-card' style='text-align:center;
@@ -1850,7 +2020,8 @@ def render(market, nw):
                     <div style='font-size:2rem;'>{ach['icon']}</div>
                     <div style='color:#E2E8F0;font-weight:700;margin-top:6px;font-size:0.9rem;'>{ach['name']}</div>
                     <div style='color:#64748B;font-size:0.75rem;margin-top:4px;'>{ach['desc']}</div>
-                    <div style='color:{"#FFD600" if has else "#475569"};font-size:0.75rem;margin-top:6px;font-weight:700;'>
+                    <div style='color:#FFD600;font-size:0.72rem;margin-top:4px;font-weight:700;'>💰 보상 {format_korean_money(reward)}</div>
+                    <div style='color:{"#FFD600" if has else "#475569"};font-size:0.75rem;margin-top:4px;font-weight:700;'>
                         {"✅ 달성!" if has else "🔒 미달성"}
                     </div>
                 </div>
@@ -1930,12 +2101,19 @@ def render(market, nw):
         st.markdown('<div class="pet-tab-header">📖 펫 일지</div>', unsafe_allow_html=True)
         st.markdown('<div class="pet-sub">펫과의 활동 기록이 자동으로 남습니다.</div>', unsafe_allow_html=True)
         journal = pet.get('journal', [])
-        if not journal:
-            st.markdown("<div style='text-align:center;color:#475569;padding:30px;'>아직 기록이 없어요. 펫과 함께 활동해보세요!</div>", unsafe_allow_html=True)
+
+        # 카테고리 필터
+        filter_opt = st.selectbox("🔍 필터", ["전체","🎉 레벨업","🍖 먹이","⚔️ 배틀","🗺️ 탐험","🧪 레시피","💪 훈련","🤗 쓰다듬기"], key="journal_filter")
+        filter_kw  = {"전체":None,"🎉 레벨업":"레벨업","🍖 먹이":"먹임","⚔️ 배틀":"배틀","🗺️ 탐험":"탐험","🧪 레시피":"레시피","💪 훈련":"훈련","🤗 쓰다듬기":"쓰다듬"}.get(filter_opt)
+        filtered = [e for e in journal if filter_kw is None or filter_kw in e]
+
+        if not filtered:
+            st.markdown("<div style='text-align:center;color:#475569;padding:30px;'>해당 카테고리 기록이 없어요!</div>", unsafe_allow_html=True)
         else:
-            for entry in journal[:30]:
+            for entry in filtered[:30]:
+                ic = "#FFD600" if "레벨업" in entry else "#FF4B4B" if "배틀" in entry else "#00E5FF" if "탐험" in entry else "#DD00FF" if "레시피" in entry else "#FF6699" if "쓰다듬" in entry else "#00FF88"
                 st.markdown(f"""
-                <div style='background:rgba(255,255,255,0.03);border-left:2px solid {sp["rarity_color"]}44;
+                <div style='background:rgba(255,255,255,0.03);border-left:2px solid {ic}55;
                             padding:8px 14px;margin-bottom:6px;border-radius:0 8px 8px 0;
                             color:#B0BAC8;font-size:0.84rem;'>
                     {entry}
@@ -2002,4 +2180,162 @@ def render(market, nw):
                 st.rerun()
             if cc2.button("❌ 취소", use_container_width=True, key="confirm_no"):
                 del st.session_state['confirm_release']
+                st.rerun()
+
+    # ── TAB 12: 💬 펫과 대화 (Claude AI)
+    with tabs[11]:
+        st.markdown('<div class="pet-tab-header">💬 펫과 대화하기</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="pet-sub">{pet["name"]}이(가) 직접 대답해요! AI가 종족·기분·레벨에 맞게 응답합니다 🤖</div>', unsafe_allow_html=True)
+
+        # 채팅 이력 초기화
+        if 'pet_chat_history' not in st.session_state:
+            st.session_state.pet_chat_history = []
+
+        mood_name_c, mood_data_c = get_mood(pet)
+        season_c, _ = get_season()
+        weather_c = get_weather()
+
+        # 시스템 프롬프트 생성
+        sp_data = PET_SPECIES.get(pet.get('species','cat'), {})
+        system_prompt = f"""너는 '{pet.get('name','펫')}'이라는 {sp_data.get('name','펫')}야. 
+성격: {pet.get('personality','장난꾸러기')}. 레벨: {lv}. 기분: {mood_name_c}({mood_data_c['desc']}).
+HP: {hp}/100, 허기: {pet.get('hunger',100)}/100, 행복: {happy}/100.
+지금 계절은 {season_c}, 날씨는 {weather_c}야.
+유대감 단계: {get_bond_title(bond_lv)}. 탄생일: {pet.get('birth_date','?')}.
+
+반드시 지켜야 할 규칙:
+- 펫의 입장에서 1인칭으로 짧고 귀엽게 대답해
+- 종족 특성({sp_data.get('ability','')})과 성격을 반영해
+- 기분이 나쁘면(배고픔/아픔) 그 상태를 티내
+- 한국어로만 대답하고, 1~3문장 이내로
+- 이모티콘을 적절히 사용해 (너무 많이는 ❌)
+- 절대 AI라고 밝히지 말고, 진짜 펫처럼 행동해"""
+
+        # 채팅 UI
+        chat_container = st.container()
+        with chat_container:
+            if not st.session_state.pet_chat_history:
+                greeting_map = {
+                    "신남": f"안녕! 나 오늘 기분 최고야! 같이 뭐 할까? 🤩",
+                    "행복": f"어, 왔어? 잘됐다~ 심심하던 참이야 😊",
+                    "배고픔": f"...배고파. 밥 좀... 😮",
+                    "아픔": f"몸이 좀 안 좋아... 포션 줘... 🤒",
+                    "피곤": f"...졸려. 잠깐 쉬고 싶어 😴",
+                    "슬픔": f"왜 이제 왔어... 보고싶었는데 😢",
+                    "보통": f"응, 왔어? 뭐 물어보려고? 😐",
+                }
+                greeting = greeting_map.get(mood_name_c, f"안녕! 나야, {pet['name']}!")
+                st.markdown(f"""
+                <div style='display:flex;gap:12px;margin-bottom:16px;align-items:flex-start;'>
+                    <div style='width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);
+                                display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;
+                                border:1px solid {sp["rarity_color"]}44;'>
+                        {sp.get("baby","🐾")}
+                    </div>
+                    <div style='background:rgba(255,255,255,0.05);border:1px solid {sp["rarity_color"]}33;
+                                border-radius:0 14px 14px 14px;padding:10px 14px;max-width:80%;'>
+                        <div style='color:#E2E8F0;font-size:0.9rem;'>{greeting}</div>
+                        <div style='color:#475569;font-size:0.7rem;margin-top:4px;'>{pet["name"]} · {mood_data_c["emoji"]} {mood_name_c}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            for msg in st.session_state.pet_chat_history[-20:]:
+                if msg['role'] == 'user':
+                    st.markdown(f"""
+                    <div style='display:flex;justify-content:flex-end;margin-bottom:12px;'>
+                        <div style='background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.3);
+                                    border-radius:14px 0 14px 14px;padding:10px 14px;max-width:80%;'>
+                            <div style='color:#E2E8F0;font-size:0.9rem;'>{msg["content"]}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div style='display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;'>
+                        <div style='width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);
+                                    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;
+                                    border:1px solid {sp["rarity_color"]}44;'>
+                            {sp.get("baby","🐾")}
+                        </div>
+                        <div style='background:rgba(255,255,255,0.05);border:1px solid {sp["rarity_color"]}33;
+                                    border-radius:0 14px 14px 14px;padding:10px 14px;max-width:80%;'>
+                            <div style='color:#E2E8F0;font-size:0.9rem;'>{msg["content"]}</div>
+                            <div style='color:#475569;font-size:0.7rem;margin-top:4px;'>{pet["name"]} · {mood_data_c["emoji"]}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        # 입력
+        with st.form("pet_chat_form", clear_on_submit=True):
+            col_inp, col_btn = st.columns([5,1])
+            with col_inp:
+                user_msg = st.text_input("메시지 입력...", placeholder=f"{pet['name']}에게 말 걸기!", label_visibility="collapsed")
+            with col_btn:
+                sent = st.form_submit_button("전송", use_container_width=True, type="primary")
+
+        if sent and user_msg.strip():
+            # ── Gemini API 호출 (project_a.py와 동일 방식)
+            import requests as _req
+            GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", "").strip()
+            st.session_state.pet_chat_history.append({"role":"user","content":user_msg.strip()})
+
+            pet_reply = None
+            if GOOGLE_API_KEY:
+                # 대화 이력 → Gemini 형식으로 변환
+                gemini_contents = []
+                for m in st.session_state.pet_chat_history[-10:]:
+                    role = "user" if m["role"] == "user" else "model"
+                    gemini_contents.append({"role": role, "parts": [{"text": m["content"]}]})
+
+                # 시스템 프롬프트를 첫 user 메시지 앞에 삽입
+                full_contents = [
+                    {"role": "user",  "parts": [{"text": system_prompt + "\n\n이 설정을 이해했으면 '네!'라고만 답해줘."}]},
+                    {"role": "model", "parts": [{"text": "네!"}]},
+                ] + gemini_contents
+
+                payload = {
+                    "contents": full_contents,
+                    "generationConfig": {"temperature": 0.85, "maxOutputTokens": 300},
+                }
+                models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
+                for model in models:
+                    url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={GOOGLE_API_KEY}"
+                    try:
+                        res = _req.post(url, json=payload, timeout=15)
+                        if res.status_code == 200:
+                            data = res.json()
+                            pet_reply = data['candidates'][0]['content']['parts'][0]['text']
+                            break
+                        elif res.status_code in [429, 503]:
+                            continue
+                    except Exception:
+                        continue
+
+            if not pet_reply:
+                # API 키 없거나 실패 시 fallback
+                fallbacks = {
+                    "신남":   [f"그거 진짜 좋은 말이야! 나도 그렇게 생각해 🤩", f"맞아맞아! 완전 공감~ 더 신나는 것 하자!"],
+                    "행복":   [f"응, 기분 좋아서 뭐든 다 좋아 보여 😊", f"좋은 얘기 해줘서 고마워~"],
+                    "배고픔": [f"...밥 줘. 배고파서 집중이 안 돼 😮", f"밥 먼저... 그다음에 얘기하자..."],
+                    "아픔":   [f"몸이 안 좋아서 말하기 힘들어... 포션 좀... 🤒"],
+                    "피곤":   [f"...졸려. 나중에 얘기해... 😴"],
+                    "슬픔":   [f"그래... 고마워. 같이 있어줘서 😢"],
+                    "보통":   [f"흠, 그렇구나~", f"나도 그런 생각 해봤어.", f"재밌는 얘기네!"],
+                }
+                import random as _r
+                pet_reply = _r.choice(fallbacks.get(mood_name_c, fallbacks["보통"]))
+
+            st.session_state.pet_chat_history.append({"role":"assistant","content":pet_reply})
+            # 대화하면 행복도 살짝 오름
+            pet['happiness'] = min(100, pet.get('happiness',100) + 3)
+            pet['bond']      = pet.get('bond',0) + 1
+            add_journal(pet, f"💬 '{user_msg[:20]}...' 대화!")
+            save_pet(uid, pet)
+            st.rerun()
+
+        # 대화 초기화 버튼
+        if st.session_state.pet_chat_history:
+            if st.button("🗑️ 대화 초기화", key="clear_chat"):
+                st.session_state.pet_chat_history = []
                 st.rerun()
