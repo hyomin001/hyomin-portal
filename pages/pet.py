@@ -306,7 +306,7 @@ RUNE_SHARD_DROP = {"battle_win": (1, 3), "expedition": (2, 5), "jackpot": (3, 8)
 #   만렙(5000) 도달 시 환생 가능. 레벨 1로 리셋되지만:
 #   · 영구 EXP 배수 +10%/환생 · 영구 전 스탯 +15%/환생
 #   · 환생 칭호 부여 · prestige_points 지급(특수 상점용)
-REBIRTH_REQ_LEVEL = 5000
+#   ※ REBIRTH_REQ_LEVEL은 MAX_LEVEL 정의 이후(363줄 부근)에서 할당됩니다.
 REBIRTH_TITLES = [
     "필멸자",       # 0
     "🥉 각성자",    # 1
@@ -361,6 +361,7 @@ EXP_PER_LEVEL = 200          # (레거시 호환용 — 실제 곡선은 exp_to_
 # 🌟 v9: 만렙 / 진화 / 환생 시스템
 # ══════════════════════════════════════════════════════════════════════════════
 MAX_LEVEL = 5000                 # 만렙
+REBIRTH_REQ_LEVEL = MAX_LEVEL    # 환생 가능 레벨 (MAX_LEVEL 정의 이후 할당)
 EVO_INTERVAL = 1000              # 1000렙마다 진화
 
 # 진화 단계 정의 (스테이지 수 = 6: egg, baby, adult, legend + 초월 2단계)
