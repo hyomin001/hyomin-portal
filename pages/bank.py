@@ -15,46 +15,7 @@ def render(market, nw):
     c2.metric("💳 대출잔액", format_korean_money(st.session_state.loan))
     c3.metric("📊 순자산",  format_korean_money(nw))
 
-    tab_send, tab_loan = st.tabs(["💸 송금", "💳 대출/상환"])
-
-    with tab_send:
-        _all_users = [u for u in load_db(USERS_FILE, {}).keys() if u != st.session_state.logged_in_user and u != "admin"]
-        target = st.selectbox("받는 분 선택", _all_users) if _all_users else None
-        if not _all_users: st.info("송금 가능한 다른 유저가 없습니다.")
-        amt = st.number_input("송금 금액 (원)", min_value=0, step=1_000_000, format="%d")
-        st.caption(f"송금 예정: {format_korean_money(amt)}")
-        
-        cd_send = cooldown_remaining("send_money", 5.0)
-        if cd_send > 0: st.warning(f"⏱️ 송금 쿨다운 {cd_send:.1f}초")
-        elif st.button("📤 송금하기", use_container_width=True):
-            us = load_db(USERS_FILE, {})
-            if target not in us: st.error("존재하지 않는 사용자입니다.")
-            elif st.session_state.global_cash < amt: st.error("잔액이 부족합니다.")
-            elif amt <= 0: st.error("금액을 입력하세요.")
-            else:
-                set_cooldown("send_money")
-                us_fresh = load_db(USERS_FILE, {})
-                import time as _time
-                my_data = us_fresh.get(st.session_state.logged_in_user, {})
-                last_send = my_data.get("last_send_time", 0)
-                db_cash = my_data.get("cash", 0)  # ← DB에서 실제 잔액 가져오기
-                if _time.time() - last_send < 5:
-                    st.error("⏱️ 너무 빠른 송금 요청입니다. 잠시 후 다시 시도해주세요.")
-                elif db_cash < amt:  # ← 세션 말고 DB 잔액으로 검증
-                    st.error("잔액이 부족합니다. (재검증 실패)")
-                else:
-                    new_my_cash = db_cash - amt  # ← DB 기준으로 차감
-                    us_fresh[st.session_state.logged_in_user]['cash'] = new_my_cash
-                    us_fresh[st.session_state.logged_in_user]['last_send_time'] = _time.time()
-                    # target 유저의 'cash' 키가 없을 경우를 방어
-                    us_fresh[target]['cash'] = us_fresh[target].get('cash', 0) + amt
-                    save_db(USERS_FILE, us_fresh)
-                    st.session_state.global_cash = new_my_cash  # ← DB 저장 후 세션 동기화
-                    log_tx(st.session_state.logged_in_user, "송금", f"{target}에게 송금", -amt)
-                    log_tx(target, "송금수신", f"{st.session_state.logged_in_user}에게서 수신", amt)
-                    sync_user_data(); st.success(f"✅ {target}님께 {format_korean_money(amt)} 송금 완료!")
-                    if amt >= 10_000_000_000: claim_hidden_title("first_donate_10b", "👑 [유일무이] 자선사업가")
-                    st.rerun()
+    tab_loan = st.container()
 
     with tab_loan:
         if st.session_state.equipped_title == "💸 신용불량자":
