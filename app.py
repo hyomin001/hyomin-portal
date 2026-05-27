@@ -1780,7 +1780,7 @@ function copyMsg(type, btn) {{
     <div class="module-item"><strong>pages/stock.py</strong>주식 트레이딩·차트·매수매도</div>
     <div class="module-item"><strong>pages/crypto.py</strong>코인 거래소·실시간 시세</div>
     <div class="module-item"><strong>pages/real_estate.py</strong>부동산 매입·임대료 수익</div>
-    <div class="module-item"><strong>pages/bank.py</strong>대출·송금·이자 계산</div>
+    <div class="module-item"><strong>pages/bank.py</strong>대출·상환·이자 계산</div>
     <div class="module-item"><strong>pages/txlog.py</strong>개인 거래 내역 조회</div>
     <div class="module-item"><strong>pages/ranking.py</strong>시즌 랭킹·게시판</div>
     <div class="module-item"><strong>pages/clan.py</strong>길드·클랜 시스템</div>
@@ -2545,7 +2545,7 @@ elif st.session_state.page_view == "universe":
     is_vip   = nw >= 100_000_000_000 or is_admin
 
     CATEGORY_MENUS = {
-        "📈 경제":        ["🏠 홈 광장 (튜토리얼)", "📈 주식 트레이딩", "🪙 코인 거래소", "🏢 부동산 거래소", "🏦 은행 (대출/송금)", "📜 내 거래 기록"],
+        "📈 경제":        ["🏠 홈 광장 (튜토리얼)", "📈 주식 트레이딩", "🪙 코인 거래소", "🏢 부동산 거래소", "🏦 은행 (대출/상환)", "📜 내 거래 기록"],
         "🎮 미니게임":    ["🎰 럭키 슬롯", "🃏 블랙잭 카지노", "⛏️ 광산 (노가다)", "🃏 텍사스 홀덤", "💻 사주팔자", "⚔️ 글로벌 로또", "🗡️ 전설의 명검 강화", "🎴 가챠 뽑기"],
         "🌟 성장 & 혜택": ["👤 내 프로필", "🐾 펫 키우기", "📅 일일 퀘스트", "👑 칭호 상점"],
         "⚽ 스포츠":      ["⚽ 구단주 시뮬레이터", "⚽ 조기축구 승부차기", "🏎️ 하이퍼카 레이싱", "🛠️ 커스텀 튜닝 차고지"],
@@ -2623,7 +2623,7 @@ elif st.session_state.page_view == "universe":
     elif menu == "📈 주식 트레이딩":         from pages import stock;             stock.render(market, nw)
     elif menu == "🪙 코인 거래소":           from pages import crypto;            crypto.render(market, nw)
     elif menu == "🏢 부동산 거래소":         from pages import real_estate;       real_estate.render(market, nw)
-    elif menu == "🏦 은행 (대출/송금)":      from pages import bank;              bank.render(market, nw)
+    elif menu == "🏦 은행 (대출/상환)":      from pages import bank;              bank.render(market, nw)
     elif menu == "📜 내 거래 기록":          from pages import txlog;             txlog.render(market, nw)
     elif menu == "👤 내 프로필":              from pages import profile;           profile.render(market, nw)
     elif menu == "🐾 펫 키우기":              from pages import pet;               pet.render(market, nw)
