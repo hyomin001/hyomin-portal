@@ -1666,17 +1666,17 @@ function copyMsg(type, btn) {{
 
             st.markdown("""
 <div class="arch-card">
-    <h4>🧩 41개 독립 모듈 구조</h4>
+    <h4>🧩 42개 독립 모듈 구조</h4>
     <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>41개의 독립 모듈</b>로 구성됩니다.
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>41개의 기능 모듈</b>, 총 42개 파일로 구성됩니다.
         각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
         한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
         유지보수 및 신규 기능 추가가 용이한 구조입니다.
     </p>
     <div style="margin-top:10px;">
         <span class="arch-badge">app.py (진입점)</span>
-        <span class="arch-badge">pages/ (29개 페이지)</span>
-        <span class="arch-badge">utils/ (6개 유틸)</span>
+        <span class="arch-badge">pages/ (36개 페이지)</span>
+        <span class="arch-badge">utils/ (5개 유틸)</span>
         <span class="arch-badge">독립 렌더링</span>
     </div>
 </div>
@@ -1794,7 +1794,7 @@ function copyMsg(type, btn) {{
     <div class="module-item"><strong>pages/games/blackjack.py</strong>블랙잭 카지노</div>
     <div class="module-item"><strong>pages/games/holdem.py</strong>텍사스 홀덤</div>
     <div class="module-item"><strong>pages/games/mine.py</strong>광산 노가다</div>
-    <div class="module-item"><strong>pages/games/quiz.py</strong>사주팔</div>
+    <div class="module-item"><strong>pages/games/quiz.py</strong>사주팔자 운세</div>
     <div class="module-item"><strong>pages/games/lotto.py</strong>글로벌 로또</div>
     <div class="module-item"><strong>pages/games/forge.py</strong>전설의 명검 강화</div>
     <div class="module-item"><strong>pages/games/gacha.py</strong>가챠 뽑기</div>
