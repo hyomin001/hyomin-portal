@@ -306,7 +306,7 @@ RUNE_SHARD_DROP = {"battle_win": (1, 3), "expedition": (2, 5), "jackpot": (3, 8)
 #   만렙(5000) 도달 시 환생 가능. 레벨 1로 리셋되지만:
 #   · 영구 EXP 배수 +10%/환생 · 영구 전 스탯 +15%/환생
 #   · 환생 칭호 부여 · prestige_points 지급(특수 상점용)
-REBIRTH_REQ_LEVEL = MAX_LEVEL
+REBIRTH_REQ_LEVEL = 5000
 REBIRTH_TITLES = [
     "필멸자",       # 0
     "🥉 각성자",    # 1
