@@ -256,7 +256,7 @@ def generate_profile_card_html(uid, avatar, lv, lv_title, nw, custom_title,
 *{{margin:0;padding:0;box-sizing:border-box;}}
 body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace;}}
 #card{{
-  width:100%;height:360px;
+  width:100%;height:410px;
   background:linear-gradient(135deg,{bg} 0%,rgba(5,5,20,0.98) 100%);
   border:2px solid {frame_border};
   border-radius:22px;position:relative;overflow:hidden;
@@ -281,7 +281,7 @@ body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace
   width:200px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;
   justify-content:center;padding:20px 10px;border-right:1px solid rgba(255,255,255,0.06);
 }}
-#right-panel{{flex:1;display:flex;flex-direction:column;padding:18px 22px;overflow:hidden;}}
+#right-panel{{flex:1;display:flex;flex-direction:column;padding:18px 22px;overflow:visible;}}
 
 /* AVATAR */
 #avatar-ring{{
@@ -504,7 +504,7 @@ const EFX = document.getElementById('efx');
 // ── Starfield canvas
 const canvas = document.getElementById('bg-canvas');
 const ctx = canvas.getContext('2d');
-canvas.width=700; canvas.height=360;
+canvas.width=700; canvas.height=410;
 const stars = Array.from({{length:70}}, ()=>({{'x':Math.random()*700,'y':Math.random()*360,
   'r':Math.random()*1.4+0.2,'op':Math.random(),'spd':Math.random()*0.015+0.005,'dir':1}}));
 // Rainbow stars
@@ -641,7 +641,8 @@ def render(market, nw):
             status_msg, join_date, theme_id, frame_id,
             badge_count, len(PROFILE_BADGES), pet_info, assets
         ),
-        height=370
+        height=420,
+        scrolling=False
     )
 
     st.write("")
