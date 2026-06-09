@@ -1972,59 +1972,450 @@ def render(market, nw):
                 st.session_state['_tm_claimed'] = False
 
         st.write("---")
-        st.markdown("#### 🧪 기타 훈련")
-        st.markdown('<div class="pet-sub">훈련으로 EXP를 올리세요. 5% 확률 잭팟(EXP 5배)도 노려보세요! 🎰</div>', unsafe_allow_html=True)
-        train_cols = st.columns(3)
-        for i, tg in enumerate(TRAINING_GAMES):
-            with train_cols[i % 3]:
-                st.markdown(f"""
-                <div class='pet-card'>
-                    <div style='display:flex;align-items:center;gap:12px;'>
-                        <div style='font-size:2.5rem;'>{tg['icon']}</div>
-                        <div>
-                            <div style='font-weight:900;color:#E2E8F0;'>{tg['name']}</div>
-                            <div style='color:#64748B;font-size:0.78rem;'>{tg['desc']}</div>
-                            <div style='color:#FFD600;font-size:0.78rem;font-weight:700;margin-top:4px;'>
-                                EXP +{tg['exp_reward']} &nbsp;|&nbsp; {format_korean_money(tg['cost'])}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                if st.button(f"🎮 {tg['name']}", key=f"train_{tg['id']}", use_container_width=True):
-                    if st.session_state.global_cash < tg['cost']:
-                        st.toast("현금이 부족해요!", icon="💸")
-                    elif pet.get('happiness',100) < 10:
-                        st.toast("행복도가 너무 낮아요! 먼저 쓰다듬거나 같이 놀아주세요 🥺", icon="😢")
-                    else:
-                        st.session_state.global_cash -= tg['cost']
-                        atomic_deduct_cash(uid, tg['cost'])
-                        roll    = random.uniform(0.6, 1.5)
-                        exp_got = int(tg['exp_reward'] * roll)
-                        jackpot = random.random() < 0.05  # v8: 5% 잭팟
-                        if jackpot:
-                            exp_got *= 5
-                            _rs = random.randint(*RUNE_SHARD_DROP['jackpot'])
-                            pet['rune_shards'] = pet.get('rune_shards',0) + _rs
-                        pet['happiness']   = max(0, pet.get('happiness',100) - 5)
-                        pet['last_played'] = time.time()
-                        pet['bond']        = pet.get('bond',0) + 2
-                        pet, leveled_up, gained_exp = add_exp(pet, exp_got)
-                        if jackpot:       result = "🎰 잭팟!! EXP 5배!!"
-                        elif roll>=1.35:  result = "🌟 대성공!"
-                        elif roll>=0.95:  result = "✅ 성공!"
-                        else:             result = "😅 아쉬운 결과"
-                        add_journal(pet, f"🎮 {tg['name']} {result} EXP+{gained_exp}")
-                        _add_action(pet,'train')
-                        save_pet(uid, pet)
-                        sync_user_data()
-                        log_tx(uid, "펫", f"{pet['name']} {tg['name']}", -tg['cost'])
-                        st.toast(f"{result} EXP +{gained_exp}", icon="🎰" if jackpot else "💪")
-                        if jackpot or leveled_up:
-                            st.balloons()
-                        if leveled_up:
-                            st.toast(f"🎉 레벨업! Lv.{pet['level']}!", icon="⬆️")
-                        st.rerun()
+        st.markdown("#### 🎮 훈련 미니게임 — 펫과 함께!")
+        st.markdown('<div class="pet-sub">펫이 직접 참여하는 훈련이에요! 게임을 플레이하고 결과에 따라 EXP를 획득합니다. 5% 확률 잭팟도 있어요 🎰</div>', unsafe_allow_html=True)
+
+        # ── 훈련 미니게임 선택
+        pet_sprite = get_pet_sprite(pet.get('species','cat'), pet.get('level',1))
+        pet_name_disp = pet.get('name', '펫')
+
+        mini_game_choice = st.radio(
+            "훈련 종목 선택",
+            ["🧠 기억력 훈련", "⚡ 반응속도 훈련", "💪 체력(연타) 훈련", "🏃 민첩 훈련", "🔮 마력 훈련", "⚔️ 전투 훈련"],
+            horizontal=True, key="mini_game_choice"
+        )
+
+        game_map = {
+            "🧠 기억력 훈련":  ("memory",  30, 1_000_000),
+            "⚡ 반응속도 훈련": ("speed",   20,   500_000),
+            "💪 체력(연타) 훈련":("strength",25,   800_000),
+            "🏃 민첩 훈련":    ("agility", 40, 1_500_000),
+            "🔮 마력 훈련":    ("magic",   55, 2_500_000),
+            "⚔️ 전투 훈련":    ("battle",  70, 4_000_000),
+        }
+        sel_id, sel_exp, sel_cost = game_map[mini_game_choice]
+
+        st.markdown(
+            f"<div class='pet-card' style='padding:10px 14px;margin-bottom:10px;'>"
+            f"<span style='font-size:1.5rem;margin-right:10px;'>{pet_sprite}</span>"
+            f"<span style='color:#E2E8F0;font-weight:700;'>{pet_name_disp}</span>이(가) 훈련에 참여합니다! &nbsp;"
+            f"<span class='stat-chip' style='background:rgba(255,214,0,0.12);color:#FFD600;'>💰 {format_korean_money(sel_cost)}</span>"
+            f"<span class='stat-chip' style='background:rgba(0,255,136,0.12);color:#00FF88;'>⭐ 기본 EXP +{sel_exp}</span>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+
+        # ──────────────────────────────────────────
+        # 기억력 훈련 — 시퀀스 기억 게임
+        # ──────────────────────────────────────────
+        if sel_id == "memory":
+            mem_html = f"""
+            <div style="font-family:-apple-system,sans-serif;background:linear-gradient(160deg,#0a0f1e,#06101a);border:2px solid #AA00FF;border-radius:18px;padding:20px;color:#fff;box-shadow:0 0 30px rgba(170,0,255,0.15) inset;">
+              <div style="text-align:center;font-size:1rem;font-weight:900;color:#AA00FF;margin-bottom:12px;letter-spacing:1px;">🧠 {pet_name_disp}과 기억력 훈련! 순서를 기억해서 따라 클릭하세요</div>
+              <div id="mem-pet" style="text-align:center;font-size:3rem;margin-bottom:8px;transition:transform 0.15s;">{pet_sprite}</div>
+              <div id="mem-msg" style="text-align:center;color:#94A3B8;font-size:0.85rem;margin-bottom:14px;min-height:22px;">START를 눌러 시작!</div>
+              <div id="mem-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:280px;margin:0 auto 16px;">
+                <button id="mb0" data-i="0" onclick="memClick(0)" style="padding:22px;font-size:1.5rem;background:rgba(255,75,75,0.15);border:2px solid #FF4B4B;border-radius:12px;cursor:pointer;color:#fff;transition:all 0.1s;">🔴</button>
+                <button id="mb1" data-i="1" onclick="memClick(1)" style="padding:22px;font-size:1.5rem;background:rgba(0,229,255,0.15);border:2px solid #00E5FF;border-radius:12px;cursor:pointer;color:#fff;transition:all 0.1s;">🔵</button>
+                <button id="mb2" data-i="2" onclick="memClick(2)" style="padding:22px;font-size:1.5rem;background:rgba(0,255,136,0.15);border:2px solid #00FF88;border-radius:12px;cursor:pointer;color:#fff;transition:all 0.1s;">🟢</button>
+                <button id="mb3" data-i="3" onclick="memClick(3)" style="padding:22px;font-size:1.5rem;background:rgba(255,214,0,0.15);border:2px solid #FFD600;border-radius:12px;cursor:pointer;color:#fff;transition:all 0.1s;">🟡</button>
+              </div>
+              <button id="mem-start" onclick="memStart()" style="width:100%;padding:14px;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,#AA00FF,#7700DD);color:#fff;border:none;border-radius:12px;cursor:pointer;">▶ START</button>
+            </div>
+            <script>
+            (function(){{
+              var seq=[],userSeq=[],step=0,showing=false,score=0,maxRound=5;
+              var colors=['#FF4B4B','#00E5FF','#00FF88','#FFD600'];
+              var pet=document.getElementById('mem-pet');
+              function msg(t){{document.getElementById('mem-msg').textContent=t;}}
+              function flash(i,cb){{
+                var b=document.getElementById('mb'+i);
+                b.style.background=colors[i]+'88';b.style.transform='scale(1.1)';
+                setTimeout(function(){{b.style.background='rgba('+hexRgb(colors[i])+',0.15)';b.style.transform='scale(1)';if(cb)cb();}},400);
+              }}
+              function hexRgb(h){{var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+','+g+','+b;}}
+              function showSeq(idx){{
+                if(idx>=seq.length){{showing=false;step=0;msg('따라 클릭하세요! ('+seq.length+'번)');return;}}
+                pet.style.transform='scale(1.2)';setTimeout(function(){{pet.style.transform='scale(1)';}},200);
+                flash(seq[idx],function(){{setTimeout(function(){{showSeq(idx+1);}},300);}});
+              }}
+              function memStart(){{
+                seq=[];userSeq=[];step=0;score=0;showing=true;
+                document.getElementById('mem-start').style.display='none';
+                for(var r=0;r<maxRound;r++)seq.push(Math.floor(Math.random()*4));
+                msg('잘 봐! 순서를 기억해!');
+                setTimeout(function(){{showSeq(0);}},600);
+              }}
+              window.memClick=function(i){{
+                if(showing)return;
+                flash(i);
+                if(i===seq[step]){{
+                  step++;
+                  if(step>=seq.length){{
+                    score=seq.length;
+                    pet.textContent='🎉';
+                    msg('완벽해! 전부 맞췄어! ×'+score+' EXP');
+                    sendScore(score*2);
+                  }} else {{ msg((seq.length-step)+'개 남았어!'); }}
+                }} else {{
+                  score=step;
+                  pet.textContent='😢';
+                  msg('틀렸어... '+step+'/'+seq.length+' 맞춤');
+                  sendScore(score);
+                }}
+              }};
+              function sendScore(s){{
+                try{{var inputs=window.parent.document.querySelectorAll('input[type=text]');inputs.forEach(function(inp){{if(inp.getAttribute('aria-label')==='__mg_score__'){{var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;setter.call(inp,String(s));inp.dispatchEvent(new Event('input',{{bubbles:true}}));inp.dispatchEvent(new Event('change',{{bubbles:true}}));}}}})}};catch(e){{}}
+              }}
+            }})();
+            </script>
+            """
+            components.html(mem_html, height=340)
+
+        # ──────────────────────────────────────────
+        # 반응속도 훈련 — 빛나면 클릭!
+        # ──────────────────────────────────────────
+        elif sel_id == "speed":
+            speed_html = f"""
+            <div style="font-family:-apple-system,sans-serif;background:linear-gradient(160deg,#0a0f1e,#06101a);border:2px solid #00E5FF;border-radius:18px;padding:20px;color:#fff;text-align:center;">
+              <div style="font-size:1rem;font-weight:900;color:#00E5FF;margin-bottom:12px;">⚡ {pet_name_disp}과 반응속도 훈련! 빛나면 즉시 클릭!</div>
+              <div id="sp-pet" style="font-size:3rem;margin-bottom:8px;transition:all 0.15s;">{pet_sprite}</div>
+              <div id="sp-msg" style="color:#94A3B8;font-size:0.9rem;margin-bottom:16px;min-height:22px;">START를 눌러 시작!</div>
+              <div id="sp-target" onclick="spClick()" style="width:120px;height:120px;border-radius:50%;margin:0 auto 18px;background:rgba(255,255,255,0.05);border:3px solid #334155;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:3rem;transition:all 0.1s;user-select:none;">⚫</div>
+              <div id="sp-score" style="color:#FFD600;font-weight:900;font-size:1rem;margin-bottom:12px;"></div>
+              <button id="sp-start" onclick="spStart()" style="width:100%;padding:14px;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,#00E5FF,#0088cc);color:#001;border:none;border-radius:12px;cursor:pointer;">▶ START</button>
+            </div>
+            <script>
+            (function(){{
+              var rounds=5,hit=0,round=0,waiting=false,timeout,startTime;
+              var pet=document.getElementById('sp-pet'),tgt=document.getElementById('sp-target'),msgEl=document.getElementById('sp-msg'),scEl=document.getElementById('sp-score');
+              function msg(t){{msgEl.textContent=t;}}
+              function spStart(){{
+                hit=0;round=0;document.getElementById('sp-start').style.display='none';
+                nextRound();
+              }}
+              function nextRound(){{
+                if(round>=rounds){{
+                  var sc=Math.round((hit/rounds)*10);
+                  pet.textContent=hit>=4?'🎉':'😤';
+                  msg(hit+'/'+rounds+' 성공! '+(hit>=4?'빠르다!':'아쉽다'));
+                  scEl.textContent='결과: '+hit+'/'+rounds;
+                  sendScore(sc); return;
+                }}
+                tgt.style.background='rgba(255,255,255,0.05)';tgt.style.borderColor='#334155';tgt.textContent='⚫';
+                waiting=false; msg('준비...');
+                var delay=1200+Math.random()*2000;
+                timeout=setTimeout(function(){{waiting=true;tgt.style.background='rgba(0,229,255,0.3)';tgt.style.borderColor='#00E5FF';tgt.textContent='⚡';tgt.style.boxShadow='0 0 30px #00E5FF';msg('지금!!');startTime=Date.now();}},delay);
+              }}
+              window.spClick=function(){{
+                if(!waiting){{clearTimeout(timeout);msg('너무 빨라! 기다려!');tgt.style.borderColor='#FF4B4B';setTimeout(function(){{nextRound();}},800);return;}}
+                waiting=false;hit++;round++;
+                var rt=Date.now()-startTime;
+                pet.style.transform='scale(1.2)';setTimeout(function(){{pet.style.transform='scale(1)';}},200);
+                tgt.style.background='rgba(0,255,136,0.3)';tgt.style.borderColor='#00FF88';tgt.textContent='✅';
+                msg(rt+'ms! '+(rt<350?'초고속!':rt<600?'빠름!':'조금 느림'));
+                setTimeout(function(){{nextRound();}},900);
+              }};
+              function sendScore(s){{try{{var inputs=window.parent.document.querySelectorAll('input[type=text]');inputs.forEach(function(inp){{if(inp.getAttribute('aria-label')==='__mg_score__'){{var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;setter.call(inp,String(s));inp.dispatchEvent(new Event('input',{{bubbles:true}}));inp.dispatchEvent(new Event('change',{{bubbles:true}}));}}}})}};catch(e){{}}}}
+            }})();
+            </script>
+            """
+            components.html(speed_html, height=330)
+
+        # ──────────────────────────────────────────
+        # 체력(연타) 훈련 — 빠르게 연타!
+        # ──────────────────────────────────────────
+        elif sel_id == "strength":
+            strength_html = f"""
+            <div style="font-family:-apple-system,sans-serif;background:linear-gradient(160deg,#0a0f1e,#06101a);border:2px solid #FF4B4B;border-radius:18px;padding:20px;color:#fff;text-align:center;">
+              <div style="font-size:1rem;font-weight:900;color:#FF4B4B;margin-bottom:10px;">💪 {pet_name_disp}의 체력 훈련! 5초 안에 최대한 연타!</div>
+              <div id="st-pet" style="font-size:3.5rem;margin-bottom:6px;">{pet_sprite}</div>
+              <div id="st-timer" style="font-size:2rem;font-weight:900;color:#FFD600;margin-bottom:6px;">5.0</div>
+              <div id="st-count" style="font-size:2.5rem;font-weight:900;color:#FF4B4B;margin-bottom:8px;">0</div>
+              <div id="st-msg" style="color:#94A3B8;font-size:0.85rem;margin-bottom:14px;min-height:20px;">START 후 펀치 버튼 연타!</div>
+              <button id="st-punch" onclick="stPunch()" style="width:140px;height:140px;border-radius:50%;font-size:2.5rem;background:rgba(255,75,75,0.15);border:3px solid #FF4B4B;cursor:pointer;color:#fff;display:none;transition:all 0.05s;user-select:none;-webkit-tap-highlight-color:transparent;">👊</button>
+              <button id="st-start" onclick="stStart()" style="width:100%;padding:14px;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,#FF4B4B,#cc0000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;">▶ START</button>
+            </div>
+            <script>
+            (function(){{
+              var cnt=0,running=false,interval,timeLeft=5.0;
+              var pet=document.getElementById('st-pet'),timerEl=document.getElementById('st-timer'),cntEl=document.getElementById('st-count'),msgEl=document.getElementById('st-msg');
+              function stStart(){{
+                cnt=0;timeLeft=5.0;running=true;
+                document.getElementById('st-start').style.display='none';
+                document.getElementById('st-punch').style.display='inline-block';
+                msgEl.textContent='연타! 연타! 연타!';
+                interval=setInterval(function(){{
+                  timeLeft=Math.max(0,timeLeft-0.1);
+                  timerEl.textContent=timeLeft.toFixed(1);
+                  if(timeLeft<=0){{
+                    clearInterval(interval);running=false;
+                    document.getElementById('st-punch').style.display='none';
+                    var sc=cnt>=60?10:cnt>=40?7:cnt>=25?5:cnt>=15?3:1;
+                    pet.textContent=cnt>=40?'🎉':'💪';
+                    msgEl.textContent=cnt+'번 연타! '+(cnt>=60?'전설!':cnt>=40?'엄청나!':cnt>=25?'잘했어!':'더 연습!');
+                    sendScore(sc);
+                  }}
+                }},100);
+              }}
+              window.stPunch=function(){{
+                if(!running)return;
+                cnt++;cntEl.textContent=cnt;
+                pet.style.transform='scale(1.3) rotate(-10deg)';
+                setTimeout(function(){{pet.style.transform='scale(1)';pet.style.color='';}} ,80);
+                var b=document.getElementById('st-punch');
+                b.style.transform='scale(0.9)';setTimeout(function(){{b.style.transform='scale(1)';}},60);
+              }};
+              function sendScore(s){{try{{var inputs=window.parent.document.querySelectorAll('input[type=text]');inputs.forEach(function(inp){{if(inp.getAttribute('aria-label')==='__mg_score__'){{var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;setter.call(inp,String(s));inp.dispatchEvent(new Event('input',{{bubbles:true}}));inp.dispatchEvent(new Event('change',{{bubbles:true}}));}}}})}};catch(e){{}}}}
+            }})();
+            </script>
+            """
+            components.html(strength_html, height=350)
+
+        # ──────────────────────────────────────────
+        # 민첩 훈련 — 나타나는 목표물 클릭!
+        # ──────────────────────────────────────────
+        elif sel_id == "agility":
+            agility_html = f"""
+            <div style="font-family:-apple-system,sans-serif;background:linear-gradient(160deg,#0a0f1e,#06101a);border:2px solid #00FF88;border-radius:18px;padding:16px;color:#fff;text-align:center;">
+              <div style="font-size:1rem;font-weight:900;color:#00FF88;margin-bottom:8px;">🏃 {pet_name_disp}의 민첩 훈련! 나타나는 순간 잡아라!</div>
+              <div id="ag-pet" style="font-size:2.5rem;margin-bottom:4px;">{pet_sprite}</div>
+              <div id="ag-info" style="color:#94A3B8;font-size:0.82rem;margin-bottom:10px;">TARGET: <span id="ag-score" style="color:#FFD600;font-weight:900;">0</span>/8 &nbsp; 시간: <span id="ag-time" style="color:#00E5FF;font-weight:900;">30</span>s</div>
+              <div id="ag-arena" style="position:relative;width:100%;height:180px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;margin-bottom:10px;cursor:pointer;" onclick="agClick(event)"></div>
+              <div id="ag-msg" style="color:#94A3B8;font-size:0.85rem;margin-bottom:10px;min-height:20px;">START 후 아레나에서 목표물을 클릭!</div>
+              <button id="ag-start" onclick="agStart()" style="width:100%;padding:12px;font-size:1.05rem;font-weight:900;background:linear-gradient(135deg,#00FF88,#00CC55);color:#001;border:none;border-radius:12px;cursor:pointer;">▶ START</button>
+            </div>
+            <script>
+            (function(){{
+              var score=0,timeLeft=30,running=false,interval,targets=[];
+              var arena=document.getElementById('ag-arena'),scEl=document.getElementById('ag-score'),tmEl=document.getElementById('ag-time'),msgEl=document.getElementById('ag-msg'),pet=document.getElementById('ag-pet');
+              var emojis=['🎯','⭐','💎','🔥','⚡','🌟'];
+              function spawnTarget(){{
+                if(!running)return;
+                var t=document.createElement('div');
+                var x=Math.random()*80,y=Math.random()*75;
+                var em=emojis[Math.floor(Math.random()*emojis.length)];
+                t.style.cssText='position:absolute;font-size:2rem;cursor:pointer;left:'+x+'%;top:'+y+'%;transform:scale(0);transition:transform 0.15s;user-select:none;';
+                t.textContent=em;t.dataset.alive='1';
+                arena.appendChild(t);targets.push(t);
+                setTimeout(function(){{t.style.transform='scale(1)';}},50);
+                setTimeout(function(){{if(t.dataset.alive==='1'){{t.style.opacity='0';setTimeout(function(){{t.remove();}},300);}}}},1800);
+                setTimeout(function(){{spawnTarget();}},600+Math.random()*800);
+              }}
+              function agStart(){{
+                score=0;timeLeft=30;running=true;
+                document.getElementById('ag-start').style.display='none';
+                scEl.textContent='0';msgEl.textContent='잡아라!';
+                spawnTarget();
+                interval=setInterval(function(){{
+                  timeLeft--;tmEl.textContent=timeLeft;
+                  if(timeLeft<=0){{
+                    clearInterval(interval);running=false;
+                    targets.forEach(function(t){{t.remove();}});targets=[];
+                    var sc=score>=8?10:score>=6?8:score>=4?5:score>=2?3:1;
+                    pet.textContent=score>=6?'🎉':'😤';
+                    msgEl.textContent=score+'개 잡음! '+(score>=8?'신의 손!':score>=5?'날쌘!':'더 연습!');
+                    sendScore(sc);
+                  }}
+                }},1000);
+              }}
+              window.agClick=function(e){{
+                if(!running)return;
+                var el=e.target;
+                if(el.dataset&&el.dataset.alive==='1'){{
+                  el.dataset.alive='0';el.style.transform='scale(1.5)';el.style.opacity='0';
+                  score++;scEl.textContent=score;
+                  pet.style.transform='scale(1.2)';setTimeout(function(){{pet.style.transform='scale(1)';}},150);
+                  setTimeout(function(){{el.remove();}},300);
+                }}
+              }};
+              function sendScore(s){{try{{var inputs=window.parent.document.querySelectorAll('input[type=text]');inputs.forEach(function(inp){{if(inp.getAttribute('aria-label')==='__mg_score__'){{var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;setter.call(inp,String(s));inp.dispatchEvent(new Event('input',{{bubbles:true}}));inp.dispatchEvent(new Event('change',{{bubbles:true}}));}}}})}};catch(e){{}}}}
+            }})();
+            </script>
+            """
+            components.html(agility_html, height=360)
+
+        # ──────────────────────────────────────────
+        # 마력 훈련 — 룬 순서 맞추기
+        # ──────────────────────────────────────────
+        elif sel_id == "magic":
+            magic_html = f"""
+            <div style="font-family:-apple-system,sans-serif;background:linear-gradient(160deg,#0a0f1e,#06101a);border:2px solid #7700DD;border-radius:18px;padding:20px;color:#fff;text-align:center;">
+              <div style="font-size:1rem;font-weight:900;color:#AA00FF;margin-bottom:10px;">🔮 {pet_name_disp}의 마력 훈련! 룬을 올바른 순서로!</div>
+              <div id="mg-pet" style="font-size:3rem;margin-bottom:6px;">{pet_sprite}</div>
+              <div id="mg-display" style="font-size:2.5rem;letter-spacing:12px;margin-bottom:10px;min-height:44px;background:rgba(170,0,255,0.1);border:1px solid #7700DD;border-radius:10px;padding:8px;"></div>
+              <div id="mg-msg" style="color:#94A3B8;font-size:0.85rem;margin-bottom:12px;min-height:20px;">START를 눌러 룬을 확인하고 순서대로 클릭!</div>
+              <div id="mg-runes" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;"></div>
+              <div id="mg-input" style="font-size:2rem;letter-spacing:8px;min-height:40px;margin-bottom:10px;color:#AA00FF;font-weight:900;"></div>
+              <button id="mg-start" onclick="mgStart()" style="width:100%;padding:12px;font-size:1.05rem;font-weight:900;background:linear-gradient(135deg,#AA00FF,#7700DD);color:#fff;border:none;border-radius:12px;cursor:pointer;">▶ START</button>
+            </div>
+            <script>
+            (function(){{
+              var runes=['🔴','🔵','🟢','🟡','🟣','🟠'],seq=[],input=[],round=0,maxRound=4,totalScore=0;
+              var dispEl=document.getElementById('mg-display'),msgEl=document.getElementById('mg-msg'),runeDiv=document.getElementById('mg-runes'),inputEl=document.getElementById('mg-input'),pet=document.getElementById('mg-pet');
+              function buildButtons(){{
+                runeDiv.innerHTML='';
+                runes.forEach(function(r,i){{
+                  var b=document.createElement('button');
+                  b.textContent=r;b.style.cssText='font-size:1.8rem;padding:10px 14px;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;color:#fff;';
+                  b.onclick=function(){{mgInput(r);}};runeDiv.appendChild(b);
+                }});
+              }}
+              function mgStart(){{
+                round=0;totalScore=0;input=[];inputEl.textContent='';
+                document.getElementById('mg-start').style.display='none';
+                buildButtons();nextRound();
+              }}
+              function nextRound(){{
+                if(round>=maxRound){{
+                  var sc=Math.round((totalScore/maxRound)*10);
+                  pet.textContent=totalScore>=3?'🎉':'😤';
+                  msgEl.textContent=totalScore+'/'+maxRound+' 라운드 성공! '+(totalScore>=3?'마법사!':'더 연습!');
+                  runeDiv.innerHTML='';sendScore(sc);return;
+                }}
+                var len=round+2;seq=[];
+                for(var i=0;i<len;i++)seq.push(runes[Math.floor(Math.random()*runes.length)]);
+                input=[];inputEl.textContent='';dispEl.textContent=seq.join(' ');
+                msgEl.textContent='기억해! 3초 후 사라져요...';
+                setTimeout(function(){{dispEl.textContent='❓'.repeat(seq.length);msgEl.textContent='순서대로 클릭! ('+seq.length+'개)';}},2500);
+              }}
+              window.mgInput=function(r){{
+                if(!seq.length)return;
+                input.push(r);inputEl.textContent=input.join(' ');
+                var idx=input.length-1;
+                if(input[idx]!==seq[idx]){{
+                  pet.textContent='😢';msgEl.textContent='틀렸어! 다음 라운드...';
+                  input=[];setTimeout(function(){{round++;nextRound();}},1000);return;
+                }}
+                if(input.length===seq.length){{
+                  totalScore++;round++;pet.style.transform='scale(1.3)';
+                  msgEl.textContent='완벽! 다음 라운드!';
+                  setTimeout(function(){{pet.style.transform='scale(1)';nextRound();}},700);
+                }}
+              }};
+              function sendScore(s){{try{{var inputs=window.parent.document.querySelectorAll('input[type=text]');inputs.forEach(function(inp){{if(inp.getAttribute('aria-label')==='__mg_score__'){{var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;setter.call(inp,String(s));inp.dispatchEvent(new Event('input',{{bubbles:true}}));inp.dispatchEvent(new Event('change',{{bubbles:true}}));}}}})}};catch(e){{}}}}
+            }})();
+            </script>
+            """
+            components.html(magic_html, height=370)
+
+        # ──────────────────────────────────────────
+        # 전투 훈련 — 콤보 입력 게임
+        # ──────────────────────────────────────────
+        elif sel_id == "battle":
+            battle_html = f"""
+            <div style="font-family:-apple-system,sans-serif;background:linear-gradient(160deg,#0a0f1e,#06101a);border:2px solid #FF9500;border-radius:18px;padding:18px;color:#fff;text-align:center;">
+              <div style="font-size:1rem;font-weight:900;color:#FF9500;margin-bottom:10px;">⚔️ {pet_name_disp}의 전투 훈련! 화면에 뜨는 콤보를 따라 입력!</div>
+              <div id="bt-pet" style="font-size:3rem;margin-bottom:6px;">{pet_sprite}</div>
+              <div id="bt-combo-show" style="font-size:2rem;letter-spacing:8px;min-height:48px;background:rgba(255,149,0,0.1);border:1px solid #FF9500;border-radius:10px;padding:8px;margin-bottom:8px;"></div>
+              <div id="bt-input-show" style="font-size:2rem;letter-spacing:8px;min-height:40px;color:#FFD600;font-weight:900;margin-bottom:6px;"></div>
+              <div id="bt-msg" style="color:#94A3B8;font-size:0.85rem;margin-bottom:12px;min-height:20px;">START 후 표시되는 콤보를 버튼으로 따라 입력!</div>
+              <div id="bt-btns" style="display:flex;gap:10px;justify-content:center;margin-bottom:14px;">
+                <button onclick="btInput('👊')" style="font-size:1.6rem;padding:12px 16px;background:rgba(255,75,75,0.15);border:2px solid #FF4B4B;border-radius:10px;cursor:pointer;color:#fff;">👊</button>
+                <button onclick="btInput('🦵')" style="font-size:1.6rem;padding:12px 16px;background:rgba(0,229,255,0.15);border:2px solid #00E5FF;border-radius:10px;cursor:pointer;color:#fff;">🦵</button>
+                <button onclick="btInput('🛡️')" style="font-size:1.6rem;padding:12px 16px;background:rgba(0,255,136,0.15);border:2px solid #00FF88;border-radius:10px;cursor:pointer;color:#fff;">🛡️</button>
+                <button onclick="btInput('✨')" style="font-size:1.6rem;padding:12px 16px;background:rgba(255,214,0,0.15);border:2px solid #FFD600;border-radius:10px;cursor:pointer;color:#fff;">✨</button>
+              </div>
+              <button id="bt-start" onclick="btStart()" style="width:100%;padding:12px;font-size:1.05rem;font-weight:900;background:linear-gradient(135deg,#FF9500,#FF6B00);color:#fff;border:none;border-radius:12px;cursor:pointer;">▶ START</button>
+            </div>
+            <script>
+            (function(){{
+              var moves=['👊','🦵','🛡️','✨'],combo=[],input=[],round=0,maxRound=5,score=0;
+              var comboEl=document.getElementById('bt-combo-show'),inputEl=document.getElementById('bt-input-show'),msgEl=document.getElementById('bt-msg'),pet=document.getElementById('bt-pet');
+              function btStart(){{
+                round=0;score=0;
+                document.getElementById('bt-start').style.display='none';
+                nextCombo();
+              }}
+              function nextCombo(){{
+                if(round>=maxRound){{
+                  var sc=Math.round((score/maxRound)*10);
+                  pet.textContent=score>=4?'🎉':'😤';
+                  msgEl.textContent=score+'/'+maxRound+' 콤보 성공! '+(score>=4?'전투왕!':'더 연습!');
+                  comboEl.textContent='';inputEl.textContent='';sendScore(sc);return;
+                }}
+                var len=round+2;combo=[];
+                for(var i=0;i<len;i++)combo.push(moves[Math.floor(Math.random()*moves.length)]);
+                input=[];inputEl.textContent='';comboEl.textContent=combo.join(' ');
+                msgEl.textContent='콤보를 따라 입력! ('+len+'번)';
+              }}
+              window.btInput=function(m){{
+                if(!combo.length)return;
+                input.push(m);inputEl.textContent=input.join(' ');
+                var idx=input.length-1;
+                if(input[idx]!==combo[idx]){{
+                  pet.textContent='😢';comboEl.style.borderColor='#FF4B4B';
+                  msgEl.textContent='틀렸어! 다음 콤보...';
+                  input=[];round++;setTimeout(function(){{comboEl.style.borderColor='#FF9500';nextCombo();}},800);return;
+                }}
+                if(input.length===combo.length){{
+                  score++;round++;pet.style.transform='scale(1.3)';
+                  comboEl.style.borderColor='#00FF88';
+                  msgEl.textContent='콤보 성공! 🔥';
+                  setTimeout(function(){{pet.style.transform='scale(1)';comboEl.style.borderColor='#FF9500';nextCombo();}},700);
+                }}
+              }};
+              function sendScore(s){{try{{var inputs=window.parent.document.querySelectorAll('input[type=text]');inputs.forEach(function(inp){{if(inp.getAttribute('aria-label')==='__mg_score__'){{var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;setter.call(inp,String(s));inp.dispatchEvent(new Event('input',{{bubbles:true}}));inp.dispatchEvent(new Event('change',{{bubbles:true}}));}}}})}};catch(e){{}}}}
+            }})();
+            </script>
+            """
+            components.html(battle_html, height=370)
+
+        # ── 미니게임 공통 보상 처리
+        mg_c1, mg_c2 = st.columns([2, 1])
+        with mg_c1:
+            mg_score_raw = st.text_input(
+                "__mg_score__", value="", key=f"mg_score_{sel_id}",
+                label_visibility="collapsed", placeholder="게임 결과가 자동 입력됩니다"
+            )
+        with mg_c2:
+            mg_claim = st.button("🎁 훈련 보상받기", key=f"mg_claim_{sel_id}", use_container_width=True, type="primary")
+
+        if mg_claim:
+            try:
+                mg_score_val = int(str(mg_score_raw).strip() or "0")
+            except ValueError:
+                mg_score_val = 0
+            if mg_score_val <= 0:
+                st.warning("게임을 끝까지 플레이한 뒤 보상받기를 눌러주세요!")
+            elif st.session_state.global_cash < sel_cost:
+                st.error(f"현금 부족! {format_korean_money(sel_cost)} 필요")
+            elif pet.get('happiness', 100) < 10:
+                st.error("행복도가 너무 낮아요! 먼저 쓰다듬거나 같이 놀아주세요 🥺")
+            elif st.session_state.get(f'_mg_last_{sel_id}') == mg_score_val and st.session_state.get(f'_mg_claimed_{sel_id}'):
+                st.info("이미 이 결과로 보상받았어요. 다시 플레이한 뒤 받아주세요!")
+            else:
+                mult      = mg_score_val / 10.0
+                exp_got   = int(sel_exp * max(0.5, mult))
+                jackpot   = random.random() < 0.05
+                if jackpot:
+                    exp_got *= 5
+                    _rs = random.randint(*RUNE_SHARD_DROP['jackpot'])
+                    pet['rune_shards'] = pet.get('rune_shards', 0) + _rs
+                st.session_state.global_cash -= sel_cost
+                atomic_deduct_cash(uid, sel_cost)
+                pet['happiness']   = max(0, pet.get('happiness', 100) - 5)
+                pet['last_played'] = time.time()
+                pet['bond']        = pet.get('bond', 0) + 3
+                pet, leveled_up, gained_exp = add_exp(pet, exp_got)
+                grade = "🌟 대성공" if mult >= 0.8 else "✅ 성공" if mult >= 0.5 else "😅 아쉬운 결과"
+                if jackpot: grade = "🎰 잭팟!!"
+                add_journal(pet, f"🎮 {mini_game_choice} {grade} EXP+{gained_exp}")
+                _add_action(pet, 'train')
+                save_pet(uid, pet)
+                sync_user_data()
+                log_tx(uid, "펫", f"{pet['name']} {mini_game_choice[2:]}", -sel_cost)
+                st.session_state[f'_mg_last_{sel_id}']    = mg_score_val
+                st.session_state[f'_mg_claimed_{sel_id}'] = True
+                st.toast(f"{grade}! {pet_name_disp}이(가) EXP +{gained_exp} 획득!", icon="🎮")
+                if jackpot or leveled_up:
+                    st.balloons()
+                if leveled_up:
+                    st.toast(f"🎉 레벨업! Lv.{pet['level']}!", icon="⬆️")
+                st.rerun()
+        else:
+            if st.session_state.get(f'_mg_last_{sel_id}') != (mg_score_raw or ''):
+                st.session_state[f'_mg_claimed_{sel_id}'] = False
 
         st.write("---")
         st.markdown("#### 💝 같이 놀기 (무료, 쿨타임 10분)")
