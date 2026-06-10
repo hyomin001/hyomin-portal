@@ -208,4 +208,111 @@ div[data-baseweb="select"] div,
 .match-time { font-size:0.85rem !important; color:#94A3B8 !important; }
 .commentary-item { border-left:3px solid rgba(0,229,255,0.4); border-radius:0 8px 8px 0; padding:8px 14px; margin:4px 0; color:#CBD5E1 !important; }
 .card { color: #E2E8F0 !important; }
+
+/* =======================================================
+   📱 모바일 반응형 (768px 이하)
+   PC는 기존 레이아웃 그대로, 모바일만 적용됨
+======================================================== */
+@media (max-width: 768px) {
+
+  /* ── 컬럼을 세로로 쌓기 ── */
+  [data-testid="stHorizontalBlock"] {
+    flex-wrap: wrap !important;
+  }
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    min-width: 100% !important;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* ── 2칸짜리는 나란히 유지 (버튼 쌍 등) ── */
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(2):last-child) > [data-testid="stColumn"] {
+    min-width: 48% !important;
+    flex: 1 1 48% !important;
+  }
+
+  /* ── 전체 여백 축소 ── */
+  .block-container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-top: 12px !important;
+  }
+
+  /* ── 홈 상단 프로필 카드: 세로 정렬 ── */
+  [data-testid="stMain"] div[style*="display: flex"][style*="align-items: center"][style*="gap: 20px"] {
+    flex-direction: column !important;
+    text-align: center !important;
+  }
+
+  /* ── 홈 상단 우측 자산 정보: 보더 제거 ── */
+  [data-testid="stMain"] div[style*="border-left"][style*="padding-left: 20px"] {
+    border-left: none !important;
+    padding-left: 0 !important;
+    text-align: center !important;
+  }
+
+  /* ── 주식 시장 현황 5칸 카드: 2칸씩 ── */
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(5):last-child) > [data-testid="stColumn"] {
+    min-width: 48% !important;
+    flex: 1 1 48% !important;
+  }
+
+  /* ── 폰트 크기 조정 ── */
+  h1 { font-size: 1.4rem !important; }
+  h2 { font-size: 1.1rem !important; }
+  h3 { font-size: 1rem !important; }
+
+  /* ── 카드 내 큰 숫자 축소 ── */
+  .score-number { font-size: 2rem !important; }
+
+  /* ── 버튼 높이 모바일 최적화 ── */
+  .stButton > button {
+    height: 48px !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* ── 카드 패딩 축소 ── */
+  .card {
+    padding: 14px !important;
+  }
+
+  /* ── 사이드바 열렸을 때 전체 화면 덮기 ── */
+  [data-testid="stSidebar"] {
+    width: 85vw !important;
+    min-width: unset !important;
+  }
+
+  /* ── 테이블 가로 스크롤 허용 ── */
+  .stock-table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* ── 홀덤/블랙잭 카드 크기 축소 ── */
+  [data-testid="stMain"] div[style*="padding:15px 20px"][style*="min-width:60px"] {
+    padding: 10px 12px !important;
+    min-width: 44px !important;
+    font-size: 1.2rem !important;
+  }
+
+  /* ── 탭 글씨 크기 축소 ── */
+  [data-testid="stTabs"] [data-baseweb="tab"] {
+    font-size: 0.8rem !important;
+    padding: 8px 10px !important;
+  }
+}
+
+/* 초소형 화면 (갤럭시 폴드 등, 360px 이하) */
+@media (max-width: 380px) {
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    min-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  h1 { font-size: 1.2rem !important; }
+  .block-container {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}
 """
