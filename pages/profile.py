@@ -206,10 +206,8 @@ def generate_profile_card_html(uid, avatar, lv, lv_title, nw, custom_title,
     s  = theme['secondary']
     bg = theme['bg']
 
-    # NW formatted
     nw_fmt = format_korean_money(nw)
 
-    # Progress to next level
     cur_thresh = next((req for lv_m,_,_,req in MILESTONES if nw >= req), 0)
     next_thresh = next((req for lv_m,_,_,req in reversed(MILESTONES) if req > nw), cur_thresh*10 or 10_000_000)
     if next_thresh > cur_thresh:
@@ -217,28 +215,17 @@ def generate_profile_card_html(uid, avatar, lv, lv_title, nw, custom_title,
     else:
         progress_pct = 100
 
-    # Pet snippet
-    pet_emoji    = pet_info.get('emoji','🥚')
-    pet_name     = pet_info.get('name','없음')
-    pet_lv       = pet_info.get('level',0)
-    has_pet      = pet_info.get('has_pet', False)
+    pet_emoji = pet_info.get('emoji','🥚')
+    pet_lv    = pet_info.get('level',0)
+    has_pet   = pet_info.get('has_pet', False)
+    pet_name  = pet_info.get('name','없음')
 
-    # Asset donut data (simplified)
-    asset_total  = sum(v for v in assets.values() if v > 0) or 1
-    cash_pct     = int(assets.get('현금',0)/asset_total*100)
-    stock_pct    = int(assets.get('주식',0)/asset_total*100)
-    coin_pct     = int(assets.get('코인',0)/asset_total*100)
-    estate_pct   = int(assets.get('부동산',0)/asset_total*100)
-
-    # Frame glow
-    frame_glow = {
-        'none': 'none',
-        'silver': '0 0 20px rgba(180,180,180,0.5)',
-        'gold':   '0 0 25px rgba(255,214,0,0.6)',
-        'diamond':'0 0 30px rgba(0,229,255,0.7)',
-        'legend': '0 0 40px rgba(170,0,255,0.8)',
-        'dragon': '0 0 50px rgba(255,80,0,0.9)',
-    }.get(frame_id, 'none')
+    asset_total = sum(v for v in assets.values() if v > 0) or 1
+    cash_pct    = int(assets.get('현금',0)/asset_total*100)
+    stock_pct   = int(assets.get('주식',0)/asset_total*100)
+    coin_pct    = int(assets.get('코인',0)/asset_total*100)
+    estate_pct  = int(assets.get('부동산',0)/asset_total*100)
+    weapon_pct  = int(assets.get('명검',0)/asset_total*100)
 
     frame_border = {
         'none':    p,
@@ -250,324 +237,270 @@ def generate_profile_card_html(uid, avatar, lv, lv_title, nw, custom_title,
     }.get(frame_id, p)
 
     is_rainbow = theme_id == 'rainbow'
+    nw_raw = int(nw)
 
-    return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+    # Build conic gradient for asset donut
+    segs = []
+    acc = 0
+    colors_seg = [('#FFD600',cash_pct),('#00FF88',stock_pct),('#FF9500',coin_pct),('#00E5FF',estate_pct),('#FF00FF',weapon_pct)]
+    for col, pct in colors_seg:
+        if pct > 0:
+            segs.append(f"{col} {acc}% {acc+pct}%")
+            acc += pct
+    if acc < 100:
+        segs.append(f"rgba(255,255,255,0.06) {acc}% 100%")
+    donut_css = "conic-gradient(" + ",".join(segs) + ")" if segs else "rgba(255,255,255,0.05)"
+
+    # Build badge JSON for JS
+    import json
+    badges_json = json.dumps([
+        {"icon": b["icon"], "name": b["name"], "earned": b["id"] in earned_badges}
+        for b in PROFILE_BADGES[:16]
+    ])
+
+    status_escaped = (status_msg or '').replace('"', "'").replace('\\', '')
+
+    rainbow_ring_css  = "animation:rainbowRing 3s linear infinite;" if is_rainbow else f"box-shadow:0 0 24px {frame_border}44;"
+    rainbow_nw_css    = "background:linear-gradient(90deg,#ff00ff,#00ffff,#ff00ff);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:rainbowTxt 3s linear infinite;" if is_rainbow else f"color:{p};"
+    rainbow_fill_css  = "animation:rainbowFill 3s linear infinite;" if is_rainbow else ""
+    is_rainbow_js     = "true" if is_rainbow else "false"
+
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{background:transparent;overflow:hidden;font-family:'Courier New',monospace;}}
-#card{{
-  width:100%;height:410px;
-  background:linear-gradient(135deg,{bg} 0%,rgba(5,5,20,0.98) 100%);
-  border:2px solid {frame_border};
-  border-radius:22px;position:relative;overflow:hidden;
-  box-shadow:{frame_glow},0 0 80px rgba(0,0,0,0.8);
-}}
-#bg-canvas{{position:absolute;inset:0;width:100%;height:100%;}}
-#grid{{
-  position:absolute;inset:0;pointer-events:none;
-  background-image:linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px);
-  background-size:44px 44px;
-}}
-.corner{{position:absolute;width:22px;height:22px;border-color:{frame_border};border-style:solid;opacity:0.6;}}
-.tl{{top:10px;left:10px;border-width:2px 0 0 2px;}}
-.tr{{top:10px;right:10px;border-width:2px 2px 0 0;}}
-.bl{{bottom:10px;left:10px;border-width:0 0 2px 2px;}}
-.br{{bottom:10px;right:10px;border-width:0 2px 2px 0;}}
-
-/* LAYOUT */
-#layout{{position:absolute;inset:0;display:flex;flex-direction:row;align-items:stretch;z-index:5;}}
-#left-panel{{
-  width:200px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:20px 10px;border-right:1px solid rgba(255,255,255,0.06);
-}}
-#right-panel{{flex:1;display:flex;flex-direction:column;padding:18px 22px;overflow:visible;}}
-
-/* AVATAR */
-#avatar-ring{{
-  width:108px;height:108px;border-radius:50%;
-  border:3px solid {frame_border};
-  background:rgba(0,0,0,0.5);
-  display:flex;align-items:center;justify-content:center;
-  position:relative;
-  {"animation:rainbowBorder 3s linear infinite;" if is_rainbow else "animation:ringPulse 2.5s ease-in-out infinite;"}
-  box-shadow:0 0 25px {frame_border}44;
-}}
-#avatar-emoji{{font-size:52px;line-height:1;animation:avatarFloat 4s ease-in-out infinite;}}
-#lv-circle{{
-  position:absolute;bottom:-8px;right:-8px;
-  width:36px;height:36px;border-radius:50%;
-  background:linear-gradient(135deg,{p},{s});
-  border:2px solid rgba(0,0,0,0.6);
-  display:flex;align-items:center;justify-content:center;
-  color:#000;font-size:11px;font-weight:900;
-}}
-#username{{
-  color:#fff;font-size:1.15rem;font-weight:900;text-align:center;margin-top:12px;
-  letter-spacing:1px;text-shadow:0 0 12px {p};
-}}
-#player-title{{
-  color:{p};font-size:0.68rem;font-weight:700;margin-top:4px;text-align:center;
-  letter-spacing:1.5px;
-}}
-#frame-badge{{
-  margin-top:8px;padding:3px 10px;border-radius:8px;
-  background:rgba(0,0,0,0.5);border:1px solid {frame_border}66;
-  color:{frame_border};font-size:0.68rem;font-weight:700;
-}}
-
-/* RIGHT PANEL TOP */
-#top-row{{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}}
-#nw-block{{}}
-#nw-lbl{{color:#64748b;font-size:0.72rem;letter-spacing:1px;}}
-#nw-val{{
-  {"background:linear-gradient(90deg,#ff00ff,#00ffff,#ff00ff);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:rainbowText 3s linear infinite;" if is_rainbow else "color:#FFD600;"}
-  font-size:1.6rem;font-weight:900;margin-top:2px;line-height:1;
-}}
-#title-block{{text-align:right;}}
-#lv-title-txt{{color:{p};font-size:0.78rem;font-weight:700;}}
-#join-txt{{color:#475569;font-size:0.7rem;margin-top:3px;}}
-#status-msg{{
-  color:#94A3B8;font-size:0.78rem;margin-top:-4px;margin-bottom:12px;
-  border-left:2px solid {p};padding-left:10px;font-style:italic;
-}}
-
-/* PROGRESS BAR */
-#prog-section{{margin-bottom:12px;}}
-#prog-lbl{{display:flex;justify-content:space-between;color:#64748b;font-size:0.7rem;margin-bottom:4px;}}
-#prog-bg{{background:rgba(255,255,255,0.07);border-radius:4px;height:7px;overflow:hidden;}}
-#prog-fill{{
-  height:100%;border-radius:4px;
-  background:linear-gradient(90deg,{p},{s});
-  width:{progress_pct}%;transition:width 1s ease;
-  {"animation:rainbowFill 3s linear infinite;" if is_rainbow else ""}
-  box-shadow:0 0 8px {p}88;
-}}
-
-/* BOTTOM STATS */
-#bottom-row{{display:flex;gap:12px;flex-wrap:wrap;margin-top:auto;}}
-.stat-box{{
-  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
-  border-radius:10px;padding:8px 12px;flex:1;min-width:80px;
-}}
-.stat-box-lbl{{color:#475569;font-size:0.65rem;letter-spacing:1px;margin-bottom:3px;}}
-.stat-box-val{{color:#E2E8F0;font-size:0.88rem;font-weight:900;}}
-
-/* MINI DONUT */
-#donut-wrap{{
-  position:absolute;right:18px;top:50%;transform:translateY(-50%);
-  width:100px;height:100px;
-}}
-#donut-svg{{width:100%;height:100%;animation:donutSpin 20s linear infinite;}}
-#donut-label{{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  text-align:center;
-}}
-#donut-main{{color:#E2E8F0;font-size:0.65rem;font-weight:700;}}
-
-/* PARTICLES */
-.ptcl{{position:absolute;pointer-events:none;font-size:12px;animation:ptclRise linear forwards;opacity:0;z-index:4;}}
-.glow-orb{{
-  position:absolute;border-radius:50%;pointer-events:none;
-  animation:orbPulse 4s ease-in-out infinite alternate;
-  filter:blur(35px);z-index:0;
-}}
-
-/* ANIMATIONS */
-@keyframes ringPulse{{
-  0%,100%{{box-shadow:0 0 20px {p}44;}}
-  50%{{box-shadow:0 0 40px {p}88,0 0 80px {p}22;}}
-}}
-@keyframes rainbowBorder{{
-  0%{{box-shadow:0 0 30px #ff00ff88;border-color:#ff00ff;}}
-  20%{{box-shadow:0 0 30px #ff990088;border-color:#ff9900;}}
-  40%{{box-shadow:0 0 30px #ffff0088;border-color:#ffff00;}}
-  60%{{box-shadow:0 0 30px #00ff8888;border-color:#00ff88;}}
-  80%{{box-shadow:0 0 30px #00e5ff88;border-color:#00e5ff;}}
-  100%{{box-shadow:0 0 30px #ff00ff88;border-color:#ff00ff;}}
-}}
-@keyframes rainbowText{{
-  0%{{background-position:0%;}}
-  100%{{background-position:200%;}}
-}}
-@keyframes rainbowFill{{
-  0%{{background:linear-gradient(90deg,#ff00ff,#ff9900,#ffff00);}}
-  33%{{background:linear-gradient(90deg,#00ff88,#00e5ff,#aa00ff);}}
-  66%{{background:linear-gradient(90deg,#ff4b4b,#ff00ff,#00e5ff);}}
-  100%{{background:linear-gradient(90deg,#ff00ff,#ff9900,#ffff00);}}
-}}
-@keyframes avatarFloat{{
-  0%,100%{{transform:translateY(0) scale(1);}}
-  50%{{transform:translateY(-10px) scale(1.04);}}
-}}
-@keyframes ptclRise{{
-  0%{{opacity:0;transform:translateY(0) scale(0.5);}}
-  10%{{opacity:0.6;}}
-  90%{{opacity:0.1;}}
-  100%{{opacity:0;transform:translateY(-280px) translateX(var(--dx)) scale(1);}}
-}}
-@keyframes orbPulse{{
-  from{{opacity:0.06;transform:scale(0.9);}}
-  to{{opacity:0.14;transform:scale(1.1);}}
-}}
-@keyframes donutSpin{{
-  from{{transform:rotate(0);}} to{{transform:rotate(360deg);}}
-}}
-@keyframes scanLine{{
-  0%{{top:-10%;}} 100%{{top:110%;}}
-}}
+body{{background:transparent;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;}}
+#card{{width:100%;height:520px;position:relative;overflow:hidden;background:{bg};border:2px solid {frame_border};border-radius:24px;}}
+#wave-canvas{{position:absolute;inset:0;width:100%;height:100%;z-index:0;}}
+#shimmer{{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(105deg,transparent 40%,{p}18 50%,transparent 60%);background-size:200% 100%;animation:shimmerMove 4s ease-in-out infinite;}}
+#grid-overlay{{position:absolute;inset:0;z-index:1;pointer-events:none;background-image:linear-gradient({p}12 1px,transparent 1px),linear-gradient(90deg,{p}12 1px,transparent 1px);background-size:40px 40px;}}
+.cm{{position:absolute;width:18px;height:18px;border-color:{frame_border};border-style:solid;opacity:0.7;z-index:10;}}
+.cm-tl{{top:10px;left:10px;border-width:2px 0 0 2px;}}.cm-tr{{top:10px;right:10px;border-width:2px 2px 0 0;}}
+.cm-bl{{bottom:10px;left:10px;border-width:0 0 2px 2px;}}.cm-br{{bottom:10px;right:10px;border-width:0 2px 2px 0;}}
+#content{{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;padding:18px 22px 14px;}}
+#topbar{{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}}
+#online-dot{{width:8px;height:8px;border-radius:50%;background:#00FF88;box-shadow:0 0 8px #00FF88;animation:blink 2s ease-in-out infinite;margin-right:6px;flex-shrink:0;}}
+#topbar-left{{display:flex;align-items:center;gap:6px;}}
+#uid-tag{{color:{p};font-size:0.7rem;font-weight:700;letter-spacing:2px;opacity:0.8;}}
+#topbar-right{{display:flex;gap:8px;align-items:center;}}
+.top-chip{{padding:3px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;background:rgba(255,255,255,0.05);border:1px solid {frame_border}55;color:{frame_border};letter-spacing:0.5px;}}
+#hero{{display:flex;gap:16px;align-items:flex-start;margin-bottom:12px;}}
+#av-zone{{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;}}
+#av-ring{{width:90px;height:90px;border-radius:50%;cursor:pointer;border:3px solid {frame_border};background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;position:relative;{rainbow_ring_css}transition:transform 0.15s;}}
+#av-ring:hover{{transform:scale(1.06);}}
+#av-emoji{{font-size:44px;line-height:1;animation:float 4s ease-in-out infinite;}}
+#av-lv{{position:absolute;bottom:-8px;right:-8px;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,{p},{s});border:2px solid rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;color:#000;font-size:10px;font-weight:900;}}
+#av-name{{color:#fff;font-size:0.95rem;font-weight:900;text-align:center;letter-spacing:0.5px;text-shadow:0 0 14px {p};}}
+#av-title{{color:{p};font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-align:center;}}
+#info-zone{{flex:1;min-width:0;}}
+#nw-label{{color:#64748B;font-size:0.65rem;letter-spacing:1.5px;margin-bottom:2px;}}
+#nw-counter{{{rainbow_nw_css}font-size:1.75rem;font-weight:900;line-height:1;cursor:pointer;transition:transform 0.1s;font-variant-numeric:tabular-nums;}}
+#nw-counter:hover{{transform:scale(1.03);}}
+#nw-sub{{color:#475569;font-size:0.65rem;margin-top:2px;margin-bottom:8px;}}
+#status-wrap{{background:rgba(255,255,255,0.03);border-left:2px solid {p};padding:5px 10px;border-radius:0 8px 8px 0;margin-bottom:8px;}}
+#status-txt{{color:#94A3B8;font-size:0.75rem;font-style:italic;}}
+#cursor{{display:inline-block;width:2px;height:11px;background:{p};margin-left:2px;animation:cursorBlink 0.8s steps(1) infinite;vertical-align:middle;}}
+#prog-row{{display:flex;align-items:center;gap:8px;}}
+#prog-right{{flex:1;}}
+#prog-labels{{display:flex;justify-content:space-between;color:#475569;font-size:0.62rem;margin-bottom:3px;}}
+#prog-track{{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}}
+#prog-fill{{height:100%;border-radius:3px;width:0%;background:linear-gradient(90deg,{p},{s});{rainbow_fill_css}box-shadow:0 0 8px {p}66;transition:width 1.2s cubic-bezier(0.34,1.56,0.64,1);}}
+#stats-row{{display:flex;gap:7px;margin-bottom:0;}}
+.scard{{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:7px 9px;transition:border-color 0.2s,background 0.2s;cursor:default;}}
+.scard:hover{{border-color:{p}44;background:rgba(255,255,255,0.06);}}
+.scard-icon{{font-size:1.1rem;margin-bottom:2px;}}
+.scard-val{{color:#E2E8F0;font-size:0.75rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}}
+.scard-lbl{{color:#475569;font-size:0.57rem;letter-spacing:0.5px;margin-top:1px;}}
+.hdiv{{height:1px;background:linear-gradient(90deg,transparent,{p}33,transparent);margin:10px 0;}}
+#bottom{{display:flex;gap:12px;align-items:flex-start;}}
+#donut-zone{{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;}}
+#donut-ring{{width:76px;height:76px;border-radius:50%;background:{donut_css};display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.2s;}}
+#donut-ring:hover{{transform:scale(1.06) rotate(5deg);}}
+#donut-inner{{width:52px;height:52px;border-radius:50%;background:{bg};display:flex;flex-direction:column;align-items:center;justify-content:center;}}
+#donut-pct{{color:{p};font-size:0.68rem;font-weight:900;transition:color 0.3s;}}
+#donut-lbl{{color:#475569;font-size:0.52rem;}}
+#asset-legend{{display:flex;flex-direction:column;gap:2px;}}
+.aleg{{display:flex;align-items:center;gap:4px;font-size:0.56rem;color:#64748B;}}
+.aleg-dot{{width:6px;height:6px;border-radius:50%;flex-shrink:0;}}
+#pet-zone{{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;}}
+#pet-bubble{{background:rgba(255,255,255,0.04);border:1px solid {p}33;border-radius:14px;padding:6px 10px;text-align:center;cursor:pointer;transition:all 0.2s;min-width:60px;}}
+#pet-bubble:hover{{background:rgba(255,255,255,0.08);transform:translateY(-2px);}}
+#pet-sprite{{font-size:1.7rem;animation:petBob 2.5s ease-in-out infinite;}}
+#pet-info-txt{{color:#94A3B8;font-size:0.58rem;margin-top:2px;}}
+#badge-zone{{flex:1;}}
+#badge-header{{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}}
+#badge-title{{color:#94A3B8;font-size:0.62rem;letter-spacing:1px;}}
+#badge-count-txt{{color:{p};font-size:0.62rem;font-weight:700;}}
+#badge-strip{{display:flex;flex-wrap:wrap;gap:3px;}}
+.bdot{{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;cursor:default;transition:transform 0.15s;}}
+.bdot:hover{{transform:scale(1.28);}}
+.bdot.earned{{background:rgba(255,214,0,0.12);border:1px solid #FFD60044;}}
+.bdot.locked{{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);filter:grayscale(1);opacity:0.28;}}
+#efx{{position:absolute;inset:0;pointer-events:none;z-index:20;}}
+.ptcl{{position:absolute;pointer-events:none;font-size:12px;animation:ptclRise linear forwards;opacity:0;}}
+#scanline{{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,{p}55,transparent);pointer-events:none;z-index:15;animation:scan 6s linear infinite;}}
+@keyframes shimmerMove{{0%{{background-position:-100% 0;}}50%{{background-position:200% 0;}}100%{{background-position:200% 0;}}}}
+@keyframes float{{0%,100%{{transform:translateY(0);}}50%{{transform:translateY(-8px);}}}}
+@keyframes petBob{{0%,100%{{transform:translateY(0) rotate(-3deg);}}50%{{transform:translateY(-5px) rotate(3deg);}}}}
+@keyframes blink{{0%,100%{{opacity:1;}}50%{{opacity:0.3;}}}}
+@keyframes cursorBlink{{0%,49%{{opacity:1;}}50%,100%{{opacity:0;}}}}
+@keyframes rainbowRing{{0%{{border-color:#ff00ff;box-shadow:0 0 24px #ff00ff44;}}25%{{border-color:#ffff00;box-shadow:0 0 24px #ffff0044;}}50%{{border-color:#00ffff;box-shadow:0 0 24px #00ffff44;}}75%{{border-color:#00ff88;box-shadow:0 0 24px #00ff8844;}}100%{{border-color:#ff00ff;box-shadow:0 0 24px #ff00ff44;}}}}
+@keyframes rainbowTxt{{0%{{background-position:0%;}}100%{{background-position:200%;}}}}
+@keyframes rainbowFill{{0%{{background:linear-gradient(90deg,#ff00ff,#ff9900);}}50%{{background:linear-gradient(90deg,#00e5ff,#aa00ff);}}100%{{background:linear-gradient(90deg,#ff00ff,#ff9900);}}}}
+@keyframes ptclRise{{0%{{opacity:0;transform:translateY(0) scale(0.5);}}10%{{opacity:0.7;}}90%{{opacity:0.1;}}100%{{opacity:0;transform:translateY(-220px) translateX(var(--dx)) scale(1.2);}}}}
+@keyframes scan{{0%{{top:-2px;}}100%{{top:102%;}}}}
+@keyframes popIn{{0%{{transform:scale(0) rotate(-15deg);opacity:0;}}70%{{transform:scale(1.15) rotate(5deg);}}100%{{transform:scale(1) rotate(0deg);opacity:1;}}}}
 </style>
-</head>
-<body>
+</head><body>
 <div id="card">
-  <canvas id="bg-canvas"></canvas>
-  <div id="grid"></div>
-  <div class="corner tl"></div><div class="corner tr"></div>
-  <div class="corner bl"></div><div class="corner br"></div>
-
-  <!-- Glow orbs -->
-  <div class="glow-orb" style="width:200px;height:200px;left:-60px;top:-60px;
-    background:{p};animation-delay:0s;"></div>
-  <div class="glow-orb" style="width:160px;height:160px;right:40px;bottom:-40px;
-    background:{s};animation-delay:2s;"></div>
-
-  <div id="layout">
-    <!-- LEFT -->
-    <div id="left-panel">
-      <div id="avatar-ring">
-        <div id="avatar-emoji">{avatar}</div>
-        <div id="lv-circle">{lv}</div>
-      </div>
-      <div id="username">{uid}</div>
-      <div id="player-title">✦ {custom_title} ✦</div>
-      <div id="frame-badge">{frame['icon']} {frame['name']} 프레임</div>
+<canvas id="wave-canvas"></canvas>
+<div id="grid-overlay"></div>
+<div id="shimmer"></div>
+<div id="scanline"></div>
+<div class="cm cm-tl"></div><div class="cm cm-tr"></div>
+<div class="cm cm-bl"></div><div class="cm cm-br"></div>
+<div id="efx"></div>
+<div id="content">
+  <div id="topbar">
+    <div id="topbar-left"><div id="online-dot"></div><span id="uid-tag">@{uid}</span></div>
+    <div id="topbar-right">
+      <span class="top-chip">{frame['icon']} {frame['name']}</span>
+      <span class="top-chip" id="time-chip">--:--</span>
     </div>
-
-    <!-- RIGHT -->
-    <div id="right-panel">
-      <div id="top-row">
-        <div id="nw-block">
-          <div id="nw-lbl">💰 총 순자산</div>
-          <div id="nw-val">{nw_fmt}</div>
-        </div>
-        <div id="title-block">
-          <div id="lv-title-txt">{lv_title}</div>
-          <div id="join-txt">📅 {join_date}</div>
-        </div>
+  </div>
+  <div id="hero">
+    <div id="av-zone">
+      <div id="av-ring" onclick="avatarClick(event)">
+        <div id="av-emoji">{avatar}</div>
+        <div id="av-lv">{lv}</div>
       </div>
-
-      <div id="status-msg">{"💬 " + status_msg if status_msg else "상태 메시지를 설정해보세요..."}</div>
-
-      <div id="prog-section">
-        <div id="prog-lbl">
-          <span>📈 다음 단계까지</span>
-          <span>{progress_pct}%</span>
-        </div>
-        <div id="prog-bg"><div id="prog-fill"></div></div>
-      </div>
-
-      <div id="bottom-row">
-        <div class="stat-box">
-          <div class="stat-box-lbl">🏅 배지</div>
-          <div class="stat-box-val">{badge_count}/{total_badges}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box-lbl">🐾 펫</div>
-          <div class="stat-box-val">{f"{pet_emoji} Lv.{pet_lv}" if has_pet else "없음"}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box-lbl">💵 현금</div>
-          <div class="stat-box-val">{format_korean_money(assets.get('현금',0))}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box-lbl">📈 주식</div>
-          <div class="stat-box-val">{format_korean_money(assets.get('주식',0))}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box-lbl">🪙 코인</div>
-          <div class="stat-box-val">{format_korean_money(assets.get('코인',0))}</div>
+      <div id="av-name">{uid}</div>
+      <div id="av-title">✦ {custom_title} ✦</div>
+    </div>
+    <div id="info-zone">
+      <div id="nw-label">💰 TOTAL NET WORTH</div>
+      <div id="nw-counter" onclick="nwClick(event)">₩0</div>
+      <div id="nw-sub">{lv_title} &nbsp;·&nbsp; 📅 {join_date}</div>
+      <div id="status-wrap"><span id="status-txt"></span><span id="cursor"></span></div>
+      <div id="prog-row">
+        <span style="font-size:1rem;flex-shrink:0;">📈</span>
+        <div id="prog-right">
+          <div id="prog-labels"><span>다음 레벨까지</span><span id="prog-pct-txt">0%</span></div>
+          <div id="prog-track"><div id="prog-fill"></div></div>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- EFX -->
-  <div id="efx" style="position:absolute;inset:0;pointer-events:none;z-index:20;"></div>
+  <div id="stats-row">
+    <div class="scard"><div class="scard-icon">🏅</div><div class="scard-val">{badge_count}<span style="color:#475569;font-size:0.6rem;">/{total_badges}</span></div><div class="scard-lbl">배지</div></div>
+    <div class="scard"><div class="scard-icon">💵</div><div class="scard-val">{format_korean_money(assets.get('현금',0))}</div><div class="scard-lbl">현금</div></div>
+    <div class="scard"><div class="scard-icon">📈</div><div class="scard-val">{format_korean_money(assets.get('주식',0))}</div><div class="scard-lbl">주식</div></div>
+    <div class="scard"><div class="scard-icon">🪙</div><div class="scard-val">{format_korean_money(assets.get('코인',0))}</div><div class="scard-lbl">코인</div></div>
+    <div class="scard"><div class="scard-icon">🏢</div><div class="scard-val">{format_korean_money(assets.get('부동산',0))}</div><div class="scard-lbl">부동산</div></div>
+  </div>
+  <div class="hdiv"></div>
+  <div id="bottom">
+    <div id="donut-zone">
+      <div id="donut-ring" onclick="donutClick()" title="자산 구성">
+        <div id="donut-inner">
+          <div id="donut-pct" style="color:#FFD600;">{cash_pct}%</div>
+          <div id="donut-lbl">현금</div>
+        </div>
+      </div>
+      <div id="asset-legend">
+        <div class="aleg"><div class="aleg-dot" style="background:#FFD600;"></div>현금 {cash_pct}%</div>
+        <div class="aleg"><div class="aleg-dot" style="background:#00FF88;"></div>주식 {stock_pct}%</div>
+        <div class="aleg"><div class="aleg-dot" style="background:#FF9500;"></div>코인 {coin_pct}%</div>
+      </div>
+    </div>
+    <div id="pet-zone">
+      <div id="pet-bubble" onclick="petClick()">
+        <div id="pet-sprite">{"🥚" if not has_pet else pet_emoji}</div>
+        <div id="pet-info-txt">{"없음" if not has_pet else f"{pet_name} Lv.{pet_lv}"}</div>
+      </div>
+      <div style="color:#475569;font-size:0.58rem;text-align:center;">🐾 파트너</div>
+    </div>
+    <div id="badge-zone">
+      <div id="badge-header">
+        <span id="badge-title">🏅 BADGES</span>
+        <span id="badge-count-txt">{badge_count}/{total_badges} 달성</span>
+      </div>
+      <div id="badge-strip"></div>
+    </div>
+  </div>
 </div>
-
+</div>
 <script>
-const P="{p}", S="{s}", BG="{bg}";
-const IS_RAINBOW={str(is_rainbow).lower()};
-const APP = document.getElementById('card');
-const EFX = document.getElementById('efx');
+const P="{p}",S="{s}",BG="{bg}";
+const IS_RAINBOW={is_rainbow_js};
+const NW_RAW={nw_raw};
+const PROGRESS={progress_pct};
+const STATUS_MSG="{status_escaped}";
+const BADGES_DATA={badges_json};
+const DONUT_SEGS=[
+  {{pct:{cash_pct},label:"현금",color:"#FFD600"}},
+  {{pct:{stock_pct},label:"주식",color:"#00FF88"}},
+  {{pct:{coin_pct},label:"코인",color:"#FF9500"}},
+  {{pct:{estate_pct},label:"부동산",color:"#00E5FF"}},
+  {{pct:{weapon_pct},label:"명검",color:"#FF00FF"}}
+].filter(d=>d.pct>0);
 
-// ── Starfield canvas
-const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
-canvas.width=700; canvas.height=410;
-const stars = Array.from({{length:70}}, ()=>({{'x':Math.random()*700,'y':Math.random()*360,
-  'r':Math.random()*1.4+0.2,'op':Math.random(),'spd':Math.random()*0.015+0.005,'dir':1}}));
-// Rainbow stars
-let hueOff = 0;
-function drawBg(){{
-  ctx.clearRect(0,0,700,360);
-  stars.forEach(s=>{{
-    s.op += s.spd*s.dir; if(s.op>1||s.op<0.05) s.dir*=-1;
-    if(IS_RAINBOW){{
-      hueOff += 0.002;
-      ctx.fillStyle='hsla('+(s.x+hueOff*100)+',100%,80%,'+s.op.toFixed(2)+')';
-    }} else {{
-      ctx.fillStyle='rgba(255,255,255,'+s.op.toFixed(2)+')';
-    }}
-    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+// Time chip
+function updClock(){{const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0');document.getElementById('time-chip').textContent=h+':'+m;}}
+updClock();setInterval(updClock,10000);
+
+// Wave BG
+const cv=document.getElementById('wave-canvas');
+const cx=cv.getContext('2d');
+cv.width=800;cv.height=520;
+let wt=0;
+function drawWave(){{
+  cx.clearRect(0,0,800,520);
+  [[120,80,180,P+'22'],[700,410,160,S+'1A'],[400,260,130,P+'0E']].forEach(([ox,oy,or,oc])=>{{
+    const g=cx.createRadialGradient(ox,oy,0,ox,oy,or);
+    g.addColorStop(0,oc);g.addColorStop(1,'transparent');
+    cx.fillStyle=g;cx.beginPath();cx.arc(ox,oy,or,0,Math.PI*2);cx.fill();
   }});
-  requestAnimationFrame(drawBg);
+  [0,1,2].forEach(i=>{{
+    cx.beginPath();cx.strokeStyle=P+(i===1?'30':'18');cx.lineWidth=1;
+    for(let x=0;x<=800;x+=3){{const y=260+(Math.sin((x/120)+wt+i*1.2)*28)+(Math.sin((x/60)+wt*1.5)*10);x===0?cx.moveTo(x,y):cx.lineTo(x,y);}}
+    cx.stroke();
+  }});
+  wt+=0.018;requestAnimationFrame(drawWave);
 }}
-drawBg();
+drawWave();
 
-// ── Particle emitter
-const ptcls = IS_RAINBOW
-  ? ['✨','🌈','💫','⭐','🔮','💜','💛','💖']
-  : ['✨','💫','⭐','💎'];
-function spawnPtcl(){{
-  const p=document.createElement('div');
-  p.className='ptcl';
-  p.textContent=ptcls[Math.floor(Math.random()*ptcls.length)];
-  const dx=(Math.random()-0.5)*80;
-  p.style.setProperty('--dx',dx+'px');
-  p.style.left=Math.random()*90+'%';
-  p.style.bottom='-15px';
-  p.style.animationDuration=(5+Math.random()*5)+'s';
-  APP.insertBefore(p,APP.firstChild);
-  setTimeout(()=>p.remove(),11000);
-}}
-setInterval(spawnPtcl,1600);
+// Count-up NW
+const NWE=document.getElementById('nw-counter');
+const FU=[[1e15,'경'],[1e12,'조'],[1e8,'억'],[1e4,'만']];
+function fmtKr(n){{if(n<=0)return '₩0';let r='';for(const[u,l]of FU){{if(n>=u){{r+=Math.floor(n/u).toLocaleString()+l;n%=u;}}}}return '₩'+r;}}
+(function(){{const dur=1800,t0=performance.now();function step(now){{const t=Math.min((now-t0)/dur,1),e=1-Math.pow(1-t,4);NWE.textContent=fmtKr(Math.floor(NW_RAW*e));if(t<1)requestAnimationFrame(step);else NWE.textContent=fmtKr(NW_RAW);}}requestAnimationFrame(step);}})();
 
-// ── Scan line effect
-const scan=document.createElement('div');
-scan.style.cssText='position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,'+P+'44,transparent);pointer-events:none;z-index:15;animation:scanLine 5s linear infinite;';
-APP.appendChild(scan);
+// Typewriter status
+(function(){{const el=document.getElementById('status-txt'),msg=STATUS_MSG||'상태 메시지를 설정해보세요...';let i=0;function type(){{if(i<=msg.length){{el.textContent=msg.slice(0,i++);setTimeout(type,i===1?700:55);}}}}setTimeout(type,1000);}})();
 
-// ── Click burst on avatar
-const av=document.getElementById('avatar-ring');
-const SPARKS=['✨','⭐','💫','🌟'];
-av.addEventListener('click',e=>{{
-  for(let i=0;i<8;i++){{
-    const sp=document.createElement('div');
-    sp.style.cssText='position:absolute;font-size:18px;pointer-events:none;z-index:60;';
-    sp.textContent=SPARKS[Math.floor(Math.random()*SPARKS.length)];
-    const a=(i/8)*Math.PI*2;
-    const r=document.getElementById('card').getBoundingClientRect();
-    sp.style.left=(e.clientX-r.left)+'px';
-    sp.style.top =(e.clientY-r.top)+'px';
-    EFX.appendChild(sp);
-    const dx=Math.cos(a)*45,dy=Math.sin(a)*45;
-    sp.animate([
-      {{opacity:1,transform:'translate(0,0) scale(0.5)'}},
-      {{opacity:0,transform:'translate('+dx+'px,'+dy+'px) scale(1.3)'}}
-    ],{{duration:700,easing:'ease-out'}}).onfinish=()=>sp.remove();
-  }}
-}});
+// Progress
+setTimeout(()=>{{document.getElementById('prog-fill').style.width=PROGRESS+'%';document.getElementById('prog-pct-txt').textContent=PROGRESS+'%';}},400);
+
+// Badges
+(function(){{const s=document.getElementById('badge-strip');BADGES_DATA.forEach((b,idx)=>{{const d=document.createElement('div');d.className='bdot '+(b.earned?'earned':'locked');d.textContent=b.icon;d.title=b.name;if(b.earned){{d.style.opacity='0';d.style.animation='popIn 0.35s ease forwards';d.style.animationDelay=(idx*0.04)+'s';}}s.appendChild(d);}});}})();
+
+// Particles
+const EFX=document.getElementById('efx'),CARD=document.getElementById('card');
+const PTCLS=IS_RAINBOW?['✨','🌈','💫','⭐','💖']:['✨','💫','⭐','💎'];
+function spawnP(){{const p=document.createElement('div');p.className='ptcl';p.textContent=PTCLS[Math.floor(Math.random()*PTCLS.length)];p.style.setProperty('--dx',(Math.random()-0.5)*70+'px');p.style.left=Math.random()*88+'%';p.style.bottom='-10px';p.style.animationDuration=(4+Math.random()*4)+'s';CARD.appendChild(p);setTimeout(()=>p.remove(),9000);}}
+setInterval(spawnP,2200);
+
+function burst(ex,ey,arr,n){{for(let i=0;i<n;i++){{const sp=document.createElement('div');sp.style.cssText='position:absolute;font-size:16px;pointer-events:none;z-index:60;';sp.textContent=arr[Math.floor(Math.random()*arr.length)];const r=CARD.getBoundingClientRect();sp.style.left=(ex-r.left)+'px';sp.style.top=(ey-r.top)+'px';EFX.appendChild(sp);const a=(i/n)*Math.PI*2,d=40+Math.random()*40;sp.animate([{{opacity:1,transform:'translate(0,0) scale(0.4)'}},{{opacity:0,transform:`translate(${{Math.cos(a)*d}}px,${{Math.sin(a)*d}}px) scale(1.3)`}}],{{duration:600+Math.random()*300,easing:'ease-out'}}).onfinish=()=>sp.remove();}}}}
+
+function confetti(ex,ey){{const cols=[P,S,'#FFD600','#FF4B4B','#00FF88'];for(let i=0;i<22;i++){{const d=document.createElement('div');const sz=6+Math.random()*7;d.style.cssText=`position:absolute;width:${{sz}}px;height:${{sz}}px;border-radius:${{Math.random()>.5?'50%':'2px'}};background:${{cols[i%cols.length]}};pointer-events:none;z-index:60;left:${{ex-CARD.getBoundingClientRect().left}}px;top:${{ey-CARD.getBoundingClientRect().top}}px;`;EFX.appendChild(d);const dx=(Math.random()-.5)*150,dy=-60-Math.random()*100,rt=Math.random()*720;d.animate([{{opacity:1,transform:'translate(0,0) rotate(0deg)'}},{{opacity:0,transform:`translate(${{dx}}px,${{dy}}px) rotate(${{rt}}deg)`}}],{{duration:900+Math.random()*400,easing:'cubic-bezier(0.1,0.8,0.3,1)'}}).onfinish=()=>d.remove();}}}}
+
+function avatarClick(e){{const av=document.getElementById('av-ring');av.style.transform='scale(0.88)';setTimeout(()=>av.style.transform='',180);burst(e.clientX,e.clientY,['✨','⭐','💫','💎','🌟'],10);}}
+function nwClick(e){{confetti(e.clientX,e.clientY);NWE.style.transform='scale(1.12)';setTimeout(()=>NWE.style.transform='',180);}}
+
+let donutIdx=0;
+function donutClick(){{if(!DONUT_SEGS.length)return;donutIdx=(donutIdx+1)%DONUT_SEGS.length;const seg=DONUT_SEGS[donutIdx];const pe=document.getElementById('donut-pct');pe.style.color=seg.color;pe.textContent=seg.pct+'%';document.getElementById('donut-lbl').textContent=seg.label;}}
+
+function petClick(){{const pb=document.getElementById('pet-bubble');pb.style.transform='translateY(-6px) scale(1.1)';setTimeout(()=>pb.style.transform='',280);burst(pb.getBoundingClientRect().x+35,pb.getBoundingClientRect().y+30,['🐾','💖','✨'],6);}}
 </script>
 </body></html>"""
 
@@ -641,7 +574,7 @@ def render(market, nw):
             status_msg, join_date, theme_id, frame_id,
             badge_count, len(PROFILE_BADGES), pet_info, assets
         ),
-        height=420,
+        height=540,
         scrolling=False
     )
 
