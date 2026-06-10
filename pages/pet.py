@@ -2781,7 +2781,7 @@ function renderPlay(sc){{
   sc.innerHTML=`
   <div id="play-wrap">
     <div id="play-arena" onclick="playTap(event)">
-      <div id="play-pet" style="font-size:3.5rem;">{pet_sprite_js}</div>
+      <div id="play-pet" style="font-size:3.5rem;" id="play-pet-inner"></div>
     </div>
     ${{remaining>0
       ? `<div id="play-cooldown">⏳ ${{mmss}} 후 다시 놀 수 있어요!</div>`
@@ -2796,6 +2796,13 @@ function renderPlay(sc){{
     </button>
   </div>`;
   var sparkCnt=0;
+  // copy sprite from left panel
+  (function(){{
+    var src=document.querySelector('#pet-sprite-wrap');
+    var dst=sc.querySelector('#play-pet-inner')||sc.querySelector('#play-pet');
+    if(src&&dst)dst.innerHTML=src.innerHTML;
+    else if(dst)dst.textContent='🐾';
+  }})();
   window.playTap=function(e){{
     const pet=sc.querySelector('#play-pet');
     pet.style.transform='scale(1.3) rotate(-15deg)';
@@ -2861,11 +2868,6 @@ renderGame('timing');
 </html>
 """
 
-        # pet_sprite_js: strip SVG tags if needed for JS use
-        import re as _re
-        _svg_stripped = _re.sub(r'<svg[^>]*>|</svg>', '', pet_sprite or '').strip()
-
-        training_app_html = training_app_html.replace('{pet_sprite_js}', pet_sprite or '🐾')
 
         components.html(training_app_html, height=700, scrolling=False)
 
