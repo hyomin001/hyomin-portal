@@ -2776,53 +2776,120 @@ function renderBattle(sc){{
 // ══════════════════════════════════
 function renderPlay(sc){{
   const now=Math.floor(Date.now()/1000);
-  const remaining=Math.max(0, 600-(now-LAST_PLAY_TS));
+  const remaining=Math.max(0,600-(now-LAST_PLAY_TS));
   const mmss=`${{Math.floor(remaining/60)}}분 ${{remaining%60}}초`;
+
+  sc.style.overflow='hidden';
   sc.innerHTML=`
-  <div id="play-wrap">
-    <div id="play-arena" onclick="playTap(event)">
-      <div id="play-pet" style="font-size:3.5rem;" id="play-pet-inner"></div>
-    </div>
-    ${{remaining>0
-      ? `<div id="play-cooldown">⏳ ${{mmss}} 후 다시 놀 수 있어요!</div>`
-      : `<div id="play-msg">펫을 클릭하거나 아래 버튼으로 같이 놀아요!</div>`
-    }}
-    <div id="play-happy-bar">
-      <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:#64748B;margin-bottom:3px;"><span>😊 행복도</span><span id="play-happy-val">{pet_happy}%</span></div>
-      <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;"><div id="play-happy-fill" style="height:100%;width:{pet_happy}%;background:#FFD600;border-radius:3px;transition:width 0.5s;"></div></div>
-    </div>
-    <button id="play-btn" onclick="doPlay()" ${{remaining>0?'disabled':''}}>
-      💝 같이 놀기! (무료 · 행복+15~35 · EXP+5~15)
-    </button>
+  <style>
+  #fw-arena{{width:100%;height:100%;position:relative;cursor:crosshair;background:linear-gradient(180deg,#0a0f1e 0%,#0d1a0d 100%);overflow:hidden;user-select:none;}}
+  #fw-ground{{position:absolute;bottom:0;left:0;right:0;height:28px;background:linear-gradient(180deg,#1a3a1a,#0d200d);border-top:1px solid #2d5a2d;}}
+  #fw-grass{{position:absolute;bottom:28px;left:0;right:0;height:6px;background:repeating-linear-gradient(90deg,#2d6a2d 0px,#2d6a2d 8px,#3a8a3a 8px,#3a8a3a 14px);}}
+  #fw-pet{{position:absolute;bottom:28px;font-size:2.2rem;transition:left 0.35s cubic-bezier(0.25,1.5,0.5,1),transform 0.15s;transform-origin:bottom center;}}
+  #fw-ball{{position:absolute;font-size:1.4rem;display:none;transition:none;}}
+  #fw-throw-hint{{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,0.25);font-size:0.8rem;text-align:center;pointer-events:none;}}
+  #fw-count-wrap{{position:absolute;top:10px;left:0;right:0;display:flex;justify-content:center;gap:6px;}}
+  .fw-dot{{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);transition:all 0.2s;}}
+  .fw-dot.done{{background:#FFD600;border-color:#FFD600;box-shadow:0 0 8px #FFD600;}}
+  #fw-msg{{position:absolute;bottom:38px;left:0;right:0;text-align:center;font-size:0.72rem;color:#94A3B8;pointer-events:none;}}
+  #fw-cool{{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);border-radius:14px;}}
+  #fw-cool-txt{{color:#FF9500;font-size:1rem;font-weight:900;text-align:center;}}
+  </style>
+  <div id="fw-arena" onclick="fwThrow(event)">
+    <div id="fw-ground"></div>
+    <div id="fw-grass"></div>
+    <div id="fw-count-wrap">${{Array(8).fill(0).map((_,i)=>`<div class="fw-dot" id="fw-d${{i}}"></div>`).join('')}}</div>
+    <div id="fw-pet">🐾</div>
+    <div id="fw-ball">🎾</div>
+    <div id="fw-msg">아레나를 클릭해서 공을 던져요!</div>
+    <div id="fw-throw-hint">👆 여기를 클릭!</div>
+    ${{remaining>0?`<div id="fw-cool"><div id="fw-cool-txt">⏳ ${{mmss}}<br><span style="font-size:0.75rem;color:#94A3B8">후에 다시 놀 수 있어요</span></div></div>`:''}}
   </div>`;
-  var sparkCnt=0;
-  // copy sprite from left panel
+
+  // copy pet sprite from left panel into fw-pet
   (function(){{
     var src=document.querySelector('#pet-sprite-wrap');
-    var dst=sc.querySelector('#play-pet-inner')||sc.querySelector('#play-pet');
-    if(src&&dst)dst.innerHTML=src.innerHTML;
-    else if(dst)dst.textContent='🐾';
+    var dst=sc.querySelector('#fw-pet');
+    if(src&&dst){{ dst.innerHTML=src.innerHTML; dst.style.fontSize=''; dst.style.width='52px'; dst.style.height='52px'; }}
   }})();
-  window.playTap=function(e){{
-    const pet=sc.querySelector('#play-pet');
-    pet.style.transform='scale(1.3) rotate(-15deg)';
-    setPetSpeech(['히히 간질간질!','같이 놀자놀자!','야호~~!','신난다!!'][sparkCnt++%4]);
-    setTimeout(()=>pet.style.transform='',250);
-  }};
-  window.doPlay=function(){{
-    if(remaining>0)return;
-    const ph=15+Math.floor(Math.random()*20);
-    const pe=5+Math.floor(Math.random()*10);
-    const newHappy=Math.min(100,{pet_happy}+ph);
-    sc.querySelector('#play-happy-fill').style.width=newHappy+'%';
-    sc.querySelector('#play-happy-val').textContent=newHappy+'%';
-    sc.querySelector('#play-btn').disabled=true;
-    sc.querySelector('#play-btn').textContent='✅ 완료! 보상받기를 눌러요~';
-    const label=['공 던지기 🎾','숨바꼭질 🙈','퍼즐 🧩','노래 🎵','산책 🌿'][Math.floor(Math.random()*5)];
-    setScore(pe, '💝 '+label+' 완료! 행복 +'+ph+' EXP +'+pe+' — 보상받기!');
-    setPetMood('win');setPetSpeech('최고야!! 오늘 하루 너무 행복해!! 💝💝');
-    showToast('행복 +'+ph+'! EXP +'+pe,'#FF00AA');
-    LAST_PLAY_TS=Math.floor(Date.now()/1000);
+
+  if(remaining>0)return;
+
+  var throws=0,maxThrows=8,fetching=false,petX=15;
+  const arena=sc.querySelector('#fw-arena');
+  const petEl=sc.querySelector('#fw-pet');
+  const ballEl=sc.querySelector('#fw-ball');
+  const msgEl=sc.querySelector('#fw-msg');
+  const hint=sc.querySelector('#fw-throw-hint');
+
+  petEl.style.left=petX+'%';
+
+  window.fwThrow=function(e){{
+    if(fetching||throws>=maxThrows||remaining>0)return;
+    hint.style.display='none';
+    const rect=arena.getBoundingClientRect();
+    const tx=Math.max(5,Math.min(90,((e.clientX-rect.left)/rect.width)*100));
+    const ballStartX=petX+3;
+
+    // show ball
+    ballEl.style.display='block';
+    ballEl.style.left=ballStartX+'%';
+    ballEl.style.bottom='34px';
+    ballEl.style.transition='none';
+
+    // arc animation via keyframes on ball
+    const dur=600;
+    const peakY=55+Math.random()*30;
+    let t0=null;
+    function animBall(ts){{
+      if(!t0)t0=ts;
+      const prog=Math.min((ts-t0)/dur,1);
+      const cx=ballStartX+(tx-ballStartX)*prog;
+      const cy=34+peakY*Math.sin(prog*Math.PI);
+      ballEl.style.left=cx+'%';
+      ballEl.style.bottom=cy+'px';
+      ballEl.style.transform=`rotate(${{prog*360}}deg)`;
+      if(prog<1){{requestAnimationFrame(animBall);return;}}
+      // ball landed
+      ballEl.style.bottom='34px';
+      msgEl.textContent='가져와! 빨리!!';
+      setPetSpeech('웅! 가져올게!! 🏃💨');
+      setPetMood('playing');
+      fetching=true;
+      // pet runs to ball
+      petEl.style.transform='scaleX(-1)';
+      petEl.style.left=tx+'%';
+      setTimeout(()=>{{
+        // pet picks up ball
+        ballEl.style.display='none';
+        petEl.style.transform='scaleX(1) scale(1.2)';
+        setTimeout(()=>petEl.style.transform='scaleX(1)',200);
+        msgEl.textContent='물어왔다! 잘했어~ 🎉';
+        setPetSpeech('받아!! 또 던져!! 🎾');
+        setPetMood('win');
+        // pet runs back
+        petX=Math.max(8,tx-12);
+        petEl.style.left=petX+'%';
+        throws++;
+        sc.querySelector('#fw-d'+(throws-1)).classList.add('done');
+        fetching=false;
+        if(throws>=maxThrows){{
+          setTimeout(()=>{{
+            const ph=20+Math.floor(Math.random()*15);
+            const pe=8+Math.floor(Math.random()*7);
+            msgEl.textContent='다 던졌어! 오늘 훈련 완료! 🏆';
+            setPetSpeech('신났다!! 최고였어!! 💝🎉');
+            setPetMood('win');
+            setScore(pe,'💝 공 던지기 '+maxThrows+'회 완료! 행복+'+ph+' EXP+'+pe+' — 보상받기!');
+            showToast('공던지기 완료! 🎾',  '#FFD600');
+            LAST_PLAY_TS=Math.floor(Date.now()/1000);
+          }},600);
+        }} else {{
+          msgEl.textContent='잘했어! 또 던져봐! ('+(maxThrows-throws)+'번 남음)';
+        }}
+      }},400);
+    }}
+    requestAnimationFrame(animBall);
   }};
 }}
 
