@@ -199,7 +199,8 @@ def get_asset_breakdown(u, market, nw):
 
 def generate_profile_card_html(uid, avatar, lv, lv_title, nw, custom_title,
                                 status_msg, join_date, theme_id, frame_id,
-                                badge_count, total_badges, pet_info, assets):
+                                badge_count, total_badges, pet_info, assets,
+                                earned_badges=None):
     theme = PROFILE_THEMES.get(theme_id, PROFILE_THEMES['cyan'])
     frame = PROFILE_FRAMES.get(frame_id, PROFILE_FRAMES['none'])
     p  = theme['primary']
@@ -253,6 +254,8 @@ def generate_profile_card_html(uid, avatar, lv, lv_title, nw, custom_title,
 
     # Build badge JSON for JS
     import json
+    if earned_badges is None:
+        earned_badges = set()
     badges_json = json.dumps([
         {"icon": b["icon"], "name": b["name"], "earned": b["id"] in earned_badges}
         for b in PROFILE_BADGES[:16]
@@ -572,7 +575,8 @@ def render(market, nw):
         generate_profile_card_html(
             uid, avatar, lv, lv_title, nw, custom_title,
             status_msg, join_date, theme_id, frame_id,
-            badge_count, len(PROFILE_BADGES), pet_info, assets
+            badge_count, len(PROFILE_BADGES), pet_info, assets,
+            earned_badges=earned_badges
         ),
         height=540,
         scrolling=False
