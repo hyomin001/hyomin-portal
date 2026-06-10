@@ -215,104 +215,127 @@ div[data-baseweb="select"] div,
 ======================================================== */
 @media (max-width: 768px) {
 
-  /* ── 컬럼을 세로로 쌓기 ── */
+  /* ── 1. 가로 삐져나옴 완전 차단 ── */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+  }
+  [data-testid="stAppViewContainer"],
+  [data-testid="stMain"],
+  [data-testid="stVerticalBlock"] {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  /* ── 2. 전체 여백 축소 ── */
+  .block-container {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-top: 10px !important;
+    max-width: 100% !important;
+  }
+
+  /* ── 3. 컬럼 gap 축소 ── */
   [data-testid="stHorizontalBlock"] {
     flex-wrap: wrap !important;
+    gap: 6px !important;
   }
+
+  /* ── 4. 기본: 모든 컬럼 100% 너비로 세로 쌓기 ── */
   [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
     min-width: 100% !important;
     width: 100% !important;
     flex: 1 1 100% !important;
   }
 
-  /* ── 2칸짜리는 나란히 유지 (버튼 쌍 등) ── */
+  /* ── 5. 예외: 2칸짜리만 나란히 (버튼 쌍, 간단한 입력폼 등) ── */
   [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(2):last-child) > [data-testid="stColumn"] {
-    min-width: 48% !important;
-    flex: 1 1 48% !important;
+    min-width: calc(50% - 4px) !important;
+    flex: 1 1 calc(50% - 4px) !important;
   }
 
-  /* ── 전체 여백 축소 ── */
-  .block-container {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    padding-top: 12px !important;
+  /* ── 6. iframe (components.html 게임/프로필 카드) 너비 맞춤 ── */
+  iframe {
+    max-width: 100% !important;
+    width: 100% !important;
   }
 
-  /* ── 홈 상단 프로필 카드: 세로 정렬 ── */
-  [data-testid="stMain"] div[style*="display: flex"][style*="align-items: center"][style*="gap: 20px"] {
+  /* ── 7. 인라인 flex 컨테이너 줄바꿈 허용 ── */
+  [data-testid="stMain"] div[style*="display:flex"],
+  [data-testid="stMain"] div[style*="display: flex"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* ── 8. 홈 상단 프로필 카드 세로 정렬 ── */
+  [data-testid="stMain"] div[style*="display: flex"][style*="gap: 20px"] {
     flex-direction: column !important;
-    text-align: center !important;
+    align-items: center !important;
   }
-
-  /* ── 홈 상단 우측 자산 정보: 보더 제거 ── */
-  [data-testid="stMain"] div[style*="border-left"][style*="padding-left: 20px"] {
+  [data-testid="stMain"] div[style*="border-left: 1px solid"] {
     border-left: none !important;
+    border-top: 1px solid rgba(0,229,255,0.3) !important;
     padding-left: 0 !important;
+    padding-top: 12px !important;
     text-align: center !important;
+    width: 100% !important;
   }
 
-  /* ── 주식 시장 현황 5칸 카드: 2칸씩 ── */
-  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(5):last-child) > [data-testid="stColumn"] {
-    min-width: 48% !important;
-    flex: 1 1 48% !important;
-  }
-
-  /* ── 폰트 크기 조정 ── */
-  h1 { font-size: 1.4rem !important; }
-  h2 { font-size: 1.1rem !important; }
-  h3 { font-size: 1rem !important; }
-
-  /* ── 카드 내 큰 숫자 축소 ── */
-  .score-number { font-size: 2rem !important; }
-
-  /* ── 버튼 높이 모바일 최적화 ── */
-  .stButton > button {
-    height: 48px !important;
-    font-size: 0.9rem !important;
-  }
-
-  /* ── 카드 패딩 축소 ── */
-  .card {
-    padding: 14px !important;
-  }
-
-  /* ── 사이드바 열렸을 때 전체 화면 덮기 ── */
-  [data-testid="stSidebar"] {
-    width: 85vw !important;
-    min-width: unset !important;
-  }
-
-  /* ── 테이블 가로 스크롤 허용 ── */
+  /* ── 9. 테이블 가로 스크롤 허용 ── */
   .stock-table {
     display: block !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
-  }
-
-  /* ── 홀덤/블랙잭 카드 크기 축소 ── */
-  [data-testid="stMain"] div[style*="padding:15px 20px"][style*="min-width:60px"] {
-    padding: 10px 12px !important;
-    min-width: 44px !important;
-    font-size: 1.2rem !important;
-  }
-
-  /* ── 탭 글씨 크기 축소 ── */
-  [data-testid="stTabs"] [data-baseweb="tab"] {
     font-size: 0.8rem !important;
-    padding: 8px 10px !important;
+  }
+  .stock-table th, .stock-table td {
+    padding: 8px 6px !important;
+    white-space: nowrap !important;
+  }
+
+  /* ── 10. 폰트 크기 조정 ── */
+  h1 { font-size: 1.3rem !important; }
+  h2 { font-size: 1.1rem !important; }
+  h3 { font-size: 1rem !important; }
+  .score-number { font-size: 2rem !important; }
+
+  /* ── 11. 버튼 ── */
+  .stButton > button {
+    height: 46px !important;
+    font-size: 0.88rem !important;
+    padding: 0 8px !important;
+  }
+
+  /* ── 12. 카드 패딩 축소 ── */
+  .card { padding: 12px !important; }
+
+  /* ── 13. 사이드바 너비 ── */
+  [data-testid="stSidebar"] {
+    width: 82vw !important;
+    min-width: unset !important;
+  }
+
+  /* ── 14. 탭 글씨 ── */
+  [data-testid="stTabs"] [data-baseweb="tab"] {
+    font-size: 0.78rem !important;
+    padding: 8px 8px !important;
+  }
+
+  /* ── 15. 숫자 입력 등 입력창 전체 너비 ── */
+  .stTextInput, .stNumberInput, .stSelectbox {
+    width: 100% !important;
   }
 }
 
-/* 초소형 화면 (갤럭시 폴드 등, 360px 이하) */
+/* ── 초소형 화면 (360px 이하, 갤럭시 폴드 등) ── */
 @media (max-width: 380px) {
-  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+  .block-container {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(2):last-child) > [data-testid="stColumn"] {
     min-width: 100% !important;
     flex: 1 1 100% !important;
   }
-  h1 { font-size: 1.2rem !important; }
-  .block-container {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
+  h1 { font-size: 1.1rem !important; }
 }
 """
