@@ -1666,9 +1666,9 @@ function copyMsg(type, btn) {{
 
             st.markdown("""
 <div class="arch-card">
-    <h4>🧩 42개 독립 모듈 구조</h4>
+    <h4>🧩 43개 독립 모듈 구조</h4>
     <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>41개의 기능 모듈</b>, 총 42개 파일로 구성됩니다.
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>42개의 기능 모듈</b>, 총 43개 파일로 구성됩니다.
         각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
         한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
         유지보수 및 신규 기능 추가가 용이한 구조입니다.
@@ -1812,8 +1812,22 @@ function copyMsg(type, btn) {{
     <div class="module-item"><strong>pages/project_g.py</strong>🧟 좀비 아포칼립스 슈터</div>
     <div class="module-item"><strong>pages/project_h.py</strong>🥊 스트리트 파이터 EX</div>
     <div class="module-item"><strong>pages/project_i.py</strong>🎯 라인 배틀 저격전</div>
+    <div class="module-item"><strong>dep_graph_snippet.py</strong>🕸️ 파일 의존성 그래프 위젯</div>
 </div>
         """, unsafe_allow_html=True)
+
+        # ── 파일 의존성 인터랙티브 그래프 ─────────────────────
+        st.markdown("#### 🕸️ 파일 의존성 인터랙티브 그래프")
+        st.markdown(
+            "<p style='color:#8899bb;font-size:0.88rem;margin-top:-6px;'>"
+            "파일을 클릭하면 그 파일과 직접 연결된 다른 파일들이 강조됩니다. "
+            "어떤 모듈을 고치면 어디까지 영향이 가는지 한눈에 확인할 수 있습니다."
+            "</p>",
+            unsafe_allow_html=True
+        )
+        import streamlit.components.v1 as _dg_components
+        from dep_graph_snippet import DEP_GRAPH_HTML
+        _dg_components.html(DEP_GRAPH_HTML, height=900, scrolling=True)
 
     # ── 전체 서비스 완전 가이드 ──────────────────────────────
     with st.expander("📖 전체 서비스 완전 가이드 보기", expanded=False):
