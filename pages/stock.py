@@ -275,6 +275,11 @@ def _render_orderbook(price, vol):
             <div class='ob-buy-qty'>{bq:,}</div>
         </div>"""
 
+    # ※ 수정: {rows} 자리에서 rows 가 줄바꿈(\n)으로 시작하기 때문에,
+    #   앞쪽 들여쓰기 공백과 합쳐지면 "공백만 있는 줄"(=마크다운이 인식하는 빈 줄)이 생겨버림.
+    #   그 빈 줄 때문에 위에서 열려있던 HTML 블록이 끊기고, 그 다음 줄(4칸 이상 들여쓰기)이
+    #   마크다운의 "들여쓰기 코드블록"으로 오인식되어 raw HTML 텍스트로 출력되는 버그였음.
+    #   rows.strip() 으로 선행 줄바꿈/공백을 제거해 빈 줄이 생기지 않게 하면 해결됨.
     return f"""
     <div class='ob-wrap'>
         <div class='ob-header'>
@@ -282,7 +287,7 @@ def _render_orderbook(price, vol):
             <span style='text-align:center;'>호가</span>
             <span>잔량(매수)</span>
         </div>
-        {rows}
+        {rows.strip()}
         <div class='ob-total'>
             <span>총매도 <span class='ask-t'>{total_ask:,}</span></span>
             <span>총매수 <span class='bid-t'>{total_bid:,}</span></span>
