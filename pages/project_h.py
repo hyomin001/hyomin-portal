@@ -562,8 +562,6 @@ function updateFighter(f,opp){
   if(f.stun>0){f.stun--;if(f.stun>0&&f.state!=='ko')f.state='stun';else if(f.state==='stun'){f.state='idle';f.stunMax=0;}}
   f.animF=(f.animF+1)%60;
   if(['idle','walk'].includes(f.state))f.facing=opp.x>f.x?1:-1;
-  // Super charge mode
-  if(superChargeMode&&f.frame%90===0)f.super=Math.min(100,f.super+15);
   // Attack hitbox
   const cm=f.curMove;
   if(cm&&!cm._hit&&!cm.isProjectile&&!cm.isDash&&!cm.isLauncher&&!cm.isMultiHit&&!cm.isSlam&&!cm.isFreeze){
@@ -931,25 +929,71 @@ function drawBg(){if(canvas.width===0||canvas.height===0)resize();
 }
 
 let gFrame=0;
+// 일부 OS/브라우저 환경은 최신 이모지(🦾,🥷 등) 글리프가 없어 캐릭터가 "안 보이는" 현상이
+// 발생할 수 있다. 이모지 전용 폰트를 명시적으로 우선 지정해 렌더링 성공률을 높인다.
+const EFONT="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',serif";
+// 타격 모션 궤적 이펙트 (펀치/킥 임팩트 순간에 짧은 스파크 라인을 방사형으로 그려 타격감 보강)
+function drawStrikeFX(fx,fy,col,scale){
+  ctx.save();ctx.translate(fx,fy);
+  ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.shadowColor=col;ctx.shadowBlur=10;ctx.globalAlpha=.85;
+  for(let i=0;i<5;i++){
+    const a=(i/5)*Math.PI*2+gFrame*.06;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a)*5*scale,Math.sin(a)*5*scale);
+    ctx.lineTo(Math.cos(a)*15*scale,Math.sin(a)*15*scale);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawFighter(f){
   const x=f.x,y=f.y,h=f.char.hp*.35;
   ctx.save();ctx.translate(x,y);if(f.facing===-1)ctx.scale(-1,1);
   let sz=1,offY=0,rot=0,glow=null,alpha=1;
-  if(f.state==='punch'){sz=1.18;ctx.shadowColor=f.char.col;ctx.shadowBlur=12;ctx.font='22px serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('👊',h*.28,f.stateT>8?-h*.5:-h*.6);ctx.shadowBlur=0;}
-  else if(f.state==='kick'){sz=1.1;ctx.font='20px serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('🦵',h*.22,-h*.28);}
-  else if(f.state==='heavy'){sz=1.25;glow=f.char.col;ctx.shadowColor=f.char.col;ctx.shadowBlur=14;ctx.font='24px serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('👊',h*.3,f.stateT>10?-h*.45:-h*.62);ctx.shadowBlur=0;}
-  else if(f.state==='low'){sz=.88;offY=12;ctx.font='20px serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('👊',h*.25,-h*.1);}
-  else if(f.state==='airPunch'){sz=1.15;rot=-f.facing*.22;ctx.shadowColor=f.char.col;ctx.shadowBlur=10;ctx.font='20px serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('👊',h*.22,-h*.55);ctx.shadowBlur=0;}
+  if(f.state==='punch'){
+    sz=1.18;
+    const fx=h*.28,fy=f.stateT>8?-h*.5:-h*.6;
+    ctx.shadowColor=f.char.col;ctx.shadowBlur=14;ctx.font=`22px ${EFONT}`;ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('👊',fx,fy);ctx.shadowBlur=0;
+    if(f.stateT>6&&f.stateT<13){drawStrikeFX(fx+8,fy,f.char.col,1);if(gFrame%2===0)spawnP(x+f.facing*(fx+8),y+fy,{n:1,col:f.char.col,vMax:1.6,szMax:2.6,glow:true,dMin:.08,dMax:.12});}
+  }
+  else if(f.state==='kick'){
+    sz=1.1;
+    const fx=h*.22,fy=-h*.28;
+    ctx.shadowColor=f.char.col;ctx.shadowBlur=11;ctx.font=`20px ${EFONT}`;ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('🦵',fx,fy);ctx.shadowBlur=0;
+    if(f.stateT>4&&f.stateT<11){drawStrikeFX(fx+10,fy,f.char.col,1.1);if(gFrame%2===0)spawnP(x+f.facing*(fx+10),y+fy,{n:1,col:f.char.col,vMax:1.6,szMax:2.6,glow:true,dMin:.08,dMax:.12});}
+  }
+  else if(f.state==='heavy'){
+    sz=1.25;glow=f.char.col;
+    const fx=h*.3,fy=f.stateT>10?-h*.45:-h*.62;
+    ctx.shadowColor=f.char.col;ctx.shadowBlur=18;ctx.font=`24px ${EFONT}`;ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('👊',fx,fy);ctx.shadowBlur=0;
+    if(f.stateT>9&&f.stateT<17){drawStrikeFX(fx+10,fy,f.char.col,1.4);spawnP(x+f.facing*(fx+10),y+fy,{n:2,col:[f.char.col,'#fff'],vMax:2.4,szMax:3.4,glow:true,dMin:.07,dMax:.11});}
+  }
+  else if(f.state==='low'){sz=.88;offY=12;ctx.font=`20px ${EFONT}`;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('👊',h*.25,-h*.1);}
+  else if(f.state==='airPunch'){sz=1.15;rot=-f.facing*.22;ctx.shadowColor=f.char.col;ctx.shadowBlur=10;ctx.font=`20px ${EFONT}`;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('👊',h*.22,-h*.55);ctx.shadowBlur=0;}
   else if(f.state==='jump'){offY=-8-Math.abs(f.vy)*2.2;rot=f.facing*.14;}
   else if(f.state==='hurt'||f.state==='airHurt'){sz=.88;rot=f.facing*-.18;ctx.filter='brightness(2.5) hue-rotate(310deg)';alpha=f.hitCD%2===0?.6:1;}
   else if(f.state==='stun'){sz=.85;offY=5;rot=Math.sin(f.animF*.25)*.1;ctx.filter='brightness(2) sepia(1)';
-    ['⭐','✨','💫'].forEach((s,si)=>{ctx.save();ctx.font='14px serif';ctx.textAlign='center';const sa=f.animF*.15+si*(Math.PI*2/3);ctx.fillText(s,Math.cos(sa)*24,-h*.75+Math.sin(sa)*12);ctx.restore();});}
+    ['⭐','✨','💫'].forEach((s,si)=>{ctx.save();ctx.font=`14px ${EFONT}`;ctx.textAlign='center';const sa=f.animF*.15+si*(Math.PI*2/3);ctx.fillText(s,Math.cos(sa)*24,-h*.75+Math.sin(sa)*12);ctx.restore();});}
   else if(f.state==='block'||f.blocking){ctx.save();ctx.strokeStyle='rgba(0,200,255,.5)';ctx.shadowColor='rgba(0,200,255,.4)';ctx.shadowBlur=16;ctx.lineWidth=2.5;ctx.fillStyle='rgba(0,200,255,.1)';ctx.beginPath();ctx.arc(h*.22,-h*.44,h*.62,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();}
   else if(f.state==='special'){sz=1.3;glow=f.char.col;spawnP(x,y,{n:2,col:f.char.col,glow:true,vMax:4,szMax:6,dMin:.06,dMax:.1});}
   else if(f.state==='super'){sz=1.4;glow=f.char.col;if(f.animF%4<2)ctx.filter='brightness(3) saturate(2)';spawnP(x,y,{n:3,col:[f.char.col,'#fff'],glow:true,vMax:5,szMax:8,dMin:.05,dMax:.09});}
   else if(f.state==='ko'){rot=f.facing*.8;offY=14;sz=.82;}
   else if(f.state==='idle'||f.state==='walk'){offY=Math.sin(f.animF*.1)*2;}
-  ctx.rotate(rot);ctx.globalAlpha*=alpha;ctx.font=`${h*1.15*sz}px serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
+  ctx.rotate(rot);ctx.globalAlpha*=alpha;
+  // ★ 캐릭터 베이스 실루엣: 이모지 글리프가 일부 환경에서 누락되어도
+  //   캐릭터 색상의 발광 디스크가 항상 그 자리에 보이도록 보장 (봇 캐릭터 소실 버그 방지) ★
+  ctx.save();
+  ctx.globalAlpha*=.5;
+  const baseR=h*.6*sz;
+  const grad=ctx.createRadialGradient(0,-h*.42+offY,0,0,-h*.42+offY,baseR);
+  grad.addColorStop(0,f.char.col+'cc');
+  grad.addColorStop(1,f.char.col+'00');
+  ctx.fillStyle=grad;
+  ctx.beginPath();ctx.arc(0,-h*.42+offY,baseR,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.font=`${h*1.15*sz}px ${EFONT}`;ctx.textAlign='center';ctx.textBaseline='bottom';
   if(glow){ctx.shadowBlur=24;ctx.shadowColor=glow;}
   ctx.fillText(f.char.emoji,0,-h*.02+offY);
   if(glow)ctx.shadowBlur=0;ctx.restore();
