@@ -1195,16 +1195,27 @@ function updateUnits(dt,frozen){
 
     // 1단계: 기지에서 나와서 라인 Y로 이동 (대각선)
     if(!u.reachedLane){
-      const targetY=laneY(u.laneIdx);
-      const dy=targetY-u.y;
-      const dir=u.side===0?1:-1;
-      // X도 조금씩 이동, Y를 더 빠르게
-      u.x+=dir*u.spd*0.5*dt;
-      if(Math.abs(dy)>2){
-        u.y+=Math.sign(dy)*u.spd*1.2*dt;
-      } else {
-        u.y=targetY;
+      // ★ 지나침 버그 수정: 진입 중에도 근접한 적이 있으면 즉시 라인 합류 ★
+      // 기존에는 이 단계에서 적 감지를 전혀 하지 않아, 상대 기지를 공격 중인
+      // 유닛 바로 옆에서 스폰된 적이 충돌 체크 없이 그대로 지나쳐버리는 문제가 있었음.
+      // → 진입 중에도 근접 적을 검사해서, 가까우면 즉시 reachedLane=true로 전환해
+      //   다음 프레임부터 2단계의 정상 교전/차단 로직이 적용되게 한다.
+      const nearEnemy=G.units.find(o=>o.side!==u.side&&o.hp>0&&o.laneIdx===u.laneIdx&&Math.abs(u.x-o.x)<40);
+      if(nearEnemy){
+        u.y=laneY(u.laneIdx);
         u.reachedLane=true;
+      } else {
+        const targetY=laneY(u.laneIdx);
+        const dy=targetY-u.y;
+        const dir=u.side===0?1:-1;
+        // X도 조금씩 이동, Y를 더 빠르게
+        u.x+=dir*u.spd*0.5*dt;
+        if(Math.abs(dy)>2){
+          u.y+=Math.sign(dy)*u.spd*1.2*dt;
+        } else {
+          u.y=targetY;
+          u.reachedLane=true;
+        }
       }
       return;
     }
