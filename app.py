@@ -31,8 +31,9 @@ pull_user_data()
 if st.query_params.get("ping") == "1":
     try:
         check_and_run_season_reset(load_db(MARKET_FILE, {}))
-    except Exception:
-        pass
+    except Exception as _ping_se:
+        import logging
+        logging.error(f"[ping season check] 실패: {_ping_se}")
     st.write("ok")
     st.stop()
 
@@ -746,7 +747,9 @@ if st.session_state.page_view == "portal":
         _season_just_reset = check_and_run_season_reset(market)
         if _season_just_reset:
             market = load_db(MARKET_FILE, {})  # 초기화 후 최신 market 재로드
-    except Exception:
+    except Exception as _season_check_e:
+        import logging
+        logging.error(f"[portal season check] 실패: {_season_check_e}")
         _season_just_reset = False
 
     # ── 최상단 HUD ──
@@ -883,7 +886,7 @@ if st.session_state.page_view == "portal":
                 st.session_state.page_view = "login"; st.rerun()
 
     # ── 히어로 섹션 ──
-    st.markdown("""
+    st.markdown(f"""
     <div class='hero'>
       <div class='hero-eyebrow'>POWERED BY AI · BUILT FOR YOU</div>
       <div class='hero-title'>HYOMIN PORTAL</div>
@@ -891,7 +894,7 @@ if st.session_state.page_view == "portal":
         하나의 계정으로 효민 유니버스의 모든 경제, 엔터테인먼트,<br>
         AI 학습, 커뮤니티 서비스를 통합 이용하세요.
       </p>
-      <div class='hero-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM · 가입 시 5억 지급 · 시즌 2 진행 중</div>
+      <div class='hero-badge'>🛡️ HYOMIN NETWORKS SECURE PLATFORM · 가입 시 5억 지급 · 시즌 {market.get('season_num', 1)} 진행 중</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -905,9 +908,10 @@ if st.session_state.page_view == "portal":
 
     # ── 서비스 미리보기 위 스크롤 태그 배너 ──
     _prev_tags_html = ""
+    _cur_sn = market.get('season_num', 1)
     _prev_tags = [
-        ("🏅 시즌 1 명예의 전당", "gold"), ("📈 주식·코인·부동산", "live"), ("🎰 카지노 & 게임", "hot"),
-        ("🏎️ 하이퍼카 레이싱", "new"), ("🔥 HOT", "hot"), ("🚀 시즌 2 진행 중", "live"),
+        (f"🏅 시즌 {max(1, _cur_sn - 1)} 명예의 전당", "gold"), ("📈 주식·코인·부동산", "live"), ("🎰 카지노 & 게임", "hot"),
+        ("🏎️ 하이퍼카 레이싱", "new"), ("🔥 HOT", "hot"), (f"🚀 시즌 {_cur_sn} 진행 중", "live"),
         ("🤖 AI 모의고사", "new"), ("🏆 랭킹 1위 쟁탈전", "gold"), ("⚔️ 던전 런 REBORN", "hot"),
         ("🎲 인베스트 마블", "gold"), ("💻 THE TERMINAL", "new"), ("🗳️ 월드 배틀", "live"),
     ]
@@ -915,7 +919,7 @@ if st.session_state.page_view == "portal":
         _prev_tags_html += f"<span class='scroll-tag {_pcls}'>{_plabel}</span>"
     st.markdown(f"<div class='banner-scroll-wrap' style='margin-bottom:16px;'><div class='banner-scroll-track'>{_prev_tags_html}</div></div>", unsafe_allow_html=True)
 
-    st.markdown("""
+    _preview_block = """
 <style>
 @keyframes carousel-slide {
   0%   { transform: translateX(0); }
@@ -1177,7 +1181,9 @@ if st.session_state.page_view == "portal":
   <span style='color:#ffd700;font-weight:900;font-size:1rem;'>🎁 가입 즉시 5억 원 지급!</span>
   <span style='color:#94A3B8;font-size:0.82rem;margin-left:10px;'>지금 가입하고 시즌 2 랭킹 경쟁에 참여하세요</span>
 </div>
-    """, unsafe_allow_html=True)
+    """
+    _preview_block = _preview_block.replace("시즌 2", f"시즌 {market.get('season_num', 1)}")
+    st.markdown(_preview_block, unsafe_allow_html=True)
 
     # ── 실시간 통계 위젯 ──
     try:
@@ -1602,7 +1608,10 @@ function copyMsg(type, btn) {{
     # ── 시스템 공지 & 아키텍처 섹션 ───────────────────────
     with st.expander("📋 시스템 공지 & 전체 아키텍처 구조 보기", expanded=False):
 
-        st.markdown("""
+        _sn_now = market.get('season_num', 1)
+        _ss_ts = market.get('season_start', 0)
+        _ss_str = datetime.fromtimestamp(_ss_ts, KST).strftime('%Y년 %m월 %d일 %H:%M') if _ss_ts else '날짜 정보 없음'
+        st.markdown(f"""
 <div class="arch-highlight">
     <p>🔧 시스템 대공사 및 재시작 안내</p>
     <p class="sub">
@@ -1612,10 +1621,10 @@ function copyMsg(type, btn) {{
     </p>
 </div>
 <div class="arch-highlight" style="border-left-color:#00ff88; background: linear-gradient(90deg, rgba(0,255,136,0.08), rgba(0,212,255,0.06));">
-    <p style="color:#00ff88 !important;">🚀 시즌 2 진행 중</p>
+    <p style="color:#00ff88 !important;">🚀 시즌 {_sn_now} 진행 중</p>
     <p class="sub">
         <b>[시즌 1 기간]</b> 2026년 4월 15일 ~ 5월 15일 15:35 (종료)<br>
-        <b>[시즌 2]</b> 2026년 5월 15일 이후 진행 중 — 기간·혜택은 추후 공지 예정입니다.<br>
+        <b>[시즌 {_sn_now}]</b> {_ss_str} 이후 진행 중 — 기간·혜택은 추후 공지 예정입니다.<br>
         <b>신규 가입 시 초기 정착금 5억 원</b>이 즉시 지급됩니다!<br>
         궁금한 점이나 응원은 아래 <b>유저 소통 창구</b>를 통해 남겨주세요 — 모든 의견을 적극 반영합니다! 💬
     </p>
@@ -2421,11 +2430,12 @@ detectDevice();
         tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
 
         with tabs[0]:
-            st.markdown("""
+            _login_sn = load_db(MARKET_FILE, {}).get('season_num', 1)
+            st.markdown(f"""
 <div style='background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.45);border-radius:10px;padding:14px;margin-bottom:16px;'>
-  <div style='color:#00ff88;font-weight:900;font-size:1rem;'>🚀 시즌 2 진행 중!</div>
+  <div style='color:#00ff88;font-weight:900;font-size:1rem;'>🚀 시즌 {_login_sn} 진행 중!</div>
   <div style='color:#E2E8F0;font-size:0.9rem;margin-top:6px;'>
-    시즌 2가 시작되었습니다! 새로운 경쟁에서 최고 자리를 차지하세요 🏆<br>
+    시즌 {_login_sn}이 시작되었습니다! 새로운 경쟁에서 최고 자리를 차지하세요 🏆<br>
     <b>신규 가입 시 초기 정착금 5억 원</b>이 즉시 지급됩니다!<br>
     의견·응원은 포털 메인의 <b>유저 소통 창구</b>에 남겨주세요 💬
   </div>
