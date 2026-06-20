@@ -83,7 +83,7 @@ def render(market, nw):
             _top1_uid = rank_data[0]['uid']
             _top1_nw  = format_korean_money(rank_data[0]['nw'])
             _share_kakao   = f"🌌 효민 포털 현재 랭킹!\n\n{_rank_emoji} 나 ({_my_uid}): {_rank_pos}위 · {_nw_str_share}\n🏆 현재 1위: {_top1_uid} · {_top1_nw}\n\n📈 주식·코인·부동산 + 🎮 게임 10종\n가입하면 바로 5억 지급! 🎁\n👉 {PORTAL_URL}"
-            _share_discord = f"**🌌 효민 포털 시즌 2 랭킹**\n> {_rank_emoji} **{_my_uid}** — {_rank_pos}위 | {_nw_str_share}\n> 🏆 1위: **{_top1_uid}** | {_top1_nw}\n> 📈 주식·코인·부동산 | 🎮 게임 10종 | 가입 시 **5억 지급!**\n🔗 {PORTAL_URL}"
+            _share_discord = f"**🌌 효민 포털 시즌 {market.get('season_num', 1)} 랭킹**\n> {_rank_emoji} **{_my_uid}** — {_rank_pos}위 | {_nw_str_share}\n> 🏆 1위: **{_top1_uid}** | {_top1_nw}\n> 📈 주식·코인·부동산 | 🎮 게임 10종 | 가입 시 **5억 지급!**\n🔗 {PORTAL_URL}"
             st.markdown(f"""
 <div style='background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(0,212,255,0.06));
      border:1px solid rgba(108,99,255,0.3);border-radius:14px;padding:16px 20px;margin-bottom:18px;'>
