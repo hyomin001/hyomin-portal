@@ -1677,9 +1677,9 @@ function copyMsg(type, btn) {{
 
             st.markdown("""
 <div class="arch-card">
-    <h4>🧩 43개 독립 모듈 구조</h4>
+    <h4>🧩 44개 독립 모듈 구조</h4>
     <p>
-        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>42개의 기능 모듈</b>, 총 43개 파일로 구성됩니다.
+        전체 시스템은 <b>1개의 진입점(app.py)</b>과 <b>43개의 기능 모듈</b>, 총 44개 파일로 구성됩니다.
         각 기능(주식, 코인, 부동산, 미니게임 등)이 완전히 분리되어 있어,
         한 모듈의 오류가 전체 서비스에 영향을 주지 않습니다.
         유지보수 및 신규 기능 추가가 용이한 구조입니다.
@@ -1688,6 +1688,7 @@ function copyMsg(type, btn) {{
         <span class="arch-badge">app.py (진입점)</span>
         <span class="arch-badge">pages/ (36개 페이지)</span>
         <span class="arch-badge">utils/ (5개 유틸)</span>
+        <span class="arch-badge">components/ (1개 컴포넌트)</span>
         <span class="arch-badge">독립 렌더링</span>
     </div>
 </div>
@@ -1782,6 +1783,7 @@ function copyMsg(type, btn) {{
         st.markdown("""
 <div class="module-grid">
     <div class="module-item"><strong>app.py</strong>진입점·라우터·로그인·뷰 전환</div>
+    <div class="module-item"><strong>components/promo_popup.py</strong>🎉 시즌 홍보 팝업 (광고 모달)</div>
     <div class="module-item"><strong>utils/database.py</strong>MongoDB 연결·CRUD·stats 관리</div>
     <div class="module-item"><strong>utils/core.py</strong>해시·포맷·순자산·세션 동기화</div>
     <div class="module-item"><strong>utils/market_sync.py</strong>주가·코인·이자·임대료 자동동기화</div>
