@@ -13,6 +13,7 @@ from utils.database import load_db, save_db, load_stats, save_stats, get_login_l
 from utils.core import hash_pw, hash_pw_bcrypt, verify_pw, is_legacy_hash, format_korean_money, get_net_worth, sync_user_data, ADMIN_HASH, pull_user_data, get_online_users
 from utils.market_sync import run_market_sync
 from utils.css import GLOBAL_CSS
+from components.promo_popup import render_promo_popup
 
 # ==============================
 # 2. 페이지 기본 설정
@@ -740,6 +741,7 @@ div[data-testid="stAlert"] p, div[data-testid="stAlert"] span {
 # ==============================
 if st.session_state.page_view == "portal":
     st.markdown(PORTAL_CSS, unsafe_allow_html=True)
+    render_promo_popup()  # 🎉 시즌 3 홍보 팝업 (닫기 / 일주일간 보지 않기)
     market = load_db(MARKET_FILE, {})
 
     # ── 시즌 자동 전환 체크 (market DB 기반, 중복 실행 방지 내장) ──
