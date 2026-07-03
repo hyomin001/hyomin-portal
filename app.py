@@ -805,6 +805,7 @@ if st.session_state.page_view == "portal":
         _r_zombie_uid,  _r_zombie_val  = _get_gr_top('zombie',  'wave',  'wave')
         _r_fighter_uid, _r_fighter_val = _get_gr_top('fighter', 'score', 'score')
         _r_sniper_uid,  _r_sniper_val  = _get_gr_top('sniper',  'score', 'score')
+        _r_soccer11_uid, _r_soccer11_val = _get_gr_top('soccer11', 'score', 'score')
 
         # 터미널: game_records에서 클리어 스테이지 수 기준
         def _get_terminal_top():
@@ -833,9 +834,11 @@ if st.session_state.page_view == "portal":
             return f"<div class='card-rank-badge' style='color:rgba(255,100,100,0.6);font-size:0.6rem;'>⚠️ err</div>"
         _r_marble_uid = _r_dungeon_uid = _r_racing_uid = '—'
         _r_zombie_uid = _r_fighter_uid = _r_sniper_uid = _r_terminal_uid = '—'
+        _r_soccer11_uid = '—'
         _r_marble_val = _r_dungeon_val = _r_racing_val = '—'
         _r_zombie_val = _r_fighter_val = _r_sniper_val = '—'
         _r_terminal_val = '기록 없음'
+        _r_soccer11_val = '기록 없음'
 
 
     hud_user_txt = f"👤 {st.session_state.logged_in_user}님 접속 중" if st.session_state.get('logged_in_user') else "🔒 비로그인"
@@ -1344,7 +1347,7 @@ if st.session_state.page_view == "portal":
 
     # ── 신규 게임 행 ──────────────────────────────────────────
     st.markdown("<div class='game-section-title'>🆕 신규 게임 추가</div>", unsafe_allow_html=True)
-    nc1, nc2, nc3, nc4 = st.columns(4)
+    nc1, nc2, nc3, nc4, nc5 = st.columns(5)
 
     with nc1:
         st.markdown(f"""
@@ -1415,6 +1418,24 @@ if st.session_state.page_view == "portal":
                 st.session_state.page_view = "project_i"
             else:
                 st.session_state['_pending_page'] = "project_i"
+                st.session_state.page_view = "login"
+            st.rerun()
+
+    with nc5:
+        st.markdown(f"""
+        <div class='game-card' style='border-color:rgba(46,168,255,.4);min-height:180px;position:relative;'>
+          <div class='card-badge badge-new'>🆕 NEW</div>
+          {_rank_html(_r_soccer11_uid, _r_soccer11_val)}
+          <div class='card-icon'>⚽</div>
+          <div class='card-title'>얼티밋 사커 11</div>
+          <div class='card-desc'>11 vs 11 실시간 축구 매치<br>공수 전환 조작 · 3분 1경기</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("⚽ 매치 입장", use_container_width=True, key="btn_j"):
+            if st.session_state.get('logged_in_user'):
+                st.session_state.page_view = "project_j"
+            else:
+                st.session_state['_pending_page'] = "project_j"
                 st.session_state.page_view = "login"
             st.rerun()
 
@@ -1825,6 +1846,7 @@ function copyMsg(type, btn) {{
     <div class="module-item"><strong>pages/project_g.py</strong>🧟 좀비 아포칼립스 슈터</div>
     <div class="module-item"><strong>pages/project_h.py</strong>🥊 스트리트 파이터 EX</div>
     <div class="module-item"><strong>pages/project_i.py</strong>🎯 라인 배틀 저격전</div>
+    <div class="module-item"><strong>pages/project_j.py</strong>⚽ 얼티밋 사커 11 (11v11 축구매치)</div>
     <div class="module-item"><strong>dep_graph_snippet.py</strong>🕸️ 파일 의존성 그래프 위젯</div>
 </div>
         """, unsafe_allow_html=True)
@@ -2783,3 +2805,15 @@ elif st.session_state.page_view == "project_i":
         st.session_state.page_view = "portal"; st.rerun()
     from pages import project_i
     project_i.render()
+
+
+# ==============================
+# 15. [View 13] ⚽ 얼티밋 사커 11
+# ==============================
+elif st.session_state.page_view == "project_j":
+    if 'logged_in_user' not in st.session_state or not st.session_state.logged_in_user:
+        st.session_state.page_view = "login"; st.rerun()
+    if st.button("🏠 포털 메인으로 나가기", key="back_j"):
+        st.session_state.page_view = "portal"; st.rerun()
+    from pages import project_j
+    project_j.render()
