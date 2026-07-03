@@ -234,6 +234,7 @@ _GAME_META = {
     "zombie":        {"name": "좀비 아포칼립스",      "fmt": lambda s: f"{s:,}킬"},
     "fighter":       {"name": "스트리트 파이터 EX",   "fmt": lambda s: f"{s:,}점"},
     "sniper":        {"name": "라인 배틀 저격전",     "fmt": lambda s: f"{s:,}킬"},
+    "soccer11":      {"name": "얼티밋 사커 11",       "fmt": lambda s: f"{s:,}골"},
 }
 
 def get_game_meta(game_id: str) -> dict:
