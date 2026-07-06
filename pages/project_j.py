@@ -1240,52 +1240,103 @@ function drawGoalNet(x,yTop,yBot,dir){
   }
 }
 
-function drawPlayer(p, isActive){
-  const P=project(p.x,p.y);
-  const r=10.5*P.scale;
-
+function roundRectPath(x,y,w,h,r){
   ctx.beginPath();
-  ctx.ellipse(P.x,P.y+r*0.85,r,r*0.4,0,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fill();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function drawPlayer(p, isActive, dt){
+  const P=project(p.x,p.y);
+  const s=P.scale;
+  const speed=Math.hypot(p.vx,p.vy);
+  p.animPhase = (p.animPhase||0) + (now()<p.stumbleUntil? 0 : speed*(dt||0.016)*0.05);
+  const activity=clamp(speed/85,0,1);
+  const swing=Math.sin(p.animPhase)*5.4*s*activity;
+  const armSwing=-swing*0.8;
+
+  const gx=P.x, gy=P.y;
+  const legLen=9.2*s, torsoH=9.2*s, torsoW=7.4*s, headR=3.9*s;
+  const hipY=gy-legLen, shoulderY=hipY-torsoH, headY=shoulderY-headR*0.85;
 
   const base = p.isGK ? '#ffd400' : (p.team==='B'?'#2ea8ff':'#ff4757');
   const dark = p.isGK ? '#a88400' : (p.team==='B'?'#0e5fa8':'#a8202c');
-  const grad=ctx.createRadialGradient(P.x-r*0.3,P.y-r*0.4,1,P.x,P.y,r);
-  grad.addColorStop(0, isActive? '#ffffff': base);
-  grad.addColorStop(0.55, base);
-  grad.addColorStop(1, dark);
+  const skin = '#e8b48a';
+  const shortsColor = p.isGK? '#222833' : (p.team==='B'? '#0a2a45':'#3a0d12');
 
+  // 그림자
   ctx.beginPath();
-  ctx.arc(P.x,P.y,r,0,Math.PI*2);
-  ctx.fillStyle=grad; ctx.fill();
-  ctx.lineWidth=1.4; ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.stroke();
+  ctx.ellipse(gx,gy,7.2*s,2.9*s,0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
 
+  // 다리 (달리기 애니메이션)
+  const leftFootX=gx-2.6*s+swing, rightFootX=gx+2.6*s-swing;
+  ctx.lineCap='round';
+  ctx.lineWidth=Math.max(1.4,2.5*s);
+  ctx.strokeStyle=base;
+  ctx.beginPath(); ctx.moveTo(gx-1.6*s,hipY); ctx.lineTo(leftFootX,gy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(gx+1.6*s,hipY); ctx.lineTo(rightFootX,gy); ctx.stroke();
+  ctx.fillStyle='#111';
+  ctx.beginPath(); ctx.ellipse(leftFootX,gy,1.7*s,0.95*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(rightFootX,gy,1.7*s,0.95*s,0,0,Math.PI*2); ctx.fill();
+
+  // 팔
+  const leftHandX=gx-4.8*s-armSwing*0.35, rightHandX=gx+4.8*s+armSwing*0.35;
+  const handY=shoulderY+4.6*s+Math.abs(armSwing)*0.25;
+  ctx.lineWidth=Math.max(1.2,2.1*s);
+  ctx.strokeStyle=base;
+  ctx.beginPath(); ctx.moveTo(gx-2.6*s,shoulderY+1*s); ctx.lineTo(leftHandX,handY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(gx+2.6*s,shoulderY+1*s); ctx.lineTo(rightHandX,handY); ctx.stroke();
+  ctx.fillStyle= p.isGK? '#fff' : skin;
+  ctx.beginPath(); ctx.arc(leftHandX,handY,1.25*s,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(rightHandX,handY,1.25*s,0,Math.PI*2); ctx.fill();
+
+  // 몸통(유니폼 + 반바지)
+  const grad=ctx.createLinearGradient(gx,shoulderY,gx,hipY);
+  grad.addColorStop(0, isActive? '#ffffff': base);
+  grad.addColorStop(0.6, base);
+  grad.addColorStop(0.61, shortsColor);
+  grad.addColorStop(1, shortsColor);
+  roundRectPath(gx-torsoW/2, shoulderY, torsoW, torsoH, 2.3*s);
+  ctx.fillStyle=grad; ctx.fill();
+  ctx.lineWidth=Math.max(0.6,0.9*s); ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.stroke();
+
+  if(s>0.72){
+    ctx.fillStyle='#fff';
+    ctx.font=`800 ${Math.max(5,6.4*s)}px Rajdhani, sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p.num, gx, shoulderY+torsoH*0.32);
+  }
+
+  // 머리
+  ctx.beginPath(); ctx.arc(gx,headY,headR,0,Math.PI*2);
+  ctx.fillStyle=skin; ctx.fill();
+  ctx.lineWidth=Math.max(0.5,0.8*s); ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(gx,headY,headR,Math.PI*1.12,Math.PI*1.88);
+  ctx.strokeStyle=dark; ctx.lineWidth=Math.max(1,1.6*s); ctx.stroke();
   if(p.facing){
-    const fp=project(p.x+p.facing.x*13, p.y+p.facing.y*13);
-    ctx.beginPath(); ctx.arc(fp.x,fp.y,2.4*P.scale,0,Math.PI*2);
-    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(gx+p.facing.x*headR*0.72, headY+p.facing.y*headR*0.72, Math.max(0.5,0.85*s),0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fill();
   }
 
   if(isActive){
-    const pulse=(r+4)+Math.sin(now()*7)*1.5*P.scale;
-    ctx.beginPath(); ctx.arc(P.x,P.y,pulse,0,Math.PI*2);
-    ctx.strokeStyle='#fff'; ctx.lineWidth=2.2; ctx.stroke();
+    const pulse=1+Math.sin(now()*7)*0.06;
+    ctx.beginPath(); ctx.ellipse(gx,gy,9.5*s*pulse,3.6*s*pulse,0,0,Math.PI*2);
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.8; ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(P.x-5*P.scale,P.y-(r+9)); ctx.lineTo(P.x+5*P.scale,P.y-(r+9)); ctx.lineTo(P.x,P.y-(r+2));
+    ctx.moveTo(gx-4.6*s, headY-headR-6.5*s); ctx.lineTo(gx+4.6*s, headY-headR-6.5*s); ctx.lineTo(gx, headY-headR-1.6*s);
     ctx.fillStyle='#ffd400'; ctx.fill();
   }
-
-  ctx.fillStyle='#04070a';
-  ctx.font=`800 ${Math.max(7,9*P.scale)}px Rajdhani, sans-serif`;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(p.num, P.x, P.y+0.5);
-
   if(p.shielding){
-    ctx.beginPath(); ctx.arc(P.x,P.y,r+5.5,0,Math.PI*2);
-    ctx.strokeStyle='rgba(11,220,107,.6)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(gx,(shoulderY+hipY)/2, torsoW*1.35, (legLen+torsoH)*0.58, 0,0,Math.PI*2);
+    ctx.strokeStyle='rgba(11,220,107,.55)'; ctx.lineWidth=1.6; ctx.stroke();
   }
-  if(p===activePlayer() && p.stamina<22){
-    ctx.beginPath(); ctx.arc(P.x+r,P.y-r,3.2,0,Math.PI*2);
+  if(isActive && p.stamina<22){
+    ctx.beginPath(); ctx.arc(gx+torsoW*0.7, headY-headR, Math.max(2,3*s),0,Math.PI*2);
     ctx.fillStyle='#ff4757'; ctx.fill();
   }
 }
@@ -1366,7 +1417,7 @@ function render(dt){
   drawList.push({t:'b',y:ball.y});
   drawList.sort((a,b)=>a.y-b.y);
   for(const it of drawList){
-    if(it.t==='p') drawPlayer(it.ref, it.ref===activePlayer());
+    if(it.t==='p') drawPlayer(it.ref, it.ref===activePlayer(), dt);
     else drawBall();
   }
   drawParticles(dt);
