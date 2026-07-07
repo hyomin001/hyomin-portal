@@ -291,6 +291,7 @@ function resetKickoff(){
   activeBlueIdx=6;
   freezeUntil=now()+0.8;
   camInit=false;
+  markAssignAt=0; markAssignB={}; markAssignR={};
 }
 
 function fullReset(){
@@ -488,6 +489,7 @@ function doShortPass(passer){
   ball.intended=t; ball.lastPasser=passer;
   stats.passTry++; if(passer.team==='B' && Math.hypot(pt.x-t.x,pt.y-t.y)<12) stats.passOk++;
   addFloat(passer.x,passer.y-22,'PASS','#2ea8ff');
+  if(passer===activePlayer()) autoSwitchCooldown=now()+0.55;
 }
 function doThroughPass(passer){
   const t=bestThroughTarget(passer)||pickNearMate(passer);
@@ -508,6 +510,7 @@ function doThroughPass(passer){
   ball.intended=t; ball.lastPasser=passer;
   stats.passTry++;
   addFloat(passer.x,passer.y-22,'THROUGH!','#ffd400');
+  if(passer===activePlayer()) autoSwitchCooldown=now()+0.55;
 }
 function doLongOrCross(passer){
   const nearByline = passer.team==='B' ? passer.x>H1-220 : passer.x<H0+220;
@@ -526,6 +529,7 @@ function doLongOrCross(passer){
   }
   ball.intended=null;
   stats.passTry++;
+  if(passer===activePlayer()) autoSwitchCooldown=now()+0.55;
 }
 function doShoot(passer,power){
   const goalX = passer.team==='B'? GOAL_R_X : GOAL_L_X;
@@ -541,6 +545,7 @@ function doShoot(passer,power){
   if(passer.team==='B') stats.shots++;
   addFloat(passer.x,passer.y-24, power>0.75?'강슛!!':'슈팅!', '#ff4757');
   if(power>0.7) commentate(passer.team==='B'? '💥 강력한 슈팅을 시도합니다!' : '⚠️ 상대의 위협적인 슈팅!');
+  if(passer===activePlayer()) autoSwitchCooldown=now()+0.55;
 }
 function doCallRun(passer){
   const t=bestThroughTarget(passer)||pickNearMate(passer);
@@ -1401,6 +1406,29 @@ function nearestOpponentAttacker(p){
   return best || nearestOpponent(p);
 }
 
+let markAssignB={}, markAssignR={}, markAssignAt=0;
+function computeMarkFor(defTeam){
+  const defenders=(defTeam==='B'?blue:red).filter(p=>!p.isGK);
+  const attackers=(defTeam==='B'?red:blue).filter(p=>!p.isGK && p.role!=='DF');
+  if(!attackers.length) return {};
+  const pairs=[];
+  for(const d of defenders) for(const a of attackers) pairs.push({d,a,dist:dist(d,a)});
+  pairs.sort((x,y)=>x.dist-y.dist);
+  const defClaimed=new Set(), atkClaimed=new Set(), result={};
+  for(const pr of pairs){
+    if(defClaimed.has(pr.d.id) || atkClaimed.has(pr.a.id)) continue;
+    result[pr.d.id]=pr.a;
+    defClaimed.add(pr.d.id); atkClaimed.add(pr.a.id);
+  }
+  return result;
+}
+function updateMarkAssignments(){
+  if(now()<markAssignAt) return;
+  markAssignAt=now()+0.5;
+  markAssignB=computeMarkFor('B');
+  markAssignR=computeMarkFor('R');
+}
+
 function aiStep(p,dt){
   const t=now();
   if(p===activePlayer()) return;
@@ -1456,7 +1484,8 @@ function aiStep(p,dt){
   } else if(ball.owner && ball.owner.team!==p.team && !p.isGK){
     p.aiState='MARK';
     const s=slotPos(p);
-    const mark=nearestOpponentAttacker(p);
+    const markMap = p.team==='B'? markAssignB : markAssignR;
+    const mark = markMap[p.id] || nearestOpponentAttacker(p);
     const goalX = p.team==='B'? H0 : H1;
     tx = mark.x*0.6 + s.x*0.2 + goalX*0.2;
     ty = mark.y*0.5 + s.y*0.5;
@@ -2085,6 +2114,7 @@ function loop(ts){
   if(gameState==='playing'){
     if(now()>=freezeUntil){
       humanStep(dt);
+      updateMarkAssignments();
       for(const p of blue) if(p!==activePlayer()) aiStep(p,dt);
       for(const p of red) aiStep(p,dt);
       ballStep(dt);
