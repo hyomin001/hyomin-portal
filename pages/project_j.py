@@ -28,6 +28,7 @@ canvas{position:absolute;top:126px;left:50%;transform:translateX(-50%);border-ra
 #center-info{display:flex;flex-direction:column;align-items:center;gap:5px;}
 #timer{font-family:'Orbitron',sans-serif;font-size:23px;font-weight:900;color:var(--gold);letter-spacing:2px;text-shadow:0 0 10px rgba(255,212,0,.5);}
 #poss-bar{width:160px;height:6px;border-radius:6px;overflow:hidden;background:rgba(255,255,255,.08);display:flex;box-shadow:inset 0 0 4px rgba(0,0,0,.5);}
+#commentary{position:absolute;top:118px;left:50%;transform:translateX(-50%);z-index:100;font-size:11px;color:#cde;background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:8px;padding:4px 14px;max-width:420px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .3s;}
 #poss-b{background:linear-gradient(90deg,#0e5fa8,#2ea8ff);height:100%;transition:width .3s;}
 #poss-r{background:linear-gradient(90deg,#ff4757,#a8202c);height:100%;transition:width .3s;}
 #stam-wrap{position:absolute;top:128px;left:50%;transform:translateX(-368px);width:150px;z-index:100;}
@@ -108,6 +109,7 @@ canvas{position:absolute;top:126px;left:50%;transform:translateX(-50%);border-ra
   <div id="center-info" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:101;">
     <div id="timer">3:00</div>
     <div id="poss-bar"><div id="poss-b" style="width:50%;"></div><div id="poss-r" style="width:50%;"></div></div>
+    <div id="commentary"></div>
   </div>
   <div id="stam-wrap"><div id="stam-lbl">STAMINA</div><div id="stam-bg"><div id="stam-fill"></div></div></div>
   <div id="active-tag">조작 중: <b id="active-num">#—</b> · 전술 <b id="tactic-tag">균형</b> (T)</div>
@@ -247,9 +249,12 @@ let userFormation='4-4-2';
 let opponentOVR=72;
 let tactic='balanced'; // 'attacking' | 'balanced' | 'defensive'
 let touchLog=[];
+let replayBuffer=[], goalReplay=null, replaySampleAcc=0;
+let adaptCheckAt=0;
 
 // ── 메타 레이어 (허브 / 친선전 / 월드컵 토너먼트 / 리그) ──
 const SAVED_LEAGUE = __SAVED_LEAGUE_JSON__;
+const SAVED_ACHIEVEMENTS = __SAVED_ACHIEVEMENTS_JSON__ || {};
 let metaMode=null;          // null(hub) | 'friendly' | 'wc' | 'league'
 let aiDifficulty=1.0;
 let lastMatchScore={b:0,r:0};
@@ -298,6 +303,8 @@ function fullReset(){
   particles=[]; floatTexts=[];
   touchLog=[];
   tactic='balanced';
+  adaptCheckAt=now()+8;
+  commentate('🎙️ 킥오프! 경기가 시작됩니다.');
 }
 
 const keys=new Set();
@@ -437,6 +444,15 @@ function kickTo(x,y,spd,lofted){
 function addFloat(x,y,text,color){
   floatTexts.push({x,y,text,color,born:now()});
 }
+let commentaryTimer=null;
+function commentate(text){
+  const el=document.getElementById('commentary');
+  if(!el) return;
+  el.textContent=text;
+  el.style.opacity='1';
+  if(commentaryTimer) clearTimeout(commentaryTimer);
+  commentaryTimer=setTimeout(()=>{ el.style.opacity='0'; }, 3000);
+}
 function burst(x,y,color,n,spread){
   spread=spread||220;
   for(let i=0;i<n;i++){
@@ -475,6 +491,7 @@ function doThroughPass(passer){
   const targetX=t.x+dir*72;
   if(isOffside(passer.team, targetX)){
     addFloat(t.x, t.y-26, 'OFFSIDE!', '#ff4757');
+    commentate('🚩 오프사이드! 판정이 무효로 돌아갑니다.');
     const opp=nearestOpponent(passer);
     ball.owner = opp || null;
     ball.x=passer.x; ball.y=passer.y; ball.vx=0; ball.vy=0; ball.vz=0; ball.z=0;
@@ -519,6 +536,7 @@ function doShoot(passer,power){
   ball.assistCandidate = (ball.lastPasser && ball.lastPasser!==passer && ball.lastPasser.team===passer.team) ? ball.lastPasser : null;
   if(passer.team==='B') stats.shots++;
   addFloat(passer.x,passer.y-24, power>0.75?'강슛!!':'슈팅!', '#ff4757');
+  if(power>0.7) commentate(passer.team==='B'? '💥 강력한 슈팅을 시도합니다!' : '⚠️ 상대의 위협적인 슈팅!');
 }
 function doCallRun(passer){
   const t=bestThroughTarget(passer)||pickNearMate(passer);
@@ -557,6 +575,7 @@ function attemptStandingTackle(defender){
     if(Math.random()<chance){
       ball.owner=defender; ball.vx=0; ball.vy=0; ball.vz=0; ball.z=0; ball.intended=null; ball.lastPasser=null;
       addFloat(defender.x,defender.y-22,'TACKLE!','#0bdc6b');
+      if(defender.team==='B') commentate('🛡️ 깔끔한 태클로 공을 따냅니다!');
       if(defender.team==='B') stats.tackles++;
       defender.matchTackles=(defender.matchTackles||0)+1;
       burst(defender.x,defender.y,'#c9a36a',7,120);
@@ -582,6 +601,7 @@ function attemptSlideTackle(defender){
       ball.owner=defender; ball.vx=0; ball.vy=0; ball.vz=0; ball.z=0; ball.intended=null; ball.lastPasser=null;
       defender.stumbleUntil=now()+0.3;
       addFloat(defender.x,defender.y-22,'SLIDE TACKLE!','#0bdc6b');
+      if(defender.team==='B') commentate('🛡️ 과감한 슬라이딩 태클 성공!');
       if(defender.team==='B') stats.tackles++;
       defender.matchTackles=(defender.matchTackles||0)+1;
     } else {
@@ -611,6 +631,14 @@ function showMeta(){ document.getElementById('startOverlay').style.display='flex
 function hideMeta(){ document.getElementById('startOverlay').style.display='none'; }
 function setMetaBody(html){ document.getElementById('metaBody').innerHTML=html; }
 
+function achievementsHtml(){
+  const a=SAVED_ACHIEVEMENTS||{};
+  return `<div class="fixture-box" style="font-size:10.8px;line-height:1.8;margin-top:10px;">
+    <b style="color:var(--gold);">🏅 업적</b><br>
+    🎩 해트트릭 ${a.hattrick||0}회 &nbsp; 🧤 클린시트 ${a.cleanSheet||0}회 &nbsp;
+    🔥 대승(4골차+) ${a.bigWin||0}회 &nbsp; 📈 최다연승 ${a.winStreakMax||0}
+  </div>`;
+}
 function renderHub(){
   metaMode=null;
   const leagueTag = leagueState ? `<div class="md">진행 중인 시즌 있음 · ${leagueState.matchday}/7 라운드</div>` : `<div class="md">8팀 리그 · 기록 자동 저장</div>`;
@@ -622,6 +650,7 @@ function renderHub(){
       <div class="mode-btn" data-action="go_wc"><div class="mi">🏆</div><div><div class="mt">월드컵 토너먼트</div><div class="md">국가 선택 → 조별리그 → 결승</div></div></div>
       <div class="mode-btn" data-action="go_league"><div class="mi">📅</div><div><div class="mt">리그 모드</div><div class="md">8팀 풀리그 · ${leagueState?'이어서 진행':'새 시즌 시작'}</div></div></div>
     </div>
+    ${achievementsHtml()}
     ${keyGuideHtml()}
   `);
 }
@@ -1251,6 +1280,7 @@ function tryGKSave(gk){
     ball.vx = -ball.vx*0.9 + (gk.team==='B'?1:-1)*180;
     ball.vy = (Math.random()-0.5)*380;
     flashBanner('SAVE!', gk.team==='B'?'BLUE GK':'RED GK', gk.team==='B'?'#2ea8ff':'#ff4757');
+    commentate(gk.team==='B'? '🧤 골키퍼의 환상적인 선방!' : '😮 상대 골키퍼도 잘 막아냅니다.');
     burst(ball.x,ball.y,'#ffffff',10,200);
   }
 }
@@ -1273,10 +1303,11 @@ function scoreGoal(team){
       ball.assistCandidate.matchAssists=(ball.assistCandidate.matchAssists||0)+1;
     }
   }
+  goalReplay = replayBuffer.slice(-26);
   score[team]++;
   updateScoreHUD();
   flashBanner('GOAL!!', (team==='B'?'BLUE':'RED')+' SCORES', team==='B'?'#2ea8ff':'#ff4757');
-  freezeUntil=now()+1.7;
+  commentate(team==='B'? '🎉 GOOOOAL! 우리 팀이 득점에 성공합니다!' : '😱 아... 상대에게 실점을 허용합니다.');
   shakeT=now()+0.5;
   flashT=now()+0.35;
   burst(team==='B'?GOAL_R_X-14:GOAL_L_X+14, (GY0+GY1)/2, team==='B'?'#2ea8ff':'#ff4757', 26, 260);
@@ -1284,6 +1315,7 @@ function scoreGoal(team){
   const keepScore={...score};
   resetKickoff();
   score=keepScore;
+  freezeUntil=now()+2.6;
 }
 
 function updateScoreHUD(){
@@ -1598,6 +1630,41 @@ function drawFloatTexts(){
   }
 }
 
+function snapshotNow(){
+  return {
+    bx:ball.x, by:ball.y, bz:ball.z||0,
+    blue: blue.map(p=>({x:p.x,y:p.y,isGK:p.isGK,active:p===activePlayer()})),
+    red: red.map(p=>({x:p.x,y:p.y,isGK:p.isGK}))
+  };
+}
+function drawSimpleDot(x,y,color,isGK){
+  const P=project(x,y);
+  const r=(isGK?9:8)*P.scale;
+  ctx.beginPath(); ctx.arc(P.x,P.y,r,0,Math.PI*2);
+  ctx.fillStyle=color; ctx.fill();
+  ctx.lineWidth=1.2; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.stroke();
+}
+function drawSimpleBall(x,y,z){
+  const P=project(x,y);
+  const s=(1+(z||0)*0.012)*P.scale;
+  const zOff=(z||0)*0.9*P.scale;
+  ctx.beginPath(); ctx.arc(P.x,P.y-zOff,6*s,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=1; ctx.strokeStyle='#333'; ctx.stroke();
+}
+function renderReplay(){
+  drawPitch();
+  const dur=2.2, elapsed=clamp(dur-(freezeUntil-now()),0,dur);
+  const idx=clamp(Math.floor((elapsed/dur)*(goalReplay.length-1)),0,goalReplay.length-1);
+  const snap=goalReplay[idx];
+  for(const rp of snap.red) drawSimpleDot(rp.x,rp.y,'#ff4757',rp.isGK);
+  for(const rp of snap.blue) drawSimpleDot(rp.x,rp.y, rp.active?'#ffd400':'#2ea8ff', rp.isGK);
+  drawSimpleBall(snap.bx,snap.by,snap.bz);
+  ctx.font='900 13px Orbitron, sans-serif'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,212,0,.92)';
+  ctx.fillText('🎬 GOAL REPLAY', W/2, 26);
+}
+
 function render(dt){
   updateCamera(dt);
   ctx.save();
@@ -1605,19 +1672,24 @@ function render(dt){
     ctx.translate((Math.random()-0.5)*7,(Math.random()-0.5)*7);
   }
 
-  drawPitch();
+  if(goalReplay && goalReplay.length && now()<freezeUntil){
+    renderReplay();
+  } else {
+    if(goalReplay) goalReplay=null;
+    drawPitch();
 
-  const drawList=[];
-  for(const p of red) drawList.push({t:'p',ref:p,y:p.y});
-  for(const p of blue) drawList.push({t:'p',ref:p,y:p.y});
-  drawList.push({t:'b',y:ball.y});
-  drawList.sort((a,b)=>a.y-b.y);
-  for(const it of drawList){
-    if(it.t==='p') drawPlayer(it.ref, it.ref===activePlayer(), dt);
-    else drawBall();
+    const drawList=[];
+    for(const p of red) drawList.push({t:'p',ref:p,y:p.y});
+    for(const p of blue) drawList.push({t:'p',ref:p,y:p.y});
+    drawList.push({t:'b',y:ball.y});
+    drawList.sort((a,b)=>a.y-b.y);
+    for(const it of drawList){
+      if(it.t==='p') drawPlayer(it.ref, it.ref===activePlayer(), dt);
+      else drawBall();
+    }
+    drawParticles(dt);
+    drawFloatTexts();
   }
-  drawParticles(dt);
-  drawFloatTexts();
   ctx.restore();
 
   const vig=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.8);
@@ -1659,6 +1731,20 @@ function loop(ts){
 
       timeLeft-=dt;
       if(timeLeft<=0){ timeLeft=0; endMatch(); }
+
+      replaySampleAcc+=dt;
+      if(replaySampleAcc>0.08){
+        replaySampleAcc=0;
+        replayBuffer.push(snapshotNow());
+        if(replayBuffer.length>40) replayBuffer.shift();
+      }
+
+      if(now()>adaptCheckAt){
+        adaptCheckAt=now()+8;
+        const diff=score.B-score.R;
+        if(diff>=2) aiDifficulty=clamp(aiDifficulty+0.05,0.6,1.55);
+        else if(diff<=-2) aiDifficulty=clamp(aiDifficulty-0.05,0.6,1.55);
+      }
     }
     document.getElementById('timer').textContent = fmtTime(timeLeft);
     document.getElementById('stam-fill').style.width = activePlayer().stamina+'%';
@@ -1732,6 +1818,7 @@ function endMatch(){
   if(b>r){ tagEl.textContent='🎉 승리!'; tagEl.style.color='#0bdc6b'; win=1; }
   else if(b===r){ tagEl.textContent='🤝 무승부'; tagEl.style.color='#ffd400'; }
   else { tagEl.textContent='😢 패배'; tagEl.style.color='#ff4757'; }
+  commentate('🏁 경기 종료! 최종 스코어 '+b+' : '+r);
   const tot=possAcc.b+possAcc.r || 1;
   const pb=Math.round(possAcc.b/tot*100);
   document.getElementById('rs-poss').textContent = pb+' : '+(100-pb);
@@ -1751,8 +1838,11 @@ function endMatch(){
   document.getElementById('retryBtn').textContent = label;
 
   document.getElementById('endOverlay').style.display='flex';
+  const hattrick = blue.some(p=>(p.matchGoals||0)>=3);
+  const cleanSheet = (r===0);
+  const bigWin = win===1 && (b-r)>=4;
   try{
-    window.parent.postMessage({type:'soccer11_result', score:b, opp:r, win:win},'*');
+    window.parent.postMessage({type:'soccer11_result', score:b, opp:r, win:win, hattrick, cleanSheet, bigWin},'*');
   }catch(e){}
 }
 
@@ -1813,18 +1903,30 @@ def render():
                 _s_score = int(_result.get('score', 0))
                 _s_opp   = int(_result.get('opp', 0))
                 _s_win   = int(_result.get('win', 0))
+                _s_hattrick = bool(_result.get('hattrick', False))
+                _s_cleanSheet = bool(_result.get('cleanSheet', False))
+                _s_bigWin = bool(_result.get('bigWin', False))
                 if _cur_uid:
                     _col = _get_col(USERS_FILE)
                     _doc = _col.find_one({"_id": "main"}, {_cur_uid: 1})
                     if _doc and _cur_uid in _doc:
                         _udata = _doc[_cur_uid]
+                        _s11 = _udata.get('game_records', {}).get('soccer11', {})
+                        _ach = _s11.get('achievements', {})
+                        _streak_cur = _ach.get('winStreakCurrent', 0) + 1 if _s_win else 0
+                        _streak_max = max(_ach.get('winStreakMax', 0), _streak_cur)
                         _upd = {
-                            f"{_cur_uid}.game_records.soccer11.matches": _udata.get('game_records', {}).get('soccer11', {}).get('matches', 0) + 1,
+                            f"{_cur_uid}.game_records.soccer11.matches": _s11.get('matches', 0) + 1,
+                            f"{_cur_uid}.game_records.soccer11.achievements.hattrick": _ach.get('hattrick', 0) + (1 if _s_hattrick else 0),
+                            f"{_cur_uid}.game_records.soccer11.achievements.cleanSheet": _ach.get('cleanSheet', 0) + (1 if _s_cleanSheet else 0),
+                            f"{_cur_uid}.game_records.soccer11.achievements.bigWin": _ach.get('bigWin', 0) + (1 if _s_bigWin else 0),
+                            f"{_cur_uid}.game_records.soccer11.achievements.winStreakCurrent": _streak_cur,
+                            f"{_cur_uid}.game_records.soccer11.achievements.winStreakMax": _streak_max,
                         }
                         if _s_win:
-                            _upd[f"{_cur_uid}.game_records.soccer11.wins"] = _udata.get('game_records', {}).get('soccer11', {}).get('wins', 0) + 1
+                            _upd[f"{_cur_uid}.game_records.soccer11.wins"] = _s11.get('wins', 0) + 1
                         _col.update_one({"_id": "main"}, {"$set": _upd})
-                        if _s_score > _udata.get('game_records', {}).get('soccer11', {}).get('score', 0):
+                        if _s_score > _s11.get('score', 0):
                             _col.update_one({"_id": "main"}, {"$set": {
                                 f"{_cur_uid}.game_records.soccer11.score": _s_score,
                             }})
@@ -1848,14 +1950,19 @@ def render():
             import logging; logging.error(f"[soccer11 league save] {_e}")
 
     _saved_league = None
+    _saved_achievements = None
     try:
         if _cur_uid:
             _col = _get_col(USERS_FILE)
-            _doc = _col.find_one({"_id": "main"}, {f"{_cur_uid}.game_records.soccer11.league": 1})
+            _doc = _col.find_one({"_id": "main"}, {f"{_cur_uid}.game_records.soccer11": 1})
             if _doc and _cur_uid in _doc:
-                _saved_league = _doc[_cur_uid].get('game_records', {}).get('soccer11', {}).get('league')
+                _s11 = _doc[_cur_uid].get('game_records', {}).get('soccer11', {})
+                _saved_league = _s11.get('league')
+                _saved_achievements = _s11.get('achievements')
     except Exception:
         _saved_league = None
+        _saved_achievements = None
 
     _html = GAME_HTML.replace("__SAVED_LEAGUE_JSON__", _json.dumps(_saved_league) if _saved_league else "null")
+    _html = _html.replace("__SAVED_ACHIEVEMENTS_JSON__", _json.dumps(_saved_achievements) if _saved_achievements else "null")
     components.html(_html, height=940, scrolling=False)
