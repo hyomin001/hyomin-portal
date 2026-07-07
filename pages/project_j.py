@@ -96,6 +96,8 @@ canvas{position:absolute;top:126px;left:50%;transform:translateX(-50%);border-ra
 .fixture-box b{color:var(--gold);}
 .continue-btn{font-family:'Orbitron',sans-serif;font-weight:900;letter-spacing:1px;border:none;border-radius:12px;padding:14px 0;width:100%;font-size:14.5px;cursor:pointer;margin-top:4px;background:linear-gradient(90deg,#0bdc6b,#2ea8ff);color:#05121a;}
 .ghost-btn{font-family:'Rajdhani',sans-serif;font-weight:700;border:1px solid var(--border);background:rgba(255,255,255,.05);border-radius:10px;padding:9px 0;width:100%;font-size:12.5px;cursor:pointer;margin-top:8px;color:#aebccb;}
+.mini-btn{display:inline-block;background:rgba(255,212,0,.14);border:1px solid rgba(255,212,0,.4);color:var(--gold);border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;}
+.mini-btn:hover{background:rgba(255,212,0,.28);}
 .trophy-emoji{font-size:56px;margin:6px 0;}
 </style>
 </head>
@@ -292,7 +294,9 @@ function resetKickoff(){
 }
 
 function fullReset(){
-  blue=makeTeam('B', 74, userFormation);
+  blue = (blueRosterSource==='career' && typeof careerState!=='undefined' && careerState)
+    ? makeTeamFromSquad(careerState.squad, 'B', userFormation)
+    : makeTeam('B', 74, userFormation);
   red=makeTeam('R', opponentOVR, '4-4-2');
   resetKickoff();
   score={B:0,R:0};
@@ -649,6 +653,7 @@ function renderHub(){
       <div class="mode-btn" data-action="go_friendly"><div class="mi">🤝</div><div><div class="mt">친선전</div><div class="md">난이도 선택 후 AI와 단판 매치</div></div></div>
       <div class="mode-btn" data-action="go_wc"><div class="mi">🏆</div><div><div class="mt">월드컵 토너먼트</div><div class="md">국가 선택 → 조별리그 → 결승</div></div></div>
       <div class="mode-btn" data-action="go_league"><div class="mi">📅</div><div><div class="mt">리그 모드</div><div class="md">8팀 풀리그 · ${leagueState?'이어서 진행':'새 시즌 시작'}</div></div></div>
+      <div class="mode-btn" data-action="go_career"><div class="mi">🏟️</div><div><div class="mt">커리어 모드</div><div class="md">${careerState? careerState.crest+' '+careerState.clubName+' · 시즌 '+careerState.season : '구단 창단 · 이적시장 · 스쿼드 육성'}</div></div></div>
     </div>
     ${achievementsHtml()}
     ${keyGuideHtml()}
@@ -675,8 +680,13 @@ function renderFriendlySetup(){
     <div class="ghost-btn" data-action="goto_hub">◀ 메인으로</div>
   `);
 }
-function pickFormation(f){ userFormation = FORMATIONS[f]? f : '4-4-2'; renderFriendlySetup(); }
+function pickFormation(f){
+  userFormation = FORMATIONS[f]? f : '4-4-2';
+  if(metaMode==='career') renderCareerHub();
+  else renderFriendlySetup();
+}
 function startFriendly(diff){
+  blueRosterSource=null;
   aiDifficulty=diff;
   opponentOVR = diff<0.9? 60 : (diff>1.1? 85 : 72);
   startRealMatch('RED (AI)');
@@ -776,12 +786,14 @@ function wcTableHtml(table){
   return `<table class="meta-table"><tr><th>팀</th><th>경기</th><th>승</th><th>무</th><th>패</th><th>득실</th><th>승점</th></tr>${rows}</table>`;
 }
 function wcStartNextGroupMatch(){
+  blueRosterSource=null;
   const opp=wcState.opponents[wcState.matchIdx];
   hud('r', opp);
   opponentOVR = wcState.opponentOVR[opp] || 70;
   startRealMatch(opp);
 }
 function wcStartFinalMatch(){
+  blueRosterSource=null;
   hud('r', wcState.finalOpp);
   aiDifficulty=1.15;
   opponentOVR = (wcState.opponentOVR[wcState.finalOpp] || 74) + 4;
@@ -890,6 +902,7 @@ function leagueTableHtml(table){
   return `<table class="meta-table"><tr><th>팀</th><th>경기</th><th>승</th><th>무</th><th>패</th><th>득실</th><th>승점</th></tr>${rows}</table>`;
 }
 function leaguePlayMatchday(){
+  blueRosterSource=null;
   const round=leagueState.fixtures[leagueState.matchday];
   let userPair=null; const others=[];
   for(const pr of round){ if(pr.includes(0)) userPair=pr; else others.push(pr); }
@@ -913,6 +926,281 @@ function leagueOnMatchEnd(b,r,win){
   return leagueState.done? '🏆 시즌 최종 결과 보기' : '📅 다음 라운드로';
 }
 
+// ── 커리어 모드 / 이적시장 ──
+const NAME_POOL=['김민준','이서준','박도윤','최시우','정하준','강주원','조은우','윤지호','장현우','임도현',
+  '한지훈','오승민','서준혁','권태양','신동욱','배재현','황인성','문성민','안재원','송민호',
+  '카를로스','디에고','루카스','안토니오','마르코','유키','하비에르','토마스','브루노','니콜라스'];
+const CREST_POOL=['⚽','🦁','🐉','⚡','🔥','🛡️','⭐','🦅','👑','💎'];
+
+function ovrOf(p){ const a=p.attrs; return Math.round((a.pace+a.shoot+a.pass+a.tackle+a.stam)/5); }
+function genSquadPlayer(role, ovrTarget, age){
+  return {
+    id:'sq'+Math.random().toString(36).slice(2,9),
+    name: NAME_POOL[Math.floor(Math.random()*NAME_POOL.length)],
+    role, age: age||(18+Math.floor(Math.random()*17)),
+    attrs: genAttrs(role, ovrTarget)
+  };
+}
+function playerValue(p){
+  const ovr=ovrOf(p);
+  const ageFactor = p.age<=22? (0.75+(p.age-18)*0.05) : (p.age<=29? 1.15 : Math.max(0.22, 1.15-(p.age-29)*0.13));
+  return Math.max(300000, Math.round(ovr*ovr*900*ageFactor/1000)*1000);
+}
+function genInitialSquad(){
+  const roles=[...Array(2).fill('GK'), ...Array(5).fill('DF'), ...Array(5).fill('MF'), ...Array(4).fill('FW')];
+  return roles.map(r=> genSquadPlayer(r, 58+Math.floor(Math.random()*16)));
+}
+function genMarketPlayer(){
+  const roles=['GK','DF','MF','FW'];
+  const r=roles[Math.floor(Math.random()*roles.length)];
+  const p=genSquadPlayer(r, 55+Math.floor(Math.random()*38));
+  p.price=playerValue(p);
+  return p;
+}
+function genMarketPool(n){ const arr=[]; for(let i=0;i<n;i++) arr.push(genMarketPlayer()); return arr; }
+
+function pickSquadForFormation(squad, formationName){
+  const F=FORMATIONS[formationName]||FORMATIONS['4-4-2'];
+  const need={GK:0,DF:0,MF:0,FW:0};
+  F.roles.forEach(r=>need[r]++);
+  const byRole={GK:[],DF:[],MF:[],FW:[]};
+  squad.forEach(pl=> byRole[pl.role] && byRole[pl.role].push(pl));
+  Object.keys(byRole).forEach(r=> byRole[r].sort((a,b)=> ovrOf(b)-ovrOf(a)));
+  const chosen=[];
+  for(const role of ['GK','DF','MF','FW']){
+    const picks=byRole[role].slice(0, need[role]);
+    while(picks.length<need[role]) picks.push(genSquadPlayer(role,60));
+    chosen.push(...picks);
+  }
+  return chosen;
+}
+function makeTeamFromSquad(squad, team, formationName){
+  const F=FORMATIONS[formationName]||FORMATIONS['4-4-2'];
+  const chosen=pickSquadForFormation(squad, formationName);
+  const arr=[];
+  for(let i=0;i<11;i++){
+    const f=F.slots[i], role=F.roles[i];
+    const src=chosen[i];
+    const fx = team==='B'? f.x : 1-f.x;
+    arr.push({
+      id:team+i, team, num:i+1, role, isGK:role==='GK', baseFx:fx, baseFy:f.y,
+      x:H0+fx*(H1-H0), y:V0+f.y*(V1-V0),
+      vx:0, vy:0, facing:{x:team==='B'?1:-1,y:0},
+      attrs:src.attrs, ovr:ovrOf(src), pname:src.name, squadId:src.id,
+      stamina:100, shielding:false, jockeying:false, aiState:'HOLD',
+      runUntil:0, pressUntil:0, stumbleUntil:0, skillEvadeUntil:0,
+      matchGoals:0, matchAssists:0, matchTackles:0
+    });
+  }
+  return arr;
+}
+
+const SAVED_CAREER = __SAVED_CAREER_JSON__;
+let careerState = SAVED_CAREER && SAVED_CAREER.squad ? SAVED_CAREER : null;
+let blueRosterSource=null; // null | 'career'
+
+function persistCareer(){
+  try{ window.parent.postMessage({type:'soccer11_career_state', state:careerState}, '*'); }catch(e){}
+}
+function fmtMoney(v){ return (v/10000).toFixed(0)+'만'; }
+
+function careerCreate(name, crest){
+  careerState = {
+    clubName: name && name.trim()? name.trim() : '나의 구단',
+    crest: crest||'⚽',
+    budget: 50000000,
+    season: 1,
+    squad: genInitialSquad(),
+    market: genMarketPool(10),
+    league: {
+      teams: ['__CLUB__', ...shuffle(LEAGUE_CLUB_NAMES)],
+      ovr: [70, ...LEAGUE_CLUB_NAMES.map(()=>60+Math.round(Math.random()*25))],
+      table: Array(8).fill(0).map(()=>({p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0})),
+      fixtures: makeRoundRobin(8),
+      matchday: 0, done:false
+    }
+  };
+  careerState.league.teams[0]=careerState.clubName;
+  persistCareer();
+}
+function careerStandingsSorted(){
+  return careerState.league.teams.map((n,i)=>({name:n, idx:i, ...careerState.league.table[i]}))
+    .sort((x,y)=> y.pts-x.pts || (y.gf-y.ga)-(x.gf-x.ga) || y.gf-x.gf);
+}
+function careerPlayMatchday(){
+  if(!careerState || careerState.league.done) return;
+  const round=careerState.league.fixtures[careerState.league.matchday];
+  if(!round) return;
+  let userPair=null; const others=[];
+  for(const pr of round){ if(pr.includes(0)) userPair=pr; else others.push(pr); }
+  for(const [ai,bi] of others){
+    const [ga,gb]=simScoreline(careerState.league.ovr[ai], careerState.league.ovr[bi]);
+    const A=careerState.league.table[ai], B=careerState.league.table[bi];
+    A.p++; B.p++; A.gf+=ga; A.ga+=gb; B.gf+=gb; B.ga+=ga;
+    if(ga>gb){ A.w++; A.pts+=3; B.l++; } else if(ga<gb){ B.w++; B.pts+=3; A.l++; } else { A.d++;B.d++;A.pts++;B.pts++; }
+  }
+  const oppIdx = userPair[0]===0?userPair[1]:userPair[0];
+  careerState.league._pendingOpp=oppIdx;
+  aiDifficulty=1.0;
+  opponentOVR = careerState.league.ovr[oppIdx];
+  blueRosterSource='career';
+  hud('r', careerState.league.teams[oppIdx]);
+  startRealMatch(careerState.league.teams[oppIdx]);
+}
+function careerOnMatchEnd(b,r,win){
+  const oppIdx=careerState.league._pendingOpp;
+  const A=careerState.league.table[0], B=careerState.league.table[oppIdx];
+  A.p++; B.p++; A.gf+=b; A.ga+=r; B.gf+=r; B.ga+=b;
+  if(b>r){ A.w++; A.pts+=3; B.l++; } else if(b<r){ B.w++; B.pts+=3; A.l++; } else { A.d++;B.d++;A.pts++;B.pts++; }
+  careerState.league.matchday++;
+  if(careerState.league.matchday>=7) careerState.league.done=true;
+  persistCareer();
+  return careerState.league.done? '🏆 시즌 결산 보기' : '📅 다음 라운드로';
+}
+function careerSeasonEnd(){
+  const table=careerStandingsSorted();
+  const myPos = table.findIndex(t=>t.idx===0)+1;
+  const prize = myPos===1? 30000000 : (myPos<=3? 15000000 : (myPos<=6? 8000000 : 3000000));
+  careerState.budget += prize;
+  const retired=[];
+  careerState.squad.forEach(p=>{
+    p.age++;
+    const a=p.attrs;
+    const grow=(k)=>{
+      if(p.age<24) a[k]=clamp(a[k]+Math.round(Math.random()*3),28,99);
+      else if(p.age<=29) a[k]=clamp(a[k]+Math.round(Math.random()*2-1),28,99);
+      else a[k]=clamp(a[k]-Math.round(1+Math.random()*2),20,99);
+    };
+    ['pace','shoot','pass','tackle','stam'].forEach(grow);
+  });
+  careerState.squad = careerState.squad.filter(p=>{
+    if(p.age>=36){ retired.push(p.name); return false; }
+    return true;
+  });
+  while(careerState.squad.filter(p=>p.role==='GK').length<2) careerState.squad.push(genSquadPlayer('GK',60,21));
+  while(careerState.squad.length<16) careerState.squad.push(genSquadPlayer(['DF','MF','FW'][Math.floor(Math.random()*3)],60,20));
+  careerState.market = genMarketPool(10);
+  careerState.season++;
+  careerState.league.table = Array(8).fill(0).map(()=>({p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
+  careerState.league.fixtures = makeRoundRobin(8);
+  careerState.league.matchday = 0;
+  careerState.league.done = false;
+  careerState.league.ovr = [70, ...LEAGUE_CLUB_NAMES.map(()=>60+Math.round(Math.random()*25))];
+  persistCareer();
+  return {myPos, prize, retired};
+}
+function careerBuy(id){
+  const p=careerState.market.find(m=>m.id===id);
+  if(!p) return;
+  if(careerState.budget<p.price){ renderCareerMarket('예산이 부족합니다.'); return; }
+  careerState.budget-=p.price;
+  careerState.squad.push({id:p.id,name:p.name,role:p.role,age:p.age,attrs:p.attrs});
+  careerState.market=careerState.market.filter(m=>m.id!==id);
+  persistCareer();
+  renderCareerMarket(`✅ ${p.name} 영입 완료!`);
+}
+function careerSell(id){
+  const p=careerState.squad.find(s=>s.id===id);
+  if(!p) return;
+  const gkCount=careerState.squad.filter(s=>s.role==='GK').length;
+  if(careerState.squad.length<=12 || (p.role==='GK' && gkCount<=1)){
+    renderCareerSquad('최소 스쿼드 인원(또는 GK)은 유지해야 해!');
+    return;
+  }
+  const value=Math.round(playerValue(p)*0.7);
+  careerState.budget+=value;
+  careerState.squad=careerState.squad.filter(s=>s.id!==id);
+  persistCareer();
+  renderCareerSquad(`✅ ${p.name} 방출 완료 (+${fmtMoney(value)})`);
+}
+
+function careerSquadRowsHtml(){
+  const rows=[...careerState.squad].sort((a,b)=> ovrOf(b)-ovrOf(a));
+  return rows.map(p=>`<tr><td class="tname">${p.name}</td><td>${p.role}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td><td>${fmtMoney(playerValue(p))}</td>
+    <td><div class="mini-btn" data-action="career_sell" data-id="${p.id}">방출</div></td></tr>`).join('');
+}
+function renderCareerSquad(msg){
+  metaMode='career';
+  setMetaBody(`
+    <div class="meta-title">👥 스쿼드 (${careerState.squad.length}명)</div>
+    <div class="meta-sub">${msg||'선수를 방출해 예산을 확보할 수 있어. 최소 12명은 유지해야 해.'}</div>
+    <table class="meta-table"><tr><th>이름</th><th>포지션</th><th>나이</th><th>OVR</th><th>시장가</th><th></th></tr>${careerSquadRowsHtml()}</table>
+    <div class="ghost-btn" data-action="career_hub">◀ 구단 사무실로</div>
+  `);
+}
+function careerMarketRowsHtml(){
+  return careerState.market.map(p=>`<tr><td class="tname">${p.name}</td><td>${p.role}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td><td>${fmtMoney(p.price)}</td>
+    <td><div class="mini-btn" data-action="career_buy" data-id="${p.id}">영입</div></td></tr>`).join('');
+}
+function renderCareerMarket(msg){
+  metaMode='career';
+  setMetaBody(`
+    <div class="meta-title">💰 이적시장</div>
+    <div class="meta-sub">보유 예산: <b style="color:var(--gold);">${fmtMoney(careerState.budget)}</b>${msg? ' · '+msg:''}</div>
+    <table class="meta-table"><tr><th>이름</th><th>포지션</th><th>나이</th><th>OVR</th><th>가격</th><th></th></tr>${careerMarketRowsHtml()}</table>
+    <div class="ghost-btn" data-action="career_hub">◀ 구단 사무실로</div>
+  `);
+}
+function renderCareerCreate(){
+  metaMode='career';
+  setMetaBody(`
+    <div class="meta-title">🏟️ 커리어 모드 시작</div>
+    <div class="meta-sub">구단 이름과 엠블럼을 골라줘. 시즌을 거듭하며 스쿼드를 키워나가는 모드야.</div>
+    <input id="clubNameInput" type="text" placeholder="구단 이름 입력" maxlength="14" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:13px;margin-bottom:10px;">
+    <div class="diff-grid" style="grid-template-columns:repeat(5,1fr);">
+      ${CREST_POOL.map(c=>`<div class="opt-btn" data-action="career_pick_crest" data-crest="${c}" style="font-size:20px;">${c}</div>`).join('')}
+    </div>
+    <button class="continue-btn" data-action="career_confirm_create" style="margin-top:12px;">🏁 창단하기</button>
+    <div class="ghost-btn" data-action="goto_hub">◀ 메인으로</div>
+  `);
+}
+let pendingCrest='⚽';
+function renderCareerHub(){
+  metaMode='career';
+  if(!careerState){ renderCareerCreate(); return; }
+  const table=careerStandingsSorted();
+  const myPos=table.findIndex(t=>t.idx===0)+1;
+  if(careerState.league.done){
+    setMetaBody(`
+      <div class="meta-title">${careerState.crest} ${careerState.clubName}</div>
+      <div class="meta-sub">시즌 ${careerState.season} 종료 · 최종 순위 ${myPos}위 · 예산 <b style="color:var(--gold);">${fmtMoney(careerState.budget)}</b></div>
+      ${leagueTableHtml(table)}
+      <button class="continue-btn" data-action="career_season_end">🔄 시즌 결산 처리</button>
+      <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 저장됨)</div>
+    `);
+    return;
+  }
+  const round=careerState.league.fixtures[careerState.league.matchday];
+  const userPair=round.find(pr=>pr.includes(0));
+  const oppIdx=userPair[0]===0?userPair[1]:userPair[0];
+  setMetaBody(`
+    <div class="meta-title">${careerState.crest} ${careerState.clubName}</div>
+    <div class="meta-sub">시즌 ${careerState.season} · ${careerState.league.matchday+1}/7 라운드 · 예산 <b style="color:var(--gold);">${fmtMoney(careerState.budget)}</b> · ${myPos}위</div>
+    <div class="fixture-box">이번 라운드 상대: <b>${careerState.league.teams[oppIdx]}</b></div>
+    ${leagueTableHtml(table)}
+    <div class="diff-grid">
+      <div class="opt-btn ${userFormation==='4-4-2'?'sel':''}" data-action="pick_formation" data-form="4-4-2"><b>4-4-2</b></div>
+      <div class="opt-btn ${userFormation==='4-3-3'?'sel':''}" data-action="pick_formation" data-form="4-3-3"><b>4-3-3</b></div>
+    </div>
+    <button class="continue-btn" data-action="career_play" style="margin-top:10px;">⚽ 경기 시작</button>
+    <div class="diff-grid" style="margin-top:8px;">
+      <div class="opt-btn" data-action="career_squad">👥 스쿼드 관리</div>
+      <div class="opt-btn" data-action="career_market">💰 이적시장</div>
+    </div>
+    <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 저장됨)</div>
+  `);
+}
+function renderCareerSeasonEndResult(res){
+  metaMode='career';
+  setMetaBody(`
+    <div class="meta-title" style="color:var(--gold);">📋 시즌 ${careerState.season-1} 결산</div>
+    <div class="meta-sub">최종 순위 ${res.myPos}위 · 상금 +${fmtMoney(res.prize)}</div>
+    ${res.retired.length? `<div class="fixture-box">은퇴한 선수: ${res.retired.join(', ')}</div>`:''}
+    <div class="fixture-box">선수단이 한 살씩 나이를 먹고 능력치가 조정됐어. 이적시장도 새로 열렸어!</div>
+    <button class="continue-btn" data-action="career_hub">🏁 시즌 ${careerState.season} 시작하기</button>
+  `);
+}
+
 // ── 공용 헬퍼 ──
 function hud(side, name){
   if(side==='r') document.getElementById('hud-r-name').textContent = name;
@@ -930,6 +1218,7 @@ document.getElementById('metaBox').addEventListener('click',(e)=>{
   if(act==='go_friendly') renderFriendlySetup();
   else if(act==='go_wc'){ wcState={stage:'country'}; renderWcScreen(); }
   else if(act==='go_league') renderLeagueHome();
+  else if(act==='go_career') renderCareerHub();
   else if(act==='goto_hub') renderHub();
   else if(act==='friendly_pick') startFriendly(parseFloat(el.dataset.diff));
   else if(act==='pick_formation') pickFormation(el.dataset.form);
@@ -938,6 +1227,23 @@ document.getElementById('metaBox').addEventListener('click',(e)=>{
   else if(act==='wc_start_final'){ wcState.stage='final'; wcStartFinalMatch(); }
   else if(act==='league_new'){ leagueNew(); renderLeagueHome(); }
   else if(act==='league_play') leaguePlayMatchday();
+  else if(act==='career_pick_crest'){
+    pendingCrest=el.dataset.crest;
+    document.querySelectorAll('#metaBody .opt-btn[data-action="career_pick_crest"]').forEach(b=>b.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  else if(act==='career_confirm_create'){
+    const nameEl=document.getElementById('clubNameInput');
+    careerCreate(nameEl? nameEl.value : '', pendingCrest);
+    renderCareerHub();
+  }
+  else if(act==='career_hub') renderCareerHub();
+  else if(act==='career_play') careerPlayMatchday();
+  else if(act==='career_squad') renderCareerSquad();
+  else if(act==='career_market') renderCareerMarket();
+  else if(act==='career_sell') careerSell(el.dataset.id);
+  else if(act==='career_buy') careerBuy(el.dataset.id);
+  else if(act==='career_season_end'){ const res=careerSeasonEnd(); renderCareerSeasonEndResult(res); }
 });
 
 // ── input ──
@@ -1411,46 +1717,93 @@ function drawMinimap(){
   ctx.restore();
 }
 
-function drawPitch(){
+function drawStadium(){
   const bgGrad=ctx.createLinearGradient(0,0,0,H);
-  bgGrad.addColorStop(0,'#0a2313'); bgGrad.addColorStop(1,'#0e3a1f');
+  bgGrad.addColorStop(0,'#050d08'); bgGrad.addColorStop(0.5,'#081f10'); bgGrad.addColorStop(1,'#0a2a14');
   ctx.fillStyle=bgGrad; ctx.fillRect(0,0,W,H);
+
+  // 관중석 (경기장 위/아래 대역)
+  const standTop=project(CX,V0-70), standTop2=project(CX,V0);
+  ctx.fillStyle='#12181f';
+  ctx.fillRect(0,0,W,Math.max(6,standTop2.y-4));
+  for(let i=0;i<60;i++){
+    const x=(i*37+13)%W, y=6+((i*53)%Math.max(6,standTop2.y-14));
+    ctx.fillStyle = i%5===0? 'rgba(255,212,0,.5)' : (i%3===0?'rgba(46,168,255,.35)':'rgba(255,255,255,.22)');
+    ctx.fillRect(x,y,3,2.4);
+  }
+  ctx.fillStyle='#0d1218';
+  ctx.fillRect(0,H-16,W,16);
+  for(let i=0;i<40;i++){
+    const x=(i*41+9)%W, y=H-14+((i*17)%9);
+    ctx.fillStyle = i%4===0? 'rgba(255,71,87,.4)' : 'rgba(255,255,255,.18)';
+    ctx.fillRect(x,y,3,2.4);
+  }
+  // 플러드라이트 글로우
+  [[70,20],[W-70,20]].forEach(([fx,fy])=>{
+    const g=ctx.createRadialGradient(fx,fy,2,fx,fy,120);
+    g.addColorStop(0,'rgba(255,255,240,.16)'); g.addColorStop(1,'rgba(255,255,240,0)');
+    ctx.fillStyle=g; ctx.fillRect(fx-120,fy-120,240,240);
+  });
+}
+
+function drawAdBoards(){
+  const colors=['#1c3faa','#c0392b','#1a8f4c','#e6a500'];
+  const topY0=project(H0,V0).y-9, topY1=project(H0,V0).y-2;
+  const segs=14;
+  for(let i=0;i<segs;i++){
+    const x0=H0+(i/segs)*(H1-H0), x1=H0+((i+1)/segs)*(H1-H0);
+    const p0=project(x0,V0), p1=project(x1,V0);
+    ctx.fillStyle=colors[i%colors.length];
+    ctx.fillRect(p0.x, p0.y-8*p0.scale, p1.x-p0.x, 8*p0.scale);
+  }
+  for(let i=0;i<segs;i++){
+    const x0=H0+(i/segs)*(H1-H0), x1=H0+((i+1)/segs)*(H1-H0);
+    const p0=project(x0,V1);
+    ctx.fillStyle=colors[(i+2)%colors.length];
+    ctx.fillRect(p0.x, p0.y+2, (project(x1,V1).x-p0.x), 8*p0.scale);
+  }
+}
+
+function drawPitch(){
+  drawStadium();
 
   fillQuad([[H0-30,V0],[H1+30,V0],[H1+30,V1],[H0-30,V1]], 10, '#0e3a1f');
 
   const bands=10;
   for(let i=0;i<bands;i++){
     const y0=V0+i*(V1-V0)/bands, y1=V0+(i+1)*(V1-V0)/bands;
-    const shade = i%2===0? 'rgba(255,255,255,.035)':'rgba(0,0,0,.05)';
+    const shade = i%2===0? 'rgba(255,255,255,.05)':'rgba(0,0,0,.07)';
     fillQuad([[H0-30,y0],[H1+30,y0],[H1+30,y1],[H0-30,y1]], 3, shade);
   }
 
-  strokeQuad([[H0,V0],[H1,V0],[H1,V1],[H0,V1]], 12, 'rgba(255,255,255,.78)', 2.4);
-  strokeSeg(CX,V0,CX,V1,16,'rgba(255,255,255,.7)',2.2);
-  strokeArc(CX,CY,58,0,Math.PI*2,32,'rgba(255,255,255,.7)',2.2);
+  drawAdBoards();
+
+  strokeQuad([[H0,V0],[H1,V0],[H1,V1],[H0,V1]], 12, 'rgba(255,255,255,.85)', 2.8);
+  strokeSeg(CX,V0,CX,V1,16,'rgba(255,255,255,.78)',2.4);
+  strokeArc(CX,CY,58,0,Math.PI*2,32,'rgba(255,255,255,.78)',2.4);
   const cSpot=project(CX,CY);
   ctx.beginPath(); ctx.arc(cSpot.x,cSpot.y,2.6*cSpot.scale,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
 
-  strokeQuad([[H0,GY0-46],[H0+128,GY0-46],[H0+128,GY1+46],[H0,GY1+46]], 8,'rgba(255,255,255,.72)',2);
-  strokeQuad([[H1-128,GY0-46],[H1,GY0-46],[H1,GY1+46],[H1-128,GY1+46]], 8,'rgba(255,255,255,.72)',2);
-  strokeQuad([[H0,GY0-14],[H0+46,GY0-14],[H0+46,GY1+14],[H0,GY1+14]], 6,'rgba(255,255,255,.72)',2);
-  strokeQuad([[H1-46,GY0-14],[H1,GY0-14],[H1,GY1+14],[H1-46,GY1+14]], 6,'rgba(255,255,255,.72)',2);
+  strokeQuad([[H0,GY0-46],[H0+128,GY0-46],[H0+128,GY1+46],[H0,GY1+46]], 8,'rgba(255,255,255,.8)',2.2);
+  strokeQuad([[H1-128,GY0-46],[H1,GY0-46],[H1,GY1+46],[H1-128,GY1+46]], 8,'rgba(255,255,255,.8)',2.2);
+  strokeQuad([[H0,GY0-14],[H0+46,GY0-14],[H0+46,GY1+14],[H0,GY1+14]], 6,'rgba(255,255,255,.8)',2.2);
+  strokeQuad([[H1-46,GY0-14],[H1,GY0-14],[H1,GY1+14],[H1-46,GY1+14]], 6,'rgba(255,255,255,.8)',2.2);
 
   const spotL=project(H0+94,CY), spotR=project(H1-94,CY);
   ctx.beginPath(); ctx.arc(spotL.x,spotL.y,2.6*spotL.scale,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
   ctx.beginPath(); ctx.arc(spotR.x,spotR.y,2.6*spotR.scale,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-  strokeArc(H0+94,CY,50,-0.65,0.65,16,'rgba(255,255,255,.7)',2);
-  strokeArc(H1-94,CY,50,Math.PI-0.65,Math.PI+0.65,16,'rgba(255,255,255,.7)',2);
+  strokeArc(H0+94,CY,50,-0.65,0.65,16,'rgba(255,255,255,.78)',2.2);
+  strokeArc(H1-94,CY,50,Math.PI-0.65,Math.PI+0.65,16,'rgba(255,255,255,.78)',2.2);
 
-  strokeArc(H0,V0,10,0,Math.PI/2,8,'rgba(255,255,255,.7)',1.6);
-  strokeArc(H1,V0,10,Math.PI/2,Math.PI,8,'rgba(255,255,255,.7)',1.6);
-  strokeArc(H0,V1,10,-Math.PI/2,0,8,'rgba(255,255,255,.7)',1.6);
-  strokeArc(H1,V1,10,Math.PI,Math.PI*1.5,8,'rgba(255,255,255,.7)',1.6);
+  strokeArc(H0,V0,10,0,Math.PI/2,8,'rgba(255,255,255,.78)',1.8);
+  strokeArc(H1,V0,10,Math.PI/2,Math.PI,8,'rgba(255,255,255,.78)',1.8);
+  strokeArc(H0,V1,10,-Math.PI/2,0,8,'rgba(255,255,255,.78)',1.8);
+  strokeArc(H1,V1,10,Math.PI,Math.PI*1.5,8,'rgba(255,255,255,.78)',1.8);
 
   drawGoalNet(H0, GY0, GY1, -1);
   drawGoalNet(H1, GY0, GY1, 1);
-  strokeSeg(H0,GY0,H0,GY1,6,'rgba(255,255,255,.95)',4);
-  strokeSeg(H1,GY0,H1,GY1,6,'rgba(255,255,255,.95)',4);
+  strokeSeg(H0,GY0,H0,GY1,6,'rgba(255,255,255,.98)',4.5);
+  strokeSeg(H1,GY0,H1,GY1,6,'rgba(255,255,255,.98)',4.5);
 }
 
 function drawGoalNet(x,yTop,yBot,dir){
@@ -1477,7 +1830,7 @@ function roundRectPath(x,y,w,h,r){
 
 function drawPlayer(p, isActive, dt){
   const P=project(p.x,p.y);
-  const s=P.scale;
+  const s=P.scale*1.34;
   const speed=Math.hypot(p.vx,p.vy);
   p.animPhase = (p.animPhase||0) + (now()<p.stumbleUntil? 0 : speed*(dt||0.016)*0.05);
   const activity=clamp(speed/85,0,1);
@@ -1485,54 +1838,63 @@ function drawPlayer(p, isActive, dt){
   const armSwing=-swing*0.8;
 
   const gx=P.x, gy=P.y;
-  const legLen=9.2*s, torsoH=9.2*s, torsoW=7.4*s, headR=3.9*s;
+  const legLen=9.6*s, torsoH=9.6*s, torsoW=7.8*s, headR=4.3*s;
   const hipY=gy-legLen, shoulderY=hipY-torsoH, headY=shoulderY-headR*0.85;
 
   const base = p.isGK ? '#ffd400' : (p.team==='B'?'#2ea8ff':'#ff4757');
   const dark = p.isGK ? '#a88400' : (p.team==='B'?'#0e5fa8':'#a8202c');
   const skin = '#e8b48a';
-  const shortsColor = p.isGK? '#222833' : (p.team==='B'? '#0a2a45':'#3a0d12');
+  const shortsColor = p.isGK? '#f2f2f2' : '#ffffff';
+  const teamRing = p.team==='B'?'#2ea8ff':'#ff4757';
 
+  // 팀 컬러 지면 링(원거리에서도 팀 구분 즉시 가능)
+  ctx.beginPath();
+  ctx.ellipse(gx,gy,8.4*s,3.3*s,0,0,Math.PI*2);
+  ctx.strokeStyle=teamRing; ctx.lineWidth=Math.max(1,1.4*s); ctx.globalAlpha=0.55; ctx.stroke(); ctx.globalAlpha=1;
   // 그림자
   ctx.beginPath();
-  ctx.ellipse(gx,gy,7.2*s,2.9*s,0,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
+  ctx.ellipse(gx,gy,7.4*s,3*s,0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fill();
 
   // 다리 (달리기 애니메이션)
-  const leftFootX=gx-2.6*s+swing, rightFootX=gx+2.6*s-swing;
+  const leftFootX=gx-2.7*s+swing, rightFootX=gx+2.7*s-swing;
   ctx.lineCap='round';
-  ctx.lineWidth=Math.max(1.4,2.5*s);
-  ctx.strokeStyle=base;
-  ctx.beginPath(); ctx.moveTo(gx-1.6*s,hipY); ctx.lineTo(leftFootX,gy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(gx+1.6*s,hipY); ctx.lineTo(rightFootX,gy); ctx.stroke();
-  ctx.fillStyle='#111';
-  ctx.beginPath(); ctx.ellipse(leftFootX,gy,1.7*s,0.95*s,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(rightFootX,gy,1.7*s,0.95*s,0,0,Math.PI*2); ctx.fill();
+  ctx.lineWidth=Math.max(2,3.1*s);
+  ctx.strokeStyle=dark;
+  ctx.beginPath(); ctx.moveTo(gx-1.7*s,hipY); ctx.lineTo(leftFootX,gy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(gx+1.7*s,hipY); ctx.lineTo(rightFootX,gy); ctx.stroke();
+  ctx.fillStyle='#0a0a0a';
+  ctx.beginPath(); ctx.ellipse(leftFootX,gy,1.9*s,1.05*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(rightFootX,gy,1.9*s,1.05*s,0,0,Math.PI*2); ctx.fill();
 
   // 팔
-  const leftHandX=gx-4.8*s-armSwing*0.35, rightHandX=gx+4.8*s+armSwing*0.35;
-  const handY=shoulderY+4.6*s+Math.abs(armSwing)*0.25;
-  ctx.lineWidth=Math.max(1.2,2.1*s);
+  const leftHandX=gx-5.1*s-armSwing*0.35, rightHandX=gx+5.1*s+armSwing*0.35;
+  const handY=shoulderY+4.8*s+Math.abs(armSwing)*0.25;
+  ctx.lineWidth=Math.max(1.6,2.5*s);
   ctx.strokeStyle=base;
-  ctx.beginPath(); ctx.moveTo(gx-2.6*s,shoulderY+1*s); ctx.lineTo(leftHandX,handY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(gx+2.6*s,shoulderY+1*s); ctx.lineTo(rightHandX,handY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(gx-2.8*s,shoulderY+1*s); ctx.lineTo(leftHandX,handY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(gx+2.8*s,shoulderY+1*s); ctx.lineTo(rightHandX,handY); ctx.stroke();
   ctx.fillStyle= p.isGK? '#fff' : skin;
-  ctx.beginPath(); ctx.arc(leftHandX,handY,1.25*s,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(rightHandX,handY,1.25*s,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(leftHandX,handY,1.4*s,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(rightHandX,handY,1.4*s,0,Math.PI*2); ctx.fill();
 
-  // 몸통(유니폼 + 반바지)
+  // 몸통(유니폼 + 반바지) - 진한 외곽선으로 뚜렷하게
   const grad=ctx.createLinearGradient(gx,shoulderY,gx,hipY);
   grad.addColorStop(0, isActive? '#ffffff': base);
-  grad.addColorStop(0.6, base);
-  grad.addColorStop(0.61, shortsColor);
+  grad.addColorStop(0.58, base);
+  grad.addColorStop(0.59, shortsColor);
   grad.addColorStop(1, shortsColor);
-  roundRectPath(gx-torsoW/2, shoulderY, torsoW, torsoH, 2.3*s);
+  roundRectPath(gx-torsoW/2, shoulderY, torsoW, torsoH, 2.6*s);
   ctx.fillStyle=grad; ctx.fill();
-  ctx.lineWidth=Math.max(0.6,0.9*s); ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.stroke();
+  ctx.lineWidth=Math.max(1,1.3*s); ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.stroke();
+  // 팀 컬러 사이드 스트라이프
+  ctx.fillStyle=dark;
+  ctx.fillRect(gx-torsoW/2, shoulderY, torsoW*0.16, torsoH*0.6);
+  ctx.fillRect(gx+torsoW/2-torsoW*0.16, shoulderY, torsoW*0.16, torsoH*0.6);
 
-  if(s>0.72){
-    ctx.fillStyle='#fff';
-    ctx.font=`800 ${Math.max(5,6.4*s)}px Rajdhani, sans-serif`;
+  if(s>0.85){
+    ctx.fillStyle='#04070a';
+    ctx.font=`900 ${Math.max(6,7.4*s)}px Rajdhani, sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(p.num, gx, shoulderY+torsoH*0.32);
   }
@@ -1540,60 +1902,67 @@ function drawPlayer(p, isActive, dt){
   // 머리
   ctx.beginPath(); ctx.arc(gx,headY,headR,0,Math.PI*2);
   ctx.fillStyle=skin; ctx.fill();
-  ctx.lineWidth=Math.max(0.5,0.8*s); ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.stroke();
-  ctx.beginPath(); ctx.arc(gx,headY,headR,Math.PI*1.12,Math.PI*1.88);
-  ctx.strokeStyle=dark; ctx.lineWidth=Math.max(1,1.6*s); ctx.stroke();
+  ctx.lineWidth=Math.max(0.8,1.1*s); ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(gx,headY,headR,Math.PI*1.1,Math.PI*1.9);
+  ctx.strokeStyle=dark; ctx.lineWidth=Math.max(1.3,2*s); ctx.stroke();
   if(p.facing){
-    ctx.beginPath(); ctx.arc(gx+p.facing.x*headR*0.72, headY+p.facing.y*headR*0.72, Math.max(0.5,0.85*s),0,Math.PI*2);
-    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(gx+p.facing.x*headR*0.72, headY+p.facing.y*headR*0.72, Math.max(0.6,1*s),0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
   }
 
   if(isActive){
-    const pulse=1+Math.sin(now()*7)*0.06;
-    ctx.beginPath(); ctx.ellipse(gx,gy,9.5*s*pulse,3.6*s*pulse,0,0,Math.PI*2);
-    ctx.strokeStyle='#fff'; ctx.lineWidth=1.8; ctx.stroke();
+    const pulse=1+Math.sin(now()*7)*0.07;
+    ctx.beginPath(); ctx.ellipse(gx,gy,10.2*s*pulse,4*s*pulse,0,0,Math.PI*2);
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2.4; ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(gx-4.6*s, headY-headR-6.5*s); ctx.lineTo(gx+4.6*s, headY-headR-6.5*s); ctx.lineTo(gx, headY-headR-1.6*s);
+    ctx.moveTo(gx-5.2*s, headY-headR-7.2*s); ctx.lineTo(gx+5.2*s, headY-headR-7.2*s); ctx.lineTo(gx, headY-headR-1.8*s);
     ctx.fillStyle='#ffd400'; ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.stroke();
   }
   if(p.shielding){
-    ctx.beginPath(); ctx.ellipse(gx,(shoulderY+hipY)/2, torsoW*1.35, (legLen+torsoH)*0.58, 0,0,Math.PI*2);
-    ctx.strokeStyle='rgba(11,220,107,.55)'; ctx.lineWidth=1.6; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(gx,(shoulderY+hipY)/2, torsoW*1.4, (legLen+torsoH)*0.6, 0,0,Math.PI*2);
+    ctx.strokeStyle='rgba(11,220,107,.65)'; ctx.lineWidth=1.8; ctx.stroke();
   }
   if(isActive && p.stamina<22){
-    ctx.beginPath(); ctx.arc(gx+torsoW*0.7, headY-headR, Math.max(2,3*s),0,Math.PI*2);
+    ctx.beginPath(); ctx.arc(gx+torsoW*0.75, headY-headR, Math.max(2.2,3.2*s),0,Math.PI*2);
     ctx.fillStyle='#ff4757'; ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle='#fff'; ctx.stroke();
   }
 }
 
 function drawBall(){
   const P=project(ball.x,ball.y);
-  const s=(1+(ball.z||0)*0.012)*P.scale;
+  const s=(1.28+(ball.z||0)*0.012)*P.scale;
   const zOffset=(ball.z||0)*0.92*P.scale;
 
   for(let i=0;i<ball.trail.length;i++){
     const tpt=ball.trail[i];
     const TP=project(tpt.x,tpt.y);
-    const a=(i+1)/ball.trail.length*0.28;
-    ctx.beginPath(); ctx.arc(TP.x,TP.y,5*TP.scale,0,Math.PI*2);
+    const a=(i+1)/ball.trail.length*0.32;
+    ctx.beginPath(); ctx.arc(TP.x,TP.y,5.5*TP.scale,0,Math.PI*2);
     ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fill();
   }
 
   // 그림자는 항상 지면(z=0) 위치에
   const shadowShrink = clamp(1-(ball.z||0)/220, 0.35, 1);
   ctx.beginPath();
-  ctx.ellipse(P.x, P.y+7*P.scale, 7*P.scale*shadowShrink, 3*P.scale*shadowShrink, 0,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fill();
+  ctx.ellipse(P.x, P.y+7*P.scale, 7.4*P.scale*shadowShrink, 3.1*P.scale*shadowShrink, 0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fill();
+
+  // 눈에 띄게 하는 골드 글로우 링
+  ctx.beginPath(); ctx.arc(P.x, P.y-zOffset, 8.2*s, 0, Math.PI*2);
+  ctx.strokeStyle='rgba(255,212,0,.55)'; ctx.lineWidth=1.6; ctx.stroke();
 
   ctx.save();
   ctx.translate(P.x, P.y-zOffset);
   ctx.rotate(ball.spin||0);
-  const bg=ctx.createRadialGradient(-2,-2,1,0,0,6.4*s);
+  const bg=ctx.createRadialGradient(-2,-2,1,0,0,6.8*s);
   bg.addColorStop(0,'#ffffff'); bg.addColorStop(1,'#c9ccd2');
-  ctx.beginPath(); ctx.arc(0,0,6.2*s,0,Math.PI*2); ctx.fillStyle=bg; ctx.fill();
-  ctx.lineWidth=1; ctx.strokeStyle='#333';
-  ctx.beginPath(); ctx.arc(0,0,2.2*s,0,Math.PI*2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-6.2*s,0); ctx.lineTo(6.2*s,0); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,6.6*s,0,Math.PI*2); ctx.fillStyle=bg; ctx.fill();
+  ctx.lineWidth=1.3; ctx.strokeStyle='#222';
+  ctx.beginPath(); ctx.arc(0,0,6.6*s,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,2.3*s,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-6.6*s,0); ctx.lineTo(6.6*s,0); ctx.stroke();
   ctx.restore();
 }
 
@@ -1835,6 +2204,7 @@ function endMatch(){
   let label='🔄 다시 하기';
   if(metaMode==='wc') label = wcOnMatchEnd(b,r,win) || label;
   else if(metaMode==='league') label = leagueOnMatchEnd(b,r,win) || label;
+  else if(metaMode==='career') label = careerOnMatchEnd(b,r,win) || label;
   document.getElementById('retryBtn').textContent = label;
 
   document.getElementById('endOverlay').style.display='flex';
@@ -1852,6 +2222,7 @@ document.getElementById('retryBtn').addEventListener('click',()=>{
   if(metaMode==='friendly') renderFriendlySetup();
   else if(metaMode==='wc') renderWcScreen();
   else if(metaMode==='league') renderLeagueHome();
+  else if(metaMode==='career') renderCareerHub();
   else renderHub();
 });
 document.getElementById('exitBtn').addEventListener('click',()=>{
@@ -1892,9 +2263,11 @@ def render():
     _bridge_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'components', 'game_bridge')
     _bridge = st.components.v1.declare_component("game_bridge_soccer11", path=_bridge_dir)
     _league_bridge = st.components.v1.declare_component("game_bridge_soccer11_league", path=_bridge_dir)
+    _career_bridge = st.components.v1.declare_component("game_bridge_soccer11_career", path=_bridge_dir)
 
     _result = _bridge(game_type="soccer11_result", key=f"bridge_soccer11_{_cur_uid}", default=None)
     _league_result = _league_bridge(game_type="soccer11_league_state", key=f"bridge_soccer11_league_{_cur_uid}", default=None)
+    _career_result = _career_bridge(game_type="soccer11_career_state", key=f"bridge_soccer11_career_{_cur_uid}", default=None)
 
     if _result and isinstance(_result, dict) and _result.get('type') == 'soccer11_result':
         if not st.session_state.get('_soccer11_saved'):
@@ -1949,8 +2322,20 @@ def render():
         except Exception as _e:
             import logging; logging.error(f"[soccer11 league save] {_e}")
 
+    if _career_result and isinstance(_career_result, dict) and _career_result.get('type') == 'soccer11_career_state':
+        try:
+            _career_state = _career_result.get('state')
+            if _cur_uid and isinstance(_career_state, dict):
+                _col = _get_col(USERS_FILE)
+                _col.update_one({"_id": "main"}, {"$set": {
+                    f"{_cur_uid}.game_records.soccer11.career": _career_state,
+                }})
+        except Exception as _e:
+            import logging; logging.error(f"[soccer11 career save] {_e}")
+
     _saved_league = None
     _saved_achievements = None
+    _saved_career = None
     try:
         if _cur_uid:
             _col = _get_col(USERS_FILE)
@@ -1959,10 +2344,13 @@ def render():
                 _s11 = _doc[_cur_uid].get('game_records', {}).get('soccer11', {})
                 _saved_league = _s11.get('league')
                 _saved_achievements = _s11.get('achievements')
+                _saved_career = _s11.get('career')
     except Exception:
         _saved_league = None
         _saved_achievements = None
+        _saved_career = None
 
     _html = GAME_HTML.replace("__SAVED_LEAGUE_JSON__", _json.dumps(_saved_league) if _saved_league else "null")
     _html = _html.replace("__SAVED_ACHIEVEMENTS_JSON__", _json.dumps(_saved_achievements) if _saved_achievements else "null")
+    _html = _html.replace("__SAVED_CAREER_JSON__", _json.dumps(_saved_career) if _saved_career else "null")
     components.html(_html, height=940, scrolling=False)
