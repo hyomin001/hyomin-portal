@@ -8,12 +8,15 @@ GAME_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>얼티밋 사커 11</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
 :root{--blue:#2ea8ff;--blueD:#0e5fa8;--red:#ff4757;--redD:#a8202c;--gold:#ffd400;--green:#0bdc6b;--bg:#03050a;--glass:rgba(255,255,255,.05);--border:rgba(255,255,255,.09);}
 html,body{width:100%;height:900px;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#0a1420 0%,#03050a 70%);font-family:'Rajdhani',sans-serif;touch-action:none;}
 #root{position:relative;width:100%;height:900px;overflow:hidden;}
-canvas{position:absolute;top:126px;left:50%;transform:translateX(-50%);border-radius:16px;box-shadow:0 10px 50px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.06);}
+#pitch3d-wrap{position:absolute;top:126px;left:50%;transform:translateX(-50%);width:1040px;height:660px;border-radius:16px;overflow:hidden;box-shadow:0 10px 50px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.06);background:#040a06;}
+#pitch3d-wrap canvas{position:absolute;top:0;left:0;}
+#overlay2d{pointer-events:none;}
 
 /* ── HUD ── */
 #hud{position:absolute;top:0;left:0;right:0;height:118px;z-index:100;background:linear-gradient(180deg,rgba(0,0,0,.92),rgba(0,0,0,.5));display:flex;align-items:center;justify-content:center;gap:30px;padding:0 10px;}
@@ -115,7 +118,9 @@ canvas{position:absolute;top:126px;left:50%;transform:translateX(-50%);border-ra
   </div>
   <div id="stam-wrap"><div id="stam-lbl">STAMINA</div><div id="stam-bg"><div id="stam-fill"></div></div></div>
   <div id="active-tag">조작 중: <b id="active-num">#—</b> · 전술 <b id="tactic-tag">균형</b> (T)</div>
-  <canvas id="pitch" width="1040" height="660"></canvas>
+  <div id="pitch3d-wrap">
+    <canvas id="overlay2d" width="1040" height="660"></canvas>
+  </div>
   <div id="banner"><div id="banner-big"></div><div id="banner-sub"></div></div>
   <div id="power-wrap"><div id="power-lbl">SHOT POWER</div><div id="power-bg"><div id="power-fill"></div></div></div>
 
@@ -158,8 +163,8 @@ canvas{position:absolute;top:126px;left:50%;transform:translateX(-50%);border-ra
 <script>
 (function(){
 "use strict";
-const cv = document.getElementById('pitch');
-const ctx = cv.getContext('2d');
+const octx = document.getElementById('overlay2d').getContext('2d');
+let scene, camera, renderer;
 const W=1040,H=660, H0=52,H1=988, V0=50,V1=610;
 let camX=0, camInit=false;
 const GY0=264, GY1=396; // goal mouth
@@ -1525,8 +1530,11 @@ function humanStep(dt){
   }
 
   const dvx=mx*spd, dvy=my*spd;
-  p.vx=lerpTowards(p.vx,dvx,1500*dt);
-  p.vy=lerpTowards(p.vy,dvy,1500*dt);
+  const speedNow=Math.hypot(p.vx,p.vy);
+  const wantDirDot = speedNow>1 ? (p.vx*mx + p.vy*my)/speedNow : 1;
+  const accelRate = wantDirDot < -0.15 ? 4400 : 2600;
+  p.vx=lerpTowards(p.vx,dvx,accelRate*dt);
+  p.vy=lerpTowards(p.vy,dvy,accelRate*dt);
   p.x+=p.vx*dt; p.y+=p.vy*dt;
 
   if(p.isGK && !p.rushBoost){
@@ -1662,337 +1670,225 @@ function updateScoreHUD(){
 const HORIZON_Y=150, VIEW_HEIGHT=470;
 const FAR_SCALE=0.56, NEAR_SCALE=1.18, DEPTH_EASE=0.78;
 
-function project(wx,wy){
-  let d=(wy-V0)/(V1-V0); d=clamp(d,0,1);
-  const e=Math.pow(d,DEPTH_EASE);
-  const scale=FAR_SCALE+(NEAR_SCALE-FAR_SCALE)*e;
-  const sy=HORIZON_Y+e*VIEW_HEIGHT;
-  const sx=W/2+(wx-camX)*scale;
-  return {x:sx,y:sy,scale};
+const SCALE3D=0.034, HEIGHT3D=0.05;
+const PITCH_W3D=(H1-H0)*SCALE3D, PITCH_D3D=(V1-V0)*SCALE3D;
+const GOAL_H3D=0.9;
+const CAM_HEIGHT=11.5, CAM_BACK=13.5;
+let blueMeshes=[], redMeshes=[], ballMesh=null, ballSeam=null;
+let camPosX=0, camPosZ=0, camInit3D=false;
+
+function worldToScreen(wx, wy, wz){
+  const wp = new THREE.Vector3((wx-CX)*SCALE3D, (wz||0)*SCALE3D*1.6+0.05, (wy-CY)*SCALE3D);
+  const dist = camera.position.distanceTo(wp);
+  const v = wp.clone().project(camera);
+  const scale = clamp(9/Math.max(dist,1), 0.4, 1.7);
+  return { x:(v.x*0.5+0.5)*W, y:(1-(v.y*0.5+0.5))*H, scale };
 }
 
-function projSeg(x1,y1,x2,y2,samples){
-  const n=(y1===y2)?1:samples;
-  const pts=[];
-  for(let i=0;i<=n;i++){
-    const t=i/n;
-    pts.push(project(x1+(x2-x1)*t, y1+(y2-y1)*t));
+function makePitchTexture(){
+  const tw=1024, th=Math.round(1024*((V1-V0)/(H1-H0)));
+  const tc=document.createElement('canvas');
+  tc.width=tw; tc.height=th;
+  const tctx=tc.getContext('2d');
+  tctx.fillStyle='#0e3a1f'; tctx.fillRect(0,0,tw,th);
+  const bands=10;
+  for(let i=0;i<bands;i++){
+    tctx.fillStyle = i%2===0? 'rgba(255,255,255,.05)':'rgba(0,0,0,.07)';
+    tctx.fillRect(0, Math.round(i*th/bands), tw, Math.ceil(th/bands));
   }
-  return pts;
-}
-function strokeSeg(x1,y1,x2,y2,samples,style,width){
-  const pts=projSeg(x1,y1,x2,y2,samples);
-  ctx.beginPath();
-  pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
-  ctx.strokeStyle=style||'rgba(255,255,255,.65)'; ctx.lineWidth=width||2; ctx.stroke();
-}
-function fillQuad(corners,samples,style){
-  ctx.beginPath();
-  for(let e=0;e<4;e++){
-    const [x1,y1]=corners[e], [x2,y2]=corners[(e+1)%4];
-    const pts=projSeg(x1,y1,x2,y2,(y1===y2)?1:samples);
-    pts.forEach((p,i)=>{ if(e===0&&i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
-  }
-  ctx.closePath(); ctx.fillStyle=style; ctx.fill();
-}
-function strokeQuad(corners,samples,style,width){
-  ctx.beginPath();
-  for(let e=0;e<4;e++){
-    const [x1,y1]=corners[e], [x2,y2]=corners[(e+1)%4];
-    const pts=projSeg(x1,y1,x2,y2,(y1===y2)?1:samples);
-    pts.forEach((p,i)=>{ if(e===0&&i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
-  }
-  ctx.closePath(); ctx.strokeStyle=style||'rgba(255,255,255,.65)'; ctx.lineWidth=width||2; ctx.stroke();
-}
-function strokeArc(cx,cy,r,a0,a1,segments,style,width){
-  const pts=[];
-  for(let i=0;i<=segments;i++){
-    const a=a0+(a1-a0)*(i/segments);
-    pts.push(project(cx+Math.cos(a)*r, cy+Math.sin(a)*r));
-  }
-  ctx.beginPath();
-  pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
-  ctx.strokeStyle=style||'rgba(255,255,255,.65)'; ctx.lineWidth=width||2; ctx.stroke();
+  const sx=tw/(H1-H0), sy=th/(V1-V0);
+  const X=(wx)=> (wx-H0)*sx, Y=(wy)=> (wy-V0)*sy;
+  tctx.strokeStyle='rgba(255,255,255,.92)'; tctx.lineWidth=4;
+  tctx.strokeRect(2,2,tw-4,th-4);
+  tctx.beginPath(); tctx.moveTo(tw/2,0); tctx.lineTo(tw/2,th); tctx.stroke();
+  tctx.beginPath(); tctx.arc(tw/2,th/2, 66*sx, 0, Math.PI*2); tctx.stroke();
+  tctx.beginPath(); tctx.arc(tw/2,th/2,4,0,Math.PI*2); tctx.fillStyle='#fff'; tctx.fill();
+
+  tctx.lineWidth=3;
+  tctx.strokeRect(X(H0), Y(GY0-53), 148*sx, (GY1-GY0+106)*sy);
+  tctx.strokeRect(X(H1)-148*sx, Y(GY0-53), 148*sx, (GY1-GY0+106)*sy);
+  tctx.strokeRect(X(H0), Y(GY0-16), 53*sx, (GY1-GY0+32)*sy);
+  tctx.strokeRect(X(H1)-53*sx, Y(GY0-16), 53*sx, (GY1-GY0+32)*sy);
+
+  [[H0+108,CY],[H1-108,CY]].forEach(([px,py])=>{
+    tctx.beginPath(); tctx.arc(X(px),Y(py),4,0,Math.PI*2); tctx.fillStyle='#fff'; tctx.fill();
+  });
+  tctx.beginPath(); tctx.arc(X(H0+108),Y(CY),57*sx,-0.65,0.65); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1-108),Y(CY),57*sx,Math.PI-0.65,Math.PI+0.65); tctx.stroke();
+
+  tctx.lineWidth=2.4;
+  tctx.beginPath(); tctx.arc(X(H0),Y(V0),12*sx,0,Math.PI/2); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1),Y(V0),12*sx,Math.PI/2,Math.PI); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H0),Y(V1),12*sx,-Math.PI/2,0); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1),Y(V1),12*sx,Math.PI,Math.PI*1.5); tctx.stroke();
+
+  const tex=new THREE.CanvasTexture(tc);
+  tex.needsUpdate=true;
+  return tex;
 }
 
-function updateCamera(dt){
+function addGoalMesh(xPos, dir){
+  const grp=new THREE.Group();
+  const postMat=new THREE.MeshStandardMaterial({color:0xffffff});
+  const goalWidth3D=(GY1-GY0)*SCALE3D;
+  const post1=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,GOAL_H3D,8), postMat);
+  post1.position.set(xPos, GOAL_H3D/2, -goalWidth3D/2);
+  const post2=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,GOAL_H3D,8), postMat);
+  post2.position.set(xPos, GOAL_H3D/2, goalWidth3D/2);
+  const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,goalWidth3D,8), postMat);
+  bar.rotation.z=Math.PI/2; bar.position.set(xPos, GOAL_H3D, 0);
+  grp.add(post1,post2,bar);
+  const netMat=new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.18, side:THREE.DoubleSide});
+  const net=new THREE.Mesh(new THREE.PlaneGeometry(goalWidth3D, GOAL_H3D), netMat);
+  net.position.set(xPos+dir*0.35, GOAL_H3D/2, 0);
+  net.rotation.y=Math.PI/2;
+  grp.add(net);
+  scene.add(grp);
+}
+
+function addStands(){
+  const standMat=new THREE.MeshStandardMaterial({color:0x141a20});
+  const s1=new THREE.Mesh(new THREE.BoxGeometry(PITCH_W3D+5, 2.2, 1.3), standMat);
+  s1.position.set(0, 1.1, -PITCH_D3D/2-2.2);
+  scene.add(s1);
+  const s2=s1.clone(); s2.position.z=PITCH_D3D/2+2.2; scene.add(s2);
+
+  const lightMat=new THREE.MeshBasicMaterial({color:0xfff4d0});
+  [[-PITCH_W3D/2-1, -PITCH_D3D/2-1],[PITCH_W3D/2+1, -PITCH_D3D/2-1],
+   [-PITCH_W3D/2-1, PITCH_D3D/2+1],[PITCH_W3D/2+1, PITCH_D3D/2+1]].forEach(([lx,lz])=>{
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,4,6), new THREE.MeshStandardMaterial({color:0x222222}));
+    pole.position.set(lx,2,lz);
+    scene.add(pole);
+    const lamp=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.3,0.5), lightMat);
+    lamp.position.set(lx,4,lz);
+    scene.add(lamp);
+  });
+}
+
+function makePlayerMesh(){
+  const grp=new THREE.Group();
+  const torso=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.24,0.3,0.76,8),
+    new THREE.MeshStandardMaterial({color:0x2ea8ff})
+  );
+  torso.position.y=0.62;
+  grp.add(torso);
+  const head=new THREE.Mesh(
+    new THREE.SphereGeometry(0.19,10,8),
+    new THREE.MeshStandardMaterial({color:0xe8b48a})
+  );
+  head.position.y=1.15;
+  grp.add(head);
+  const ring=new THREE.Mesh(
+    new THREE.RingGeometry(0.34,0.43,24),
+    new THREE.MeshBasicMaterial({color:0xffd400, transparent:true, opacity:0, side:THREE.DoubleSide})
+  );
+  ring.rotation.x=-Math.PI/2; ring.position.y=0.02;
+  grp.add(ring);
+  grp.userData={torso,head,ring};
+  scene.add(grp);
+  return grp;
+}
+
+function init3D(){
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x040a06);
+  if(THREE.FogExp2) scene.fog=new THREE.FogExp2(0x040a06, 0.02);
+
+  camera=new THREE.PerspectiveCamera(52, W/H, 0.1, 200);
+
+  renderer=new THREE.WebGLRenderer({antialias:true, alpha:false});
+  renderer.setSize(W,H);
+  try{ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2)); }catch(e){}
+  const wrap=document.getElementById('pitch3d-wrap');
+  const overlayEl=document.getElementById('overlay2d');
+  wrap.insertBefore(renderer.domElement, overlayEl);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.78));
+  const dl=new THREE.DirectionalLight(0xffffff, 0.62);
+  dl.position.set(8,20,6);
+  scene.add(dl);
+  const dl2=new THREE.DirectionalLight(0x88aaff, 0.22);
+  dl2.position.set(-10,14,-10);
+  scene.add(dl2);
+
+  const pitchMesh=new THREE.Mesh(
+    new THREE.PlaneGeometry(PITCH_W3D+2, PITCH_D3D+2),
+    new THREE.MeshStandardMaterial({map: makePitchTexture()})
+  );
+  pitchMesh.rotation.x=-Math.PI/2;
+  scene.add(pitchMesh);
+
+  addGoalMesh(-PITCH_W3D/2-0.05, -1);
+  addGoalMesh(PITCH_W3D/2+0.05, 1);
+  addStands();
+
+  for(let i=0;i<11;i++) blueMeshes.push(makePlayerMesh());
+  for(let i=0;i<11;i++) redMeshes.push(makePlayerMesh());
+
+  ballMesh=new THREE.Mesh(
+    new THREE.SphereGeometry(0.24, 14, 12),
+    new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5})
+  );
+  scene.add(ballMesh);
+  ballSeam=new THREE.Mesh(
+    new THREE.TorusGeometry(0.24, 0.014, 6, 20),
+    new THREE.MeshBasicMaterial({color:0x222222})
+  );
+  ballMesh.add(ballSeam);
+}
+
+function updateOnePlayerMesh(mesh, p, dt){
+  if(!p){ mesh.visible=false; return; }
+  mesh.visible=true;
+  mesh.position.set((p.x-CX)*SCALE3D, 0, (p.y-CY)*SCALE3D);
+  mesh.rotation.y = Math.atan2(p.facing.x||0, p.facing.y||0);
+  const speed=Math.hypot(p.vx,p.vy);
+  p.animPhase=(p.animPhase||0)+(now()<p.stumbleUntil?0:speed*(dt||0.016)*0.05);
+  const bob=Math.abs(Math.sin(p.animPhase))*0.05*clamp(speed/85,0,1);
+  mesh.userData.torso.position.y=0.62+bob;
+  mesh.userData.torso.material.color.setHex(p.isGK?0xffd400:(p.team==='B'?0x2ea8ff:0xff4757));
+  const isActive=(p.team==='B' && p===activePlayer());
+  mesh.userData.ring.material.opacity = isActive? (0.55+Math.sin(now()*7)*0.18) : 0;
+}
+
+function updateCamera3D(dt){
   const p=activePlayer();
-  const targetX = clamp(ball.x*0.65 + p.x*0.35, H0-30, H1+30);
-  if(!camInit){ camX=targetX; camInit=true; return; }
-  camX += (targetX-camX)*Math.min(1, dt*4.2);
+  const tx=(ball.x*0.62+p.x*0.38-CX)*SCALE3D;
+  const tz=(ball.y*0.55+p.y*0.45-CY)*SCALE3D;
+  if(!camInit3D){ camPosX=tx; camPosZ=tz; camInit3D=true; }
+  camPosX += (tx-camPosX)*Math.min(1, dt*4);
+  camPosZ += (tz-camPosZ)*Math.min(1, dt*4);
+  camera.position.set(camPosX, CAM_HEIGHT, camPosZ+CAM_BACK);
+  camera.lookAt(camPosX, 0.4, camPosZ);
+}
+
+function updateScene3D(dt){
+  for(let i=0;i<11;i++) updateOnePlayerMesh(blueMeshes[i], blue[i], dt);
+  for(let i=0;i<11;i++) updateOnePlayerMesh(redMeshes[i], red[i], dt);
+  ballMesh.position.set((ball.x-CX)*SCALE3D, 0.24+(ball.z||0)*SCALE3D*1.6, (ball.y-CY)*SCALE3D);
+  ballMesh.rotation.y += (ball.spin||0)*0.02;
+  updateCamera3D(dt);
+  renderer.render(scene, camera);
 }
 
 function drawMinimap(){
   const mx=W-186, my=14, mw=174, mh=94;
-  ctx.save();
-  ctx.fillStyle='rgba(0,0,0,.5)';
-  ctx.fillRect(mx-5,my-5,mw+10,mh+10);
-  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1;
-  ctx.strokeRect(mx,my,mw,mh);
-  ctx.beginPath(); ctx.moveTo(mx+mw/2,my); ctx.lineTo(mx+mw/2,my+mh); ctx.stroke();
+  octx.save();
+  octx.fillStyle='rgba(0,0,0,.5)';
+  octx.fillRect(mx-5,my-5,mw+10,mh+10);
+  octx.strokeStyle='rgba(255,255,255,.55)'; octx.lineWidth=1;
+  octx.strokeRect(mx,my,mw,mh);
+  octx.beginPath(); octx.moveTo(mx+mw/2,my); octx.lineTo(mx+mw/2,my+mh); octx.stroke();
 
   const sx=mw/(H1-H0), sy=mh/(V1-V0);
   function mproj(x,y){ return {x:mx+(x-H0)*sx, y:my+(y-V0)*sy}; }
 
-  for(const p of red){ const q=mproj(p.x,p.y); ctx.beginPath(); ctx.arc(q.x,q.y,1.7,0,Math.PI*2); ctx.fillStyle='#ff4757'; ctx.fill(); }
-  for(const p of blue){ const q=mproj(p.x,p.y); ctx.beginPath(); ctx.arc(q.x,q.y,1.7,0,Math.PI*2); ctx.fillStyle=(p===activePlayer())?'#ffd400':'#2ea8ff'; ctx.fill(); }
+  for(const p of red){ const q=mproj(p.x,p.y); octx.beginPath(); octx.arc(q.x,q.y,1.7,0,Math.PI*2); octx.fillStyle='#ff4757'; octx.fill(); }
+  for(const p of blue){ const q=mproj(p.x,p.y); octx.beginPath(); octx.arc(q.x,q.y,1.7,0,Math.PI*2); octx.fillStyle=(p===activePlayer())?'#ffd400':'#2ea8ff'; octx.fill(); }
   const bq=mproj(ball.x,ball.y);
-  ctx.beginPath(); ctx.arc(bq.x,bq.y,1.9,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-
-  const halfW=(W/2)/NEAR_SCALE;
-  const vp1=mproj(camX-halfW,V0), vp2=mproj(camX+halfW,V1);
-  ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1;
-  ctx.strokeRect(vp1.x,vp1.y,vp2.x-vp1.x,vp2.y-vp1.y);
-  ctx.restore();
-}
-
-function drawStadium(){
-  const bgGrad=ctx.createLinearGradient(0,0,0,H);
-  bgGrad.addColorStop(0,'#050d08'); bgGrad.addColorStop(0.5,'#081f10'); bgGrad.addColorStop(1,'#0a2a14');
-  ctx.fillStyle=bgGrad; ctx.fillRect(0,0,W,H);
-
-  // 관중석 (경기장 위/아래 대역)
-  const standTop=project(CX,V0-70), standTop2=project(CX,V0);
-  ctx.fillStyle='#12181f';
-  ctx.fillRect(0,0,W,Math.max(6,standTop2.y-4));
-  for(let i=0;i<60;i++){
-    const x=(i*37+13)%W, y=6+((i*53)%Math.max(6,standTop2.y-14));
-    ctx.fillStyle = i%5===0? 'rgba(255,212,0,.5)' : (i%3===0?'rgba(46,168,255,.35)':'rgba(255,255,255,.22)');
-    ctx.fillRect(x,y,3,2.4);
-  }
-  ctx.fillStyle='#0d1218';
-  ctx.fillRect(0,H-16,W,16);
-  for(let i=0;i<40;i++){
-    const x=(i*41+9)%W, y=H-14+((i*17)%9);
-    ctx.fillStyle = i%4===0? 'rgba(255,71,87,.4)' : 'rgba(255,255,255,.18)';
-    ctx.fillRect(x,y,3,2.4);
-  }
-  // 플러드라이트 글로우
-  [[70,20],[W-70,20]].forEach(([fx,fy])=>{
-    const g=ctx.createRadialGradient(fx,fy,2,fx,fy,120);
-    g.addColorStop(0,'rgba(255,255,240,.16)'); g.addColorStop(1,'rgba(255,255,240,0)');
-    ctx.fillStyle=g; ctx.fillRect(fx-120,fy-120,240,240);
-  });
-}
-
-function drawAdBoards(){
-  const colors=['#1c3faa','#c0392b','#1a8f4c','#e6a500'];
-  const topY0=project(H0,V0).y-9, topY1=project(H0,V0).y-2;
-  const segs=14;
-  for(let i=0;i<segs;i++){
-    const x0=H0+(i/segs)*(H1-H0), x1=H0+((i+1)/segs)*(H1-H0);
-    const p0=project(x0,V0), p1=project(x1,V0);
-    ctx.fillStyle=colors[i%colors.length];
-    ctx.fillRect(p0.x, p0.y-8*p0.scale, p1.x-p0.x, 8*p0.scale);
-  }
-  for(let i=0;i<segs;i++){
-    const x0=H0+(i/segs)*(H1-H0), x1=H0+((i+1)/segs)*(H1-H0);
-    const p0=project(x0,V1);
-    ctx.fillStyle=colors[(i+2)%colors.length];
-    ctx.fillRect(p0.x, p0.y+2, (project(x1,V1).x-p0.x), 8*p0.scale);
-  }
-}
-
-function drawPitch(){
-  drawStadium();
-
-  fillQuad([[H0-35,V0],[H1+35,V0],[H1+35,V1],[H0-35,V1]], 10, '#0e3a1f');
-
-  const bands=10;
-  for(let i=0;i<bands;i++){
-    const y0=V0+i*(V1-V0)/bands, y1=V0+(i+1)*(V1-V0)/bands;
-    const shade = i%2===0? 'rgba(255,255,255,.05)':'rgba(0,0,0,.07)';
-    fillQuad([[H0-35,y0],[H1+35,y0],[H1+35,y1],[H0-35,y1]], 3, shade);
-  }
-
-  drawAdBoards();
-
-  strokeQuad([[H0,V0],[H1,V0],[H1,V1],[H0,V1]], 12, 'rgba(255,255,255,.85)', 2.8);
-  strokeSeg(CX,V0,CX,V1,16,'rgba(255,255,255,.78)',2.4);
-  strokeArc(CX,CY,66,0,Math.PI*2,32,'rgba(255,255,255,.78)',2.4);
-  const cSpot=project(CX,CY);
-  ctx.beginPath(); ctx.arc(cSpot.x,cSpot.y,2.6*cSpot.scale,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-
-  strokeQuad([[H0,GY0-53],[H0+148,GY0-53],[H0+148,GY1+53],[H0,GY1+53]], 8,'rgba(255,255,255,.8)',2.2);
-  strokeQuad([[H1-148,GY0-53],[H1,GY0-53],[H1,GY1+53],[H1-148,GY1+53]], 8,'rgba(255,255,255,.8)',2.2);
-  strokeQuad([[H0,GY0-16],[H0+53,GY0-16],[H0+53,GY1+16],[H0,GY1+16]], 6,'rgba(255,255,255,.8)',2.2);
-  strokeQuad([[H1-53,GY0-16],[H1,GY0-16],[H1,GY1+16],[H1-53,GY1+16]], 6,'rgba(255,255,255,.8)',2.2);
-
-  const spotL=project(H0+108,CY), spotR=project(H1-108,CY);
-  ctx.beginPath(); ctx.arc(spotL.x,spotL.y,2.6*spotL.scale,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-  ctx.beginPath(); ctx.arc(spotR.x,spotR.y,2.6*spotR.scale,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-  strokeArc(H0+108,CY,57,-0.65,0.65,16,'rgba(255,255,255,.78)',2.2);
-  strokeArc(H1-108,CY,57,Math.PI-0.65,Math.PI+0.65,16,'rgba(255,255,255,.78)',2.2);
-
-  strokeArc(H0,V0,12,0,Math.PI/2,8,'rgba(255,255,255,.78)',1.8);
-  strokeArc(H1,V0,12,Math.PI/2,Math.PI,8,'rgba(255,255,255,.78)',1.8);
-  strokeArc(H0,V1,12,-Math.PI/2,0,8,'rgba(255,255,255,.78)',1.8);
-  strokeArc(H1,V1,12,Math.PI,Math.PI*1.5,8,'rgba(255,255,255,.78)',1.8);
-
-  drawGoalNet(H0, GY0, GY1, -1);
-  drawGoalNet(H1, GY0, GY1, 1);
-  strokeSeg(H0,GY0,H0,GY1,6,'rgba(255,255,255,.98)',4.5);
-  strokeSeg(H1,GY0,H1,GY1,6,'rgba(255,255,255,.98)',4.5);
-}
-
-function drawGoalNet(x,yTop,yBot,dir){
-  const depth=14, steps=8, dsteps=3;
-  for(let i=0;i<=steps;i++){
-    const yy=yTop+(yBot-yTop)*i/steps;
-    strokeSeg(x,yy,x+dir*depth,yy, 2, 'rgba(255,255,255,.22)', 1);
-  }
-  for(let j=0;j<=dsteps;j++){
-    const xx=x+dir*depth*j/dsteps;
-    strokeSeg(xx,yTop,xx,yBot, 6, 'rgba(255,255,255,.22)', 1);
-  }
-}
-
-function roundRectPath(x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);
-  ctx.arcTo(x,y,x+w,y,r);
-  ctx.closePath();
-}
-
-function drawPlayer(p, isActive, dt){
-  const P=project(p.x,p.y);
-  const s=P.scale*1.52;
-  const speed=Math.hypot(p.vx,p.vy);
-  p.animPhase = (p.animPhase||0) + (now()<p.stumbleUntil? 0 : speed*(dt||0.016)*0.05);
-  const activity=clamp(speed/85,0,1);
-  const swing=Math.sin(p.animPhase)*5.4*s*activity;
-  const armSwing=-swing*0.8;
-
-  const gx=P.x, gy=P.y;
-  const legLen=9.6*s, torsoH=9.6*s, torsoW=7.8*s, headR=4.3*s;
-  const hipY=gy-legLen, shoulderY=hipY-torsoH, headY=shoulderY-headR*0.85;
-
-  const base = p.isGK ? '#ffd400' : (p.team==='B'?'#2ea8ff':'#ff4757');
-  const dark = p.isGK ? '#a88400' : (p.team==='B'?'#0e5fa8':'#a8202c');
-  const skin = '#e8b48a';
-  const shortsColor = p.isGK? '#f2f2f2' : '#ffffff';
-  const teamRing = p.team==='B'?'#2ea8ff':'#ff4757';
-
-  // 팀 컬러 지면 링(원거리에서도 팀 구분 즉시 가능)
-  ctx.beginPath();
-  ctx.ellipse(gx,gy,8.4*s,3.3*s,0,0,Math.PI*2);
-  ctx.strokeStyle=teamRing; ctx.lineWidth=Math.max(1,1.4*s); ctx.globalAlpha=0.55; ctx.stroke(); ctx.globalAlpha=1;
-  // 그림자
-  ctx.beginPath();
-  ctx.ellipse(gx,gy,7.4*s,3*s,0,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fill();
-
-  // 다리 (달리기 애니메이션)
-  const leftFootX=gx-2.7*s+swing, rightFootX=gx+2.7*s-swing;
-  ctx.lineCap='round';
-  ctx.lineWidth=Math.max(2,3.1*s);
-  ctx.strokeStyle=dark;
-  ctx.beginPath(); ctx.moveTo(gx-1.7*s,hipY); ctx.lineTo(leftFootX,gy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(gx+1.7*s,hipY); ctx.lineTo(rightFootX,gy); ctx.stroke();
-  ctx.fillStyle='#0a0a0a';
-  ctx.beginPath(); ctx.ellipse(leftFootX,gy,1.9*s,1.05*s,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(rightFootX,gy,1.9*s,1.05*s,0,0,Math.PI*2); ctx.fill();
-
-  // 팔
-  const leftHandX=gx-5.1*s-armSwing*0.35, rightHandX=gx+5.1*s+armSwing*0.35;
-  const handY=shoulderY+4.8*s+Math.abs(armSwing)*0.25;
-  ctx.lineWidth=Math.max(1.6,2.5*s);
-  ctx.strokeStyle=base;
-  ctx.beginPath(); ctx.moveTo(gx-2.8*s,shoulderY+1*s); ctx.lineTo(leftHandX,handY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(gx+2.8*s,shoulderY+1*s); ctx.lineTo(rightHandX,handY); ctx.stroke();
-  ctx.fillStyle= p.isGK? '#fff' : skin;
-  ctx.beginPath(); ctx.arc(leftHandX,handY,1.4*s,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(rightHandX,handY,1.4*s,0,Math.PI*2); ctx.fill();
-
-  // 몸통(유니폼 + 반바지) - 진한 외곽선으로 뚜렷하게
-  const grad=ctx.createLinearGradient(gx,shoulderY,gx,hipY);
-  grad.addColorStop(0, isActive? '#ffffff': base);
-  grad.addColorStop(0.58, base);
-  grad.addColorStop(0.59, shortsColor);
-  grad.addColorStop(1, shortsColor);
-  roundRectPath(gx-torsoW/2, shoulderY, torsoW, torsoH, 2.6*s);
-  ctx.fillStyle=grad; ctx.fill();
-  ctx.lineWidth=Math.max(1,1.3*s); ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.stroke();
-  // 팀 컬러 사이드 스트라이프
-  ctx.fillStyle=dark;
-  ctx.fillRect(gx-torsoW/2, shoulderY, torsoW*0.16, torsoH*0.6);
-  ctx.fillRect(gx+torsoW/2-torsoW*0.16, shoulderY, torsoW*0.16, torsoH*0.6);
-
-  if(s>0.85){
-    ctx.fillStyle='#04070a';
-    ctx.font=`900 ${Math.max(6,7.4*s)}px Rajdhani, sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(p.num, gx, shoulderY+torsoH*0.32);
-  }
-
-  // 머리
-  ctx.beginPath(); ctx.arc(gx,headY,headR,0,Math.PI*2);
-  ctx.fillStyle=skin; ctx.fill();
-  ctx.lineWidth=Math.max(0.8,1.1*s); ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.stroke();
-  ctx.beginPath(); ctx.arc(gx,headY,headR,Math.PI*1.1,Math.PI*1.9);
-  ctx.strokeStyle=dark; ctx.lineWidth=Math.max(1.3,2*s); ctx.stroke();
-  if(p.facing){
-    ctx.beginPath(); ctx.arc(gx+p.facing.x*headR*0.72, headY+p.facing.y*headR*0.72, Math.max(0.6,1*s),0,Math.PI*2);
-    ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
-  }
-
-  if(isActive){
-    const pulse=1+Math.sin(now()*7)*0.07;
-    ctx.beginPath(); ctx.ellipse(gx,gy,10.2*s*pulse,4*s*pulse,0,0,Math.PI*2);
-    ctx.strokeStyle='#fff'; ctx.lineWidth=2.4; ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(gx-5.2*s, headY-headR-7.2*s); ctx.lineTo(gx+5.2*s, headY-headR-7.2*s); ctx.lineTo(gx, headY-headR-1.8*s);
-    ctx.fillStyle='#ffd400'; ctx.fill();
-    ctx.lineWidth=1; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.stroke();
-  }
-  if(p.shielding){
-    ctx.beginPath(); ctx.ellipse(gx,(shoulderY+hipY)/2, torsoW*1.4, (legLen+torsoH)*0.6, 0,0,Math.PI*2);
-    ctx.strokeStyle='rgba(11,220,107,.65)'; ctx.lineWidth=1.8; ctx.stroke();
-  }
-  if(isActive && p.stamina<22){
-    ctx.beginPath(); ctx.arc(gx+torsoW*0.75, headY-headR, Math.max(2.2,3.2*s),0,Math.PI*2);
-    ctx.fillStyle='#ff4757'; ctx.fill();
-    ctx.lineWidth=1; ctx.strokeStyle='#fff'; ctx.stroke();
-  }
-}
-
-function drawBall(){
-  const P=project(ball.x,ball.y);
-  const s=(1.46+(ball.z||0)*0.012)*P.scale;
-  const zOffset=(ball.z||0)*0.92*P.scale;
-
-  for(let i=0;i<ball.trail.length;i++){
-    const tpt=ball.trail[i];
-    const TP=project(tpt.x,tpt.y);
-    const a=(i+1)/ball.trail.length*0.32;
-    ctx.beginPath(); ctx.arc(TP.x,TP.y,5.5*TP.scale,0,Math.PI*2);
-    ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fill();
-  }
-
-  // 그림자는 항상 지면(z=0) 위치에
-  const shadowShrink = clamp(1-(ball.z||0)/220, 0.35, 1);
-  ctx.beginPath();
-  ctx.ellipse(P.x, P.y+7*P.scale, 7.4*P.scale*shadowShrink, 3.1*P.scale*shadowShrink, 0,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fill();
-
-  // 눈에 띄게 하는 골드 글로우 링
-  ctx.beginPath(); ctx.arc(P.x, P.y-zOffset, 8.2*s, 0, Math.PI*2);
-  ctx.strokeStyle='rgba(255,212,0,.55)'; ctx.lineWidth=1.6; ctx.stroke();
-
-  ctx.save();
-  ctx.translate(P.x, P.y-zOffset);
-  ctx.rotate(ball.spin||0);
-  const bg=ctx.createRadialGradient(-2,-2,1,0,0,6.8*s);
-  bg.addColorStop(0,'#ffffff'); bg.addColorStop(1,'#c9ccd2');
-  ctx.beginPath(); ctx.arc(0,0,6.6*s,0,Math.PI*2); ctx.fillStyle=bg; ctx.fill();
-  ctx.lineWidth=1.3; ctx.strokeStyle='#222';
-  ctx.beginPath(); ctx.arc(0,0,6.6*s,0,Math.PI*2); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0,0,2.3*s,0,Math.PI*2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-6.6*s,0); ctx.lineTo(6.6*s,0); ctx.stroke();
-  ctx.restore();
+  octx.beginPath(); octx.arc(bq.x,bq.y,1.9,0,Math.PI*2); octx.fillStyle='#fff'; octx.fill();
+  octx.restore();
 }
 
 function drawParticles(dt){
@@ -2001,12 +1897,12 @@ function drawParticles(dt){
     pt.age+=dt;
     if(pt.age>pt.life){ particles.splice(i,1); continue; }
     pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.vy+=140*dt;
-    const P=project(pt.x,pt.y);
+    const P=worldToScreen(pt.x,pt.y,0);
     const a=1-pt.age/pt.life;
-    ctx.beginPath();
-    ctx.arc(P.x,P.y,pt.size*P.scale,0,Math.PI*2);
-    ctx.fillStyle=hexA(pt.color,a);
-    ctx.fill();
+    octx.beginPath();
+    octx.arc(P.x,P.y,pt.size*P.scale,0,Math.PI*2);
+    octx.fillStyle=hexA(pt.color,a);
+    octx.fill();
   }
 }
 function hexA(hex,a){
@@ -2020,11 +1916,11 @@ function drawFloatTexts(){
     const age=now()-ft.born;
     if(age>0.75){ floatTexts.splice(i,1); continue; }
     const a=1-age/0.75;
-    const P=project(ft.x,ft.y);
-    ctx.font=`900 ${Math.max(10,12*P.scale)}px Orbitron, sans-serif`;
-    ctx.textAlign='center';
-    ctx.fillStyle=hexA(ft.color,a);
-    ctx.fillText(ft.text, P.x, P.y-age*26);
+    const P=worldToScreen(ft.x,ft.y,0);
+    octx.font=`900 ${Math.max(10,12*P.scale)}px Orbitron, sans-serif`;
+    octx.textAlign='center';
+    octx.fillStyle=hexA(ft.color,a);
+    octx.fillText(ft.text, P.x, P.y-age*26);
   }
 }
 
@@ -2036,73 +1932,54 @@ function snapshotNow(){
   };
 }
 function drawSimpleDot(x,y,color,isGK){
-  const P=project(x,y);
+  const P=worldToScreen(x,y,0);
   const r=(isGK?9:8)*P.scale;
-  ctx.beginPath(); ctx.arc(P.x,P.y,r,0,Math.PI*2);
-  ctx.fillStyle=color; ctx.fill();
-  ctx.lineWidth=1.2; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.stroke();
+  octx.beginPath(); octx.arc(P.x,P.y,r,0,Math.PI*2);
+  octx.fillStyle=color; octx.fill();
+  octx.lineWidth=1.2; octx.strokeStyle='rgba(0,0,0,.5)'; octx.stroke();
 }
 function drawSimpleBall(x,y,z){
-  const P=project(x,y);
-  const s=(1+(z||0)*0.012)*P.scale;
-  const zOff=(z||0)*0.9*P.scale;
-  ctx.beginPath(); ctx.arc(P.x,P.y-zOff,6*s,0,Math.PI*2);
-  ctx.fillStyle='#fff'; ctx.fill();
-  ctx.lineWidth=1; ctx.strokeStyle='#333'; ctx.stroke();
+  const P=worldToScreen(x,y,z);
+  octx.beginPath(); octx.arc(P.x,P.y,6*P.scale,0,Math.PI*2);
+  octx.fillStyle='#fff'; octx.fill();
+  octx.lineWidth=1; octx.strokeStyle='#333'; octx.stroke();
 }
 function renderReplay(){
-  drawPitch();
   const dur=2.2, elapsed=clamp(dur-(freezeUntil-now()),0,dur);
   const idx=clamp(Math.floor((elapsed/dur)*(goalReplay.length-1)),0,goalReplay.length-1);
   const snap=goalReplay[idx];
   for(const rp of snap.red) drawSimpleDot(rp.x,rp.y,'#ff4757',rp.isGK);
   for(const rp of snap.blue) drawSimpleDot(rp.x,rp.y, rp.active?'#ffd400':'#2ea8ff', rp.isGK);
   drawSimpleBall(snap.bx,snap.by,snap.bz);
-  ctx.font='900 13px Orbitron, sans-serif'; ctx.textAlign='center';
-  ctx.fillStyle='rgba(255,212,0,.92)';
-  ctx.fillText('🎬 GOAL REPLAY', W/2, 26);
+  octx.font='900 13px Orbitron, sans-serif'; octx.textAlign='center';
+  octx.fillStyle='rgba(255,212,0,.92)';
+  octx.fillText('🎬 GOAL REPLAY', W/2, 26);
 }
 
 function render(dt){
-  updateCamera(dt);
-  ctx.save();
-  if(now()<shakeT){
-    ctx.translate((Math.random()-0.5)*7,(Math.random()-0.5)*7);
-  }
+  updateScene3D(dt);
+  octx.clearRect(0,0,W,H);
 
   if(goalReplay && goalReplay.length && now()<freezeUntil){
     renderReplay();
   } else {
     if(goalReplay) goalReplay=null;
-    drawPitch();
-
-    const drawList=[];
-    for(const p of red) drawList.push({t:'p',ref:p,y:p.y});
-    for(const p of blue) drawList.push({t:'p',ref:p,y:p.y});
-    drawList.push({t:'b',y:ball.y});
-    drawList.sort((a,b)=>a.y-b.y);
-    for(const it of drawList){
-      if(it.t==='p') drawPlayer(it.ref, it.ref===activePlayer(), dt);
-      else drawBall();
-    }
     drawParticles(dt);
     drawFloatTexts();
   }
-  ctx.restore();
 
-  const vig=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.8);
+  const vig=octx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.8);
   vig.addColorStop(0,'rgba(0,0,0,0)');
   vig.addColorStop(1,'rgba(0,0,0,.4)');
-  ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
+  octx.fillStyle=vig; octx.fillRect(0,0,W,H);
 
   if(now()<flashT){
-    ctx.fillStyle=`rgba(255,255,255,${clamp((flashT-now())/0.35,0,1)*0.5})`;
-    ctx.fillRect(0,0,W,H);
+    octx.fillStyle=`rgba(255,255,255,${clamp((flashT-now())/0.35,0,1)*0.5})`;
+    octx.fillRect(0,0,W,H);
   }
 
   drawMinimap();
 }
-
 // ── loop ──
 let lastT=null;
 function loop(ts){
@@ -2267,6 +2144,7 @@ document.getElementById('kg-toggle').addEventListener('click',()=>{
   document.getElementById('kg-toggle').textContent = hidden? '⌨ 키 숨기기':'⌨ 키 보기';
 });
 
+init3D();
 resetKickoff();
 score={B:0,R:0}; timeLeft=MATCH_TIME; gameState='menu';
 updateScoreHUD();
