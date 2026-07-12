@@ -269,7 +269,8 @@ let lastMatchScore={b:0,r:0};
 const COUNTRIES=[
   {n:'🇰🇷 대한민국'},{n:'🇧🇷 브라질'},{n:'🇩🇪 독일'},{n:'🇫🇷 프랑스'},
   {n:'🇦🇷 아르헨티나'},{n:'🇪🇸 스페인'},{n:'🏴 잉글랜드'},{n:'🇵🇹 포르투갈'},
-  {n:'🇳🇱 네덜란드'},{n:'🇯🇵 일본'},{n:'🇧🇪 벨기에'},{n:'🇭🇷 크로아티아'}
+  {n:'🇳🇱 네덜란드'},{n:'🇯🇵 일본'},{n:'🇧🇪 벨기에'},{n:'🇭🇷 크로아티아'},
+  {n:'🇮🇹 이탈리아'},{n:'🇺🇾 우루과이'},{n:'🇺🇸 미국'},{n:'🇲🇽 멕시코'}
 ];
 const LEAGUE_CLUB_NAMES=['FC 라이온즈','유나이티드 드래곤즈','아틀레티코 팰컨즈','레알 타이거스','보루시아 울프스','인터 코브라스','스톰 레인저스'];
 
@@ -278,7 +279,9 @@ let leagueState = SAVED_LEAGUE && SAVED_LEAGUE.teams ? SAVED_LEAGUE : null;
 
 function placeAtKickoff(arr, team){
   for(const p of arr){
-    p.x = H0+p.baseFx*(H1-H0);
+    let x = H0+p.baseFx*(H1-H0);
+    x = team==='B'? Math.min(x, CX-6) : Math.max(x, CX+6);
+    p.x = x;
     p.y = V0+p.baseFy*(V1-V0);
     p.vx=0; p.vy=0; p.facing={x:team==='B'?1:-1,y:0};
     p.shielding=false; p.jockeying=false; p.aiState='HOLD';
@@ -702,33 +705,42 @@ function startFriendly(diff){
   startRealMatch('RED (AI)');
 }
 
-// ── 월드컵 토너먼트 ──
+// ── 월드컵 토너먼트 (16개국, 4개조 조별리그 → 8강 → 4강 → 결승) ──
 function wcStart(country){
   metaMode='wc';
-  const others = shuffle(COUNTRIES.map(c=>c.n).filter(n=>n!==country)).slice(0,3);
-  const ovrMap={}; others.forEach(n=> ovrMap[n]=Math.round(64+Math.random()*24));
-  wcState = { country, opponents: others, opponentOVR:ovrMap, results:[], matchIdx:0, stage:'group', finalOpp:'', outcome:'' };
+  const pool=shuffle(COUNTRIES.map(c=>c.n).filter(n=>n!==country));
+  const myGroup=[country, ...pool.slice(0,3)];
+  const otherGroups=[pool.slice(3,7), pool.slice(7,11), pool.slice(11,15)];
+  const ovrMap={};
+  [...myGroup, ...otherGroups.flat()].forEach(n=>{ if(n!==country) ovrMap[n]=Math.round(62+Math.random()*28); });
+  wcState = {
+    country, myGroup, otherGroups, opponents: myGroup.filter(n=>n!==country),
+    opponentOVR: ovrMap, results:[], matchIdx:0, stage:'group',
+    bracket:null, bracketRound:'', roundOpp:'', outcome:''
+  };
   aiDifficulty=1.0;
   renderWcScreen();
 }
-function wcGroupStandings(){
-  // 유저 + 상대 3팀의 팀별 성적표 (상대끼리 맞대결은 즉시 시뮬레이션해서 채움)
-  const names=['나의 팀', ...wcState.opponents];
-  const table={}; names.forEach(n=> table[n]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+function wcGroupStandingsFor(teams, matches){
+  const table={}; teams.forEach(n=> table[n]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
   function apply(a,b,ga,gb){
+    if(!table[a]||!table[b]) return;
     table[a].p++; table[a].gf+=ga; table[a].ga+=gb;
     table[b].p++; table[b].gf+=gb; table[b].ga+=ga;
     if(ga>gb){ table[a].w++; table[a].pts+=3; table[b].l++; }
     else if(ga<gb){ table[b].w++; table[b].pts+=3; table[a].l++; }
     else { table[a].d++; table[b].d++; table[a].pts++; table[b].pts++; }
   }
-  wcState.results.forEach(r=> apply('나의 팀', r.opp, r.gf, r.ga));
-  if(wcState._simmed){
-    wcState._simmed.forEach(m=> apply(m.a,m.b,m.ga,m.gb));
-  }
+  matches.forEach(m=> apply(m.a,m.b,m.ga,m.gb));
   const arr=Object.keys(table).map(n=>({name:n,...table[n]}));
   arr.sort((x,y)=> y.pts-x.pts || (y.gf-y.ga)-(x.gf-x.ga) || y.gf-x.gf);
   return arr;
+}
+function wcGroupStandings(){
+  const matches = wcState.results.map(r=>({a:'나의 팀', b:r.opp, ga:r.gf, gb:r.ga}));
+  if(wcState._simmed) matches.push(...wcState._simmed);
+  const teams=['나의 팀', ...wcState.opponents];
+  return wcGroupStandingsFor(teams, matches);
 }
 function wcSimRestOfGroup(){
   if(wcState._simmed) return;
@@ -737,7 +749,49 @@ function wcSimRestOfGroup(){
   const pairs=[[opps[0],opps[1]],[opps[0],opps[2]],[opps[1],opps[2]]];
   for(const [a,b] of pairs){
     const [ga,gb]=simScoreline(wcState.opponentOVR[a]||70, wcState.opponentOVR[b]||70);
-    wcState._simmed.push({a,b, ga, gb});
+    wcState._simmed.push({a,b,ga,gb});
+  }
+}
+function wcSimOtherGroups(){
+  // 각 그룹(4팀) 풀리그 6경기 시뮬레이션 후 상위 2팀 반환
+  return wcState.otherGroups.map(group=>{
+    const matches=[];
+    for(let i=0;i<group.length;i++) for(let j=i+1;j<group.length;j++){
+      const [ga,gb]=simScoreline(wcState.opponentOVR[group[i]]||70, wcState.opponentOVR[group[j]]||70);
+      matches.push({a:group[i],b:group[j],ga,gb});
+    }
+    const table=wcGroupStandingsFor(group, matches);
+    return [table[0].name, table[1].name];
+  });
+}
+function wcBuildBracket(){
+  const myGroupTable=wcGroupStandings();
+  const others=wcSimOtherGroups(); // [[g2w,g2r],[g3w,g3r],[g4w,g4r]]
+  const myIdx=myGroupTable.findIndex(t=>t.name==='나의 팀');
+  const myRank = myIdx; // 0=1위, 1=2위
+  const myOpp = myRank===0? others[0][1] : others[0][0];
+  // 남은 8강 2경기(내 경기 제외)는 즉시 시뮬레이션해서 승자만 기록
+  const rest=[[others[1][0],others[2][1]],[others[2][0],others[1][1]]];
+  const restResults=rest.map(([a,b])=>{
+    const [ga,gb]=simScoreline(wcState.opponentOVR[a]||70, wcState.opponentOVR[b]||70);
+    return ga>=gb? a:b;
+  });
+  wcState.bracket = { qfOpp: myOpp, qfWinners: restResults, stage:'QF' };
+  wcState.roundOpp = myOpp;
+}
+function wcAdvanceBracket(iWon){
+  const br=wcState.bracket;
+  if(!iWon){ wcState.stage='out_knockout'; return; }
+  if(br.stage==='QF'){
+    // 4강: 나 + restResults(2팀) 중 하나 + 나머지 하나는 부전(이미 3팀뿐이므로 임의 매칭)
+    const semiOpp = br.qfWinners[Math.floor(Math.random()*br.qfWinners.length)];
+    br.stage='SF';
+    wcState.roundOpp = semiOpp;
+  } else if(br.stage==='SF'){
+    br.stage='F';
+    wcState.roundOpp = br.qfWinners.find(t=>t!==wcState.roundOpp) || br.qfWinners[0];
+  } else if(br.stage==='F'){
+    wcState.stage='champion';
   }
 }
 function renderWcScreen(){
@@ -746,7 +800,7 @@ function renderWcScreen(){
     const grid = COUNTRIES.map(c=>`<div class="opt-btn" data-action="wc_pick_country" data-country="${c.n}"><b>${c.n}</b></div>`).join('');
     setMetaBody(`
       <div class="meta-title">🏆 월드컵 토너먼트</div>
-      <div class="meta-sub">대표할 국가를 선택해줘 (조별리그 3경기 → 결승)</div>
+      <div class="meta-sub">대표할 국가를 선택해줘 · 16개국 · 4개조 조별리그 → 8강 → 4강 → 결승</div>
       <div class="country-grid">${grid}</div>
       <div class="ghost-btn" data-action="goto_hub">◀ 메인으로</div>
     `);
@@ -754,18 +808,29 @@ function renderWcScreen(){
     const played = wcState.results.map(r=>`${r.opp} 전 ${r.gf}:${r.ga}`).join(' · ')||'아직 없음';
     const next = wcState.opponents[wcState.matchIdx];
     setMetaBody(`
-      <div class="meta-title">🏆 ${wcState.country} · 조별리그</div>
+      <div class="meta-title">🏆 ${wcState.country} · 조별리그 (E조)</div>
       <div class="meta-sub">${wcState.matchIdx}/3 경기 완료 · ${played}</div>
-      <div class="fixture-box">다음 상대: <b>${next}</b></div>
+      <div class="fixture-box">다음 상대: <b>${next}</b> (OVR ${wcState.opponentOVR[next]})</div>
+      <div class="fixture-box" style="font-size:10.5px;color:#8aa;">🔼 조 1~2위만 8강 토너먼트 진출</div>
       <button class="continue-btn" data-action="wc_start_group_match">⚽ 경기 시작</button>
       <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 유지)</div>
     `);
-  } else if(wcState.stage==='final_intro'){
+  } else if(wcState.stage==='knockout_intro'){
+    const rn = wcState.bracket.stage==='QF'?'8강':(wcState.bracket.stage==='SF'?'4강':'결승');
     setMetaBody(`
-      <div class="meta-title">🎉 결승 진출!</div>
-      <div class="meta-sub">조별리그 통과! 결승 상대는:</div>
-      <div class="fixture-box" style="text-align:center;font-size:15px;"><b>${wcState.finalOpp}</b></div>
-      <button class="continue-btn" data-action="wc_start_final">🏁 결승전 시작</button>
+      <div class="meta-title">🎉 조별리그 통과!</div>
+      <div class="meta-sub">토너먼트 대진표가 확정됐어.</div>
+      ${wcBracketHtml()}
+      <button class="continue-btn" data-action="wc_start_knockout">🏁 ${rn} 시작</button>
+    `);
+  } else if(wcState.stage==='knockout'){
+    const rn = wcState.bracket.stage==='QF'?'8강':(wcState.bracket.stage==='SF'?'4강':'결승');
+    setMetaBody(`
+      <div class="meta-title">🏆 ${rn}</div>
+      ${wcBracketHtml()}
+      <div class="fixture-box">상대: <b>${wcState.roundOpp}</b></div>
+      <button class="continue-btn" data-action="wc_start_knockout">⚽ ${rn} 경기 시작</button>
+      <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 유지)</div>
     `);
   } else if(wcState.stage==='out'){
     const table=wcGroupStandings();
@@ -775,11 +840,18 @@ function renderWcScreen(){
       ${wcTableHtml(table)}
       <button class="continue-btn" data-action="goto_hub">메인으로</button>
     `);
+  } else if(wcState.stage==='out_knockout'){
+    const rn = wcState.bracket.stage==='QF'?'8강':(wcState.bracket.stage==='SF'?'4강':'결승');
+    setMetaBody(`
+      <div class="meta-title">😢 ${rn} 탈락</div>
+      <div class="meta-sub">토너먼트에서 여기까지 왔어! 다음엔 우승까지 노려보자.</div>
+      <button class="continue-btn" data-action="goto_hub">메인으로</button>
+    `);
   } else if(wcState.stage==='champion'){
     setMetaBody(`
       <div class="meta-title" style="color:var(--gold);">🏆 챔피언!</div>
       <div class="trophy-emoji">🏆</div>
-      <div class="meta-sub">${wcState.country}, 월드컵 우승을 차지했다!</div>
+      <div class="meta-sub">${wcState.country}, 16개국을 뚫고 월드컵 우승을 차지했다!</div>
       <button class="continue-btn" data-action="goto_hub">메인으로</button>
     `);
   } else if(wcState.stage==='runnerup'){
@@ -795,6 +867,15 @@ function wcTableHtml(table){
   const rows = table.map(t=>`<tr class="${t.name==='나의 팀'?'me':''}"><td class="tname">${t.name}</td><td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td>${t.gf}:${t.ga}</td><td><b>${t.pts}</b></td></tr>`).join('');
   return `<table class="meta-table"><tr><th>팀</th><th>경기</th><th>승</th><th>무</th><th>패</th><th>득실</th><th>승점</th></tr>${rows}</table>`;
 }
+function wcBracketHtml(){
+  const br=wcState.bracket;
+  const stageLabel=(s)=> s==='QF'?'8강':(s==='SF'?'4강':'결승');
+  return `<div class="fixture-box" style="line-height:1.9;">
+    <b style="color:var(--gold);">${stageLabel(br.stage)} 진행 중</b><br>
+    ${wcState.country} vs ${wcState.roundOpp||br.qfOpp}<br>
+    <span style="color:#8aa;font-size:10px;">나머지 대진은 자동 진행됩니다</span>
+  </div>`;
+}
 function wcStartNextGroupMatch(){
   blueRosterSource=null;
   const opp=wcState.opponents[wcState.matchIdx];
@@ -802,13 +883,13 @@ function wcStartNextGroupMatch(){
   opponentOVR = wcState.opponentOVR[opp] || 70;
   startRealMatch(opp);
 }
-function wcStartFinalMatch(){
+function wcStartKnockoutMatch(){
   blueRosterSource=null;
-  hud('r', wcState.finalOpp);
-  aiDifficulty=1.15;
-  opponentOVR = (wcState.opponentOVR[wcState.finalOpp] || 74) + 4;
-  wcState.stage='final';
-  startRealMatch(wcState.finalOpp);
+  hud('r', wcState.roundOpp);
+  aiDifficulty = wcState.bracket.stage==='QF'? 1.05 : (wcState.bracket.stage==='SF'? 1.12 : 1.2);
+  opponentOVR = (wcState.opponentOVR[wcState.roundOpp] || 74) + 3;
+  wcState.stage='knockout';
+  startRealMatch(wcState.roundOpp);
 }
 function wcOnMatchEnd(b,r,win){
   if(wcState.stage==='group'){
@@ -819,16 +900,19 @@ function wcOnMatchEnd(b,r,win){
     const table=wcGroupStandings();
     const myIdx=table.findIndex(t=>t.name==='나의 팀');
     if(myIdx<2){
-      wcState.finalOpp = (myIdx===0? table[1] : table[0]).name;
-      wcState.stage='final_intro';
-      return '🏁 결승 진출 확인';
+      wcBuildBracket();
+      wcState.stage='knockout_intro';
+      return '🏁 토너먼트 대진표 확인';
     } else {
       wcState.stage='out';
       return '📋 결과 확인';
     }
-  } else if(wcState.stage==='final'){
-    wcState.stage = win? 'champion':'runnerup';
-    return win? '🏆 우승 세리머니':'🥈 결과 확인';
+  } else if(wcState.stage==='knockout'){
+    wcAdvanceBracket(win===1);
+    if(wcState.stage==='champion') return '🏆 우승 세리머니';
+    if(wcState.stage==='out_knockout') return '📋 결과 확인';
+    wcState.stage='knockout_intro';
+    return '🏁 다음 라운드 대진표 확인';
   }
   return '계속하기';
 }
@@ -948,6 +1032,7 @@ function genSquadPlayer(role, ovrTarget, age){
     id:'sq'+Math.random().toString(36).slice(2,9),
     name: NAME_POOL[Math.floor(Math.random()*NAME_POOL.length)],
     role, age: age||(18+Math.floor(Math.random()*17)),
+    contract: 1+Math.floor(Math.random()*3),
     attrs: genAttrs(role, ovrTarget)
   };
 }
@@ -956,18 +1041,23 @@ function playerValue(p){
   const ageFactor = p.age<=22? (0.75+(p.age-18)*0.05) : (p.age<=29? 1.15 : Math.max(0.22, 1.15-(p.age-29)*0.13));
   return Math.max(300000, Math.round(ovr*ovr*900*ageFactor/1000)*1000);
 }
+function tierOvrRange(tier){
+  const base = 50+(tier-1)*10;
+  return [base, base+25];
+}
 function genInitialSquad(){
   const roles=[...Array(2).fill('GK'), ...Array(5).fill('DF'), ...Array(5).fill('MF'), ...Array(4).fill('FW')];
   return roles.map(r=> genSquadPlayer(r, 58+Math.floor(Math.random()*16)));
 }
-function genMarketPlayer(){
+function genMarketPlayer(omin,omax){
+  omin=omin||55; omax=omax||93;
   const roles=['GK','DF','MF','FW'];
   const r=roles[Math.floor(Math.random()*roles.length)];
-  const p=genSquadPlayer(r, 55+Math.floor(Math.random()*38));
+  const p=genSquadPlayer(r, omin+Math.floor(Math.random()*Math.max(1,omax-omin)));
   p.price=playerValue(p);
   return p;
 }
-function genMarketPool(n){ const arr=[]; for(let i=0;i<n;i++) arr.push(genMarketPlayer()); return arr; }
+function genMarketPool(n,omin,omax){ const arr=[]; for(let i=0;i<n;i++) arr.push(genMarketPlayer(omin,omax)); return arr; }
 
 function pickSquadForFormation(squad, formationName){
   const F=FORMATIONS[formationName]||FORMATIONS['4-4-2'];
@@ -1015,16 +1105,19 @@ function persistCareer(){
 function fmtMoney(v){ return (v/10000).toFixed(0)+'만'; }
 
 function careerCreate(name, crest){
+  const tier=2;
+  const [omin,omax]=tierOvrRange(tier);
   careerState = {
     clubName: name && name.trim()? name.trim() : '나의 구단',
     crest: crest||'⚽',
     budget: 50000000,
     season: 1,
+    tier,
     squad: genInitialSquad(),
-    market: genMarketPool(10),
+    market: genMarketPool(10, omin, omax),
     league: {
       teams: ['__CLUB__', ...shuffle(LEAGUE_CLUB_NAMES)],
-      ovr: [70, ...LEAGUE_CLUB_NAMES.map(()=>60+Math.round(Math.random()*25))],
+      ovr: [70, ...LEAGUE_CLUB_NAMES.map(()=> omin+Math.round(Math.random()*(omax-omin)))],
       table: Array(8).fill(0).map(()=>({p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0})),
       fixtures: makeRoundRobin(8),
       matchday: 0, done:false
@@ -1072,9 +1165,16 @@ function careerSeasonEnd(){
   const myPos = table.findIndex(t=>t.idx===0)+1;
   const prize = myPos===1? 30000000 : (myPos<=3? 15000000 : (myPos<=6? 8000000 : 3000000));
   careerState.budget += prize;
-  const retired=[];
+
+  let tierChange=0;
+  careerState.tier = careerState.tier||2;
+  if(myPos<=2 && careerState.tier<4){ careerState.tier++; tierChange=1; }
+  else if(myPos>=7 && careerState.tier>1){ careerState.tier--; tierChange=-1; }
+
+  const retired=[], departed=[];
   careerState.squad.forEach(p=>{
     p.age++;
+    p.contract = (p.contract===undefined?2:p.contract)-1;
     const a=p.attrs;
     const grow=(k)=>{
       if(p.age<24) a[k]=clamp(a[k]+Math.round(Math.random()*3),28,99);
@@ -1085,26 +1185,42 @@ function careerSeasonEnd(){
   });
   careerState.squad = careerState.squad.filter(p=>{
     if(p.age>=36){ retired.push(p.name); return false; }
+    if(p.contract<=0){
+      if(Math.random()<0.4){ departed.push(p.name); return false; }
+      p.contract=1+Math.floor(Math.random()*3);
+    }
     return true;
   });
   while(careerState.squad.filter(p=>p.role==='GK').length<2) careerState.squad.push(genSquadPlayer('GK',60,21));
   while(careerState.squad.length<16) careerState.squad.push(genSquadPlayer(['DF','MF','FW'][Math.floor(Math.random()*3)],60,20));
-  careerState.market = genMarketPool(10);
+
+  const [omin,omax]=tierOvrRange(careerState.tier);
+  careerState.market = genMarketPool(10, omin, omax);
+  let academyProspect=null;
+  if(Math.random()<0.45){
+    const role=['DF','MF','FW'][Math.floor(Math.random()*3)];
+    const prospect=genSquadPlayer(role, 62+Math.floor(Math.random()*10), 17+Math.floor(Math.random()*3));
+    prospect.price=Math.round(playerValue(prospect)*0.5);
+    prospect.academy=true;
+    careerState.market.unshift(prospect);
+    academyProspect=prospect.name;
+  }
+
   careerState.season++;
   careerState.league.table = Array(8).fill(0).map(()=>({p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
   careerState.league.fixtures = makeRoundRobin(8);
   careerState.league.matchday = 0;
   careerState.league.done = false;
-  careerState.league.ovr = [70, ...LEAGUE_CLUB_NAMES.map(()=>60+Math.round(Math.random()*25))];
+  careerState.league.ovr = [70, ...LEAGUE_CLUB_NAMES.map(()=> omin+Math.round(Math.random()*(omax-omin)))];
   persistCareer();
-  return {myPos, prize, retired};
+  return {myPos, prize, retired, departed, tierChange, academyProspect};
 }
 function careerBuy(id){
   const p=careerState.market.find(m=>m.id===id);
   if(!p) return;
   if(careerState.budget<p.price){ renderCareerMarket('예산이 부족합니다.'); return; }
   careerState.budget-=p.price;
-  careerState.squad.push({id:p.id,name:p.name,role:p.role,age:p.age,attrs:p.attrs});
+  careerState.squad.push({id:p.id,name:p.name,role:p.role,age:p.age,contract:p.contract||2,attrs:p.attrs});
   careerState.market=careerState.market.filter(m=>m.id!==id);
   persistCareer();
   renderCareerMarket(`✅ ${p.name} 영입 완료!`);
@@ -1124,29 +1240,32 @@ function careerSell(id){
   renderCareerSquad(`✅ ${p.name} 방출 완료 (+${fmtMoney(value)})`);
 }
 
+const TIER_NAMES=['','4부 리그','3부 리그','2부 리그','1부 리그(최상위)'];
 function careerSquadRowsHtml(){
   const rows=[...careerState.squad].sort((a,b)=> ovrOf(b)-ovrOf(a));
-  return rows.map(p=>`<tr><td class="tname">${p.name}</td><td>${p.role}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td><td>${fmtMoney(playerValue(p))}</td>
+  return rows.map(p=>`<tr><td class="tname">${p.name}</td><td>${p.role}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td><td>${fmtMoney(playerValue(p))}</td><td>${p.contract||1}년</td>
     <td><div class="mini-btn" data-action="career_sell" data-id="${p.id}">방출</div></td></tr>`).join('');
 }
 function renderCareerSquad(msg){
   metaMode='career';
   setMetaBody(`
     <div class="meta-title">👥 스쿼드 (${careerState.squad.length}명)</div>
-    <div class="meta-sub">${msg||'선수를 방출해 예산을 확보할 수 있어. 최소 12명은 유지해야 해.'}</div>
-    <table class="meta-table"><tr><th>이름</th><th>포지션</th><th>나이</th><th>OVR</th><th>시장가</th><th></th></tr>${careerSquadRowsHtml()}</table>
+    <div class="meta-sub">${msg||'선수를 방출해 예산을 확보할 수 있어. 최소 12명은 유지해야 해. 계약이 0년이면 시즌 종료 시 이적할 수도 있어.'}</div>
+    <table class="meta-table"><tr><th>이름</th><th>포지션</th><th>나이</th><th>OVR</th><th>시장가</th><th>계약</th><th></th></tr>${careerSquadRowsHtml()}</table>
     <div class="ghost-btn" data-action="career_hub">◀ 구단 사무실로</div>
   `);
 }
 function careerMarketRowsHtml(){
-  return careerState.market.map(p=>`<tr><td class="tname">${p.name}</td><td>${p.role}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td><td>${fmtMoney(p.price)}</td>
+  return careerState.market.map(p=>`<tr><td class="tname">${p.academy?'🌱 ':''}${p.name}</td><td>${p.role}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td><td>${fmtMoney(p.price)}</td>
     <td><div class="mini-btn" data-action="career_buy" data-id="${p.id}">영입</div></td></tr>`).join('');
 }
 function renderCareerMarket(msg){
   metaMode='career';
+  const hasAcademy = careerState.market.some(p=>p.academy);
   setMetaBody(`
     <div class="meta-title">💰 이적시장</div>
     <div class="meta-sub">보유 예산: <b style="color:var(--gold);">${fmtMoney(careerState.budget)}</b>${msg? ' · '+msg:''}</div>
+    ${hasAcademy? `<div class="fixture-box">🌱 유스 스카우팅 유망주가 시장에 나왔어! 성장 가능성이 높은 특가 매물이야.</div>`:''}
     <table class="meta-table"><tr><th>이름</th><th>포지션</th><th>나이</th><th>OVR</th><th>가격</th><th></th></tr>${careerMarketRowsHtml()}</table>
     <div class="ghost-btn" data-action="career_hub">◀ 구단 사무실로</div>
   `);
@@ -1155,7 +1274,7 @@ function renderCareerCreate(){
   metaMode='career';
   setMetaBody(`
     <div class="meta-title">🏟️ 커리어 모드 시작</div>
-    <div class="meta-sub">구단 이름과 엠블럼을 골라줘. 시즌을 거듭하며 스쿼드를 키워나가는 모드야.</div>
+    <div class="meta-sub">구단 이름과 엠블럼을 골라줘. 2부 리그에서 시작해서 승강제를 거치며 성장하는 모드야.</div>
     <input id="clubNameInput" type="text" placeholder="구단 이름 입력" maxlength="14" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:13px;margin-bottom:10px;">
     <div class="diff-grid" style="grid-template-columns:repeat(5,1fr);">
       ${CREST_POOL.map(c=>`<div class="opt-btn" data-action="career_pick_crest" data-crest="${c}" style="font-size:20px;">${c}</div>`).join('')}
@@ -1170,10 +1289,11 @@ function renderCareerHub(){
   if(!careerState){ renderCareerCreate(); return; }
   const table=careerStandingsSorted();
   const myPos=table.findIndex(t=>t.idx===0)+1;
+  const tierTag = TIER_NAMES[careerState.tier||2];
   if(careerState.league.done){
     setMetaBody(`
       <div class="meta-title">${careerState.crest} ${careerState.clubName}</div>
-      <div class="meta-sub">시즌 ${careerState.season} 종료 · 최종 순위 ${myPos}위 · 예산 <b style="color:var(--gold);">${fmtMoney(careerState.budget)}</b></div>
+      <div class="meta-sub">${tierTag} · 시즌 ${careerState.season} 종료 · 최종 순위 ${myPos}위 · 예산 <b style="color:var(--gold);">${fmtMoney(careerState.budget)}</b></div>
       ${leagueTableHtml(table)}
       <button class="continue-btn" data-action="career_season_end">🔄 시즌 결산 처리</button>
       <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 저장됨)</div>
@@ -1185,8 +1305,9 @@ function renderCareerHub(){
   const oppIdx=userPair[0]===0?userPair[1]:userPair[0];
   setMetaBody(`
     <div class="meta-title">${careerState.crest} ${careerState.clubName}</div>
-    <div class="meta-sub">시즌 ${careerState.season} · ${careerState.league.matchday+1}/7 라운드 · 예산 <b style="color:var(--gold);">${fmtMoney(careerState.budget)}</b> · ${myPos}위</div>
-    <div class="fixture-box">이번 라운드 상대: <b>${careerState.league.teams[oppIdx]}</b></div>
+    <div class="meta-sub">${tierTag} · 시즌 ${careerState.season} · ${careerState.league.matchday+1}/7 라운드 · 예산 <b style="color:var(--gold);">${fmtMoney(careerState.budget)}</b> · ${myPos}위</div>
+    <div class="fixture-box">이번 라운드 상대: <b>${careerState.league.teams[oppIdx]}</b> (OVR ${careerState.league.ovr[oppIdx]})</div>
+    <div class="fixture-box" style="font-size:10.5px;color:#8aa;">🔼 1~2위: 승격 &nbsp; 🔽 7~8위: 강등</div>
     ${leagueTableHtml(table)}
     <div class="diff-grid">
       <div class="opt-btn ${userFormation==='4-4-2'?'sel':''}" data-action="pick_formation" data-form="4-4-2"><b>4-4-2</b></div>
@@ -1202,11 +1323,16 @@ function renderCareerHub(){
 }
 function renderCareerSeasonEndResult(res){
   metaMode='career';
+  const tierMsg = res.tierChange>0? `🔼 승격! 다음 시즌부터 ${TIER_NAMES[careerState.tier]}에서 경쟁해` :
+    (res.tierChange<0? `🔽 강등... 다음 시즌은 ${TIER_NAMES[careerState.tier]}에서 재도전이야` : `순위 유지 · ${TIER_NAMES[careerState.tier]} 잔류`);
   setMetaBody(`
     <div class="meta-title" style="color:var(--gold);">📋 시즌 ${careerState.season-1} 결산</div>
     <div class="meta-sub">최종 순위 ${res.myPos}위 · 상금 +${fmtMoney(res.prize)}</div>
-    ${res.retired.length? `<div class="fixture-box">은퇴한 선수: ${res.retired.join(', ')}</div>`:''}
-    <div class="fixture-box">선수단이 한 살씩 나이를 먹고 능력치가 조정됐어. 이적시장도 새로 열렸어!</div>
+    <div class="fixture-box">${tierMsg}</div>
+    ${res.retired.length? `<div class="fixture-box">🎗️ 은퇴한 선수: ${res.retired.join(', ')}</div>`:''}
+    ${res.departed.length? `<div class="fixture-box">📤 계약 만료로 떠난 선수: ${res.departed.join(', ')}</div>`:''}
+    ${res.academyProspect? `<div class="fixture-box">🌱 유스 스카우팅: <b>${res.academyProspect}</b> 선수가 이적시장에 특가로 나왔어!</div>`:''}
+    <div class="fixture-box">선수단이 한 살씩 나이를 먹고 능력치가 조정됐어.</div>
     <button class="continue-btn" data-action="career_hub">🏁 시즌 ${careerState.season} 시작하기</button>
   `);
 }
@@ -1234,7 +1360,7 @@ document.getElementById('metaBox').addEventListener('click',(e)=>{
   else if(act==='pick_formation') pickFormation(el.dataset.form);
   else if(act==='wc_pick_country') wcStart(el.dataset.country);
   else if(act==='wc_start_group_match') wcStartNextGroupMatch();
-  else if(act==='wc_start_final'){ wcState.stage='final'; wcStartFinalMatch(); }
+  else if(act==='wc_start_knockout') wcStartKnockoutMatch();
   else if(act==='league_new'){ leagueNew(); renderLeagueHome(); }
   else if(act==='league_play') leaguePlayMatchday();
   else if(act==='career_pick_crest'){
@@ -1673,8 +1799,9 @@ const FAR_SCALE=0.56, NEAR_SCALE=1.18, DEPTH_EASE=0.78;
 const SCALE3D=0.034, HEIGHT3D=0.05;
 const PITCH_W3D=(H1-H0)*SCALE3D, PITCH_D3D=(V1-V0)*SCALE3D;
 const GOAL_H3D=0.9;
-const CAM_HEIGHT=11.5, CAM_BACK=13.5;
-let blueMeshes=[], redMeshes=[], ballMesh=null, ballSeam=null;
+const CAM_HEIGHT=15.5, CAM_BACK=18.5;
+let blueMeshes=[], redMeshes=[], ballMesh=null, ballSeam=null, refereeMesh=null;
+let refX=CX, refY=CY;
 let camPosX=0, camPosZ=0, camInit3D=false;
 
 function worldToScreen(wx, wy, wz){
@@ -1795,7 +1922,7 @@ function init3D(){
   scene.background=new THREE.Color(0x040a06);
   if(THREE.FogExp2) scene.fog=new THREE.FogExp2(0x040a06, 0.02);
 
-  camera=new THREE.PerspectiveCamera(52, W/H, 0.1, 200);
+  camera=new THREE.PerspectiveCamera(62, W/H, 0.1, 260);
 
   renderer=new THREE.WebGLRenderer({antialias:true, alpha:false});
   renderer.setSize(W,H);
@@ -1826,6 +1953,12 @@ function init3D(){
   for(let i=0;i<11;i++) blueMeshes.push(makePlayerMesh());
   for(let i=0;i<11;i++) redMeshes.push(makePlayerMesh());
 
+  refereeMesh = makePlayerMesh();
+  refereeMesh.userData.torso.material.color.setHex(0x111318);
+  refereeMesh.userData.head.material.color.setHex(0xe8b48a);
+  refereeMesh.scale.set(0.92,0.92,0.92);
+  refereeMesh.userData.ring.material.opacity=0;
+
   ballMesh=new THREE.Mesh(
     new THREE.SphereGeometry(0.24, 14, 12),
     new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5})
@@ -1852,6 +1985,7 @@ function updateOnePlayerMesh(mesh, p, dt){
   mesh.userData.ring.material.opacity = isActive? (0.55+Math.sin(now()*7)*0.18) : 0;
 }
 
+let camZoomMul=1;
 function updateCamera3D(dt){
   const p=activePlayer();
   const tx=(ball.x*0.62+p.x*0.38-CX)*SCALE3D;
@@ -1859,13 +1993,29 @@ function updateCamera3D(dt){
   if(!camInit3D){ camPosX=tx; camPosZ=tz; camInit3D=true; }
   camPosX += (tx-camPosX)*Math.min(1, dt*4);
   camPosZ += (tz-camPosZ)*Math.min(1, dt*4);
-  camera.position.set(camPosX, CAM_HEIGHT, camPosZ+CAM_BACK);
+  const ballSpeed=Math.hypot(ball.vx,ball.vy);
+  const targetZoom = 1 + clamp(ballSpeed/900, 0, 0.32);
+  camZoomMul += (targetZoom-camZoomMul)*Math.min(1, dt*2.2);
+  camera.position.set(camPosX, CAM_HEIGHT*camZoomMul, camPosZ+CAM_BACK*camZoomMul);
   camera.lookAt(camPosX, 0.4, camPosZ);
+}
+
+function updateReferee(dt){
+  const dir = (ball.y>CY)? -1:1;
+  const targetX = clamp(ball.x + dir*4, H0+20, H1-20);
+  const targetY = clamp(ball.y - dir*22, V0+30, V1-30);
+  refX += (targetX-refX)*Math.min(1, dt*2.4);
+  refY += (targetY-refY)*Math.min(1, dt*2.4);
+  refereeMesh.visible = true;
+  refereeMesh.position.set((refX-CX)*SCALE3D, 0, (refY-CY)*SCALE3D);
+  const dx=targetX-refX, dy=targetY-refY;
+  if(Math.hypot(dx,dy)>1) refereeMesh.rotation.y = Math.atan2(dx,dy);
 }
 
 function updateScene3D(dt){
   for(let i=0;i<11;i++) updateOnePlayerMesh(blueMeshes[i], blue[i], dt);
   for(let i=0;i<11;i++) updateOnePlayerMesh(redMeshes[i], red[i], dt);
+  updateReferee(dt);
   ballMesh.position.set((ball.x-CX)*SCALE3D, 0.24+(ball.z||0)*SCALE3D*1.6, (ball.y-CY)*SCALE3D);
   ballMesh.rotation.y += (ball.spin||0)*0.02;
   updateCamera3D(dt);
@@ -1931,39 +2081,42 @@ function snapshotNow(){
     red: red.map(p=>({x:p.x,y:p.y,isGK:p.isGK}))
   };
 }
-function drawSimpleDot(x,y,color,isGK){
-  const P=worldToScreen(x,y,0);
-  const r=(isGK?9:8)*P.scale;
-  octx.beginPath(); octx.arc(P.x,P.y,r,0,Math.PI*2);
-  octx.fillStyle=color; octx.fill();
-  octx.lineWidth=1.2; octx.strokeStyle='rgba(0,0,0,.5)'; octx.stroke();
+function updateOnePlayerMeshFromSnap(mesh, sp, team){
+  if(!sp){ mesh.visible=false; return; }
+  mesh.visible=true;
+  mesh.position.set((sp.x-CX)*SCALE3D, 0, (sp.y-CY)*SCALE3D);
+  mesh.userData.torso.material.color.setHex(sp.isGK?0xffd400:(team==='B'?0x2ea8ff:0xff4757));
+  mesh.userData.ring.material.opacity = sp.active? 0.6 : 0;
 }
-function drawSimpleBall(x,y,z){
-  const P=worldToScreen(x,y,z);
-  octx.beginPath(); octx.arc(P.x,P.y,6*P.scale,0,Math.PI*2);
-  octx.fillStyle='#fff'; octx.fill();
-  octx.lineWidth=1; octx.strokeStyle='#333'; octx.stroke();
-}
-function renderReplay(){
+function renderReplay3D(dt){
   const dur=2.2, elapsed=clamp(dur-(freezeUntil-now()),0,dur);
   const idx=clamp(Math.floor((elapsed/dur)*(goalReplay.length-1)),0,goalReplay.length-1);
   const snap=goalReplay[idx];
-  for(const rp of snap.red) drawSimpleDot(rp.x,rp.y,'#ff4757',rp.isGK);
-  for(const rp of snap.blue) drawSimpleDot(rp.x,rp.y, rp.active?'#ffd400':'#2ea8ff', rp.isGK);
-  drawSimpleBall(snap.bx,snap.by,snap.bz);
-  octx.font='900 13px Orbitron, sans-serif'; octx.textAlign='center';
-  octx.fillStyle='rgba(255,212,0,.92)';
-  octx.fillText('🎬 GOAL REPLAY', W/2, 26);
+  for(let i=0;i<11;i++) updateOnePlayerMeshFromSnap(blueMeshes[i], snap.blue[i], 'B');
+  for(let i=0;i<11;i++) updateOnePlayerMeshFromSnap(redMeshes[i], snap.red[i], 'R');
+  refereeMesh.visible=false;
+  ballMesh.position.set((snap.bx-CX)*SCALE3D, 0.24+(snap.bz||0)*SCALE3D*1.6, (snap.by-CY)*SCALE3D);
+
+  const bx=(snap.bx-CX)*SCALE3D, bz=(snap.by-CY)*SCALE3D;
+  camPosX += (bx-camPosX)*Math.min(1, dt*3);
+  camPosZ += (bz-camPosZ)*Math.min(1, dt*3);
+  camera.position.set(camPosX, CAM_HEIGHT*0.62, camPosZ+CAM_BACK*0.62);
+  camera.lookAt(camPosX, 0.5, camPosZ);
+  renderer.render(scene, camera);
+
+  octx.font='900 15px Orbitron, sans-serif'; octx.textAlign='center';
+  octx.fillStyle='rgba(255,212,0,.95)';
+  octx.fillText('🎬 GOAL REPLAY', W/2, 30);
 }
 
 function render(dt){
-  updateScene3D(dt);
   octx.clearRect(0,0,W,H);
 
   if(goalReplay && goalReplay.length && now()<freezeUntil){
-    renderReplay();
+    renderReplay3D(dt);
   } else {
     if(goalReplay) goalReplay=null;
+    updateScene3D(dt);
     drawParticles(dt);
     drawFloatTexts();
   }
