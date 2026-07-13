@@ -227,7 +227,7 @@ function makeTeam(team, ovr, formationName){
       id:team+i, team, num:i+1, role, isGK:role==='GK', baseFx:fx, baseFy:f.y,
       x:H0+fx*(H1-H0), y:V0+f.y*(V1-V0),
       vx:0, vy:0, facing:{x:team==='B'?1:-1,y:0},
-      attrs, ovr,
+      attrs, ovr, pname: NAME_POOL[Math.floor(Math.random()*NAME_POOL.length)],
       stamina:100, shielding:false, jockeying:false, aiState:'HOLD',
       runUntil:0, pressUntil:0, stumbleUntil:0, skillEvadeUntil:0,
       matchGoals:0, matchAssists:0, matchTackles:0
@@ -304,7 +304,7 @@ function resetKickoff(){
 
 function fullReset(){
   blue = (blueRosterSource==='career' && typeof careerState!=='undefined' && careerState)
-    ? makeTeamFromSquad(careerState.squad, 'B', userFormation)
+    ? makeTeamFromSquad(careerState.squad, 'B', userFormation, getLineupForFormation(userFormation))
     : makeTeam('B', 74, userFormation);
   red=makeTeam('R', opponentOVR, '4-4-2');
   resetKickoff();
@@ -1074,9 +1074,37 @@ function pickSquadForFormation(squad, formationName){
   }
   return chosen;
 }
-function makeTeamFromSquad(squad, team, formationName){
+function getLineupForFormation(formationName){
+  if(!careerState) return null;
+  careerState.lineup = careerState.lineup||{};
   const F=FORMATIONS[formationName]||FORMATIONS['4-4-2'];
-  const chosen=pickSquadForFormation(squad, formationName);
+  const saved = careerState.lineup[formationName];
+  const bySlotRole = F.roles;
+  const squadById={}; careerState.squad.forEach(p=> squadById[p.id]=p);
+  // 저장된 라인업 검증: id 존재 + 역할 일치 + 중복 없어야 유효
+  if(saved && saved.length===11){
+    const used=new Set(); let valid=true;
+    for(let i=0;i<11;i++){
+      const pid=saved[i];
+      if(!pid || !squadById[pid] || squadById[pid].role!==bySlotRole[i] || used.has(pid)){ valid=false; break; }
+      used.add(pid);
+    }
+    if(valid) return saved.slice();
+  }
+  // 유효하지 않으면 자동 베스트11로 채우고 저장
+  const auto=pickSquadForFormation(careerState.squad, formationName).map(p=>p.id);
+  careerState.lineup[formationName]=auto;
+  return auto;
+}
+function makeTeamFromSquad(squad, team, formationName, explicitIds){
+  const F=FORMATIONS[formationName]||FORMATIONS['4-4-2'];
+  let chosen;
+  if(explicitIds && explicitIds.length===11){
+    const squadById={}; squad.forEach(p=> squadById[p.id]=p);
+    chosen = explicitIds.map((id,i)=> squadById[id] || genSquadPlayer(F.roles[i],60));
+  } else {
+    chosen = pickSquadForFormation(squad, formationName);
+  }
   const arr=[];
   for(let i=0;i<11;i++){
     const f=F.slots[i], role=F.roles[i];
@@ -1315,12 +1343,67 @@ function renderCareerHub(){
     </div>
     <button class="continue-btn" data-action="career_play" style="margin-top:10px;">⚽ 경기 시작</button>
     <div class="diff-grid" style="margin-top:8px;">
+      <div class="opt-btn" data-action="career_lineup">🧩 라인업 편집</div>
       <div class="opt-btn" data-action="career_squad">👥 스쿼드 관리</div>
       <div class="opt-btn" data-action="career_market">💰 이적시장</div>
     </div>
     <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 저장됨)</div>
   `);
 }
+const ROLE_LABEL={GK:'GK 골키퍼',DF:'DF 수비수',MF:'MF 미드필더',FW:'FW 공격수'};
+function renderCareerLineup(pickSlot){
+  metaMode='career';
+  const F=FORMATIONS[userFormation]||FORMATIONS['4-4-2'];
+  const ids=getLineupForFormation(userFormation);
+  const squadById={}; careerState.squad.forEach(p=> squadById[p.id]=p);
+
+  if(pickSlot!==null && pickSlot!==undefined){
+    const role=F.roles[pickSlot];
+    const usedIds=new Set(ids.filter((id,i)=>i!==pickSlot));
+    const candidates=careerState.squad.filter(p=>p.role===role).sort((a,b)=>ovrOf(b)-ovrOf(a));
+    const rows=candidates.map(p=>{
+      const isStarting=usedIds.has(p.id);
+      const isCurrent=ids[pickSlot]===p.id;
+      return `<tr class="${isCurrent?'me':''}"><td class="tname">${p.name}${isStarting&&!isCurrent?' <span style="color:#ff8c42;font-size:9.5px;">(주전 중복)</span>':''}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td>
+        <td><div class="mini-btn" data-action="lineup_assign" data-slot="${pickSlot}" data-id="${p.id}">${isCurrent?'현재 선발':'선발 배치'}</div></td></tr>`;
+    }).join('');
+    setMetaBody(`
+      <div class="meta-title">🧩 ${ROLE_LABEL[role]} 슬롯 배치</div>
+      <div class="meta-sub">이 자리에 배치할 선수를 선택해줘. 다른 슬롯에 이미 있는 선수를 고르면 서로 자리가 바뀌어.</div>
+      <table class="meta-table"><tr><th>이름</th><th>나이</th><th>OVR</th><th></th></tr>${rows}</table>
+      <div class="ghost-btn" data-action="career_lineup">◀ 라인업으로 돌아가기</div>
+    `);
+    return;
+  }
+
+  const rows = ids.map((id,i)=>{
+    const p=squadById[id];
+    const role=F.roles[i];
+    return `<tr><td>${ROLE_LABEL[role]}</td><td class="tname">${p?p.name:'—'}</td><td>${p?p.age:'-'}</td><td><b>${p?ovrOf(p):'-'}</b></td>
+      <td><div class="mini-btn" data-action="lineup_pick_slot" data-slot="${i}">교체</div></td></tr>`;
+  }).join('');
+  const benchCount = careerState.squad.length - 11;
+  setMetaBody(`
+    <div class="meta-title">🧩 라인업 편집 (${userFormation})</div>
+    <div class="meta-sub">현재 선발 11명 · 후보 ${benchCount}명. 슬롯의 '교체' 버튼으로 같은 포지션 후보와 바꿀 수 있어.</div>
+    <table class="meta-table"><tr><th>포지션</th><th>선수</th><th>나이</th><th>OVR</th><th></th></tr>${rows}</table>
+    <div class="ghost-btn" data-action="career_hub">◀ 구단 사무실로</div>
+  `);
+}
+function lineupAssign(slot, pickedId){
+  const F=FORMATIONS[userFormation]||FORMATIONS['4-4-2'];
+  const ids=getLineupForFormation(userFormation);
+  const dupIdx = ids.indexOf(pickedId);
+  if(dupIdx!==-1 && dupIdx!==slot){
+    const tmp=ids[slot]; ids[slot]=pickedId; ids[dupIdx]=tmp;
+  } else {
+    ids[slot]=pickedId;
+  }
+  careerState.lineup[userFormation]=ids;
+  persistCareer();
+  renderCareerLineup(null);
+}
+
 function renderCareerSeasonEndResult(res){
   metaMode='career';
   const tierMsg = res.tierChange>0? `🔼 승격! 다음 시즌부터 ${TIER_NAMES[careerState.tier]}에서 경쟁해` :
@@ -1376,6 +1459,9 @@ document.getElementById('metaBox').addEventListener('click',(e)=>{
   else if(act==='career_hub') renderCareerHub();
   else if(act==='career_play') careerPlayMatchday();
   else if(act==='career_squad') renderCareerSquad();
+  else if(act==='career_lineup') renderCareerLineup(null);
+  else if(act==='lineup_pick_slot') renderCareerLineup(parseInt(el.dataset.slot,10));
+  else if(act==='lineup_assign') lineupAssign(parseInt(el.dataset.slot,10), el.dataset.id);
   else if(act==='career_market') renderCareerMarket();
   else if(act==='career_sell') careerSell(el.dataset.id);
   else if(act==='career_buy') careerBuy(el.dataset.id);
@@ -1465,9 +1551,17 @@ function switchPlayer(){
   }
 }
 function autoSwitch(){
-  if(now()<switchLockUntil || now()<autoSwitchCooldown) return;
-  if(ball.owner && ball.owner.team==='B') return;
+  if(now()<switchLockUntil) return;
   const cur=activePlayer();
+  // 공을 우리 팀 다른 선수가 잡으면 즉시 그 선수로 전환 (최우선 규칙)
+  if(ball.owner && ball.owner.team==='B' && ball.owner!==cur){
+    activeBlueIdx=blue.indexOf(ball.owner);
+    switchLockUntil=now()+0.2;
+    autoSwitchCooldown=now()+0.5;
+    return;
+  }
+  if(ball.owner) return;
+  if(now()<autoSwitchCooldown) return;
   const near = nearestOnTeamToBall('B', true, null);
   if(near && near!==cur && dist(near,ball) < dist(cur,ball)-34){
     activeBlueIdx=blue.indexOf(near);
@@ -2060,6 +2154,25 @@ function hexA(hex,a){
   const r=parseInt(c.substring(0,2),16), g=parseInt(c.substring(2,4),16), b=parseInt(c.substring(4,6),16);
   return `rgba(${r},${g},${b},${clamp(a,0,1)})`;
 }
+function drawPlayerNames(){
+  const drawOne=(p)=>{
+    if(!p || !p.pname) return;
+    const P=worldToScreen(p.x, p.y, 0);
+    if(P.scale<0.55) return; // 너무 멀면 생략(가독성)
+    const isActive = p.team==='B' && p===activePlayer();
+    octx.font=`700 ${Math.max(9,10.5*P.scale)}px Rajdhani, sans-serif`;
+    octx.textAlign='center';
+    octx.fillStyle = isActive? 'rgba(255,212,0,.95)' : 'rgba(255,255,255,.82)';
+    octx.strokeStyle='rgba(0,0,0,.65)'; octx.lineWidth=2.4;
+    const label = p.pname;
+    const ty = P.y - 26*P.scale;
+    octx.strokeText(label, P.x, ty);
+    octx.fillText(label, P.x, ty);
+  };
+  for(const p of blue) drawOne(p);
+  for(const p of red) drawOne(p);
+}
+
 function drawFloatTexts(){
   for(let i=floatTexts.length-1;i>=0;i--){
     const ft=floatTexts[i];
@@ -2117,6 +2230,7 @@ function render(dt){
   } else {
     if(goalReplay) goalReplay=null;
     updateScene3D(dt);
+    drawPlayerNames();
     drawParticles(dt);
     drawFloatTexts();
   }
