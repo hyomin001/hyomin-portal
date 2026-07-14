@@ -89,6 +89,8 @@ html,body{width:100%;height:900px;overflow:hidden;background:radial-gradient(ell
 .opt-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:11px 6px;color:#dfe8f0;font-size:12px;font-weight:700;cursor:pointer;transition:border-color .12s,transform .12s;}
 .opt-btn:hover{border-color:rgba(255,212,0,.55);transform:translateY(-1px);}
 .opt-btn.sel{border-color:var(--gold);background:rgba(255,212,0,.12);box-shadow:0 0 10px rgba(255,212,0,.25);}
+.opt-btn.swatch{padding:0;border-width:2px;}
+.opt-btn.swatch.sel{border-color:#fff;box-shadow:0 0 0 2px var(--gold);}
 .opt-btn b{display:block;font-size:14px;margin-bottom:2px;}
 .meta-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:11.5px;}
 .meta-table th{color:#8aa;font-weight:700;font-size:10px;letter-spacing:.5px;padding:5px 4px;border-bottom:1px solid var(--border);text-align:center;}
@@ -99,7 +101,8 @@ html,body{width:100%;height:900px;overflow:hidden;background:radial-gradient(ell
 .fixture-box b{color:var(--gold);}
 .continue-btn{font-family:'Orbitron',sans-serif;font-weight:900;letter-spacing:1px;border:none;border-radius:12px;padding:14px 0;width:100%;font-size:14.5px;cursor:pointer;margin-top:4px;background:linear-gradient(90deg,#0bdc6b,#2ea8ff);color:#05121a;}
 .ghost-btn{font-family:'Rajdhani',sans-serif;font-weight:700;border:1px solid var(--border);background:rgba(255,255,255,.05);border-radius:10px;padding:9px 0;width:100%;font-size:12.5px;cursor:pointer;margin-top:8px;color:#aebccb;}
-.mini-btn{display:inline-block;background:rgba(255,212,0,.14);border:1px solid rgba(255,212,0,.4);color:var(--gold);border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;}
+.mini-btn{display:inline-block;background:rgba(255,212,0,.14);border:1px solid rgba(255,212,0,.4);color:var(--gold);border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;margin:1px;}
+.mini-btn.disabled{opacity:0.3;pointer-events:none;}
 .mini-btn:hover{background:rgba(255,212,0,.28);}
 .trophy-emoji{font-size:56px;margin:6px 0;}
 </style>
@@ -165,9 +168,9 @@ html,body{width:100%;height:900px;overflow:hidden;background:radial-gradient(ell
 "use strict";
 const octx = document.getElementById('overlay2d').getContext('2d');
 let scene, camera, renderer;
-const W=1040,H=660, H0=52,H1=988, V0=50,V1=610;
+const W=1040,H=660, H0=50,H1=1040, V0=30,V1=780;
 let camX=0, camInit=false;
-const GY0=264, GY1=396; // goal mouth
+const GY0=316, GY1=494; // goal mouth
 const GOAL_L_X=H0, GOAL_R_X=H1;
 const MATCH_TIME=180;
 const CX=(H0+H1)/2, CY=(V0+V1)/2;
@@ -326,8 +329,8 @@ let shiftDown=false;
 function activePlayer(){ return blue[activeBlueIdx]; }
 
 function inOwnBox(p,team){
-  if(team==='B') return p.x<H0+173 && p.y>GY0-69 && p.y<GY1+69;
-  return p.x>H1-173 && p.y>GY0-69 && p.y<GY1+69;
+  if(team==='B') return p.x<H0+183 && p.y>GY0-92 && p.y<GY1+92;
+  return p.x>H1-183 && p.y>GY0-92 && p.y<GY1+92;
 }
 
 function slotPos(p){
@@ -521,7 +524,7 @@ function doThroughPass(passer){
   if(passer===activePlayer()) autoSwitchCooldown=now()+0.55;
 }
 function doLongOrCross(passer){
-  const nearByline = passer.team==='B' ? passer.x>H1-253 : passer.x<H0+253;
+  const nearByline = passer.team==='B' ? passer.x>H1-268 : passer.x<H0+268;
   ball.lastPasser=passer;
   if(nearByline){
     const bx = passer.team==='B'? H1-30 : H0+30;
@@ -544,7 +547,7 @@ function doShoot(passer,power){
   const shootMul = 0.84 + (passer.attrs.shoot/99)*0.32;
   const inaccuracy = (99-passer.attrs.shoot)/99;
   const off=(passer.facing.y||0)*36 + (Math.random()*18-9)*(1+inaccuracy*1.6);
-  const aimY = clamp(CY+off, GY0+11, GY1-11);
+  const aimY = clamp(CY+off, GY0+15, GY1-15);
   const dx=goalX-passer.x, dy=aimY-passer.y, d=Math.hypot(dx,dy)||1;
   const spd=(470+power*350)*shootMul;
   ball.vx=dx/d*spd; ball.vy=dy/d*spd; ball.vz=0; ball.z=0;
@@ -1028,11 +1031,14 @@ const CREST_POOL=['⚽','🦁','🐉','⚡','🔥','🛡️','⭐','🦅','👑'
 
 function ovrOf(p){ const a=p.attrs; return Math.round((a.pace+a.shoot+a.pass+a.tackle+a.stam)/5); }
 function genSquadPlayer(role, ovrTarget, age){
+  const a = age||(18+Math.floor(Math.random()*17));
+  const room = a<23? 8+Math.floor(Math.random()*13) : (a<27? 2+Math.floor(Math.random()*7) : Math.floor(Math.random()*3));
   return {
     id:'sq'+Math.random().toString(36).slice(2,9),
     name: NAME_POOL[Math.floor(Math.random()*NAME_POOL.length)],
-    role, age: age||(18+Math.floor(Math.random()*17)),
+    role, age: a,
     contract: 1+Math.floor(Math.random()*3),
+    potential: clamp((ovrTarget||60)+room, 45, 99),
     attrs: genAttrs(role, ovrTarget)
   };
 }
@@ -1114,7 +1120,7 @@ function makeTeamFromSquad(squad, team, formationName, explicitIds){
       id:team+i, team, num:i+1, role, isGK:role==='GK', baseFx:fx, baseFy:f.y,
       x:H0+fx*(H1-H0), y:V0+f.y*(V1-V0),
       vx:0, vy:0, facing:{x:team==='B'?1:-1,y:0},
-      attrs:src.attrs, ovr:ovrOf(src), pname:src.name, squadId:src.id,
+      attrs:src.attrs, ovr:ovrOf(src), pname:src.name, squadId:src.id, appearance:src.appearance||null,
       stamina:100, shielding:false, jockeying:false, aiState:'HOLD',
       runUntil:0, pressUntil:0, stumbleUntil:0, skillEvadeUntil:0,
       matchGoals:0, matchAssists:0, matchTackles:0
@@ -1141,6 +1147,7 @@ function careerCreate(name, crest){
     budget: 50000000,
     season: 1,
     tier,
+    trainingPoints: 20,
     squad: genInitialSquad(),
     market: genMarketPool(10, omin, omax),
     league: {
@@ -1185,6 +1192,15 @@ function careerOnMatchEnd(b,r,win){
   if(b>r){ A.w++; A.pts+=3; B.l++; } else if(b<r){ B.w++; B.pts+=3; A.l++; } else { A.d++;B.d++;A.pts++;B.pts++; }
   careerState.league.matchday++;
   if(careerState.league.matchday>=7) careerState.league.done=true;
+
+  let gained=5+(win?2:0);
+  if(typeof blue!=='undefined' && blue){
+    for(const p of blue){
+      gained += (p.matchGoals||0)*3 + (p.matchAssists||0)*2 + (p.matchTackles||0)*1;
+    }
+  }
+  careerState.trainingPoints = (careerState.trainingPoints||0) + Math.round(gained);
+
   persistCareer();
   return careerState.league.done? '🏆 시즌 결산 보기' : '📅 다음 라운드로';
 }
@@ -1276,13 +1292,72 @@ function careerSquadRowsHtml(){
 }
 function renderCareerSquad(msg){
   metaMode='career';
+  const hasCustom = careerState.squad.some(p=>p.custom);
   setMetaBody(`
     <div class="meta-title">👥 스쿼드 (${careerState.squad.length}명)</div>
     <div class="meta-sub">${msg||'선수를 방출해 예산을 확보할 수 있어. 최소 12명은 유지해야 해. 계약이 0년이면 시즌 종료 시 이적할 수도 있어.'}</div>
     <table class="meta-table"><tr><th>이름</th><th>포지션</th><th>나이</th><th>OVR</th><th>시장가</th><th>계약</th><th></th></tr>${careerSquadRowsHtml()}</table>
+    ${hasCustom? '' : '<button class="continue-btn" data-action="career_custom_create" style="margin-bottom:10px;">✨ 나만의 선수 만들기</button>'}
     <div class="ghost-btn" data-action="career_hub">◀ 구단 사무실로</div>
   `);
 }
+
+// ── 나만의 선수 만들기 (커스텀 선수 생성) ──
+let customDraft={ name:'', role:'FW', skin:0, hair:1, hairStyle:'short', height:'medium' };
+function syncCustomName(){
+  const ni=document.getElementById('customNameInput');
+  if(ni) customDraft.name = ni.value;
+}
+function renderCareerCustomCreate(){
+  metaMode='career';
+  const heightVal={small:0.92, medium:1.0, large:1.08}[customDraft.height];
+  setMetaBody(`
+    <div class="meta-title">✨ 나만의 선수 만들기</div>
+    <div class="meta-sub">이름, 포지션, 외형을 직접 골라서 나만의 유망주를 만들어봐. 한 커리어당 1명만 만들 수 있어.</div>
+    <input id="customNameInput" type="text" placeholder="선수 이름 입력" maxlength="10" value="${customDraft.name}" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:13px;margin-bottom:10px;">
+    <div class="meta-sub" style="color:#fff;font-weight:800;margin-bottom:4px;">포지션</div>
+    <div class="diff-grid" style="grid-template-columns:repeat(4,1fr);">
+      ${['GK','DF','MF','FW'].map(r=>`<div class="opt-btn ${customDraft.role===r?'sel':''}" data-action="custom_pick_role" data-role="${r}"><b>${r}</b></div>`).join('')}
+    </div>
+    <div class="meta-sub" style="color:#fff;font-weight:800;margin:8px 0 4px;">피부톤</div>
+    <div class="diff-grid" style="grid-template-columns:repeat(6,1fr);">
+      ${SKIN_TONES.map((c,i)=>`<div class="opt-btn swatch ${customDraft.skin===i?'sel':''}" data-action="custom_pick_skin" data-idx="${i}" style="background:#${c.toString(16).padStart(6,'0')};height:30px;"></div>`).join('')}
+    </div>
+    <div class="meta-sub" style="color:#fff;font-weight:800;margin:8px 0 4px;">헤어 컬러</div>
+    <div class="diff-grid" style="grid-template-columns:repeat(8,1fr);">
+      ${HAIR_COLORS.map((c,i)=>`<div class="opt-btn swatch ${customDraft.hair===i?'sel':''}" data-action="custom_pick_hair" data-idx="${i}" style="background:#${c.toString(16).padStart(6,'0')};height:26px;"></div>`).join('')}
+    </div>
+    <div class="meta-sub" style="color:#fff;font-weight:800;margin:8px 0 4px;">헤어 스타일</div>
+    <div class="diff-grid" style="grid-template-columns:repeat(4,1fr);">
+      ${HAIR_STYLES.map(s=>`<div class="opt-btn ${customDraft.hairStyle===s?'sel':''}" data-action="custom_pick_hairstyle" data-style="${s}">${s==='bald'?'대머리':s==='short'?'짧은':s==='full'?'풍성한':'모히칸'}</div>`).join('')}
+    </div>
+    <div class="meta-sub" style="color:#fff;font-weight:800;margin:8px 0 4px;">체형(키)</div>
+    <div class="diff-grid">
+      ${['small','medium','large'].map(h=>`<div class="opt-btn ${customDraft.height===h?'sel':''}" data-action="custom_pick_height" data-h="${h}">${h==='small'?'작은형':h==='medium'?'표준형':'큰형'}</div>`).join('')}
+    </div>
+    <button class="continue-btn" data-action="career_custom_confirm" style="margin-top:12px;">✨ 선수 생성하기</button>
+    <div class="ghost-btn" data-action="career_squad">◀ 취소하고 스쿼드로</div>
+  `);
+}
+function careerCustomConfirm(){
+  const name = (customDraft.name && customDraft.name.trim())? customDraft.name.trim() : '나의 선수';
+  const role=customDraft.role;
+  const heightVal={small:0.92, medium:1.0, large:1.08}[customDraft.height];
+  const p = genSquadPlayer(role, 63+Math.floor(Math.random()*6), 17+Math.floor(Math.random()*2));
+  p.name = name;
+  p.custom = true;
+  p.potential = clamp(p.potential+6, 45, 92);
+  p.appearance = {
+    skin: SKIN_TONES[customDraft.skin],
+    hairColor: HAIR_COLORS[customDraft.hair],
+    hairStyle: customDraft.hairStyle,
+    heightScale: heightVal
+  };
+  careerState.squad.push(p);
+  persistCareer();
+  renderCareerSquad(`✨ ${name} 선수가 유스팀에서 데뷔했어! 라인업에 배치해보자.`);
+}
+
 function careerMarketRowsHtml(){
   return careerState.market.map(p=>`<tr><td class="tname">${p.academy?'🌱 ':''}${p.name}</td><td>${p.role}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td><td>${fmtMoney(p.price)}</td>
     <td><div class="mini-btn" data-action="career_buy" data-id="${p.id}">영입</div></td></tr>`).join('');
@@ -1342,14 +1417,54 @@ function renderCareerHub(){
       <div class="opt-btn ${userFormation==='4-3-3'?'sel':''}" data-action="pick_formation" data-form="4-3-3"><b>4-3-3</b></div>
     </div>
     <button class="continue-btn" data-action="career_play" style="margin-top:10px;">⚽ 경기 시작</button>
-    <div class="diff-grid" style="margin-top:8px;">
-      <div class="opt-btn" data-action="career_lineup">🧩 라인업 편집</div>
-      <div class="opt-btn" data-action="career_squad">👥 스쿼드 관리</div>
+    <div class="diff-grid" style="margin-top:8px;grid-template-columns:repeat(4,1fr);">
+      <div class="opt-btn" data-action="career_lineup">🧩 라인업</div>
+      <div class="opt-btn" data-action="career_training">🏋️ 선수 성장</div>
+      <div class="opt-btn" data-action="career_squad">👥 스쿼드</div>
       <div class="opt-btn" data-action="career_market">💰 이적시장</div>
     </div>
     <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 저장됨)</div>
   `);
 }
+const ATTR_LABEL={pace:'속도',shoot:'슈팅',pass:'패스',tackle:'태클',stam:'스태미나'};
+function trainCost(p){
+  const ovr=ovrOf(p);
+  return 8 + Math.floor(Math.max(0,ovr-55)/4)*2;
+}
+function careerTrain(id, attrKey){
+  const p=careerState.squad.find(s=>s.id===id);
+  if(!p) return '선수를 찾을 수 없어.';
+  if(ovrOf(p)>=p.potential) return `${p.name}은(는) 이미 잠재력 한계(${p.potential})에 도달했어.`;
+  const cost=trainCost(p);
+  if((careerState.trainingPoints||0)<cost) return `훈련 포인트가 부족해 (필요 ${cost}, 보유 ${careerState.trainingPoints||0}).`;
+  careerState.trainingPoints -= cost;
+  p.attrs[attrKey] = clamp(p.attrs[attrKey]+1, 28, 99);
+  persistCareer();
+  return `✅ ${p.name}의 ${ATTR_LABEL[attrKey]} 능력치가 상승했어! (${cost}P 사용)`;
+}
+function careerTrainRowsHtml(){
+  const rows=[...careerState.squad].sort((a,b)=> ovrOf(b)-ovrOf(a));
+  return rows.map(p=>{
+    const capped = ovrOf(p)>=p.potential;
+    const cost=trainCost(p);
+    const btns = ['pace','shoot','pass','tackle','stam'].map(k=>
+      `<div class="mini-btn ${capped?'disabled':''}" data-action="career_train" data-id="${p.id}" data-attr="${k}" title="${ATTR_LABEL[k]} +1">${ATTR_LABEL[k][0]}+</div>`
+    ).join(' ');
+    return `<tr><td class="tname">${p.name}</td><td>${p.role}</td><td>${p.age}</td><td><b>${ovrOf(p)}</b></td><td>${capped?'⭐MAX':p.potential}</td>
+      <td style="white-space:nowrap;">${btns}</td></tr>`;
+  }).join('');
+}
+function renderCareerTraining(msg){
+  metaMode='career';
+  setMetaBody(`
+    <div class="meta-title">🏋️ 선수 성장</div>
+    <div class="meta-sub">훈련 포인트: <b style="color:var(--gold);">${careerState.trainingPoints||0}P</b>${msg? ' · '+msg:''}</div>
+    <div class="fixture-box" style="font-size:10.5px;color:#8aa;">경기 결과와 개인 활약(골·어시스트·태클)에 따라 훈련 포인트를 획득해. 능력치를 올릴수록 다음 훈련 비용이 비싸지고, 잠재력(POT) 한계에 도달하면 더 이상 성장하지 않아.</div>
+    <table class="meta-table"><tr><th>이름</th><th>포지션</th><th>나이</th><th>OVR</th><th>POT</th><th>훈련</th></tr>${careerTrainRowsHtml()}</table>
+    <div class="ghost-btn" data-action="career_hub">◀ 구단 사무실로</div>
+  `);
+}
+
 const ROLE_LABEL={GK:'GK 골키퍼',DF:'DF 수비수',MF:'MF 미드필더',FW:'FW 공격수'};
 function renderCareerLineup(pickSlot){
   metaMode='career';
@@ -1460,6 +1575,18 @@ document.getElementById('metaBox').addEventListener('click',(e)=>{
   else if(act==='career_play') careerPlayMatchday();
   else if(act==='career_squad') renderCareerSquad();
   else if(act==='career_lineup') renderCareerLineup(null);
+  else if(act==='career_training'){ const m=null; renderCareerTraining(m); }
+  else if(act==='career_train'){ const m=careerTrain(el.dataset.id, el.dataset.attr); renderCareerTraining(m); }
+  else if(act==='career_custom_create') renderCareerCustomCreate();
+  else if(act==='custom_pick_role'){ syncCustomName(); customDraft.role=el.dataset.role; renderCareerCustomCreate(); }
+  else if(act==='custom_pick_skin'){ syncCustomName(); customDraft.skin=parseInt(el.dataset.idx,10); renderCareerCustomCreate(); }
+  else if(act==='custom_pick_hair'){ syncCustomName(); customDraft.hair=parseInt(el.dataset.idx,10); renderCareerCustomCreate(); }
+  else if(act==='custom_pick_hairstyle'){ syncCustomName(); customDraft.hairStyle=el.dataset.style; renderCareerCustomCreate(); }
+  else if(act==='custom_pick_height'){ syncCustomName(); customDraft.height=el.dataset.h; renderCareerCustomCreate(); }
+  else if(act==='career_custom_confirm'){
+    syncCustomName();
+    careerCustomConfirm();
+  }
   else if(act==='lineup_pick_slot') renderCareerLineup(parseInt(el.dataset.slot,10));
   else if(act==='lineup_assign') lineupAssign(parseInt(el.dataset.slot,10), el.dataset.id);
   else if(act==='career_market') renderCareerMarket();
@@ -1577,7 +1704,7 @@ function aiCarrierDecision(p,dt){
   const distGoal=Math.abs(goalX-p.x);
   const pressure=nearestOpponentDist(p);
 
-  if(distGoal<200 && pressure>26 && Math.random()<0.022*diff){
+  if(distGoal<212 && pressure>26 && Math.random()<0.022*diff){
     doShoot(p, 0.5+Math.random()*0.45);
     return;
   }
@@ -1687,8 +1814,8 @@ function aiStep(p,dt){
   let tx,ty,spd=108;
   if(p.isGK){
     p.aiState='GK_HOME';
-    tx = p.team==='B'? H0+25 : H1-25;
-    ty = clamp(ball.y, GY0+18, GY1-18);
+    tx = p.team==='B'? H0+26 : H1-26;
+    ty = clamp(ball.y, GY0+24, GY1-24);
     spd=94;
     if(inOwnBox(p,p.team) && ball.owner && ball.owner.team!==p.team && dist(p,ball)<130) spd=112;
   } else if(p.runUntil>t){
@@ -1758,8 +1885,8 @@ function humanStep(dt){
   p.x+=p.vx*dt; p.y+=p.vy*dt;
 
   if(p.isGK && !p.rushBoost){
-    p.x=clamp(p.x, H0-2, H0+195);
-    if(p.team==='R') p.x=clamp(p.x, H1-195, H1+2);
+    p.x=clamp(p.x, H0-2, H0+206);
+    if(p.team==='R') p.x=clamp(p.x, H1-206, H1+2);
   } else {
     clampP(p);
   }
@@ -1806,10 +1933,10 @@ function ballStep(dt){
   }
 
   if(!ball.dangerChecked){
-    if(ball.x<H0+127 && ball.vx<0){
+    if(ball.x<H0+134 && ball.vx<0){
       ball.dangerChecked=true;
       tryGKSave(blue.find(p=>p.isGK), true);
-    } else if(ball.x>H1-127 && ball.vx>0){
+    } else if(ball.x>H1-134 && ball.vx>0){
       ball.dangerChecked=true;
       tryGKSave(red.find(p=>p.isGK), true);
     }
@@ -1893,7 +2020,7 @@ const FAR_SCALE=0.56, NEAR_SCALE=1.18, DEPTH_EASE=0.78;
 const SCALE3D=0.034, HEIGHT3D=0.05;
 const PITCH_W3D=(H1-H0)*SCALE3D, PITCH_D3D=(V1-V0)*SCALE3D;
 const GOAL_H3D=0.9;
-const CAM_HEIGHT=15.5, CAM_BACK=18.5;
+const CAM_HEIGHT=17.5, CAM_BACK=21.5;
 let blueMeshes=[], redMeshes=[], ballMesh=null, ballSeam=null, refereeMesh=null;
 let refX=CX, refY=CY;
 let camPosX=0, camPosZ=0, camInit3D=false;
@@ -1922,26 +2049,26 @@ function makePitchTexture(){
   tctx.strokeStyle='rgba(255,255,255,.92)'; tctx.lineWidth=4;
   tctx.strokeRect(2,2,tw-4,th-4);
   tctx.beginPath(); tctx.moveTo(tw/2,0); tctx.lineTo(tw/2,th); tctx.stroke();
-  tctx.beginPath(); tctx.arc(tw/2,th/2, 66*sx, 0, Math.PI*2); tctx.stroke();
+  tctx.beginPath(); tctx.arc(tw/2,th/2, 70*sx, 0, Math.PI*2); tctx.stroke();
   tctx.beginPath(); tctx.arc(tw/2,th/2,4,0,Math.PI*2); tctx.fillStyle='#fff'; tctx.fill();
 
   tctx.lineWidth=3;
-  tctx.strokeRect(X(H0), Y(GY0-53), 148*sx, (GY1-GY0+106)*sy);
-  tctx.strokeRect(X(H1)-148*sx, Y(GY0-53), 148*sx, (GY1-GY0+106)*sy);
-  tctx.strokeRect(X(H0), Y(GY0-16), 53*sx, (GY1-GY0+32)*sy);
-  tctx.strokeRect(X(H1)-53*sx, Y(GY0-16), 53*sx, (GY1-GY0+32)*sy);
+  tctx.strokeRect(X(H0), Y(GY0-71), 157*sx, (GY1-GY0+142)*sy);
+  tctx.strokeRect(X(H1)-157*sx, Y(GY0-71), 157*sx, (GY1-GY0+142)*sy);
+  tctx.strokeRect(X(H0), Y(GY0-21), 56*sx, (GY1-GY0+42)*sy);
+  tctx.strokeRect(X(H1)-56*sx, Y(GY0-21), 56*sx, (GY1-GY0+42)*sy);
 
-  [[H0+108,CY],[H1-108,CY]].forEach(([px,py])=>{
+  [[H0+114,CY],[H1-114,CY]].forEach(([px,py])=>{
     tctx.beginPath(); tctx.arc(X(px),Y(py),4,0,Math.PI*2); tctx.fillStyle='#fff'; tctx.fill();
   });
-  tctx.beginPath(); tctx.arc(X(H0+108),Y(CY),57*sx,-0.65,0.65); tctx.stroke();
-  tctx.beginPath(); tctx.arc(X(H1-108),Y(CY),57*sx,Math.PI-0.65,Math.PI+0.65); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H0+114),Y(CY),60*sx,-0.65,0.65); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1-114),Y(CY),60*sx,Math.PI-0.65,Math.PI+0.65); tctx.stroke();
 
   tctx.lineWidth=2.4;
-  tctx.beginPath(); tctx.arc(X(H0),Y(V0),12*sx,0,Math.PI/2); tctx.stroke();
-  tctx.beginPath(); tctx.arc(X(H1),Y(V0),12*sx,Math.PI/2,Math.PI); tctx.stroke();
-  tctx.beginPath(); tctx.arc(X(H0),Y(V1),12*sx,-Math.PI/2,0); tctx.stroke();
-  tctx.beginPath(); tctx.arc(X(H1),Y(V1),12*sx,Math.PI,Math.PI*1.5); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H0),Y(V0),13*sx,0,Math.PI/2); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1),Y(V0),13*sx,Math.PI/2,Math.PI); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H0),Y(V1),13*sx,-Math.PI/2,0); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1),Y(V1),13*sx,Math.PI,Math.PI*1.5); tctx.stroke();
 
   const tex=new THREE.CanvasTexture(tc);
   tex.needsUpdate=true;
@@ -1986,6 +2113,42 @@ function addStands(){
   });
 }
 
+const SKIN_TONES=[0xffe0bd,0xf1c27d,0xe0ac69,0xc68642,0x8d5524,0x5a3825];
+const HAIR_COLORS=[0x1a1410,0x2c1b0e,0x4a2e18,0x6b4226,0xa8763e,0xd4a520,0x8a8a8a,0xe8e8e8];
+const HAIR_STYLES=['bald','short','full','mohawk'];
+function hashStr(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))|0; }
+  return Math.abs(h);
+}
+function getAppearance(seedStr){
+  const h=hashStr(seedStr||'player');
+  return {
+    skin: SKIN_TONES[h%SKIN_TONES.length],
+    hairColor: HAIR_COLORS[(h>>3)%HAIR_COLORS.length],
+    hairStyle: HAIR_STYLES[(h>>6)%HAIR_STYLES.length],
+    heightScale: 0.92 + ((h>>9)%17)/100 // 0.92~1.08
+  };
+}
+function buildHairMesh(style, color){
+  let geo;
+  if(style==='full') geo=new THREE.SphereGeometry(0.205,10,8,0,Math.PI*2,0,Math.PI*0.62);
+  else if(style==='short') geo=new THREE.SphereGeometry(0.2,10,8,0,Math.PI*2,0,Math.PI*0.42);
+  else if(style==='mohawk') geo=new THREE.BoxGeometry(0.06,0.12,0.32);
+  else geo=null; // bald
+  if(!geo) return null;
+  const mesh=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color}));
+  mesh.position.y = style==='mohawk'? 1.29 : 1.18;
+  return mesh;
+}
+function applyAppearance(grp, appearance){
+  grp.userData.head.material.color.setHex(appearance.skin);
+  if(grp.userData.hair){ grp.remove(grp.userData.hair); grp.userData.hair=null; }
+  const hairMesh=buildHairMesh(appearance.hairStyle, appearance.hairColor);
+  if(hairMesh){ grp.add(hairMesh); grp.userData.hair=hairMesh; }
+  grp.scale.set(appearance.heightScale, appearance.heightScale, appearance.heightScale);
+}
+
 function makePlayerMesh(){
   const grp=new THREE.Group();
   const torso=new THREE.Mesh(
@@ -2006,7 +2169,7 @@ function makePlayerMesh(){
   );
   ring.rotation.x=-Math.PI/2; ring.position.y=0.02;
   grp.add(ring);
-  grp.userData={torso,head,ring};
+  grp.userData={torso,head,ring,hair:null,_apId:null};
   scene.add(grp);
   return grp;
 }
@@ -2068,6 +2231,11 @@ function init3D(){
 function updateOnePlayerMesh(mesh, p, dt){
   if(!p){ mesh.visible=false; return; }
   mesh.visible=true;
+  const apId = p.squadId || p.pname || p.id;
+  if(mesh.userData._apId !== apId){
+    applyAppearance(mesh, p.appearance || getAppearance(apId));
+    mesh.userData._apId = apId;
+  }
   mesh.position.set((p.x-CX)*SCALE3D, 0, (p.y-CY)*SCALE3D);
   mesh.rotation.y = Math.atan2(p.facing.x||0, p.facing.y||0);
   const speed=Math.hypot(p.vx,p.vy);
