@@ -176,9 +176,9 @@ html,body{width:100%;height:900px;overflow:hidden;background:radial-gradient(ell
 "use strict";
 const octx = document.getElementById('overlay2d').getContext('2d');
 let scene, camera, renderer;
-const W=1040,H=660, H0=50,H1=1040, V0=30,V1=780;
+const W=1040,H=660, H0=40,H1=1340, V0=20,V1=1020;
 let camX=0, camInit=false;
-const GY0=316, GY1=494; // goal mouth
+const GY0=401, GY1=639; // goal mouth
 const GOAL_L_X=H0, GOAL_R_X=H1;
 const MATCH_TIME=180;
 const CX=(H0+H1)/2, CY=(V0+V1)/2;
@@ -340,8 +340,8 @@ let shiftDown=false;
 function activePlayer(){ return blue[activeBlueIdx]; }
 
 function inOwnBox(p,team){
-  if(team==='B') return p.x<H0+183 && p.y>GY0-92 && p.y<GY1+92;
-  return p.x>H1-183 && p.y>GY0-92 && p.y<GY1+92;
+  if(team==='B') return p.x<H0+240 && p.y>GY0-123 && p.y<GY1+123;
+  return p.x>H1-240 && p.y>GY0-123 && p.y<GY1+123;
 }
 
 function slotPos(p){
@@ -535,7 +535,7 @@ function doThroughPass(passer){
   if(passer===activePlayer()) autoSwitchCooldown=now()+0.55;
 }
 function doLongOrCross(passer){
-  const nearByline = passer.team==='B' ? passer.x>H1-268 : passer.x<H0+268;
+  const nearByline = passer.team==='B' ? passer.x>H1-352 : passer.x<H0+352;
   ball.lastPasser=passer;
   if(nearByline){
     const bx = passer.team==='B'? H1-30 : H0+30;
@@ -558,7 +558,7 @@ function doShoot(passer,power){
   const shootMul = 0.84 + (passer.attrs.shoot/99)*0.32;
   const inaccuracy = (99-passer.attrs.shoot)/99;
   const off=(passer.facing.y||0)*36 + (Math.random()*18-9)*(1+inaccuracy*1.6);
-  const aimY = clamp(CY+off, GY0+15, GY1-15);
+  const aimY = clamp(CY+off, GY0+20, GY1-20);
   const dx=goalX-passer.x, dy=aimY-passer.y, d=Math.hypot(dx,dy)||1;
   const spd=(470+power*350)*shootMul;
   ball.vx=dx/d*spd; ball.vy=dy/d*spd; ball.vz=0; ball.z=0;
@@ -1963,7 +1963,7 @@ function aiCarrierDecision(p,dt){
   const distGoal=Math.abs(goalX-p.x);
   const pressure=nearestOpponentDist(p);
 
-  if(distGoal<212 && pressure>26 && Math.random()<0.022*diff){
+  if(distGoal<278 && pressure>26 && Math.random()<0.022*diff){
     doShoot(p, 0.5+Math.random()*0.45);
     return;
   }
@@ -2073,8 +2073,8 @@ function aiStep(p,dt){
   let tx,ty,spd=108;
   if(p.isGK){
     p.aiState='GK_HOME';
-    tx = p.team==='B'? H0+26 : H1-26;
-    ty = clamp(ball.y, GY0+24, GY1-24);
+    tx = p.team==='B'? H0+34 : H1-34;
+    ty = clamp(ball.y, GY0+32, GY1-32);
     spd=94;
     if(inOwnBox(p,p.team) && ball.owner && ball.owner.team!==p.team && dist(p,ball)<130) spd=112;
   } else if(p.runUntil>t){
@@ -2144,8 +2144,8 @@ function humanStep(dt){
   p.x+=p.vx*dt; p.y+=p.vy*dt;
 
   if(p.isGK && !p.rushBoost){
-    p.x=clamp(p.x, H0-2, H0+206);
-    if(p.team==='R') p.x=clamp(p.x, H1-206, H1+2);
+    p.x=clamp(p.x, H0-2, H0+271);
+    if(p.team==='R') p.x=clamp(p.x, H1-271, H1+2);
   } else {
     clampP(p);
   }
@@ -2192,10 +2192,10 @@ function ballStep(dt){
   }
 
   if(!ball.dangerChecked){
-    if(ball.x<H0+134 && ball.vx<0){
+    if(ball.x<H0+176 && ball.vx<0){
       ball.dangerChecked=true;
       tryGKSave(blue.find(p=>p.isGK), true);
-    } else if(ball.x>H1-134 && ball.vx>0){
+    } else if(ball.x>H1-176 && ball.vx>0){
       ball.dangerChecked=true;
       tryGKSave(red.find(p=>p.isGK), true);
     }
@@ -2272,14 +2272,11 @@ function updateScoreHUD(){
 }
 
 // ── render ──
-// ── 각도 있는 브로드캐스트 카메라 (원근 투영) ──
-const HORIZON_Y=150, VIEW_HEIGHT=470;
-const FAR_SCALE=0.56, NEAR_SCALE=1.18, DEPTH_EASE=0.78;
-
+// ── 3D 카메라/렌더링 ──
 const SCALE3D=0.034, HEIGHT3D=0.05;
 const PITCH_W3D=(H1-H0)*SCALE3D, PITCH_D3D=(V1-V0)*SCALE3D;
 const GOAL_H3D=0.9;
-const CAM_HEIGHT=17.5, CAM_BACK=21.5;
+const CAM_HEIGHT=12, CAM_BACK=14.5;
 let blueMeshes=[], redMeshes=[], ballMesh=null, ballSeam=null, refereeMesh=null;
 let refX=CX, refY=CY;
 let camPosX=0, camPosZ=0, camInit3D=false;
@@ -2308,26 +2305,26 @@ function makePitchTexture(){
   tctx.strokeStyle='rgba(255,255,255,.92)'; tctx.lineWidth=4;
   tctx.strokeRect(2,2,tw-4,th-4);
   tctx.beginPath(); tctx.moveTo(tw/2,0); tctx.lineTo(tw/2,th); tctx.stroke();
-  tctx.beginPath(); tctx.arc(tw/2,th/2, 70*sx, 0, Math.PI*2); tctx.stroke();
+  tctx.beginPath(); tctx.arc(tw/2,th/2, 92*sx, 0, Math.PI*2); tctx.stroke();
   tctx.beginPath(); tctx.arc(tw/2,th/2,4,0,Math.PI*2); tctx.fillStyle='#fff'; tctx.fill();
 
   tctx.lineWidth=3;
-  tctx.strokeRect(X(H0), Y(GY0-71), 157*sx, (GY1-GY0+142)*sy);
-  tctx.strokeRect(X(H1)-157*sx, Y(GY0-71), 157*sx, (GY1-GY0+142)*sy);
-  tctx.strokeRect(X(H0), Y(GY0-21), 56*sx, (GY1-GY0+42)*sy);
-  tctx.strokeRect(X(H1)-56*sx, Y(GY0-21), 56*sx, (GY1-GY0+42)*sy);
+  tctx.strokeRect(X(H0), Y(GY0-95), 206*sx, (GY1-GY0+190)*sy);
+  tctx.strokeRect(X(H1)-206*sx, Y(GY0-95), 206*sx, (GY1-GY0+190)*sy);
+  tctx.strokeRect(X(H0), Y(GY0-28), 74*sx, (GY1-GY0+56)*sy);
+  tctx.strokeRect(X(H1)-74*sx, Y(GY0-28), 74*sx, (GY1-GY0+56)*sy);
 
-  [[H0+114,CY],[H1-114,CY]].forEach(([px,py])=>{
+  [[H0+150,CY],[H1-150,CY]].forEach(([px,py])=>{
     tctx.beginPath(); tctx.arc(X(px),Y(py),4,0,Math.PI*2); tctx.fillStyle='#fff'; tctx.fill();
   });
-  tctx.beginPath(); tctx.arc(X(H0+114),Y(CY),60*sx,-0.65,0.65); tctx.stroke();
-  tctx.beginPath(); tctx.arc(X(H1-114),Y(CY),60*sx,Math.PI-0.65,Math.PI+0.65); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H0+150),Y(CY),79*sx,-0.65,0.65); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1-150),Y(CY),79*sx,Math.PI-0.65,Math.PI+0.65); tctx.stroke();
 
   tctx.lineWidth=2.4;
-  tctx.beginPath(); tctx.arc(X(H0),Y(V0),13*sx,0,Math.PI/2); tctx.stroke();
-  tctx.beginPath(); tctx.arc(X(H1),Y(V0),13*sx,Math.PI/2,Math.PI); tctx.stroke();
-  tctx.beginPath(); tctx.arc(X(H0),Y(V1),13*sx,-Math.PI/2,0); tctx.stroke();
-  tctx.beginPath(); tctx.arc(X(H1),Y(V1),13*sx,Math.PI,Math.PI*1.5); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H0),Y(V0),17*sx,0,Math.PI/2); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1),Y(V0),17*sx,Math.PI/2,Math.PI); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H0),Y(V1),17*sx,-Math.PI/2,0); tctx.stroke();
+  tctx.beginPath(); tctx.arc(X(H1),Y(V1),17*sx,Math.PI,Math.PI*1.5); tctx.stroke();
 
   const tex=new THREE.CanvasTexture(tc);
   tex.needsUpdate=true;
@@ -2546,18 +2543,39 @@ function updateScene3D(dt){
 function drawMinimap(){
   const mx=W-186, my=14, mw=174, mh=94;
   octx.save();
-  octx.fillStyle='rgba(0,0,0,.5)';
+  octx.fillStyle='rgba(0,0,0,.55)';
   octx.fillRect(mx-5,my-5,mw+10,mh+10);
-  octx.strokeStyle='rgba(255,255,255,.55)'; octx.lineWidth=1;
+  octx.strokeStyle='rgba(255,255,255,.6)'; octx.lineWidth=1.4;
   octx.strokeRect(mx,my,mw,mh);
   octx.beginPath(); octx.moveTo(mx+mw/2,my); octx.lineTo(mx+mw/2,my+mh); octx.stroke();
+  octx.beginPath(); octx.arc(mx+mw/2,my+mh/2, mh*0.16,0,Math.PI*2); octx.stroke();
 
   const sx=mw/(H1-H0), sy=mh/(V1-V0);
   function mproj(x,y){ return {x:mx+(x-H0)*sx, y:my+(y-V0)*sy}; }
 
-  for(const p of red){ const q=mproj(p.x,p.y); octx.beginPath(); octx.arc(q.x,q.y,1.7,0,Math.PI*2); octx.fillStyle='#ff4757'; octx.fill(); }
-  for(const p of blue){ const q=mproj(p.x,p.y); octx.beginPath(); octx.arc(q.x,q.y,1.7,0,Math.PI*2); octx.fillStyle=(p===activePlayer())?'#ffd400':'#2ea8ff'; octx.fill(); }
+  // 카메라가 실제로 보고 있는 대략적인 영역 표시
+  const camGX = camPosX/SCALE3D + CX, camGY = camPosZ/SCALE3D + CY;
+  const halfW=(H1-H0)*0.155, halfD=(V1-V0)*0.155;
+  const vp1=mproj(camGX-halfW, camGY-halfD), vp2=mproj(camGX+halfW, camGY+halfD);
+  octx.strokeStyle='rgba(255,255,255,.85)'; octx.lineWidth=1.2;
+  octx.strokeRect(vp1.x, vp1.y, vp2.x-vp1.x, vp2.y-vp1.y);
+
+  for(const p of red){
+    const q=mproj(p.x,p.y);
+    octx.beginPath(); octx.arc(q.x,q.y,1.8,0,Math.PI*2); octx.fillStyle='#ff4757'; octx.fill();
+  }
+  for(const p of blue){
+    const q=mproj(p.x,p.y);
+    const isAct=(p===activePlayer());
+    if(isAct){
+      octx.beginPath(); octx.arc(q.x,q.y,3.2,0,Math.PI*2);
+      octx.strokeStyle='rgba(255,212,0,.9)'; octx.lineWidth=1; octx.stroke();
+    }
+    octx.beginPath(); octx.arc(q.x,q.y,1.8,0,Math.PI*2); octx.fillStyle=isAct?'#ffd400':'#2ea8ff'; octx.fill();
+  }
   const bq=mproj(ball.x,ball.y);
+  octx.beginPath(); octx.arc(bq.x,bq.y,3.4,0,Math.PI*2);
+  octx.fillStyle='rgba(255,255,255,.35)'; octx.fill();
   octx.beginPath(); octx.arc(bq.x,bq.y,1.9,0,Math.PI*2); octx.fillStyle='#fff'; octx.fill();
   octx.restore();
 }
@@ -2585,15 +2603,21 @@ function drawPlayerNames(){
   const drawOne=(p)=>{
     if(!p || !p.pname) return;
     const P=worldToScreen(p.x, p.y, 0);
-    if(P.scale<0.55) return; // 너무 멀면 생략(가독성)
+    if(P.scale<0.32) return; // 극단적으로 멀 때만 생략
     const isActive = p.team==='B' && p===activePlayer();
-    octx.font=`700 ${Math.max(9,10.5*P.scale)}px Rajdhani, sans-serif`;
+    const fontSize = Math.max(9.5, 11.5*P.scale);
+    octx.font=`800 ${fontSize}px Rajdhani, sans-serif`;
     octx.textAlign='center';
-    octx.fillStyle = isActive? 'rgba(255,212,0,.95)' : 'rgba(255,255,255,.82)';
-    octx.strokeStyle='rgba(0,0,0,.65)'; octx.lineWidth=2.4;
     const label = p.pname;
-    const ty = P.y - 26*P.scale;
-    octx.strokeText(label, P.x, ty);
+    const ty = P.y - 27*Math.max(P.scale,0.7);
+
+    // 가독성용 반투명 배경 칩
+    const tw = octx.measureText(label).width;
+    octx.fillStyle = p.team==='B' ? 'rgba(14,95,168,.55)' : 'rgba(168,32,44,.55)';
+    octx.fillRect(P.x-tw/2-4, ty-fontSize*0.78, tw+8, fontSize*1.05);
+
+    octx.fillStyle = isActive? '#ffd400' : '#ffffff';
+    octx.textBaseline='alphabetic';
     octx.fillText(label, P.x, ty);
   };
   for(const p of blue) drawOne(p);
