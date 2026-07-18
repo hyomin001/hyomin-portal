@@ -27,6 +27,10 @@ html,body{width:100%;height:900px;overflow:hidden;background:radial-gradient(ell
 .hud-crest{width:26px;height:26px;border-radius:50%;margin-bottom:4px;display:flex;align-items:center;justify-content:center;font-size:13px;}
 .hud-team.b .hud-crest{background:radial-gradient(circle at 35% 30%,#63c4ff,#0e5fa8);box-shadow:0 0 12px rgba(46,168,255,.55);}
 .hud-team.r .hud-crest{background:radial-gradient(circle at 35% 30%,#ff8a94,#a8202c);box-shadow:0 0 12px rgba(255,71,87,.55);}
+.card-row{display:flex;gap:2px;justify-content:center;margin-top:3px;min-height:10px;}
+.card-chip{width:8px;height:11px;border-radius:1.5px;display:inline-block;}
+.card-chip.y{background:#ffd400;}
+.card-chip.r{background:#ff4757;}
 #score{font-family:'Black Han Sans',sans-serif;font-size:48px;letter-spacing:5px;text-shadow:0 0 20px rgba(255,255,255,.28);}
 #center-info{display:flex;flex-direction:column;align-items:center;gap:5px;}
 #timer{font-family:'Orbitron',sans-serif;font-size:23px;font-weight:900;color:var(--gold);letter-spacing:2px;text-shadow:0 0 10px rgba(255,212,0,.5);}
@@ -110,9 +114,9 @@ html,body{width:100%;height:900px;overflow:hidden;background:radial-gradient(ell
 <body>
 <div id="root">
   <div id="hud">
-    <div class="hud-team b"><div class="hud-crest">B</div><div class="hud-team-name">BLUE (나)</div></div>
+    <div class="hud-team b"><div class="hud-crest">B</div><div class="hud-team-name">BLUE (나)</div><div id="cards-b" class="card-row"></div></div>
     <div id="score">0 : 0</div>
-    <div class="hud-team r"><div class="hud-crest">R</div><div class="hud-team-name" id="hud-r-name">RED (AI)</div></div>
+    <div class="hud-team r"><div class="hud-crest">R</div><div class="hud-team-name" id="hud-r-name">RED (AI)</div><div id="cards-r" class="card-row"></div></div>
   </div>
   <div id="center-info" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:101;">
     <div id="timer">3:00</div>
@@ -152,6 +156,7 @@ html,body{width:100%;height:900px;overflow:hidden;background:radial-gradient(ell
         <div>슈팅<br><b id="rs-shots">0</b></div>
         <div>태클성공<br><b id="rs-tackles">0</b></div>
         <div>패스성공률<br><b id="rs-pass">0%</b></div>
+        <div>카드<br><b id="rs-cards">0 🟨 / 0 🟥</b></div>
       </div>
       <div style="font-size:10px;color:#ffd400;letter-spacing:1px;margin:8px 0 4px;">⭐ MAN OF THE MATCH</div>
       <div id="rs-mom" style="font-size:13px;color:#fff;font-weight:800;margin-bottom:10px;">—</div>
@@ -241,7 +246,7 @@ function makeTeam(team, ovr, formationName){
       attrs, ovr, pname: NAME_POOL[Math.floor(Math.random()*NAME_POOL.length)],
       stamina:100, shielding:false, jockeying:false, aiState:'HOLD',
       runUntil:0, pressUntil:0, stumbleUntil:0, skillEvadeUntil:0,
-      matchGoals:0, matchAssists:0, matchTackles:0
+      matchGoals:0, matchAssists:0, matchTackles:0, yellowCards:0, sentOff:false
     });
   }
   return arr;
@@ -306,7 +311,7 @@ function resetKickoff(){
   if(!red || !red.length) red=makeTeam('R', opponentOVR, '4-4-2');
   placeAtKickoff(blue,'B'); placeAtKickoff(red,'R');
   players=[...blue,...red];
-  ball={x:CX,y:CY,vx:0,vy:0,z:0,vz:0,owner:null,intended:null,dangerChecked:false,lofted:0,spin:0,trail:[],lastPasser:null,shotBy:null,assistCandidate:null};
+  ball={x:CX,y:CY,vx:0,vy:0,z:0,vz:0,owner:null,intended:null,dangerChecked:false,lofted:0,spin:0,trail:[],lastPasser:null,shotBy:null,assistCandidate:null,curveStrength:0,curveDir:0};
   activeBlueIdx=6;
   freezeUntil=now()+0.8;
   camInit=false;
@@ -323,7 +328,7 @@ function fullReset(){
   timeLeft=MATCH_TIME;
   gameState='playing';
   possAcc={b:1,r:1};
-  stats={shots:0, tackles:0, passOk:0, passTry:0};
+  stats={shots:0, tackles:0, passOk:0, passTry:0, fouls:{B:0,R:0}};
   particles=[]; floatTexts=[];
   touchLog=[];
   tactic='balanced';
@@ -331,6 +336,7 @@ function fullReset(){
   halftimeDone=false;
   subsUsedThisMatch=0;
   benchUsedIds=new Set();
+  updateCardHUD();
   commentate('🎙️ 킥오프! 경기가 시작됩니다.');
 }
 
@@ -375,7 +381,7 @@ function nearestOnTeamToBall(team, excludeGKUnlessBox, excludeP){
   const arr=team==='B'?blue:red;
   let best=null,bd=1e9;
   for(const q of arr){
-    if(q===excludeP) continue;
+    if(q===excludeP || q.sentOff) continue;
     if(q.isGK && excludeGKUnlessBox && !inOwnBox(q,team)) continue;
     const d=dist(q,ball);
     if(d<bd){bd=d;best=q;}
@@ -387,7 +393,7 @@ function designatedChaser(defTeam){
   const arr= defTeam==='B'?blue:red;
   let best=null,bd=1e9;
   for(const q of arr){
-    if(q.isGK) continue;
+    if(q.isGK || q.sentOff) continue;
     if(defTeam==='B' && q===activePlayer()) continue;
     const d=dist(q,ball.owner||ball);
     if(d<bd){bd=d;best=q;}
@@ -398,7 +404,7 @@ function designatedChaser(defTeam){
 function nearestOpponent(p){
   const opp=p.team==='B'?red:blue;
   let best=null,bd=1e9;
-  for(const o of opp){ const d=dist(p,o); if(d<bd){bd=d;best=o;} }
+  for(const o of opp){ if(o.sentOff) continue; const d=dist(p,o); if(d<bd){bd=d;best=o;} }
   return best;
 }
 function nearestOpponentDist(p){
@@ -407,7 +413,7 @@ function nearestOpponentDist(p){
 }
 
 // ── passing intelligence ──
-function mates(team,exclude){ return (team==='B'?blue:red).filter(p=>p!==exclude && !p.isGK); }
+function mates(team,exclude){ return (team==='B'?blue:red).filter(p=>p!==exclude && !p.isGK && !p.sentOff); }
 
 function openness(passer,mate){
   const opp=passer.team==='B'?red:blue;
@@ -466,6 +472,7 @@ function kickTo(x,y,spd,lofted){
   ball.owner=null; ball.lofted=lofted?1:0; ball.dangerChecked=false;
   ball.vz = lofted? (150+Math.min(d,500)*0.28) : 0;
   if(!lofted) ball.z=0;
+  ball.curveStrength=0; ball.curveDir=0;
 }
 
 function addFloat(x,y,text,color){
@@ -564,9 +571,16 @@ function doShoot(passer,power){
   ball.vx=dx/d*spd; ball.vy=dy/d*spd; ball.vz=0; ball.z=0;
   ball.owner=null; ball.shotBy=passer; ball.dangerChecked=false; ball.lofted=0;
   ball.assistCandidate = (ball.lastPasser && ball.lastPasser!==passer && ball.lastPasser.team===passer.team) ? ball.lastPasser : null;
+
+  const curveKeyDir = (passer===activePlayer() && keys.has('ArrowLeft'))? -1 : ((passer===activePlayer() && keys.has('ArrowRight'))? 1 : 0);
+  const curveDir = passer===activePlayer()? curveKeyDir : (Math.random()<0.3? (Math.random()<0.5?-1:1) : 0);
+  ball.curveDir = curveDir;
+  ball.curveStrength = curveDir!==0? clamp((passer.attrs.shoot-45)/55, 0.15, 1) : 0;
+
   if(passer.team==='B') stats.shots++;
   addFloat(passer.x,passer.y-24, power>0.75?'강슛!!':'슈팅!', '#ff4757');
   if(power>0.7) commentate(passer.team==='B'? '💥 강력한 슈팅을 시도합니다!' : '⚠️ 상대의 위협적인 슈팅!');
+  if(curveDir!==0 && passer===activePlayer()) commentate('🌀 감아 차는 슈팅!');
   if(passer===activePlayer()) autoSwitchCooldown=now()+0.55;
 }
 function doCallRun(passer){
@@ -594,6 +608,71 @@ function doGKPunch(gk){
   burst(ball.x,ball.y,'#ffd400',10,180);
 }
 
+function updateCardHUD(){
+  const chipHtml=(team)=>{
+    const arr=(team==='B'?blue:red).filter(p=>(p.yellowCards||0)>0 || p.sentOff);
+    return arr.map(p=>{
+      if(p.sentOff) return '<div class="card-chip r" title="'+(p.pname||'')+' 퇴장"></div>';
+      return Array(p.yellowCards||0).fill('<div class="card-chip y" title="'+(p.pname||'')+' 경고"></div>').join('');
+    }).join('');
+  };
+  const cb=document.getElementById('cards-b'), cr=document.getElementById('cards-r');
+  if(cb) cb.innerHTML = chipHtml('B');
+  if(cr) cr.innerHTML = chipHtml('R');
+}
+function sendOffCheck(p){
+  const isActive = p.team==='B' && p===activePlayer();
+  p.sentOff=true;
+  if(isActive){
+    const cands=blue.filter(q=>q!==p && !q.sentOff).sort((a,b)=>dist(a,ball)-dist(b,ball));
+    if(cands.length){
+      activeBlueIdx = blue.indexOf(cands[0]);
+      switchLockUntil=now()+0.25;
+      autoSwitchCooldown=now()+0.5;
+    }
+  }
+}
+function commitFoul(defender, attacker, severity){
+  stats.fouls = stats.fouls || {B:0,R:0};
+  stats.fouls[defender.team] = (stats.fouls[defender.team]||0)+1;
+  const foulX=defender.x, foulY=defender.y;
+
+  let redChance = severity==='slide'? 0.05 : 0.01;
+  let yellowChance = severity==='slide'? 0.30 : 0.15;
+  const disciplineFactor = clamp((70-defender.attrs.tackle)/140, -0.1, 0.15);
+  yellowChance += disciplineFactor; redChance += disciplineFactor*0.3;
+
+  let cardMsg=null;
+  if(Math.random()<redChance){
+    defender.yellowCards=(defender.yellowCards||0)+2;
+    sendOffCheck(defender);
+    cardMsg = `🟥 레드카드! ${defender.pname||'선수'} 퇴장!`;
+    flashBanner('RED CARD!', (defender.pname||'선수')+' 퇴장', '#ff4757');
+  } else if(Math.random()<yellowChance){
+    defender.yellowCards=(defender.yellowCards||0)+1;
+    if(defender.yellowCards>=2){
+      sendOffCheck(defender);
+      cardMsg = `🟥 두 번째 옐로카드! ${defender.pname||'선수'} 퇴장!`;
+      flashBanner('RED CARD!', (defender.pname||'선수')+' 퇴장 (경고 누적)', '#ff4757');
+    } else {
+      cardMsg = `🟨 옐로카드! ${defender.pname||'선수'} 경고`;
+      addFloat(defender.x,defender.y-26,'YELLOW CARD','#ffd400');
+    }
+  } else {
+    cardMsg = `⚠️ 파울! ${attacker.team==='B'?'우리':'상대'} 팀 프리킥`;
+  }
+  commentate(cardMsg);
+  addFloat(foulX, foulY-22, 'FOUL', '#ff8c42');
+
+  // 프리킥: 공격팀이 파울 지점에서 재개
+  ball.owner=attacker; ball.vx=0; ball.vy=0; ball.vz=0; ball.z=0; ball.intended=null; ball.lastPasser=null;
+  attacker.x=foulX; attacker.y=foulY;
+  ball.x=foulX; ball.y=foulY;
+  ball.curveStrength=0; ball.curveDir=0;
+  freezeUntil=now()+1.1;
+  updateCardHUD();
+}
+
 function attemptStandingTackle(defender){
   const carrier=ball.owner;
   if(!carrier || carrier.team===defender.team) return;
@@ -613,6 +692,7 @@ function attemptStandingTackle(defender){
     } else {
       defender.stumbleUntil=now()+0.25;
       addFloat(defender.x,defender.y-22,'MISS','#8899aa');
+      if(Math.random()<0.22-Math.max(0,(defender.attrs.tackle-70)/500)) commitFoul(defender, carrier, 'standing');
     }
   }
 }
@@ -637,6 +717,7 @@ function attemptSlideTackle(defender){
       defender.matchTackles=(defender.matchTackles||0)+1;
     } else {
       addFloat(defender.x,defender.y-22,'MISS!','#8899aa');
+      if(Math.random()<0.38-Math.max(0,(defender.attrs.tackle-70)/500)) commitFoul(defender, carrier, 'slide');
     }
     burst(defender.x,defender.y,'#c9a36a',9,150);
   }
@@ -781,6 +862,7 @@ function wcSimOtherGroups(){
 function wcBuildBracket(){
   const myGroupTable=wcGroupStandings();
   const others=wcSimOtherGroups(); // [[g2w,g2r],[g3w,g3r],[g4w,g4r]]
+  wcState.otherGroupsQualifiers = others;
   const myIdx=myGroupTable.findIndex(t=>t.name==='나의 팀');
   const myRank = myIdx; // 0=1위, 1=2위
   const myOpp = myRank===0? others[0][1] : others[0][0];
@@ -827,6 +909,7 @@ function renderWcScreen(){
       <div class="fixture-box">다음 상대: <b>${next}</b> (OVR ${wcState.opponentOVR[next]})</div>
       <div class="fixture-box" style="font-size:10.5px;color:#8aa;">🔼 조 1~2위만 8강 토너먼트 진출</div>
       <button class="continue-btn" data-action="wc_start_group_match">⚽ 경기 시작</button>
+      <div class="ghost-btn" data-action="wc_bracket_overview">🗺️ 전체 대진표 보기</div>
       <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 유지)</div>
     `);
   } else if(wcState.stage==='knockout_intro'){
@@ -888,7 +971,38 @@ function wcBracketHtml(){
     <b style="color:var(--gold);">${stageLabel(br.stage)} 진행 중</b><br>
     ${wcState.country} vs ${wcState.roundOpp||br.qfOpp}<br>
     <span style="color:#8aa;font-size:10px;">나머지 대진은 자동 진행됩니다</span>
-  </div>`;
+  </div>
+  <div class="ghost-btn" data-action="wc_bracket_overview" style="margin-top:6px;">🗺️ 전체 대진표 보기</div>`;
+}
+function renderWcBracketOverview(){
+  metaMode='wc';
+  const groupNames=['B조','C조','D조'];
+  const otherGroupsHtml = (wcState.otherGroups||[]).map((g,i)=>{
+    const q = (wcState.otherGroupsQualifiers||[])[i];
+    return `<div class="fixture-box" style="font-size:10.5px;">
+      <b style="color:#fff;">${groupNames[i]}</b>: ${g.join(', ')}<br>
+      ${q? `→ 진출: <b style="color:var(--gold);">${q[0]}</b>, ${q[1]}` : '(조별리그 진행 예정)'}
+    </div>`;
+  }).join('');
+  let bracketTreeHtml = '';
+  if(wcState.bracket){
+    const br=wcState.bracket;
+    const stageDone=(s)=> (s==='QF'&&(br.stage==='SF'||br.stage==='F'||wcState.stage==='champion'||wcState.stage==='runnerup')) || (s==='SF'&&(br.stage==='F'||wcState.stage==='champion'||wcState.stage==='runnerup'));
+    bracketTreeHtml = `<div class="fixture-box" style="line-height:2;">
+      <b style="color:var(--gold);">🏆 토너먼트 트리</b><br>
+      <b>8강</b>: ${wcState.country} vs ${br.qfOpp} ${stageDone('QF')?'✅':(br.stage==='QF'?'⏳':'')}<br>
+      <b>4강</b>: 승자 vs [${br.qfWinners.join(' / ')}] 중 1팀 ${stageDone('SF')?'✅':(br.stage==='SF'?'⏳':'')}<br>
+      <b>결승</b>: ${br.stage==='F'||wcState.stage==='champion'||wcState.stage==='runnerup' ? (wcState.country+' vs '+wcState.roundOpp) : '4강 승자끼리'} ${wcState.stage==='champion'||wcState.stage==='runnerup'?'✅':''}
+    </div>`;
+  }
+  setMetaBody(`
+    <div class="meta-title">🗺️ 월드컵 전체 대진표</div>
+    <div class="meta-sub">${wcState.country} (E조) 기준 · 16개국 토너먼트 현황</div>
+    <div class="fixture-box" style="font-size:10.5px;"><b style="color:#fff;">E조 (나의 조)</b>: ${wcState.country}, ${(wcState.opponents||[]).join(', ')}</div>
+    ${otherGroupsHtml}
+    ${bracketTreeHtml}
+    <div class="ghost-btn" data-action="wc_back_from_overview">◀ 돌아가기</div>
+  `);
 }
 function wcStartNextGroupMatch(){
   blueRosterSource=null;
@@ -1001,9 +1115,26 @@ function renderLeagueHome(){
       <div class="fixture-box">이번 라운드 상대: <b>${leagueState.teams[oppIdx]}</b></div>
       ${leagueTableHtml(table)}
       <button class="continue-btn" data-action="league_play">⚽ 경기 시작</button>
+      <div class="ghost-btn" data-action="league_schedule">📋 전체 일정 보기</div>
       <div class="ghost-btn" data-action="goto_hub">◀ 메인으로 (진행상황 저장됨)</div>
     `);
   }
+}
+function renderLeagueSchedule(){
+  metaMode='league';
+  const rows = leagueState.fixtures.map((round,ri)=>{
+    const userPair = round.find(pr=>pr.includes(0));
+    const oppIdx = userPair[0]===0?userPair[1]:userPair[0];
+    const played = ri<leagueState.matchday;
+    const isNow = ri===leagueState.matchday && !leagueState.done;
+    return `<tr class="${isNow?'me':''}"><td>${ri+1}R</td><td class="tname">vs ${leagueState.teams[oppIdx]}</td><td>${played?'✅ 완료':(isNow?'⏳ 예정':'—')}</td></tr>`;
+  }).join('');
+  setMetaBody(`
+    <div class="meta-title">📋 시즌 전체 일정</div>
+    <div class="meta-sub">${leagueState.teams[0]}의 7라운드 일정</div>
+    <table class="meta-table"><tr><th>라운드</th><th>상대</th><th>상태</th></tr>${rows}</table>
+    <div class="ghost-btn" data-action="league_back_from_schedule">◀ 돌아가기</div>
+  `);
 }
 function leagueTableHtml(table){
   const rows = table.map(t=>`<tr class="${t.idx===0?'me':''}"><td class="tname">${t.name}</td><td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td>${t.gf}:${t.ga}</td><td><b>${t.pts}</b></td></tr>`).join('');
@@ -1138,7 +1269,7 @@ function makeTeamFromSquad(squad, team, formationName, explicitIds){
       attrs:src.attrs, ovr:ovrOf(src), pname:src.name, squadId:src.id, appearance:src.appearance||null,
       stamina:100, shielding:false, jockeying:false, aiState:'HOLD',
       runUntil:0, pressUntil:0, stumbleUntil:0, skillEvadeUntil:0,
-      matchGoals:0, matchAssists:0, matchTackles:0
+      matchGoals:0, matchAssists:0, matchTackles:0, yellowCards:0, sentOff:false
     });
   }
   return arr;
@@ -1792,8 +1923,12 @@ document.getElementById('metaBox').addEventListener('click',(e)=>{
   else if(act==='pick_formation') pickFormation(el.dataset.form);
   else if(act==='wc_pick_country') wcStart(el.dataset.country);
   else if(act==='wc_start_group_match') wcStartNextGroupMatch();
+  else if(act==='wc_bracket_overview') renderWcBracketOverview();
+  else if(act==='wc_back_from_overview') renderWcScreen();
   else if(act==='wc_start_knockout') wcStartKnockoutMatch();
   else if(act==='league_new'){ leagueNew(); renderLeagueHome(); }
+  else if(act==='league_schedule') renderLeagueSchedule();
+  else if(act==='league_back_from_schedule') renderLeagueHome();
   else if(act==='league_play') leaguePlayMatchday();
   else if(act==='career_pick_crest'){
     pendingCrest=el.dataset.crest;
@@ -1929,7 +2064,7 @@ let autoSwitchCooldown=0;
 function switchPlayer(){
   if(now()<switchLockUntil) return;
   const cur=activePlayer();
-  let cands=blue.filter(p=>p!==cur).sort((a,b)=>dist(a,ball)-dist(b,ball));
+  let cands=blue.filter(p=>p!==cur && !p.sentOff).sort((a,b)=>dist(a,ball)-dist(b,ball));
   if(cands.length){
     activeBlueIdx = blue.indexOf(cands[0]);
     switchLockUntil=now()+0.25;
@@ -1940,7 +2075,7 @@ function autoSwitch(){
   if(now()<switchLockUntil) return;
   const cur=activePlayer();
   // 공을 우리 팀 다른 선수가 잡으면 즉시 그 선수로 전환 (최우선 규칙)
-  if(ball.owner && ball.owner.team==='B' && ball.owner!==cur){
+  if(ball.owner && ball.owner.team==='B' && ball.owner!==cur && !ball.owner.sentOff){
     activeBlueIdx=blue.indexOf(ball.owner);
     switchLockUntil=now()+0.2;
     autoSwitchCooldown=now()+0.5;
@@ -2010,7 +2145,7 @@ function nearestOpponentAttacker(p){
   const opp=p.team==='B'?red:blue;
   let best=null,bd=1e9;
   for(const o of opp){
-    if(o.isGK || o.role==='DF') continue;
+    if(o.isGK || o.role==='DF' || o.sentOff) continue;
     const d=dist(p,o);
     if(d<bd){bd=d;best=o;}
   }
@@ -2043,6 +2178,7 @@ function updateMarkAssignments(){
 function aiStep(p,dt){
   const t=now();
   if(p===activePlayer()) return;
+  if(p.sentOff){ p.aiState='OFF'; return; }
   if(t<p.stumbleUntil){ p.aiState='STUMBLE'; p.x+=p.vx*0.9*dt; p.y+=p.vy*0.9*dt; clampP(p); return; }
 
   if(ball.owner===p){
@@ -2127,7 +2263,12 @@ function humanStep(dt){
   let spd=118*paceMul(p);
   const sprinting = keys.has('KeyE') && p.stamina>2;
   const stamMul=staminaMul(p);
-  if(sprinting){ spd*=1.38; p.stamina=clamp(p.stamina-32*dt/stamMul,0,100); }
+  if(sprinting){
+    spd*=1.38; p.stamina=clamp(p.stamina-32*dt/stamMul,0,100);
+    if(Math.random()<0.4){
+      particles.push({x:p.x,y:p.y+2,vx:(Math.random()-0.5)*14,vy:(Math.random()-0.5)*14,life:0.28,age:0,color:p.team==='B'?'#2ea8ff':'#ff4757',size:1.6+Math.random()*1.2});
+    }
+  }
   else { p.stamina=clamp(p.stamina+24*dt*stamMul,0,100); }
   if(p.shielding||p.jockeying) spd*=0.62;
   if(p.isGK){
@@ -2168,6 +2309,14 @@ function ballStep(dt){
   if(ball.owner) return;
   const spd0=Math.hypot(ball.vx,ball.vy);
   ball.spin += spd0*dt*0.05;
+
+  if(ball.curveStrength>0 && spd0>30){
+    const perpX=-ball.vy/spd0, perpY=ball.vx/spd0;
+    const CURVE_FORCE=420;
+    ball.vx += perpX*ball.curveDir*ball.curveStrength*CURVE_FORCE*dt;
+    ball.vy += perpY*ball.curveDir*ball.curveStrength*CURVE_FORCE*dt;
+  }
+
   const fr = ball.lofted? 0.994 : 0.985;
   ball.vx*=fr; ball.vy*=fr;
   ball.x += ball.vx*dt; ball.y += ball.vy*dt;
@@ -2212,6 +2361,7 @@ function ballStep(dt){
     }
     if(bestP){
       ball.owner=bestP; ball.vx=0; ball.vy=0; ball.vz=0; ball.z=0; ball.intended=null; ball.lofted=0;
+      ball.curveStrength=0; ball.curveDir=0;
       touchLog.push({x:bestP.x,y:bestP.y,team:bestP.team});
       if(touchLog.length>500) touchLog.shift();
       if(ball.lastPasser && ball.lastPasser.team!==bestP.team) ball.lastPasser=null;
@@ -2485,7 +2635,7 @@ function init3D(){
 }
 
 function updateOnePlayerMesh(mesh, p, dt){
-  if(!p){ mesh.visible=false; return; }
+  if(!p || p.sentOff){ mesh.visible=false; return; }
   mesh.visible=true;
   const apId = p.squadId || p.pname || p.id;
   if(mesh.userData._apId !== apId){
@@ -2601,7 +2751,7 @@ function hexA(hex,a){
 }
 function drawPlayerNames(){
   const drawOne=(p)=>{
-    if(!p || !p.pname) return;
+    if(!p || !p.pname || p.sentOff) return;
     const P=worldToScreen(p.x, p.y, 0);
     if(P.scale<0.32) return; // 극단적으로 멀 때만 생략
     const isActive = p.team==='B' && p===activePlayer();
@@ -2832,7 +2982,7 @@ function performSub(outSlotIdx, benchPlayerId){
     attrs:benchP.attrs, ovr:ovrOf(benchP), pname:benchP.name, squadId:benchP.id, appearance:benchP.appearance||null,
     stamina:100, shielding:false, jockeying:false, aiState:'HOLD',
     runUntil:0, pressUntil:0, stumbleUntil:0, skillEvadeUntil:0,
-    matchGoals:0, matchAssists:0, matchTackles:0
+    matchGoals:0, matchAssists:0, matchTackles:0, yellowCards:0, sentOff:false
   };
   const wasActive = (activePlayer()===outP);
   blue[outSlotIdx]=newPlayer;
@@ -2913,6 +3063,10 @@ function endMatch(){
   const passPct = stats.passTry>0? Math.round(stats.passOk/stats.passTry*100) : 0;
   const rsPassEl=document.getElementById('rs-pass');
   if(rsPassEl) rsPassEl.textContent = passPct+'%';
+  const yellowCount = blue.filter(p=>(p.yellowCards||0)>0 && !p.sentOff).length + red.filter(p=>(p.yellowCards||0)>0 && !p.sentOff).length;
+  const redCount = blue.filter(p=>p.sentOff).length + red.filter(p=>p.sentOff).length;
+  const rsCardsEl=document.getElementById('rs-cards');
+  if(rsCardsEl) rsCardsEl.textContent = `${yellowCount} 🟨 / ${redCount} 🟥`;
   const mom=computeMOM();
   const rsMomEl=document.getElementById('rs-mom');
   if(rsMomEl) rsMomEl.textContent = mom? `${mom.teamLabel} #${mom.num} (${mom.role}) · 평점 ${mom.rating}` : '—';
